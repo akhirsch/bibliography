@@ -13,6 +13,7 @@
 @string{ESOP="European Symposium on Programming ({ESOP})"}
 @string{ICALP="International Conference on Automata, Languages, and Programming ({ICALP})"}
 @string{PEPM="Partial Evaluation and Program Manipulation ({PEPM})"}
+@string{FACS="Formal Aspects of Component Software ({FACS})"}
 
 %% Functional Programming
 @string{ICFP="International Conference on Functional Programming ({ICFP})"}
@@ -44,6 +45,7 @@
 @string{CSL="Computer Science Logic ({CSL})"}
 @string{LMCS="Logical Methods in Computer Science (LMCS)"}
 @string{CADE="Conference on Automated Deduction ({CADE})"}
+
 %% Theory
 @string{FOSSACS="Foundations of Software Science and Computational Structures ({FOSSACS})"}
 @string{MFCS="Mathematical Foundations of Computer Science ({MFCS})"}
@@ -53,13 +55,21 @@
 @string{ICTAC="International Colloquium on Theoretical Aspects of Computing ({ICTAC})"}
 @string{TACS="Theoretical Aspects of Computer Software (TACS)"}
 @string{FOCS="Symposium on Foundations of Computer Science ({FOCS})"}
+@string{CONCUR="Concurrency Theory ({CONCUR})"}
+@string{SSM="Software \& Systems Modeling"}
 
 %% Systems
 @string{SOSP="Symposium on Operating Systems Principles ({SOSP})"}
+@string{FMOODSFORTE="Formal Methods for Open Object-Based Distributed Systems ({FMOODS})/Formal Techniques for Distributed Objects, Components, and Systems ({FORTE})"}
+@string{FMOODS="Formal Methods for Open Object-Based Distributed Systems ({FMOODS})"}
+@string{FORTE="Formal Techniques for Distributed Objects, Components, and Systems ({FORTE})"}
 
 %% Misc
 @string{CACM="Communications of the ACM ({CACM})"}
 @string{ACS="ACM Computing Surveys"}
+@string{WWW="The Web Conference ({WWW})"}
+@string{TGC="Trustworthy Global Computer ({TGC})"}
+@string{SAC="Symposium on Applied Computing ({SAC})"}
 
 %%% I should try to have DOIs everywhere possible.
 
@@ -1835,4 +1845,74 @@ volume=21,
 number=1,
 month={September},
 pages={5--19},
+}
+
+@inproceedings{CarboneM13,
+title={Deadlock-Freedom-by-Design: Multiparty Asynchronous Global Programming},
+author={Carbone, Marco and Montesi, Fabrizio},
+booktitle=POPL,
+year={2013},
+doi={10.1145/2429069.2429101}
+}
+
+@techreport{WangX17,
+title={A Survey of Reasoning Methods for Concurrent Systems},
+author={Wang, Chun-Kun and Xu, Hao},
+intitution={University of North Carolina at Chapel Hill},
+year={2017}
+}
+
+@inproceedings{CarboneMS14,
+title={Choreographies, Logically},
+author={Carbone, Marco and Montesi, Fabrizio and Sch\"{u}rmann, Carsten},
+year={2014},
+booktitle=CONCUR,
+}
+
+@inproceedings{ZongyanXCH07,
+title={Towards the Theoretical Foundation of Choreography},
+author={Zongyan, Qiu and Xiangpeng, Zhao and Chao, Cai and Hongli, Yang},
+year={2007},
+booktitle=WWW,
+}
+
+@inproceedings{MurphyCH07,
+title={Type-safe Distributed Programming with {ML5}},
+author={Murphy {VII}, Tom and Crary, Karl and Harper, Robert},
+year={2007},
+booktitle=TGC,
+}
+
+@inproceedings{KitchinQCM09,
+title={The Orc Programming Language},
+author={Kitchin, David and Quark, Adam and Cook, William R. and Misra, Jayadev},
+year={2009},
+booktitle=FMOODSFORTE,
+}
+
+@inproceedings{Cruz-FilipeMP18,
+title={Communications in Choreographies, Revisited},
+author={Cruz-Filip, Lu\'{i}s and Montesi, Fabrizio and Peresotti, Marco},
+year={2018},
+booktitle=SAC,
+doi = {10.1145/3167132.3167267}
+}
+
+@article{MisraC07,
+title={Computation Orchestration: A Basis for Wide-Area Computing},
+author={Misra, Jayadev and Cook, William R.},
+year={2007},
+journal=SSM,
+volume={6},
+number={1},
+pages={83--110},
+doi={10.1007/s10270-006-0012-1},
+}
+
+@inproceedings{Cruz-FilipeM17,
+title={A Core Model for Choreographic Programming},
+author = {Cruze-Filipe, Lu\'{i}s and Montesi, Fabrizio},
+year={2017},
+booktitle=FACS,
+doi={10.1007/978-3-319-57666-4\_3}
 }
