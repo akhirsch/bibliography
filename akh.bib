@@ -39,6 +39,8 @@
 @string{ISSS="International Symposium on Software Security ({ISSS})"}
 @string{TISSEC="Transactions on Information and System Security ({TISSEC})"}
 @string{JSAC="IEEE Journal on Selected Areas in Communications ({JSAC})"}
+@string{POLICY="Policies for Distributed Systems and Networks (POLICY)"}
+@string{JIS="International Journal of Information Security"}
 
 %% Logic
 @string{JLC="Journal of Logic and Computation ({JLC})"}
@@ -47,7 +49,14 @@
 @string{LMCS="Logical Methods in Computer Science (LMCS)"}
 @string{CADE="Conference on Automated Deduction ({CADE})"}
 @string{LSFA="Logic and Semantic Frameworks, with Applications ({LSFA})"}
-@string{TCL="Transactions on Computational Logic ({TCL})"}
+@string{TOCL="Transactions on Computational Logic ({TOCL})"}
+@string{JLAMP="Journal of Logical and Algebraic Methods in Programming ({JLAMP})"}
+@string{IMLA="Intuitionistic Modal Logic and Applications ({IMLA})"}
+@string{PAL="Annals of Pure and Applied Logic"}
+@string{DEON="Deontic Logic in Computer Science ({DEON})"}
+@string{TARK="Theoretical Aspects of Reasoning about Knowledge ({TARK})"}
+@string{JSL="Journal of Symbolic Logic"}
+@string{TABLEAUX="Automated Reasoning with Analytic Tableaux and Related Methods ({TABLEAUX})"}
 
 %% Theory
 @string{FOSSACS="Foundations of Software Science and Computational Structures ({FOSSACS})"}
@@ -71,10 +80,14 @@
 
 %% Misc
 @string{CACM="Communications of the ACM ({CACM})"}
-@string{ACS="ACM Computing Surveys"}
+@string{CSUR="ACM Computing Surveys ({CSUR})"}
 @string{WWW="The Web Conference ({WWW})"}
 @string{TGC="Trustworthy Global Computer ({TGC})"}
 @string{SAC="Symposium on Applied Computing ({SAC})"}
+@string{ZMLGM="Zeitschrift f\"{u}r Mathematische Logik und Grundlagen der Mathematik"}
+@string{Synthese="Synthese"}
+@string{ISMIS="International Symposium on Methodologies for Intelligent Systems ({ISMIS})"}
+@string{CATA="Categorical Aspects of Topology and Analysis"}
 
 %%% I should try to have DOIs everywhere possible.
 
@@ -114,11 +127,12 @@
 
 @article{AppelF99,
   author={Appel, Andrew W. and Felten, Edward W.},
-  title = {Proof-Carrying Authorization},
+  title = {Proof-Carrying Authentication},
   year=1999,
   journal= CCS,
   publisher={ACM},
-  month={August}
+  month={August},
+  doi={10.1145/319709.319718}
 }
 
 
@@ -128,7 +142,8 @@
   year = {2003},
   publisher = {IEEE},
   journal = LICS,
-  month = {June}
+  month = {June},
+  doi={10.1109/LICS.2003.1210043}
 }
 
 @article{JiaW04,
@@ -137,7 +152,8 @@
   year = {2004},
   publisher = {Springer},
   journal = ESOP,
-  month = {August}
+  month = {August},
+  doi={10.1007/978-3-540-24725-8_16}
 }
 
 @article{RajaniGR16,
@@ -146,7 +162,8 @@
   year={2016},
   publisher={IEEE},
   journal=CSF,
-  month={June}
+  month={June},
+  doi={10.1109/CSF.2016.18}
 }
 @misc{Yang12,
   author={Yang, Edward Z.},
@@ -160,7 +177,7 @@
   author = {Hirsch, Andrew K. and de Amorim, Pedro and Cecchetti, Ethan and Arden, Owen and Tate, Ross},
   title = {First-Order Logic for Flow-Limited Authorization: Technical Report},
   year = {2019},
-  institution={Cornell}
+  institution={Cornell},
   }
 
 @article{Algehed18,
@@ -168,7 +185,8 @@
   title = {Short Paper: A Perspective on the Dependency Core Calculus},
   year = {2018},
   journal = PLAS,
-  month = {October}
+  month = {October},
+  doi={10.1145/3264820.3264823}
 }
 
 @article{JiaZ09,
@@ -177,7 +195,8 @@
   year=2009,
   journal= PLAS,
   month={June},
-  pages={17--29}
+  pages={17--29},
+  doi={10.1145/1554339.1554344}
 }
 
 @inproceedings{Becker10,
@@ -186,7 +205,8 @@
   year=2010,
   booktitle= CSF,
   pages={171--185},
-  organization={IEEE}
+  organization={IEEE},
+  doi={10.1109/CSF.2010.19}
 }
   
 @book{Jacobs99,
@@ -195,7 +215,7 @@
   publisher = {Elsevier},
   series = {Studies in Logic and The Foundations of Mathematics},
   year = {1999},
-  isbn = {0-444-50853-8}
+  isbn = {0-444-50853-8},
 }
 
 @book{Takeuti87,
@@ -214,14 +234,16 @@
   year = {1995},
   journal = LICS,
   month = {June},
-  pages = {156--166}
+  pages = {156--166},
+  doi={10.1109/LICS.1995.523253}
 }
 
 @article{Caldwell98,
   author = {Caldwell, James L.},
   title = {Classical Propositional Decidability via Nuprl Proof Extraction},
   year = {1998},
-  journal = {Theorem Proving in Higher-Order Logics (TPHOLs)}
+  journal = {Theorem Proving in Higher-Order Logics (TPHOLs)},
+  doi={10.1007/BFb0055132}
 }
 
 @article{Andreoli92,
@@ -232,7 +254,8 @@
   number={3},
   pages={297--347},
   year={1992},
-  publisher={Dov Gabbay}
+  publisher={Dov Gabbay},
+  doi={10.1093/logcom/2.3.297}
 }
 
 @book{GirardLT89,
@@ -241,8 +264,9 @@
   publisher = {Cambridge University Press},
   series = {Cambridge Tracts in Theoretical Computer Science},
   year = 1989,
-  isbn={978-0521371810}
+  isbn={978-0521371810},
 }
+
 @article{Chargueraud12,
   title = {The Locally Nameless Representation},
   author = {Chargu\'{e}raud, Arthur},
@@ -265,6 +289,7 @@
     month = May,
     year = 2015
 }
+
 @inproceedings{ArdenLM15,
     title = "Flow-Limited Authorization",
     booktitle = CSF,
@@ -272,7 +297,8 @@
     year = 2015,
     month = jul,
     author = "Owen Arden and Jed Liu and Andrew C. Myers",
-    @url = "http://www.cs.cornell.edu/andru/papers/flam"
+    @url = "http://www.cs.cornell.edu/andru/papers/flam",
+    doi={10.1109/CSF.2015.42}
 }
 
 @inproceedings{ArdenM16,
@@ -282,7 +308,8 @@
     month = jun,
     pages = "135--147",
     author = "Owen Arden and Andrew C. Myers",
-    @url = "http://www.cs.cornell.edu/andru/papers/flac"
+    @url = "http://www.cs.cornell.edu/andru/papers/flac",
+    doi={10.1109/CSF.2016.17}
 }
 
 @incollection{HowellK00,
@@ -294,7 +321,8 @@
   series ="lncs",
   @url={http://dx.doi.org/10.1007/10722599_9},
   publisher={Springer Berlin Heidelberg},
-  pages={140-158}
+  pages={140-158},
+  doi={10.1007/10722599_9}
 }
 @article{BeckerFG10,
   title={{SecPAL}: Design and semantics of a decentralized authorization language},
@@ -305,7 +333,8 @@
   pages={619--665},
   year = 2010,
   publisher={IOS Press},
-  @url="http://research.microsoft.com/apps/pubs/default.aspx?id=70334"
+  @url="http://research.microsoft.com/apps/pubs/default.aspx?id=70334",
+  doi={10.3233/JCS-2009-0364}
 }
 
 @article{SchneiderWS11,
@@ -346,10 +375,11 @@
 }
 
 @inproceedings{SirerDBRSWWS11,
-    title = "Logical Attestation: An Authorization Architecture for Trustworthy Computing",
-    author = "Emin G{\"u}n Sirer and Willem De Bruijin and Patrick Reynolds and Alan Shieh and Kevin Walsh and Dan Williams and Fred B. Schneider",
-    booktitle = SOSP,
-    year = 2011
+ title = "Logical Attestation: An Authorization Architecture for Trustworthy Computing",
+ author = "Emin G{\"u}n Sirer and Willem De Bruijin and Patrick Reynolds and Alan Shieh and Kevin Walsh and Dan Williams and Fred B. Schneider",
+ booktitle = SOSP,
+ year = 2011,
+ doi={10.1145/2043556.2043580}
 }
 
 @Manual{Coq04,
@@ -368,19 +398,20 @@
     title = "\textsc{Aura}: A Programming Language for Authorization and Audit",
     booktitle = ICFP,
     month = sep,
-    year = 2008
+    year = 2008,
+    doi={10.1145/1411204.1411212}
 }
 
 @inproceedings{AbadiBJHR99,
-    author = "Mart{\'\i}n Abadi and Anindya Banerjee and Nevin Heintze and
-	      Jon Riecke",
+    author = "Mart{\'\i}n Abadi and Anindya Banerjee and Nevin Heintze and Jon Riecke",
     title = "A Core Calculus of Dependency",
     booktitle= POPL,
     year = 1999,
     pages="147--160",
     month = jan,
     location="San Antonio, TX",
-    @url = "http://dl.acm.org/citation.cfm?id=292555"
+    @url = "http://dl.acm.org/citation.cfm?id=292555",
+    doi={10.1145/292540.292555}
 }
 
 @inproceedings{MilanoM18,
@@ -388,8 +419,7 @@
     title = "{MixT}: A Language for Mixing Consistency in Geodistributed Transactions",
     booktitle = PLDI,
     year = 2018,
-    month = jun,
-    @note = "To appear"
+    doi={10.1145/3192366.3192375}
 }
 
 @inproceedings{ZhengM05,
@@ -399,7 +429,8 @@
     month = jun,
     year = 2005,
     pages = "272--286",
-    @url = "http://www.cs.cornell.edu/andru/papers/avail.pdf"
+    @url = "http://www.cs.cornell.edu/andru/papers/avail.pdf",
+    doi={10.1109/CSFW.2005.16}
 }
 
 @article{VolpanoSI96,
@@ -409,7 +440,9 @@
 	pages = "167--187",
 	volume = 4,
 	number = 3,
-	year = 1996}
+	year = 1996,
+	doi={10.3233/JCS-1996-42-304}
+}
 
 @article{Denning76,
 	author = "Dorothy E. Denning",
@@ -418,15 +451,19 @@
 	volume = 19,
 	number = 5,
 	year = 1976,
-	pages = {236--243}
+	pages = {236--243},
+	doi ={10.1145/360051.360056}
 }
 
 @inproceedings{GoguenM82,
 	author = "Joseph A. Goguen and Jose Meseguer",
 	title = "Security Policies and Security Models",
 	booktitle = SSP,
-	year = 1982, month = apr,
-	pages = "11--20"}
+	year = 1982,
+	month = apr,
+	pages = "11--20",
+	doi = {10.1109/SP.1982.10014}
+	}
 
 @inproceedings{GargP06,
     title={Non-interference in constructive authorization logic},
@@ -438,7 +475,8 @@
     eid={},
     address={New Jersey, USA},
     year = 2006,
-    @url = "http://dl.acm.org/citation.cfm?id=1155684"
+    @url = "http://dl.acm.org/citation.cfm?id=1155684",
+    doi={10.1109/CSFW.2006.18}
 }
 @inproceedings{ZdancewicM01,
   author = "Steve Zdancewic and Andrew C. Myers",
@@ -461,7 +499,8 @@
   number =	 3233,
   series =	 "LNCS",
   publisher =	 {Springer-Verlag},
-  @url =          "http://www.cs.cornell.edu/andru/papers/isss03.pdf"
+  @url =          "http://www.cs.cornell.edu/andru/papers/isss03.pdf",
+  doi = {10.1007/978-3-540-37621-7_9}
 }
 @InProceedings{MantelS04,
   author = 	 {Heiko Mantel and David Sands},
@@ -472,7 +511,8 @@
   series = 	 {LNCS 3303},
   address = 	 {Taipei, Taiwan},
   month = 	 nov,
-  publisher = {Springer-Verlag}
+  publisher = {Springer-Verlag},
+  doi={10.1007/978-3-540-30477-7_9}
 }
 
 @InProceedings{LiZ05,
@@ -481,7 +521,8 @@
   year = 	 2005,
   booktitle = 	 POPL,
   address =	 {Long Beach, CA},
-  month =	 jan
+  month =	 jan,
+  doi={10.1145/1040305.1040319}
 }
 
 @InProceedings{SabelfeldS05,
@@ -490,7 +531,8 @@
   booktitle =    CSFW,
   year =	 2005,
   pages = "255--269",
-  month =	 jun
+  month =	 jun,
+  doi={10.1109/CSFW.2005.15}
 }
 
 @article{MyersSZ06,
@@ -501,7 +543,8 @@
     number = 2,
     pages = "157--196",
     year = 2006,
-    @url = "http://www.cs.cornell.edu/andru/papers/robdecl-jcs"
+    @url = "http://www.cs.cornell.edu/andru/papers/robdecl-jcs",
+    doi={10.3233/JCS-2006-14203}
 }
 @inproceedings{ChongM08,
   author = "Stephen Chong and Andrew C. Myers",
@@ -510,7 +553,8 @@
   year = 2008,
   month = jun,
   pages = "98--111",
-  @url = "http://www.cs.cornell.edu/andru/papers/enferasure-csf08.pdf"
+  @url = "http://www.cs.cornell.edu/andru/papers/enferasure-csf08.pdf",
+  doi = {10.1109/CSF.2008.12}
 }
 @article{AskarovMyers11,
     title = "Attacker Control and Impact for Confidentiality and Integrity",
@@ -520,14 +564,16 @@
     number = 3,
     month = sep,
     year = 2011,
-    @url="http://www.cs.cornell.edu/andru/papers/robknowledge-lmcs.pdf"
+    @url="http://www.cs.cornell.edu/andru/papers/robknowledge-lmcs.pdf",
+    doi={10.2168/LMCS-7(3:17)2011}
 }
 @InProceedings{WayeBKCR15,
   author =    {Lucas Waye and Pablo Buiras and Dan King and Stephen Chong and Alejandro Russo},
   title =     {It's My Privilege: Controlling Downgrading in {DC}-Labels},
   booktitle = STM,
   month =     sep,
-  year =      2015
+  year =      2015,
+  doi={10.1007/978-3-319-24858-5_13}
 }
 
 @inproceedings{CecchettiMA17,
@@ -537,7 +583,8 @@
     year = 2017,
     month = oct,
     pages = "1875--1891",
-    location = "Dallas, TX"
+    location = "Dallas, TX",
+    doi={10.1145/3133956.3134054}
 }
 
 @techreport{CecchettiMA17-tr,
@@ -547,73 +594,83 @@
     @note = {https://arxiv.org/abs/1708.08596},
     @url = {https://arxiv.org/abs/1708.08596},
     month = aug,
-    year = 2017
+    year = 2017,
 }
 
 @inproceedings{Moggi89,
   author = {Eugenio Moggi},
   title = {Computational Lambda-Calculus and Monads},
   booktitle = LICS,
-  year = {1989}
+  year = {1989},
+  doi={10.1109/LICS.1989.39155}
 }
 @inproceedings{PeytonJonesW93,
   author = {Simon {Peyton Jones} and Philip Wadler},
   title = {Imperative Functional Programming},
   booktitle = POPL,
-  year = {1993}
+  year = {1993},
+  doi= {10.1145/158511.158524}
 }
 @inproceedings{Tate13,
   author = {Ross Tate},
   title = {The Sequential Semantics of Producer Effect Systems},
   booktitle = POPL,
-  year = {2013}
+  year = {2013},
+  doi={10.1145/2429069.2429074}
 }
 @inproceedings{UustaluV08,
   author = {Tarmo Uustalu and Varmo Vene},
   title = {Comonadic Notions of Computation},
   booktitle = CMCS,
-  year = {2008}
+  year = {2008},
+  doi={10.1016/j.entcs.2008.05.029}
 }
 
 @inproceedings{WadlerT98,
   author = {Philip Wadler and Peter Thiemann},
   title = {The Marriage of Effects and Monads},
   booktitle = ICFP,
-  year = {1998}
+  year = {1998},
+  doi={10.1145/289423.289429}
 }
 @inproceedings{PetricekOM12,
   author={Tomas Petricek and Dominic Orchard and Alan Mycroft},
   title={Coeffects: Unified Static Analysis of Context Dependence},
   booktitle=ICALP,
-  year={2012}
+  year={2012},
+  doi={10.1007/978-3-642-39212-2_35}
 }
 
 @inproceedings{PetricekOM14,
   author={Tomas Petricek and Dominic Orchard and Alan Mycroft},
   title={Coeffects: A Calculus of Context-Dependent Computation},
   booktitle=ICFP,
-  year={2014}
+  year={2014},
+  doi={10.1145/2628136.2628160}
 }
 
 @article{Atkey09,
  author = {Atkey, Robert},
  title = {Parameterised Notions of Computation},
  journal = JFP,
- year = {2009}
+ year = {2009},
+ doi= {10.1017/S095679680900728X}
 } 
 
 @inproceedings{Filinski99,
  author = {Filinski, Andrzej},
  title = {Representing Layered Monads},
  booktitle = POPL,
- year = {1999}
+ year = {1999},
+ doi={10.1145/292540.292557}
 } 
 
 @article{Hughes00,
  author = {Hughes, John},
  title = {Generalising Monads to Arrows},
  journal = {The Science of Computer Programming},
- year = {2000}
+ year = {2000},
+ doi={10.1016/S0167-6423(99)00023-4}
 } 
 
 
@@ -621,27 +678,31 @@
  author = {Hyland, Martin and Plotkin, Gordon and Power, John},
  title = {Combining Effects: Sum and Tensor},
  journal = TCS,
- year = 2006
+ year = 2006,
+ doi={10.1016/j.tcs.2006.03.013}
 }
 
 @inproceedings{Luth02,
  author = {L\"{u}th, Christoph and Ghani, Neil},
  title = {Composing Monads Using Coproducts},
  booktitle = ICFP,
- year = {2002}
+ year = {2002},
+ doi={10.1145/581478.581492}
 } 
 
 @inproceedings{Lucassen88,
  author = {Lucassen, J. M. and Gifford, D. K.},
  title = {Polymorphic Effect Systems},
  booktitle = POPL,
- year = {1988}
+ year = {1988},
+ doi={10.1145/73560.73564}
 } 
 @article{PowerW02,
   author = {Power, John and Watanabe, Hiroshi},
   journal = TCS,
   title = {{Combining a monad and a comonad}},
-  year = {2002}
+  year = {2002},
+  doi={10.1016/S0304-3975(01)00024-X}
 }
 
 @Article{Kock72,
@@ -649,7 +710,8 @@ author="Anders Kock",
 title="Strong functors and monoidal monads",
 journal="Archiv der Mathematik",
 year = 1972,
-volume=23
+volume=23,
+doi={10.1007/BF01304852}
 }
 
 @Inbook{OrchardM13,
@@ -658,13 +720,15 @@ chapter="A Notation for Comonads",
 title="Implementation and Application of Functional Languages",
 year=2013,
 publisher="Springer Berlin Heidelberg",
+doi={10.1007/978-3-642-41582-1_1}
 }
 
 @article{AltenkirchCU15,
   author={Thorsten Altenkirch and James Chapman and Tarmo Uustalu},
   title={Monads Need Not Be Endofunctors},
   journal= LMCS,
-  year={2015}
+  year={2015},
+  doi={10.1007/978-3-642-12032-9_21}
 }
 
 @techreport{JonesH93,
@@ -678,14 +742,16 @@ publisher="Springer Berlin Heidelberg",
   author = {Gordon Plotkin and John Power},
   title = {Algebraic Operations and Generic Effects},
   year = {2003},
-  journal = {Applied Categorical Structures}
+  journal = {Applied Categorical Structures},
+  doi={10.1023/A:1023064908962}
 }
 
 @article{HylandBLPP07,
   author = {Martin Hyland and Paul {Blain Levy} and Gordon Plotkin and John Power},
   title = {Combining Algebraic Effects with Continuations},
   year = {2007},
-  journal = TCS
+  journal = TCS,
+  doi={10.1016/j.tcs.2006.12.026}
 }
 
 @article{PlotkinP09,
@@ -693,6 +759,7 @@ publisher="Springer Berlin Heidelberg",
   title = {Handlers of Algebraic Effects},
   year = {2009},
   journal = ESOP,
+  doi={10.1007/978-3-642-00590-9_7}
 }
 
 @article{PlotkinP08,
@@ -700,26 +767,29 @@ publisher="Springer Berlin Heidelberg",
   title = {A Logic for Algebraic Effects},
   year = {2008},
   journal = LICS,
+  doi={10.1109/LICS.2008.45}
 }
 @phdthesis{Pretnar10,
   author = {Matija Pretnar},
   title = {The Logic and Handling of Algebraic Effects},
   school = {School of Informatics, The University of Edinburgh},
-  year = {2010}
+  year = {2010},
 }
 
 @article{BauerP15,
   author = {Andrej Bauer and Matija Pretnar},
   title = {Programming with Algebraic Effects and Handlers},
-  journal = {Journal of Logical and Algebraic Methods in Programming},
-  year = {2015}
+  journal = JLAMP,
+  year = {2015},
+  doi = {10.1016/j.jlamp.2014.02.001}
 }
 
 @inproceedings{HicksBGLS14,
   author = {Michael Hicks and Gavin Bierman and Nataliya Guts and Daan Leijen and Nikhil Swamy},
   title = {Polymonadic Programming},
   year = {2014},
-  booktitle = MSFP
+  booktitle = MSFP,
+  doi={10.4204/EPTCS.153.7}
 }
 
 @techreport{BrookesVS93,
@@ -728,7 +798,7 @@ title = "Monads and Comonads in Intensional Semantics",
 year = 1993,
 url = "https://www.cs.cmu.edu/~brookes/papers/MonadsComonads.pdf",
 institution = "Carnegie Mellon University Department of Computer Science",
-number = "CMU-CS-93-140"
+number = "CMU-CS-93-140",
 }
 
 @inproceedings{Katsumata14,
@@ -736,6 +806,7 @@ number = "CMU-CS-93-140"
   title = "Parametric Effect Monads and Semantics of Effect Systems",
   year = 2014,
   booktitle = POPL,
+  doi={10.1145/2535838.2535846}
 }
 
 @inproceedings{NielsonN99,
@@ -754,20 +825,23 @@ number = "CMU-CS-93-140"
   author = {Daniel Marino and Todd Milstein},
   title = {A Generic Type-and-Effect System},
   booktitle = TLDI,
-  year = {2009}
+  year = {2009},
+  doi = {10.1145/1481861.1481868}
 }
 @article{Nielson96,
   author = {Flemming Nielson},
   title = {Annotated Type and Effect Systems},
-  journal = ACS,
-  year = {1996}
+  journal = CSUR,
+  year = {1996},
+  doi = {10.1145/234528.234745}
 }
 
 @inproceedings{AriolaFMOW95,
  author = {Zena M. Ariola and Matthias Felleisen and John Maraist and Martin Odersky and Philip Wadler},
  title = {A Call-By-Need Lambda Calculus},
  booktitle = POPL,
- year = {1995}
+ year = {1995},
+ doi={10.1145/199448.199507}
 }
 
 @article{Girard87,
@@ -775,13 +849,15 @@ number = "CMU-CS-93-140"
   title = {Linear Logic},
   year = 1987,
   journal = TCS,
+  doi={10.1016/0304-3975(87)90045-4}
 }
 
 @inproceedings{BlainLevy99,
  author={Paul Blain Levy},
  title = {Call-By-Push-Value: A Subsuming Paradigm},
  booktitle = TLCA,
- year = {1999}
+ year = {1999},
+ doi={10.1007/3-540-48959-2_17}
 }
 
 @phdthesis{BlainLevy01,
@@ -796,21 +872,24 @@ number = "CMU-CS-93-140"
   author = {John Maraist and Martin Odersky and David Turner and Philip Wadler},
   title = {Call-By-Name, Call-By-Value, Call-By-Need, and the Linear Lambda Calculus},
   journal = MFPS,
-  year = 1995
+  year = 1995,
+  doi={10.1016/S1571-0661(04)00022-2}
 }
 
 @article{Plotkin75,
     author = {Gordon Plotkin},
     title = {Call-By-Name, Call-By-Value, and the $\lambda$-Calculus},
     journal = TCS,
-    year = 1975
+    year = 1975,
+    doi={10.1016/0304-3975(75)90017-1}
 }
   
 @inproceedings{Wadler03,
   author = {Philip Wadler},
   title = {Call-By-Value is Dual to Call-By-Name},
   booktitle = ICFP,
-  year = {2003}
+  year = {2003},
+  doi = {10.1145/944705.944723}
 }
 
 @phdthesis{Smith89,
@@ -824,21 +903,23 @@ number = "CMU-CS-93-140"
   author={Amr Sabry and Philip Wadler},
   title={A Reflection on Call-by-Value},
   journal={Transactions on Programming Languages and Systems (TOPLAS)},
-  year = 1997
+  year = 1997,
+  doi={10.1145/944705.944723}
 }
 
 @phdthesis{Schellinx94,
   author={Harold Schellinx},
   title = {The Noble Art of Linear Decorating},
   school = {Unerversiteit van Amsterdam},
-  year = {1994}
+  year = {1994},
 }
 
 @inproceedings{Wadler93,
   author={Philip Wadler},
   title={A Taste of Linear Logic},
   booktitle= MFCS,
-  year = {1993}
+  year = {1993},
+  doi={10.1007/3-540-57182-5_12}
 }
 
 @misc{PeytonJones98,
@@ -859,45 +940,52 @@ number = "CMU-CS-93-140"
 author = {Landin, P. J.}, 
 title = {The Mechanical Evaluation of Expressions},
 year = {1964}, 
-journal = {The Computer Journal} 
+journal = {The Computer Journal},
+doi={10.1093/comjnl/6.4.308}
 }
 
 @article{Gentzen34,
   author = {Gerhard Gentzen},
   title = {Untersuchungen über das logische Schließen I},
   year = {1934},
-  journal = {Mathematische Zeitschrift}
+  journal = {Mathematische Zeitschrift},
+  doi={10.1007/BF01201353}
 }
 @article{Gentzen35,
   author = {Gerhard Gentzen},
   title = {Untersuchungen über das logische Schließen II},
   year = {1935},
-  journal = {Mathematische Zeitschrift}
+  journal = {Mathematische Zeitschrift},
+  doi={10.1007/BF01201363}
 }
 
 @article{FischerKS11,
   author    = {Sebastian Fischer and Oleg Kiselyov and Chung{-}chieh Shan},
   title     = {Purely functional lazy nondeterministic programming},
   journal   = {Journal of Functional Programming (JFP)},
-  year      = {2011}
+  year      = {2011},
+  doi       = {10.1145/1596550.1596556}
 }
 @inproceedings{BrasselC08,
   author    = {Bernd Bra{\ss}el and Jan Christiansen},
   title     = {A Relation Algebraic Semantics for a Lazy Functional Logic Language},
   booktitle = RelMiCS,
   year      = {2008},
+  doi       = {10.1007/978-3-540-78913-0_5}
 }
 @inproceedings{Riesco10,
   author    = {Adri{\'{a}}n Riesco and Juan Rodr{\'{\i}}guez{-}Hortal{\'{a}}},
   title     = {Programming with singular and plural non-deterministic functions},
   booktitle = PEPM,
   year      = {2010},
+  doi       = {10.1145/1706356.1706373}
 }
 @inproceedings{Javier07,
   author    = {Francisco Javier L{\'{o}}pez{-}Fraguas and Juan Rodr{\'{\i}}guez{-}Hortal{\'{a}} and Jaime S{\'{a}}nchez{-}Hern{\'{a}}ndez},
   title     = {A simple rewrite notion for call-time choice semantics},
   booktitle = PPDP,
   year      = {2007},
+  doi       = {10.1145/1273920.1273947}
 }
 @inproceedings{HanusKM95,
 author = "Hanus, Michael and Kuchen, Herbert and Moreno-Navarro, Juan Jos\'{e}",
@@ -919,69 +1007,79 @@ author = "Alonzo Church and J.B. Rosser",
 title = "Some Properties of Conversion",
 year = "1936",
 journal = "Transactions of the American Mathematical Society",
+doi = {10.2307/1989762}
 }
 
 @inproceedings{BrunelGMZ14,
   author = {Alo{\"{i}}s Brunel and Marco Gaboardi and Damiano Mezza and Steve Zdancewic},
   title  = {A Core Quantitative Coeffect Calculus},
   booktitle = ESOP,
-  year = {2014}
+  year = {2014},
+  doi = {10.1007/978-3-642-54833-8_19}
 }
 
 @inproceedings{Beck06,
   author = {Jon Beck},
   title = {Distributive Laws},
   booktitle = {Seminar on Triples and Categorical Homology Theory},
-  year = {2006}
+  year = {2006},
+  doi = {10.1007/BFb0083084}
 }
 
 @article{UustaluV05,
   author = {Tarmu Uustalu and Varmo Vene},
   title = {Signals and Comonads},
   journal = {Journal of Universal Computer Science},
-  year = {2005}
+  year = {2005},
+  doi = {10.3217/jucs-011-07-1311}
 }
 
 @inproceedings{BrookesG92,
   author = {Stephen Brookes and Shai Geva},
   title = {Computational Comonads and Intensional Semantics},
   booktitle = {Applications of Categories in Computer Science},
-  year = {1992}
+  year = {1992},
+  doi = {10.1017/CBO9780511525902.003}
 }
 
 @article{BellinS94,
   author = {Gianluigi Bellin and Philip J. Scott},
   title = {On the $\pi$-calculus and Linear Logic},
   journal = TCS,
-  year = {1994}
+  year = {1994},
+  doi={10.1016/0304-3975(94)00104-9}
 }
 
 @inproceedings{Wadler12,
   author = {Philip Wadler},
   title = {Propositions as Sessions},
   booktitle = ICFP,
-  year = {2012}
+  year = {2012},
+  doi = {10.1145/2364527.2364568}
 }
 
 @article{MilnerPW92,
   author = {Robin Milner and Joachim Parrow and David Walker},
   title = {A Calculus of Mobile Processes, Part I},
   journal = {Information and Computation},
-  year = {1992}
+  year = {1992},
+  doi = {10.1016/0890-5401(92)90008-4}
 }
 
-@misc{Abramsky92,
+@article{Abramsky94,
   author = {Samson Abramsky},
-  title = {Proofs-as-Processes},
-  howpublished={Seminar Talk, Deptartment of Computer Science, University of Edinburgh},
-  year = {1992}
+  title = {Proofs as Processes},
+  journal=TCS,
+  year = {1994},
+  doi={10.1016/0304-3975(94)00103-0}
 }
 
+%TODO: Check this citation
 @article{Wadler90,
   author = {Philip Wadler},
   title = {Linear Types Can Change the World!},
   journal = {Programming Concepts and Methods},
-  year = {1990}
+  year = {1990},
 }
 
 @misc{RustReference,
@@ -996,14 +1094,16 @@ journal = "Transactions of the American Mathematical Society",
   author={Marco Gaboardi and {Shin-ya} Katsumata and Dominic Orchard and Flavien Breuvart and Tarmo Uustalu},
   title= {Combining Effects and Coeffects via Grading},
   booktitle= ICFP,
-  year=2016
+  year=2016,
+  doi={10.1145/2951913.2951939}
 }
 
 @inproceedings{SabelfeldS99,
   author={Andrei Sabelfeld and David Sands},
-  title={A {PER} Model of Secure Information Flow},
+  title={A {PER} Model of Secure Information Flow in Sequential Programs},
   booktitle= ESOP,
-  year=1999
+  year=1999,
+  doi={10.1007/3-540-49099-X_4}
 }
 
 @article{WobberABL94,
@@ -1016,6 +1116,7 @@ journal = "Transactions of the American Mathematical Society",
  month = feb,
  year = 1994,
  pages = {3--32},
+ doi={10.1145/174613.174614}
 } 
 
 @inproceedings{LiMW02,
@@ -1026,6 +1127,7 @@ journal = "Transactions of the American Mathematical Society",
   year      = 2002,
   pages     = {114--130},
   booktitle  = SSP,
+  doi = {10.1109/SECPRI.2002.1004366}
 }
 
 @inproceedings{BeckerS04,
@@ -1034,7 +1136,8 @@ journal = "Transactions of the American Mathematical Society",
                Expressiveness},
   year      = 2004,
   pages     = {159--168},
-  booktitle  = {International Workshop on Policies for Distributed Systems and Networks (POLICY)},
+  booktitle  = POLICY,
+  doi = {10.1109/POLICY.2004.1309162}
 }
 
 @inproceedings{Jim01,
@@ -1043,6 +1146,7 @@ journal = "Transactions of the American Mathematical Society",
   year      = 2001,
   pages     = {106--115},
   booktitle = SSP,
+  doi={10.1109/SECPRI.2001.924291}
 }
 
 @inproceedings{DeTreville02,
@@ -1051,6 +1155,7 @@ journal = "Transactions of the American Mathematical Society",
   year      = 2002,
   pages     = {105--113},
   booktitle = SSP,
+  doi={10.1109/SECPRI.2002.1004365}
 }
 
 @inproceedings{BauerGMRRR05,
@@ -1063,7 +1168,8 @@ journal = "Transactions of the American Mathematical Society",
   title     = {Device-Enabled Authorization in the {G}rey System},
   year      = 2005,
   pages     = {431--445},
-  booktitle = {Information Security Conference (ISC)}
+  booktitle = {Information Security Conference (ISC)},
+  doi       = {10.1007/11556992_31}
 }
 
 @inproceedings{FournetGM05,
@@ -1074,6 +1180,7 @@ journal = "Transactions of the American Mathematical Society",
   year      = 2005,
   pages     = {141--156},
   booktitle = ESOP,
+  doi       = {10.1007/978-3-540-31987-0_11}
 }
 
 @inproceedings{PimlottK06,
@@ -1082,6 +1189,7 @@ journal = "Transactions of the American Mathematical Society",
   year      = 2006,
   pages     = {130--145},
   booktitle = FLOPS,
+  doi       = {10.1007/11737414_10}
 }
 
 @article{CederquistCDEHL07,
@@ -1092,11 +1200,12 @@ journal = "Transactions of the American Mathematical Society",
                J. I. den Hartog and
                Gabriele Lenzini},
   title     = {Audit-based compliance control},
-  journal   = {International Journal of Information Security},
+  journal   = JIS,
   volume    = 6,
   number    = {2--3},
   year      = 2007,
   pages     = {133--151},
+  doi       = {10.1007/s10207-007-0017-y}
 }
 
 @inproceedings{CirilloJPR07,
@@ -1108,6 +1217,7 @@ journal = "Transactions of the American Mathematical Society",
   year      = 2007,
   pages     = {16--30},
   booktitle = CSF,
+  doi       = {10.1109/CSF.2007.19}
 }
 
 @inproceedings{Lesniewski-LaasFSMK07,
@@ -1120,6 +1230,7 @@ journal = "Transactions of the American Mathematical Society",
   year      = 2007,
   pages     = {432--444},
   booktitle = CCS,
+  doi       = {10.1145/1315245.1315299}
 }
 
 @inproceedings{GurevichN08,
@@ -1128,6 +1239,7 @@ journal = "Transactions of the American Mathematical Society",
   year      = 2008,
   pages     = {149--162},
   booktitle = CSF,
+  doi       = {10.1109/CSF.2008.8}
 }
 
 @article{AbadiBLP93,
@@ -1140,6 +1252,7 @@ journal = "Transactions of the American Mathematical Society",
  month = sep,
  year = 1993,
  pages = {706--734},
+ doi = {10.1145/155183.155225}
 } 
 
 @phdthesis{Howell00,
@@ -1155,18 +1268,18 @@ journal = "Transactions of the American Mathematical Society",
   year      = 2008,
   pages     = {216--230},
   booktitle = FOSSACS,
+  doi       = {10.1007/978-3-540-78499-9_16}
 }
 
 @article{Kripke63,
   author = {Saul Kripke},
-  title = {A semantical analysis of modal logic {I}: {N}ormal modal
-    propositional calculi},
-  journal = {Zeitschrift f\"{u}r Mathematische Logik und Grundlagen
-    der Mathematik},
+  title = {A semantical analysis of modal logic {I}: {N}ormal modal propositional calculi},
+  journal = ZMLGM,
   volume = 9,
   pages = {67--96},
   note = {Announced in \textit{Journal of Symbolic Logic}, 24:323, 1959.},
   year = 1963,
+  doi= {10.1002/malq.19630090502}
 }
 
 @book{HughesC96,
@@ -1188,10 +1301,11 @@ journal = "Transactions of the American Mathematical Society",
 @article{Eberle74,
   author = {Eberle, Rolf A.},
   title = {A logic of believing, knowing and inferring},
-  journal = {Synthese},
+  journal = Synthese,
   volume = 26,
   pages = {356--382},
   year = 1974,
+  doi = {10.1007/BF00883100}
 }
 
 @misc{MooreH79,
@@ -1221,23 +1335,25 @@ journal = "Transactions of the American Mathematical Society",
  volume = 123,
 }
 
+%TODO: Figure out what's going on with this citation
 @inproceedings{Garg08,
   author = {Deepak Garg},
   title = {Principal-centric Reasoning in Constructive Authorization Logic},
   year = 2008,
   pages = {},
-  booktitle = {Intuitionistic Modal Logic and Applications (IMLA)}
+  booktitle = IMLA
 }
 
 @article{Wijesekera90,
  author = {Duminda Wijesekera},
  title = {Constructive Modal Logics {I}},
- journal = {Annals of Pure and Applied Logic},
+ journal = PAL, 
  volume = 50,
  number = 3,
  month = dec,
  year = 1990,
  pages = {271--301},
+ doi={10.1016/0168-0072(90)90059-B}
 }
 
 @phdthesis{Simpson94,
@@ -1250,7 +1366,7 @@ journal = "Transactions of the American Mathematical Society",
 @inproceedings{Parikh87,
   author = {Rohit Parikh},
   title = {Knowledge and the Problem of Logical Omniscience},
-  booktitle = {International Symposium on Methodologies for Intelligent Systems},
+  booktitle = ISMIS,
   year = 1987,
   pages = {432--439},
 }
@@ -1258,17 +1374,18 @@ journal = "Transactions of the American Mathematical Society",
 @article{Stalnaker91,
   author = {Robert Stalnaker},
   title = {The Problem of Logical Omniscience, {I}},
-  journal = {Synthese},
+  journal = Synthese,
   volume = 89,
   pages = {425--440},
-  year = 1991
+  year = 1991,
+  doi = {10.1007/BF00413506}
 }
 
 @inproceedings{Abadi08,
  author = {Abadi, Mart\'{\i}n},
  title = {Variations in Access Control Logic},
  year = 2008,
- booktitle = {Deontic Logic in Computer Science (DEON)},
+ booktitle = DEON,
  pages = {96--109},
 } 
 
@@ -1285,7 +1402,8 @@ journal = "Transactions of the American Mathematical Society",
   title = {A Framework for Intuitionistic Modal Logics},
   year = 1986,
   pages = {399--406},
-  booktitle = {Theoretical Aspects of Reasoning about Knowledge (TARK)}
+  booktitle = TARK,
+  url = {http://tark.org/proceedings/tark_mar19_86/proceedings.html}
 }
 
 @incollection{FischerServi81,
@@ -1297,16 +1415,18 @@ journal = "Transactions of the American Mathematical Society",
   booktitle = {Italian Studies in the Philosophy of Science},
   editor = {Maria Luisa Dalla Chiara},
   address = {Dordrecht, Holland},
+  doi = {10.1007/978-94-009-8937-5_5}
 }
 
 @article{Ewald86,
   author    = {W. B. Ewald},
   title     = {Intuitionistic Tense and Modal Logic},
-  journal   = {Journal of Symbolic Logic},
+  journal   = JSL,
   volume    = 51,
   number    = 1,
   year      = 1986,
   pages     = {166--179},
+  doi       = {10.2307/2273953}
 }
 
 @book{SorensenU06,
@@ -1334,6 +1454,7 @@ journal = "Transactions of the American Mathematical Society",
   volume = 66,
   pages = {1803--1816}, 
   year = 2001,
+  doi = {10.2307/2694976}
 }
 
 @book{Chellas80,
@@ -1347,11 +1468,12 @@ journal = "Transactions of the American Mathematical Society",
 @article{HakliN12,
   author = {Raul Hakli and Sara Negri},
   title = {Does the Deduction Theorem Fail for Modal Logic?},
-  journal = {Synthese},
+  journal = Synthese,
   volume = 187,
   number = 3,
   year = 2012,
   pages = {849--867},
+  doi = {10.1007/s11229-011-9905-9}
 }
 
 @inproceedings{GenoveseGGP11,
@@ -1360,7 +1482,8 @@ journal = "Transactions of the American Mathematical Society",
   title = {A Conditional Constructive Logic for Access Control and Its Sequent Calculus},
   year = 2011,
   pages = {164--179},
-  booktitle = {Automated Reasoning with Analytic Tableaux and Related Methods (TABLEAUX)}
+  booktitle = TABLEAUX,
+  doi = {10.1007/978-3-642-22119-4_14}
 }
 
 @inproceedings{LiGF00,
@@ -1371,6 +1494,7 @@ journal = "Transactions of the American Mathematical Society",
   year      = 2000,
   pages     = {27--42},
   booktitle = SSP,
+  doi = {10.1109/SECPRI.2000.848444}
 }
 
 @book{vanDalen04,
@@ -1381,6 +1505,7 @@ journal = "Transactions of the American Mathematical Society",
  publisher = {Springer},
  address = {Berlin},
 }
+
 @article{Benabou63,
   author = {Jean B\'enabou},
   title =  {Cat\'egories avec Multiplication},
@@ -1472,6 +1597,7 @@ author = "Emmanuel Beffara"
  year={1996},
  pages={313-–351}
 }
+
 @techreport{Girard91,
   TITLE = {A New Constructive Logic: Classical Logic},
   AUTHOR = {Girard, Jean-Yves},
@@ -1488,6 +1614,7 @@ author = "Emmanuel Beffara"
   year={2018},
   journal= ICFP,
   publisher={ACM},
+  doi={10.1145/3236783}
 }
 
 @inproceedings{LiuGVQWM09,
@@ -1498,7 +1625,8 @@ author = "Emmanuel Beffara"
 	pages = "321--334",
 	year = 2009,
         month = oct,
-        @url = "http://www.cs.cornell.edu/andru/papers/fabric-sosp09.html"
+        @url = "http://www.cs.cornell.edu/andru/papers/fabric-sosp09.html",
+	doi={10.1145/1629575.1629606}
 }
 
 @inproceedings{CurienFM16,
@@ -1530,6 +1658,7 @@ booktitle = MFPS,
 title = {{Distributed probabilistic and quantum strategies}},
 year = {2013}
 }
+
 @inproceedings{Winskel15,
 author = {Winskel, Glynn},
 doi = {10.1007/978-3-319-25150-9_6},
@@ -1551,41 +1680,47 @@ author = {Norell, Ulf},
 booktitle = AFP,
 title = {Dependently-Typed Programming in Agda},
 year = {2008},
+doi = {10.1007/978-3-642-04652-0_5}
 }
 
 @inproceedings{RussoCH08,
 author= {Russo, Alejandro and Claessen, Koen and Hughes, John},
 title = {A Library for Light-Weight Information-Flow Security in Haskell},
 booktitle = HASKELL,
-year={2008}
+year={2008},
+doi={10.1145/1411286.1411289}
 }
 
 @inproceedings{TsaiRH07,
 author = {Tsai, Tsa-ching and Russo, Alejandro and Hughes, John},
 title = {A Library for Secure Multi-Threaded Information Flow in Haskell},
 booktitle= CSF,
-year={2007}
+year={2007},
+doi={10.1109/CSF.2007.6}
 }
 
 @inproceedings{LiZ06,
 author={Li, Peng and Zdancewic, Steve},
 title = {Encoding Information Flow in Haskell},
 booktitle = CSFW,
-year={2006}
+year={2006},
+doi = {10.1109/CSFW.2006.13}
 }
 
 @inproceedings{StefanRMM11,
 author={Stefan, Deian and Russo, Alejandro and Mitchell, John C. and Mazi\`{e}res, David},
 title = {Flexible Dynamic Information Flow Control in Haskell},
 booktitle = HASKELL,
-year = {2011}
+year = {2011},
+doi = {10.1145/2034675.2034688}
 }
 
 @inproceedings{Giry82,
 author={Giry, Mich\`ele},
 title = {A Categorical Approach to Probability Theory},
-booktitle = {Categorical Aspects of Topology and Analysis},
-year = {1982}
+booktitle = CATA,
+year = {1982},
+doi={10.1007/BFb0092872}
 }
 
 @article{Kozen81,
@@ -1596,39 +1731,44 @@ year= {1981},
 volume={22},
 issue={3},
 month={June},
-pages={328--350}
+pages={328--350},
+doi={10.1016/0022-0000(81)90036-2}
 }
 
 @inproceedings{VakarKS19,
 author={V\'{a}k\'{a}r, Matthijs and Kammar, Ohad and Staton, Sam},
 title = {A Domain Theory for Statisical Probabilistic Programming},
 booktitle= POPL,
-year={2019}
+year={2019},
+doi={10.1145/3290349}
 }
 
 @article{Blass92,
 author={Blass, Andreas},
 title = {A Game Semantics for Linear Logic},
-journal = {Annals of Pure and Applied Logic},
+journal = PAL,
 year={1992},
 volume={56},
 issue={1--3},
 month={April},
-pages={183--220}
+pages={183--220},
+doi={10.1016/0168-0072(92)90073-9}
 }
 
 @inproceedings{AbramskyJM94,
 author={Abramsky, Samson and Jagadeesan, Radha and Pasquale, Malacaria},
 title = {Full Abstraction for {PCF}},
 booktitle = TACS,
-year={1994}
+year={1994},
+doi={10.1006/inco.2000.2930}
 }
 
 @inproceedings{HylandO93,
 author={Hyland, John Martin Elliot and Ong, Luke},
 title = {Pi-Calculus, dialogue games, and {PCF}},
 booktitle= FPLCA,
-year={1993}
+year={1993},
+doi={10.1145/224164.224189}
 }
 
 @inproceedings{Mellies2007,
@@ -1643,14 +1783,16 @@ year = {2007}
 author={Abramsky,Samson and McCusker, Guy},
 booktitle= CSL,
 title = {Call-by-Value Games},
-year={1997}
+year={1997},
+doi={10.1007/BFb0028004}
 }
 
 @inproceedings{HondaY97,
 author={Honda, Kohei and Yoshida, Nobuko},
 booktitle=ICALP,
 title = {Game Theoretic Analysis of Call-by-Value Computation},
-year={1997}
+year={1997},
+doi={10.1007/3-540-63165-8_180}
 }
 
 @phdthesis{Zeilberger09,
@@ -1731,6 +1873,7 @@ doi = {10.1093/logcom/exs025}
   title = {Stateful Authorization Logic: Proof Theory and a Case Study},
   year = 2010,
   booktitle = STM,
+  doi={10.3233/JCS-2012-0456}
 }  
 
 @inproceedings{Abadi03,
@@ -1738,6 +1881,7 @@ doi = {10.1093/logcom/exs025}
   title = {Logic in Access Control},
   booktitle = LICS,
   year = 2003,
+  doi = {10.1109/LICS.2003.1210062}
 }
 
 @inproceedings{MyersL98,
@@ -1745,6 +1889,7 @@ doi = {10.1093/logcom/exs025}
     title = "Complete, Safe Information Flow with Decentralized Labels",
     booktitle = SSP,
     year = 1998,
+    doi = {10.1109/SECPRI.1998.674834}
 }
 
 @InProceedings{SwamyHTZ06,
@@ -1752,6 +1897,7 @@ doi = {10.1093/logcom/exs025}
   title =	 {Managing Policy Updates in Security-Typed Languages},
   booktitle =	 CSFW,
   year =	 2006,
+  doi = {10.1109/CSFW.2006.17}
 }
 
 @inproceedings{SruthiWW08,
@@ -1759,6 +1905,7 @@ doi = {10.1093/logcom/exs025}
   author={Bandhakavi, Sruthi and Winsborough, William and Winslett, Marianne},
   booktitle= CSF,
   year = 2008,
+  doi = {10.1109/CSF.2008.22}
 }
 
 @article{Becker12,
@@ -1769,14 +1916,16 @@ doi = {10.1093/logcom/exs025}
   number={6},
   pages={677--708},
   year = 2012,
-  publisher={IOS Press}
+  publisher={IOS Press},
+  doi = {10.3233/JCS-2012-0443}
 }
 
 @inproceedings{FriedmanW76,
 title = {{CONS} should not Evaluate its Arguments},
 author = {Friedman, Daniel P. and Wise, David S.},
 booktitle={Automata, Languages, and Programming},
-year={1976}
+year={1976},
+doi = {10.1145/130854.130858}
 }
 
 @phdthesis{Okasaki96,
@@ -1790,14 +1939,16 @@ year = {1996}
 title={The Temporal Logic of Programs},
 author={Pnueli, Amir},
 booktitle = FOCS,
-year = {1977}
+year = {1977},
+doi = {10.1109/SFCS.1977.32}
 }
 
 @inproceedings{ClarksonFKMRS14,
 title={Temporal Logic for Hyperproperties},
 author = {Clarkson, Michael and Finkbeiner, Bernd and Koleini, Masoud and Micinski, Kristopher K. and Rabe, Markus N. and C\'{e}sar S\'{a}nchez},
 booktitle = POST,
-year = {2014}
+year = {2014},
+doi = {10.1007/978-3-642-54792-8_15}
 }
 
 @article{ClarksonS10,
@@ -1808,7 +1959,8 @@ year={2010},
 volume={18},
 number={6},
 month={September},
-pages={1157--1210}
+pages={1157--1210},
+doi={10.3233/JCS-2009-0393}
 }
 
 @techreport{AlpernS85,
@@ -1872,6 +2024,7 @@ title={Choreographies, Logically},
 author={Carbone, Marco and Montesi, Fabrizio and Sch\"{u}rmann, Carsten},
 year={2014},
 booktitle=CONCUR,
+doi={10.1007/978-3-662-44584-6_5}
 }
 
 @inproceedings{ZongyanXCH07,
@@ -1879,6 +2032,7 @@ title={Towards the Theoretical Foundation of Choreography},
 author={Zongyan, Qiu and Xiangpeng, Zhao and Chao, Cai and Hongli, Yang},
 year={2007},
 booktitle=WWW,
+doi={10.1145/1242572.1242704}
 }
 
 @inproceedings{MurphyCH07,
@@ -1886,6 +2040,7 @@ title={Type-safe Distributed Programming with {ML5}},
 author={Murphy {VII}, Tom and Crary, Karl and Harper, Robert},
 year={2007},
 booktitle=TGC,
+doi={10.1007/978-3-540-78663-4_9}
 }
 
 @inproceedings{KitchinQCM09,
@@ -1893,6 +2048,7 @@ title={The Orc Programming Language},
 author={Kitchin, David and Quark, Adam and Cook, William R. and Misra, Jayadev},
 year={2009},
 booktitle=FMOODSFORTE,
+doi={10.1007/978-3-642-02138-1_1}
 }
 
 @inproceedings{Cruz-FilipeMP18,
@@ -1928,6 +2084,7 @@ author = {Jeff Polakow and Christian Skalka},
 title = {Specifying Distributed Trust Management in {LolliMon}},
 booktitle=PLAS,
 year = {2006},
+doi = {10.1145/1134744.1134753}
 }
 
 @article{ChapinSW07,
@@ -1937,7 +2094,8 @@ volume = 40,
 number = 3,
 pages = {1--48},
 year = 2008,
-journal = ACS,
+journal = CSUR,
+doi={10.1145/1380584.1380587}
 }
 
 @misc{HirschC13Code,
@@ -1995,7 +2153,8 @@ doi={10.1007/978-3-319-30936-1_12}
 title={Fibrational Modal Type Theory},
 author={de Paiva, Valeria and Ritte, Eike},
 booktitle=LSFA,
-year={2016}
+year={2016},
+doi={10.1016/j.entcs.2016.06.010}
 }
 
 @article{BirkedalCMMPS19,
@@ -2004,15 +2163,17 @@ author={Birkedal, Lars and Clouston, Ranald and Mannaa, Bassel and M{\o}gelberg,
 journal={ArXiV},
 year={2019},
 note={In Submission to \emph{Mathematical Structures in Computer Science}}
+url={https://arxiv.org/abs/1804.05236}
 }
 
 @article{NanevskiPP07,
 title={Contextual Modal Type Theory},
 author={Nanevski, Aleksandar and Pfenning, Frank and Pientka, Brigitte},
-journal=TCL,
+journal=TOCL,
 year={2007},
 volume=5,
 number={N},
 month={February},
-pages={1--48}
+pages={1--48},
+doi={10.1016/j.entcs.2016.06.010}
 }
