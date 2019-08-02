@@ -1,1 +1,9 @@
 auto/*
+*.aux
+*.bbl
+*.blg
+*.log
+*~
+*.out
+*.syntex.gz
+*.pdf
