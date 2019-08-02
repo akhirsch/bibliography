@@ -18,6 +18,19 @@
 @string{TOPLAS="Transactions on Programming Languages and Systems ({TOPLAS})"}
 @string{BSPL="Brazilian Symposium on Programming Languages ({SBLP})"}
 @string{FMCO="Formal Methods for Components and Objects ({FMCO})"}
+@string{SNAPL="Summit o{N} Advances in Programming Languages ({SNAPL})"}
+@string{IFL="Implementation and Application of Functional Languages"}
+@string{PLP="Programming Languages and Pragmatics"}
+@string{OOPSLA="Object-Oriented Programming, Systems, Languages \& Applications ({OOPSLA})"}
+@string{ECOOP = "European Conference on Object-Oriented Programming ({ECOOP})"}
+@string{WGP = "Workshop on Generic Programming ({WGP})"}
+@string{APPSEM = "Applied Semantics, International Summer School"}
+@string{FPCA= "Functional Programming Languages and Computer Architecture ({FPCA})"}
+@string{TYPES="Types for Proofs and Programs ({TYPES})"}
+@string{ICSE="International Conference on Software Engineering ({ICSE})"}
+@string{FSE="Foundations of Software Engineering ({FSE})"}
+@string{ESEC="European Software Engineering Conference ({ESEC})"}
+@string{CPP="Certified Programs and Proofs ({CPP})"}
 
 %% Functional Programming
 @string{ICFP="International Conference on Functional Programming ({ICFP})"}
@@ -45,6 +58,7 @@
 @string{POLICY="Policies for Distributed Systems and Networks (POLICY)"}
 @string{JIS="International Journal of Information Security"}
 @string{ISC="Information Security Conference ({ISC})"}
+@string{NDSS="Network and Distributed System Security ({NDSS})"}
 
 %% Logic
 @string{JLC="Journal of Logic and Computation ({JLC})"}
@@ -76,6 +90,11 @@
 @string{SSM="Software \& Systems Modeling"}
 @string{ACCS="Applications of Categories in Computer Science"}
 @string{IC="Information and Computation"}
+@string{CALCO="Conference on Algebra and Coalgebra in Computer Science ({CALCO})"}
+@string{EATCSB="EATCS Bulletin"}
+@string{LINEARITY="Linearity"}
+@string{SCCTCS="Summer Conference on Category Theory and Computer Science"}
+@string{CCSL="Categories in Computer Science and Logic"}
 
 %% Systems
 @string{SOSP="Symposium on Operating Systems Principles ({SOSP})"}
@@ -85,6 +104,10 @@
 @string{FMOODS="Formal Methods for Open Object-Based Distributed Systems ({FMOODS})"}
 @string{FORTE="Formal Techniques for Distributed Objects, Components, and Systems ({FORTE})"}
 @string{TOCS="Transactions on Computer Systems ({TOCS})"}
+@string{TACAS="Tools and Algorithms for the Construction and Analysis of Systems ({TACAS})"}
+@string{PODC="Principals of Distributed Computing ({PODC})"}
+@string{ICDC="International Conference on Distributed Systems"}
+@string{EuroSys="European Conference on Computer Systems ({EuroSys})"}
 
 %% Pure Mathematics
 @string{CATA="Categorical Aspects of Topology and Analysis"}
@@ -92,6 +115,14 @@
 @string{ACS="Applied Categorical Structures"}
 @string{STCHT="Seminar on Triples and Categorical Homology Theory"}
 @string{CTHTTA="Category Theory, Homology Theory and Their Applications I"}
+@string{MPCPS="Mathematical Proceedings of the Cambridge Philosophical Society"}
+@string{BJPS="British Journal of Philosphy of Science"}
+@string{AIM="Advances in Mathematics"}
+@string{IJAR="International Journal of Approximate Reasoning"}
+@string{TAOC="Theory and Applications of Categories"}
+@string{PAA="Pure and Applied Algebra"}
+@string{DIALECTICA="Dialectica"}
+@string{PRIMS="Publications of the Research Institute for Mathematical Sciences ({PRIMS})"}
 
 %% Misc
 @string{CACM="Communications of the ACM ({CACM})"}
@@ -107,6 +138,9 @@
 @string{TCJ="The Computer Journal"}
 @string{JUCS="Journal of Universal Computer Science"}
 @string{CRASP="Comptes Rendus de l'Acad{\'e}mie des Sciences Paris"}
+@string{NJC="Nordic Journal of Computing"}
+@string{PTRSL="Philosophical Transactions of The Royal Society of London"}
+@string{QPL = "Quantum Physics and Logic"}
 
 %%% I should try to have DOIs everywhere possible.
 
@@ -238,7 +272,7 @@
   author = {Caldwell, James L.},
   title = {Classical Propositional Decidability via Nuprl Proof Extraction},
   year = {1998},
-  journal = TPHOLs, 
+  booktitle = TPHOLs,
   doi={10.1007/BFb0055132}
 }
 
@@ -658,14 +692,14 @@ journal=AdM,
 volume=23,
 number=1,
 year = 1972,
-month = December,
+month = {December},
 doi={10.1007/BF01304852}
 }
 
 @inproceedings{OrchardM13,
 author={Orchard, Dominic and Mycroft, Alan},
-chapter="A Notation for Comonads",
-title="Implementation and Application of Functional Languages",
+title={A Notation for Comonads},
+booktitle= IFL,
 year=2013,
 doi={10.1007/978-3-642-41582-1_1}
 }
@@ -712,7 +746,7 @@ doi={10.1007/978-3-642-41582-1_1}
   author = {Plotkin, Gordon and Pretnar, Matija},
   title = {Handlers of Algebraic Effects},
   year = {2009},
-  journal = ESOP,
+  booktitle = ESOP,
   doi={10.1007/978-3-642-00590-9_7}
 }
 
@@ -720,7 +754,7 @@ doi={10.1007/978-3-642-41582-1_1}
   author = {Plotkin, Gordon and Pretnar, Matija},
   title = {A Logic for Algebraic Effects},
   year = {2008},
-  journal = LICS,
+  booktitle = LICS,
   doi={10.1109/LICS.2008.45}
 }
 
@@ -941,7 +975,7 @@ doi={10.1093/comjnl/6.4.308}
 @inproceedings{FischerKS09,
   author    = {Fischer, Sebastian and Kiselyov, Oleg and Shan, Chung{-}chieh},
   title     = {Purely functional lazy nondeterministic programming},
-  journal   = ICFP,
+  booktitle   = ICFP,
   year      = {2009},
   doi       = {10.1145/1596550.1596556}
 }
@@ -1524,7 +1558,7 @@ doi={10.1093/comjnl/6.4.308}
 
 @article{BluteCS96,
   author={Blute, R. F. and Cockett, J. R. B. and Seely, R. A. G.},
-  title={$\bang$ and $\query$: Storage as Tensorial Strength},
+  title={! and ?: Storage as Tensorial Strength},
   journal={Mathematical Structures in Computer Science (MSCS)},
   volume={6},
   number={4},
@@ -1581,7 +1615,7 @@ doi={10.1093/comjnl/6.4.308}
 @inproceedings{Winskel13,
   author = {Winskel, Glynn},
   booktitle = MFPS,
-  title = {{Distributed probabilistic and quantum strategies}},
+  title = {Distributed Probabilistic and Quantum Strategies},
   year = {2013},
   doi = {10.1016/j.entcs.2013.09.024},
 }
@@ -1590,7 +1624,7 @@ doi={10.1093/comjnl/6.4.308}
   author = {Winskel, Glynn},
   doi = {10.1007/978-3-319-25150-9_6},
   booktitle = ICTAC,
-  title = {{On probabilistic distributed strategies}},
+  title = {On Probabilistic Distributed Strategies},
   year = {2015}
 }
 
@@ -1931,7 +1965,7 @@ doi={10.1093/comjnl/6.4.308}
 @techreport{WangX17,
   title={A Survey of Reasoning Methods for Concurrent Systems},
   author={Wang, Chun-Kun and Xu, Hao},
-  intitution={University of North Carolina at Chapel Hill},
+  institution={University of North Carolina at Chapel Hill},
   year={2017},
   url = {http://www.cs.unc.edu/techreports/17-005.pdf}
 }
@@ -2109,6 +2143,7 @@ doi={10.1093/comjnl/6.4.308}
   year=2006,
   booktitle=MFPS,
   doi={10.1016/j.entcs.2006.04.018}
+}
 
 @inproceedings{Chlipala10,
   title={Ur: Statically-Typed Metaprogramming with Type-Level Record Computation},
@@ -2134,7 +2169,8 @@ doi={10.1093/comjnl/6.4.308}
   volume=20,
   number=3,
   month={August},
-  pages={283--328}
+  pages={283--328},
+  doi={10.1145/566340.566343}
 }
 
 @inproceedings{CooperW09,
@@ -2167,4 +2203,1268 @@ doi={10.1093/comjnl/6.4.308}
   year=2006,
   booktitle=FMCO,
   doi={10.1007/978-3-540-74792-5_12}
+}
+
+@inproceedings{RichardsLBV10,
+  title = {An Analysis of the Dynamic Behavior of JavaScript Programs},
+  booktitle = PLDI,
+  year = 2010,
+  author = {Richards, Gregor and Lebresne, Sylvain and Burg, Brian and Vitek, Jan},
+  doi={10.1145/1806596.1806598}
+}
+
+@inproceedings{TobinHochstadtFFFGKSTST17,
+  title = {Migratory Typing: Ten Years Later},
+  booktitle = SNAPL,
+  year = {2017},
+  author ={Tobin-Hochstadt, Sam and Felleisen, Matthias and Findler, Robert Bruce and Flatt, Matthew and Greenman, Ben and Kent, Andrew M. and St-Amour, Vincent and Strickland, Stephen and Takikawa, Asumu},
+  doi={10.4230/LIPIcs.SNAPL.2017.17}
+}
+
+@inproceedings{TsukadaO15,
+  title = {Nondeterminism in Game Semanitcs via Sheaves},
+  booktitle=LICS,
+  year={2015},
+  author={Tsukada, Takeshi and ONg, C.-H. Luke},
+  doi={10.1109/LICS.2015.30}
+}
+
+@article{BonelliF12,
+  title = {Justification Logic as a Foundation for Certifying Mobile Computation},
+  journal = PAL,
+  year = 2012,
+  month = {July},
+  volume = 163,
+  number = 7,
+  author = {Bonelli, Eduardo and Feller, Federico},
+  doi = {10.1016/j.apal.2011.09.007}
+}
+
+@inproceedings{VassenaRGRS19,
+  title = {From Fine- to Coarse-Grained Dynamic Information Flow Control and Back},
+  author = {Vassen, Marco and Rosso, Alejandro and Garg, Deepak and Rajani, Vineet and Stefan, Deian},
+  year = {2019},
+  booktitle = POPL,
+  doi={10.1145/3290389 }
+}
+
+@inproceedings{Mellis14,
+  title = {Local States in String Diagrams},
+  author = {Melli{\`e}s, Paul-Andr{\'e}},
+  booktitle = TLCA,
+  year = {2014},
+  doi = {10.1007/978-3-319-08918-8_23}
+}
+
+@misc{AbateBGHPT19,
+  title = {Journey Beyond Full Abstraction: Exploring Robust Property Preservation for Secure Compilation},
+  author = {Abate, Carmine and Blanco, Roberto and Garg, Deepak and Hri{\c t}cu, C{\u a}t{\u a}lin and Patrignani, Marco and Thibault, J{\'e}r{\'e}my},
+  url = {https://arxiv.org/abs/1807.04603},
+  year={2019}
+}
+
+@misc{MaillardAAMHRT19,
+  title = {Dijkstra Monads for All},
+  author = {Maillard, Kenji and Ahman, Danel and Atkey, Robert and Mart{\'i}nez, Guido and Hri{\c t}cu, C{\u a}t{\u a}lin and Rivas, Exequiel and Tanter, {\'E}ric},
+  url={https://arxiv.org/abs/1903.01237},
+  year={2019}
+}
+
+@inproceedings{XiaHYXX18,
+  title = {An Empirical Study of Dynamic Types for Python Projects},
+  author = {Xia, Xinmeng and He, Xincheng and Yan, Yanyan and Xu, Lei and Xu, Baowen},
+  year={2018},
+  booktitle=SATE,
+  doi={10.1007/978-3-030-04272-1_6}
+}
+
+@inproceedings{RajaniG18,
+  title = {Types for Information Flow Control: Labeling Granularity and Semantic Models},
+  author = {Rajani, Vineet and Garg, Deepak},
+  year=2018,
+  booktitle=CSF,
+  doi = {10.1109/CSF.2018.00024}
+}
+
+@inproceedings{Simpson17,
+  title = {Probability Sheaves and the Giry Monad},
+  author = {Simpson, Alex},
+  year=2017,
+  booktitle=CALCO,
+  doi={10.4230/LIPIcs.CALCO.2017.1}
+}
+
+@article{CirsteaKPSV11,
+  title = {Modal Logics are Coalgebraic},
+  author={C{\^i}rstea, Corina and Kurz, Alexander and Pattinson, Dirk and Schr{\"o}der, Lutz and Venema, Yde},
+  journal=TCJ,
+  year=2011,
+  volume=54,
+  number=1,
+  month={January},
+  doi = {10.1093/comjnl/bxp004}
+}
+
+@inproceedings{KovacsSF13,
+  title={Relationsal Abstract Interpretation for the Verification of 2-Hypersafety Properties},
+  author={Kov{\'a}cs, M{\'a}t{\'e} and Seidl, Helmut and Finkbeiner, Bernd},
+  booktitle=CCS,
+  year={2013}
+}
+
+@incollection{Mellies09,
+  title = {Categorical Semantics of Linear Logic},
+  author = {Melli{\`e}s, Paul-Andr{\'e}},
+  booktitle = {Interactive Models of Computation and Program Behavior},
+  year = {2009},
+  url = {http://www.irif.fr/~mellies/papers/panorama.pdf}
+}
+
+@inproceedings{Landin65,
+  title={The Next 700 Programming Languages},
+  author = {Landin, P.J.},
+  booktitle=PLP,
+  year=1965,
+  doi={10.4230/LIPIcs.CALCO.2017.1}
+}
+
+@techreport{SteeleS76,
+  title = {{LAMBDA}: The Ultimate Imperative},
+  author = {Steele Jr., Guy Lewis and Sussman, Gerald Jay},
+  number = {{AI} Memo No. 353},
+  institution = {Massachusetts Institute of Technology Artificial Intelligence Labratory},
+}
+
+@article{ConstableB14,
+  title = {Intuitionistic Completeness of First-Order Logic},
+  author = {Constable, Robert and Bickford, Mark},
+  journal=PAL,
+  volume=165,
+  number=1,
+  year=2014,
+  month={January},
+  doi={10.1016/j.apal.2013.07.009}
+}
+
+@inproceedings{BrachaC90,
+  title={Mixin-Based Inheritance},
+  author={Bracha, Gilad and Cook, William},
+  booktitle=OOPSLA,
+  year={1990},
+  doi={10.1145/97945.97982}
+}
+
+@inproceedings{BahrH11,
+  title={Compositional Data Types},
+  author={Bahr, Patrick and Hvitved, Tom},
+  booktitle=WGP,
+  year=2011,
+  doi={10.1145/2036918.2036930}
+}
+
+@article{UustaluVP01,
+  title={Recursion Schemes from Comonads},
+  author={Uustalu, Tarmo and Vene, Varmo and Pardo, Alberto},
+  journal=NJC,
+  year=2001,
+  month={August},
+  volume=8,
+  
+}
+
+@inproceedings{ErdwegRRO12,
+  title={Layout-Sensitive Language Extensibility with {SugarHaskell}},
+  author={Erdweg, Sebastian and Rieger, Felix and Rendel, Tillman and Ostermann, Klaus},
+  booktitle=HASKELL,
+  year=2012,
+  doi = {10.1145/2364506.2364526}
+}
+
+@inproceedings{BeckerRS12,
+  title={Foundations of Logic-Based Trust Management},
+  author = {Becker, Moritz Y. and Russo, Alessandra and Sultana, Nik},
+  booktitle=SSP,
+  year=2012,
+  doi={10.1109/SP.2012.20}
+}
+
+@inproceedings{CederquistCDEH05,
+  title={An Audit Logic for Accountability},
+  author={Cederquist, J.G. and Corin, R. and Dekker, M.A.C. and Etalle, S. and den Hartog, J.I.},
+  booktitle=POLICY,
+  year=2005,
+  doi={10.1109/POLICY.2005.5}
+}
+
+@article{CockettH08,
+  title = {Introduction to Turing Categories},
+  author={Cockett, J.R.B. and Hofstra, Pieter J. W.},
+  journal=PAL,
+  volume=156,
+  number={2--3},
+  year={2008},
+  month={December},
+  doi={10.1016/j.apal.2008.04.005},
+}
+
+@inproceedings{VaughanJMZ08,
+  title = {Evidence-Based Audit},
+  author = {Vaughan, Jeffrey A. and Jia, Limin and Mazurak, Karl and Zdancewic, Steve},
+  booktitle=CSF,
+  year=2008,
+  doi={10.1109/CSF.2008.24}
+}
+
+@inproceedings{LeeWHGM10,
+  title = {{Jinn}: Synthesizing Dynamic Bug Detectors for Foreign Language Interfaces},
+  author={Lee, Byeoungcheol and Wiedermann, Ben and Hirzel, Martin and Grimm, Robert and McKinley, Kathryn S.},
+  booktitle=PLDI,
+  year=2010,
+  doi={10.1145/1806596.1806601}
+}
+
+@inproceedings{YangH10,
+  title={Safe to the Last Instruction: Automated Verification of a Type-Safe Operating System},
+  author={Yang, Jean and Hawblitzel, Chris},
+  booktitle=PLDI,
+  year=2010,
+  doi={10.1145/1806596.1806610}
+}
+
+@article{AwodeyW09,
+  title={Homotopy Theoretic Models of Identity Types},
+  author={Awodey, Steve and Warren, Michael A.},
+  journal=MPCPS,
+  volume=146,
+  number=45,
+  year=2009,
+  doi={10.1017/S0305004108001783},
+}
+
+% is there a better reference?
+@incollection{MartinLof98,
+  title={An Intuitionisitc Theory of Types},
+  author={Martin-L{\"o}f, Per},
+  booktitle={Twenty-Five Years of Constructive Type Theory},
+  year={1998}
+}
+
+@article{MartinLofL84,
+  title = {Constructive Mathematics and Computer Programming},
+  author = {Martin-L{\"o}f, Per and Lozinski, Z. A.},
+  year={1984},
+  journal=PTRSL,
+  volume=312,
+  doi={10.1098/rsta.1984.0073},
+}
+
+@inproceedings{Selinger08,
+  title = {Finite Dimensional Hilbert Spaces are Complete for Dagger Compact Closed Categories},
+  author = {Selinger, Peter},
+  year=2008,
+  booktitle=QPL,
+  doi={10.1016/j.entcs.2011.01.010}
+}
+
+@incollection{Selinger10,
+  title={A Survey of Graphical Languages for Monoidal Categories},
+  author = {Selinger, Peter},
+  year=2010,
+  booktitle={New Structures for Physics},
+  doi={10.1007/978-3-642-12821-9_4},
+}
+
+@atricle{JacobsR97,
+  title={A Tutorial on (Co)Algebras and (Co)Induction},
+  author={Jacobs, Bart and Rutten, Jan},
+  year=1997,
+  volume=62,
+}
+
+@inproceedings{GotsmanYFNS16,
+  title={'Cause I'm Strong Enough: Reasoning about Consistency Choices in Distributed Systems},
+  author={Gostman, Alexy and Yang, Hongseok and Ferreira, Carla and Najafzadeh, Mahsa and Shapiro, Marc},
+  year=2016,
+  booktitle=POPL,
+  doi={10.1145/2837614.2837625}
+}
+
+@inproceedings{HickeyNR99,
+  title={Specifications and Proofs for Ensemble Layers},
+  author ={Hickey, Jason and Lynch, Nancy and van Renesse, Robbert},
+  booktitle=TACAS,
+  year={1999},
+  doi={10.1007/3-540-49059-0_9}
+}
+
+@inproceedings{LynchT87,
+  title={Hierarchical Correctness Proofs for Distributed Algorithms},
+  author = {Lynch, Nancy and Tuttle, Mark R.},
+  year=1987,
+  booktitle=PODC,
+  doi={10.1145/41840.41852}
+}
+
+@inproceedings{Lampson83,
+  title={Hints for Computer System Design},
+  author={Lampson, Butler W.},
+  year=1983,
+  booktitle=SOSP,
+  doi={10.1145/800217.806614}
+}
+
+@inproceedings{SaltzerRC84,
+  title={End-to-End Arguments in System Design},
+  author={Saltzer, J. H. and Reed, D. P. and Clark, D. D.},
+  booktitle=ICDS,
+  year=1984,
+  doi={10.1145/357401.357402}
+}
+
+@inproceedings{YuIFBEGC07,
+  title={DryadLINQ: A System for General-Purpose Distributed Data-Parallel Computing Using a High-Level Language},
+  author={Yu, Yuan and Isard, Michael and Fetterly, Dennis and Budiu, Mihai and Erlingsson, {\'U}lfar and Gunda, Pradeep Kumar and Currey, Jon},
+  booktitle=EuroSys,
+  year=2007,
+  doi={10.1145/1272996.1273005}
+}
+
+@inproceedings{YamaguchiWGR13,
+  title={Chucky: Exposing Missing Checks in Source Code for Vulnerability Discovery},
+  author={Yamaguchi, Fabian and Wressnegger, Christian and Gascon, Hugo and Rieck, Konrad},
+  booktitle=CCS,
+  year=2013,
+  doi={10.1145/2508859.2516665}
+}
+
+@inproceedings{OCallahanJ97,
+  title={Lackwit: A Program Understanding Tool Based on Type Inference},
+  author={O'Callahan, Robert and Jackson, Daniel},
+  booktitle=ICSE,
+  year=1997,
+  doi={10.1145/2508859.2516665}
+}
+
+@inproceedings{AlfaroH01,
+  title={Interface Automata},
+  author={de Alfaro, Luca and Henziger, Thomas A.},
+  booktitle=ESEC,
+  year=2001,
+  doi={10.1145/503209.503226} 
+}
+
+@inproceedings{TateSTL09,
+  title={Equality Saturation: A New Approach to Optimization},
+  author={Tate, Ross and Stepp, Michael and Tatlock, Zachary and Lerner, Sorin},
+  booktitle=POPL,
+  year=2009,
+  doi={10.1145/1480881.1480915}
+}
+
+@inproceedings{Laird05,
+  title={A Game Semantics of the Asynchonous $\pi$-Calculus},
+  author={Laird, James},
+  booktitle=CONCUR,
+  year={2005},
+  doi={10.1007/11539452_8}
+}
+
+@inproceedings{FournetG00,
+  title={The Join Calculus: A Language for Distributed Mobile Programming},
+  author={Fournet, C{\'e}dric and Gonthier, Georges},
+  booktitle=APPSEM,
+  year=2000,
+  doi={10.1007/3-540-45699-6_6}
+}
+
+@inproceedings{BenOr83,
+  title={Another Advantage of Free Choice: Completely Asynchronous Agreement Protocols (Extended Abstract)},
+  author={Ben-Or, Michael},
+  booktitle=PODC,
+  year=1983,
+  doi={10.1145/800221.806707}
+}
+
+@inproceedings{MeiklejohnR15,
+  title={Lasp: A Language for Distributed, Coordination-Free Programming},
+  author={Meiklejohn, Christopher and Van Roy, Peter},
+  booktitle=PPDP,
+  year=2015,
+  doi={10.1145/2790449.2790525}
+}
+
+@misc{DeYoungCPT09,
+  title={Cut Reduction in Linear Logic as Asynchronous Session-Typed Communication},
+  author={DeYoung, Henry and Caires, Lu{\'i}s and Pfenning, Frank and Toninho, Bernardo},
+  note={Schloss Dagstuhl}
+  year={2009}
+  doi={10.4230/LIPIcs.CSL.2012.228}
+}
+
+@inproceedings{DardhaGS12,
+  title={Session Types Revisited},
+  author={Dardha, Ornela and Giachino, Elena and Sangiorgi, Davide},
+  booktitle=PPDP,
+  year=2012,
+  doi={10.1145/2370776.2370794}
+}
+
+@inproceedings{AbramskyC04,
+  title={A Categorical Semantics of Quantum Protocols},
+  author={Abramsky, Samson and Coecke, Bob},
+  booktitle=LICS,
+  year=2004,
+  doi={10.1109/LICS.2004.1319636}
+}
+
+@inproceedings{Atzemoglou04,
+  title={The Dagger Lambda Calculus},
+  author={Atzemoglou, Philip},
+  year=2004,
+  booktitle=QPL,
+  doi={10.4204/EPTCS.172.15}
+}
+
+@article{Selinger01,
+  title={Control Categories and Duality: on the Categorical Semantics of the Lambda-Mu Calculus},
+  author={Selinger, Peter},
+  journal=MSCS,
+  volume=11,
+  year=2001,
+  doi={10.1017/S096012950000311X}
+}
+
+@article{vanOosten02,
+  title={Realizability: A Historical Essay},
+  author={Van~Oosten, Jan},
+  journal=MSCS,
+  volume=12,
+  number=3,
+  year=2002,
+  month={June},
+  doi={10.1017/S0960129502003626}
+}
+
+@atricle{McLarty90,
+  title={The Uses and Abuses of the History of Topos Theory},
+  author={{McLarty}, Colin},
+  journal=BJPS,
+  volume=41,
+  year=1990,
+  url={https://www.jstor.org/stable/687825}
+}
+
+@misc{vanHeerdtSS17,
+  title={CALF: Categorical Automata Learning Framework},
+  author={van~Heerdt, Gerco and Sammartino, Matteo and Silva, Alexandra},
+  year={2017},
+  url = {https://arxiv.org/abs/1704.05676}
+}
+
+
+@article{BourkeG19,
+  title={Monads and Theories},
+  author={Bourke, John and Garner, Richard},
+  journal=AIM,
+  volume=351,
+  year=2019,
+  month=July,
+  doi={10.1016/j.aim.2019.05.016}
+}
+
+@inproceedings{PaykinZ14,
+  title={A Linear/Producer/Consumer Model of Classical Linear Logic},
+  author={Paykin, Jennifer and Zdancewic, Steve},
+  year=2014,
+  booktitle=LINEARITY,
+  doi={10.1017/S0960129516000347}
+}
+
+@article{CozmanCR08,
+  title={Probabilistic Logic with Independence},
+  author={Cozman, Fabio Gagliardi and de Campos, Cassio Polpo and da Rocha, Jos{\'e} Carlos Ferreira},
+  journal=IJAR,
+  volume=49,
+  year=2008,
+  doi={10.1016/j.ijar.2007.08.002}
+}
+
+@article{Lamport93,
+  title={The Temporal Logic of Actions},
+  author={Lamport, Leslie},
+  year={1993},
+  journal=TOPLAS,
+  doi={10.1145/177492.177726}
+}
+
+@inproceedings{Crary17,
+  title={Modules, Abstraction, and Parametric Polymorphism},
+  author={Crary, Karl},
+  year=2017,
+  booktitle=POPL,
+  doi={10.1145/3009837.3009892}
+}
+
+@inproceedings{Zeilberger08,
+  title={Focusing and Higher-Order Abstract Syntax},
+  author={Zeilberger, Noam},
+  year=2008,
+  booktitle=POPL,
+  doi={10.1145/1328438.1328482}
+}
+
+@inproceedings{CastellanCW,
+  title={The Parallel Intensionally Fully Abstract Games Model of {PCF}},
+  author={Castellan, Simon and Clairambault, Pierre and Winskel, Glynn},
+  year={2015},
+  booktitle=LICS,
+  doi={10.1109/LICS.2015.31}
+}
+
+@inproceedings{Griffin,
+  title={A Formulae-as-Types Notion of Control},
+  author={Griffin, Timothy G.},
+  year={1990},
+  booktitle=POPL,
+  doi={10.1145/96709.96714}
+}
+
+@article{Coquand96,
+  title={An Algorithm for Type-Checking Dependent Types},
+  author={Coquand, Thierry},
+  year={1996},
+  journal=SCP,
+  volume=26,
+  number={1--2},
+  month={May},
+  doi={10.1016/0167-6423(95)00021-6}
+}
+
+@misc{AltenkirchM,
+  title={Towards Observational Type Theory},
+  author={Altenkirch, Thorsten and {McBride}, Conor},
+  url={http://strictlypositive.org/ott.pdf}
+}
+
+@inproceedings{Pitts87,
+  title={Polymorphism is Set Theoretic, Constructively},
+  author={Pitts, Andrew M.},
+  booktitle=SCCTCS,
+  year={1987},
+  doi={10.1007/3-540-18508-9_18}
+}
+
+@inproceedings{Pitts01,
+  title={Nominal Logic: A First Order Theory of Names and Binding},
+  author={Pitts, Andrew M.},
+  booktitle=TACS,
+  year={2001},
+  doi={10.1016/S0890-5401(03)00138-X}
+}
+
+@article{Selinger04,
+  title={Towards a Quantum Programming Language},
+  author={Peter Selinger},
+  journal=MSCS,
+  year=2004,
+  doi={10.1017/S0960129504004256}
+}
+
+@article{HalpernO08,
+  title={Secrecy in Multiagent Systems},
+  author={Halpern, Joseph and {O'Neill}, Kevin R.},
+  journal=TISSEC,
+  year=2008,
+  volume=12,
+  number=1,
+  month={October},
+  doi={10.1145/1410234.1410239}
+}
+
+@inproceedings{BirgissonPETVL14,
+  title={Macaroons: Cookies with Contextual Caveats for Decenteralized Authorization in the Cloud},
+  author={Birgisson, Arnar and Politz, Joe Gibbs and Erlingsson, {\'U}lfar and Taly, Ankur and Vrable, Michael and Lentczner, Mark},
+  booktitle=NDSS,
+  year=2014,
+  doi={10.14722/ndss.2014.23212}
+}
+@article{NanevskiBG,
+  title={Dependent Type Theory for Verification of Information Flow and Access Control Policies},
+  author={Nanevski, Aleksandar and Banerjee, Anindya and Garg, Deepak},
+  year={2013},
+  volume=35,
+  number=2,
+  month={July},
+  journal={TOPLAS},
+  doi={10.1145/2491522.2491523}
+}
+
+@article{Savage18,
+  title={Lawful Device Access without Mass Surveillance Risk: A Technical Design Discussion},
+  author={Savage, Stefan},
+  year=2018,
+  booktitle=CCS,
+  doi={10.1145/3243734.3243758}
+}
+
+@inproceedings{MontaguPP13,
+  title={A Theory of Information-Flow Labels},
+  author={Montagu, Beno{\^i}t and Pierce, Benjamin C. and Pollack, Randy},
+  booktitle=CSF,
+  year=2013,
+  doi={10.1109/CSF.2013.8}
+}
+
+@inproceedings{RafnssonS,
+  title={Compositional Information-Flow Security for Interactive Systems},
+  author={Rafnsson, Willard and Sabelfeld, Andrei},
+  booktitle=CSF,
+  year={2014},
+  doi={10.1109/CSF.2013.8}
+}
+
+@inproceedings{RafnssonHS,
+  title={Securing Interactive Programs},
+  author={Rafnsson, Willard and Hedin, Daniel and Sabelfeld, Andrei},
+  booktitle=CSF,
+  year={2012},
+  doi={10.1109/CSF.2012.15}
+}
+
+@inproceedings{ZdancewicM,
+  title={Observational Determinism for Concurrent Program Security},
+  author={Zdancewic, Steve and Myers, Andrew C.},
+  booktitle=CSFW,
+  year= {2003},
+  doi={10.1109/CSFW.2003.1212703}
+}
+
+@inproceedings{VazouSJVPJ,
+  title={Refinement Types for Haskell},
+  author={Vazou, Niki and Seidel, Eric L. and Jhala, Ranjit and Vytiniotis, Dimitrios and Peyton-Jones, Simon},
+  booktitle=ICFP,
+  year={2014},
+  doi={10.1145/2628136.2628161}
+}
+
+@inproceedings{ScibiorGG15,
+  title={Practical Probabilistic Programming with Monads},
+  author={{\'S}cibor, Adam and Ghahramani, Zoubin and Gordon, Andrew D.}
+  booktitle=HASKELL,
+  year=2015,
+  doi={10.1145/2804302.2804317}
+}
+
+@inproceedings{PeytonJonesVWW06,
+  title={Simple Unification-Based Type Inference for {GADT}s},
+  author={Peyton Jones, Simon and Vytiniotis, Dimitrios and Weirich, Stephanie  and Washburn, Geoffery},
+  booktitle=ICFP,
+  year=2006,
+  doi={10.1145/1159803.1159811}
+}
+
+@inproceedings{Wadler98,
+  title={Theorems for Free!},
+  author={Wadler, Philip},
+  year={1998},
+  booktitle=FPCA,
+  doi={10.1145/99370.99404}
+}
+
+@inproceedings{CasinghinoSW14,
+  title={Combining Proofs and Programs in a Dependently Typed Language},
+  author={Casinghino, Chris and Sj{\"o}berg, Vilhelm and Weirich, Stephanie},
+  booktitle=POPL,
+  year=2014,
+  doi={10.1145/2535838.2535883}
+}
+
+@inproceedings{MeijerFP,
+  title={Functional Programming with Bananas, Lenses, Envelopes and Barbed Wire},
+  author={Meijer, Erik and Fokkinga, Maarten and Paterson, Ross},
+  booktitle=FPCA,
+  year={2005},
+  doi={10.1007/3540543961_7}
+}
+
+@inproceedings{GreenmanMT14,
+  title={Getting F-Bounded Polymorphism into Shape},
+  author={Greenman, Ben and M{\"u}hlb{\"o}ck, Fabian and Tate, Ross},
+  year=2014,
+  booktitle=PLDI,
+  doi={10.1145/2594291.2594308}
+}
+
+@article{BentonCF,
+  title={Modern Concurrency Abstractions for C#},
+  author={Benton, Nick and Cardelli, Luca and Fournet, C{\'e}dric},
+  journal=TOPLAS,
+  year={2004},
+  month={September},
+  volume=26,
+  number=5,
+  doi={10.1145/1018203.1018205}
+}
+
+@inproceedings{Cook09,
+  title={On Understanding Data Abstraction, Revisited},
+  author={Cook, William R.},
+  year=2009,
+  booktitle=OOPSLA,
+  doi={10.1145/1640089.1640133}
+}
+
+@article{AbramskyJ94,
+  title={Games and Full Completeness for Multiplicative Linear Logic},
+  author={Abramsky, Samson and Jagadeesan, Radha},
+  journal=JSL,
+  volume=59,
+  number=2,
+  year=1994,
+  month={June},
+  url={http://www.jstor.org/stable/2275407}
+}
+
+@inproceedings{LicataB,
+  title={$\pi_n(S^n)$ in Homotopy Type Theory},
+  author={Licata, Daniel R. and Brunerie, Guillaume},
+  booktitle=CPP,
+  year=2013,
+  doi={10.1007/978-3-319-03545-1_1}
+}
+
+@inproceedings{LicataS,
+  title={Calculating the Fundamental Group of the Circle in Homotopy Type Theory},
+  author={Licata, Daniel R. and Shulman, Michael},
+  booktitle=LICS,
+  year={2013},
+  doi={10.1109/LICS.2013.28}
+}
+
+@inproceedings{GargGN12,
+  title={Countermodels from Sequent Calculi in Multi-Modal Logics},
+  author={Garg, Deepak and Genovese, Valerio and Negri, Sara},
+  year=2012,
+  booktitle=LICS,
+  doi={10.1109/LICS.2012.42}
+}
+
+@inbook{DanosJS,
+  title={{LKQ} and {LKT}: Sequent calculi for second order logic based upon dual linear decompositions of classical implication},
+  author={Danos, Vincent and Joinet, Jean-Baptiste and Schellinx, Harold},
+  booktitle={Advances in Linear Logic},
+  year={1995},
+  doi={10.1017/CBO9780511629150.001}
+}
+
+@article{PfenningD,
+  title={A Judgmental Reconstruction of Modal Logic},
+  author={Pfenning, Frank and Davies, Rowan},
+  journal=MSCS,
+  year=2001,
+  volume=11,
+  number=4,
+  month={August},
+  doi={10.1017/S0960129501003322}
+}
+
+@misc{Shulman18,
+  title={Linear Logic for Constructive Mathematics},
+  author={Shulman, Michael},
+  year=2018,
+  arxiv={1805.07518}
+}
+
+@article{ZilianiDKNV15,
+  title={Mtac: A Monad for Typed Tactic Programming in Coq},
+  author={Ziliani, Beta and Dreyer, Derek and Krishnaswami, Neelakantan R. and Nanevski, Aleksandar and Vafeiadis, Viktor},
+  year=2015,
+  journal=JFP,
+  month={August},
+  volume=25,
+  number={e12},
+  doi={10.1017/S0956796815000118}
+}
+
+@inproceedings{KaiserZKRGD18,
+  title={Mtac2: Typed Tactics for Backward Reasoning in Coq},
+  author={Kaiser, Jan-Oliver and Ziliani, Beta and Krebbers, Robbert and R{\'e}gis-Gianas, Yann and Dreyer, Derek},
+  year=2018,
+  booktitle=ICFP,
+  doi={10.1145/3236773}
+}
+
+@inproceedings{AltenkirchMS07,
+  title={Observational Equality, Now!},
+  authors={Altenkirch, Thorsten and McBride, Conor and Swierstra, Wouter},
+  year=2007,
+  booktitle=PLPV,
+  doi={10.1145/1292597.1292608}
+}
+
+@inproceedings{DunfieldP04,
+  title={Tridirectional Typechecking},
+  authors={Dunfield, Joshua and Pfenning, Frank},
+  year={2004},
+  booktitle=POPL,
+  doi={10.1145/964001.964025}
+}
+
+@inproceedings{SwamyHKRDLFBFSKZZB16,
+  title={Dependent Types and Multi-Monadic Effects in F*},
+  author={Swamy, Nikhil and Hri{\c t}cu, C{\u a}t{\u a}lin and Keller, Chantal and Rastogi, Aseem and Delignat-Lavaud, Antoine and Forest, Simon and Bhargavan, Karthikeyan and Fournet, C{\'e}dric and Strub, Pierre-Yves and Kohlweiss, Markulf and Zinzindohoue, Jean-Karim and Zanella-B{\'e}guelin, Santiago},
+  year=POPL,
+  year=2016,
+  doi={10.1145/2837614.2837655}
+}
+
+@inproceedings{NanevskiMSGB08,
+  title={Ynot: Dependent Types for Imperative Programs},
+  author={Nanevski, Aleksandar and Morrisett, Greg and Shinnar, Avi and Govereau, Paul and Birkedal, Lars},
+  year=2008,
+  booktitle=ICFP,
+  doi={10.1145/1411204.1411237}
+}
+
+@inproceedings{ChlipalaMMSW09,
+  title={Effective Interactive Proofs for Higher-Order Imperative Programs},
+  author={Chlipala, Adam and Malecha, Gregory and Morrisett, Greg and Shinnar, Avraham and Wisnesky, Ryan},
+  year=2009,
+  booktitle=ICFP,
+  doi={10.1145/1596550.1596565}
+}
+
+@techreport{NanevskiM06,
+  title={Dependent Type Theory of Stateful Higher-Order Functions},
+  author={Nanevski, Aleksandar and Morrisett, Greg},
+  institution={Harvard University},
+  number={TR-24-05},
+  year={2006},
+  url={http://ynot.cs.harvard.edu/papers/htt.pdf}
+}
+
+@misc{Coquand92,
+  title={Pattern Matching with Dependent Types},
+  author={Coquand, Thierry},
+  year=1992,
+  url={http://www.cse.chalmers.se/~coquand/pattern.ps}
+}
+
+@inproceedings{AtkeyGJ14,
+  title={A Relationally Parametric Model of Dependent Type Theory},
+  author={Atkey, Robert and Ghani, Neil and Johann, Patricia},
+  year=2014,
+  booktitle=POPL,
+  doi={10.1145/2535838.2535852}
+}
+
+@inproceedings{Dybjer95,
+  title={Internal Type Theory},
+  author={Dybjer, Peter},
+  year={1995},
+  booktitle=TYPES,
+  doi={10.1007/3-540-61780-9_66}
+}
+
+@article{JohnstonHM04,
+  title={Advances in Dataflow Programming Languages},
+  author={Johnston, Wesley M. and Hanna, J. R. Paul and Millar, Richard J.},
+  year=2004,
+  month={March}
+  journal=CSUR,
+  volume=36,
+  number=1,
+  doi={10.1145/1013208.1013209}
+}
+  
+
+@inproceedings{EberhartH18,
+  title={What's in a Game: A Theory of Game Models},
+  author={Eberhart, Clovis and Hirschowitz, Tom},
+  year={2018},
+  booktitle=LICS,
+  doi={10.1145/3209108.3209114}
+}
+
+@inproceedings{NygaardW02,
+  title={Linearity in Process Languages},
+  author={Nygaard, Mikkel and Winskel, Glynn},
+  year=2002,
+  booktitle=LICS,
+  doi={10.1109/LICS.2002.1029851}
+}
+
+@inproceedings{JonesP89,
+  title={A Probabilistic Powerdomain of Evaluations},
+  author={Jones, C. and Plotkin, G. D.},
+  year=1989,
+  booktitle=LICS,
+  doi={10.1109/LICS.1989.39173}
+}
+
+@inproceedings{AbramskyJV15,
+  title={Games for Dependent Types},
+  author={Abramsky, Samson and Jagadeesan, Radha and V{\'a}k{\'a}r, Matthijs},
+  year=2015,
+  booktitle=ICALP,
+  doi={10.1007/978-3-662-47666-6_3}
+}
+
+@inproceedings{VaraccaVW04,
+  title={Probabilistic Event Structures and Domains},
+  author={Varacca, Daniele and V{\"o}lzer, Hagen and Winskel, Glynn},
+  year={2004},
+  booktitle=CONCUR,
+  doi={10.1007/978-3-540-28644-8_31}
+}
+
+@misc{Winskel,
+  author={Winskel, Glynn},
+  title={Distributed Games and Strategies},
+  url={https://arxiv.org/abs/1607.03760}
+}
+
+@inproceedings{AppelMRV07,
+  title={A Very Modal Model of a Modern, Major, General Type System},
+  author={Appel, Andrew W. and Melli{\`e}s Paul-Andr{\'e} and Richards, Christopher D. and Vouillon, J{\'e}r{\^o}me},
+  year=2007,
+  booktitle=POPL,
+  doi={10.1145/1190216.1190235}
+}
+@article{LiuAGM17,
+  title={Fabric: Building Open Distributed Systems Securely by Construction},
+  author={Liu, Jed and Arden, Owen and George, Michael D. and Myers, Andrew C.},
+  journal=JCS,
+  volume=25,
+  year=2017,
+  doi={10.323/JCS-15805}
+}
+
+@inproceedings{ZhengM14,
+  title={A Language-Based Approach to Secure Quorum Replication},
+  author={Zheng, Lantian and Myers, Andrew C.},
+  booktitle=PLAS,
+  year=2014,
+  doi={10.1145/2637113.2637117}
+}
+
+@article{AbramskyM96,
+  title={Linearity, Sharing, and State: A Fully Abstract Game Semantics for Idealized Algol with Active Expressions},
+  author={Abramsky, Samson and McCusker, Guy},
+  year=1996,
+  booktitle={Linear Logic 96 Tokyo Meeting},
+  doi={10.1016/S1571-0661(05)80398-6}
+}
+
+@inproceedings{AbramskyHM98,
+  title={A Fully Abstract Game Semantics for General References},
+  author={Abramsky, Samson and Honda, Kohei and McCusker, Guy},
+  year=1998,
+  booktitle=LICS,
+  doi={10.1109/LICS.1998.705669}
+}
+
+@article{Abramsky03,
+  title={Sequentiality vs Concurrency in Games and Logic},
+  author={Abramsky, Samson},
+  year=2003,
+  journal=MSCS,
+  volume=13,
+  number=4,
+  month={August},
+  doi={10.1017/S0960129503003980}
+}
+
+@inproceedings{WandCGC18,
+  title={Contextual Equivalence for a Probabilistic Language with Continuous Random Variables and Recursion},
+  author={Wand, Mitchell and Culpepper, Ryan and Giannakopoulos, Theophilos and Cobb, Andrew},
+  year=2018,
+  booktitle=ICFP,
+  doi={10.1145/3236782}
+}
+
+@article{HondaY99,
+  title={Game-Theoretic Analysis of Call-by-Value Computation},
+  author={Honda, Kohei and Yoshida, Nobuko},
+  journal=TCS,
+  volume=221,
+  year=1999,
+  doi={10.1007/3-540-63165-8_180}
+}
+
+@inproceedings{GhicaS,
+  title={Bounded Linear Types in a Resource Semiring},
+  author={Ghica, Dan R. and Smith, Alex},
+  booktitle=ESOP,
+  year={2014},
+  doi={10.1007/978-3-642-54833-8_18}
+}
+
+@inproceedings{BaillotDER,
+  title={Believe it or not, {AJM}'s Games Model is a Model of Classical Linear Logic},
+  author={Baillot, Patrick and Danos, Vincent and Ehrhard, Thomas and Regnier, Laurent},
+  booktitle=LICS,
+  year={1997},
+  doi={10.1109/LICS.1997.614933}
+}
+
+@inproceedings{BorgstroemLGS16,
+  title={A Lambda-Calculus Foundation for Universal Probabilistic Programming},
+  author={Borgstr{\"o}m, Johannes and Dal Lago, Ugo and Gordon, Andrew D. and Szymczak, Marcin},
+  year=2016,
+  booktitle=ICFP,
+  doi={10.1145/2951913.2951942}
+}
+
+@article{Laurent04,
+  title={Polarized Games},
+  author={Laurent, Olivier},
+  journal=PAL,
+  volume=130,
+  year=2004,
+  doi=10.1016/j.apal.2004.04.006
+}
+
+@inproceedings{HonsellLR12,
+  title={Categories of Coalgebraic Games},
+  author={Honsell, Furio and Lenisa, Marina and Redamalla, Rekha},
+  year=2012,
+  booktitle=MFCS,
+  doi={10.1007/978-3-642-32589-2_45}
+}
+
+@article{KozenS17,
+  title={Practical Coinduction},
+  author={Kozen, Dexter and Silva, Alexandra},
+  journal=MSCS,
+  year={2017},
+  volume=27,
+  number={Special Issue 7 (Special Issue: Categorical Logic)},
+  month={October},
+  doi={10.1017/S0960129515000493}
+}
+
+@article{Lawvere69,
+  title={Adjointness in Foundations},
+  author={Lawvere, F. William},
+  journal=DIALECTICA,
+  volume=23,
+  year=1969,
+  url={https://www.jstor.org/stable/42969800}
+}
+
+@inproceedings{Seely89,
+  title={Linear Logic, *-Autonomous Categories and Cofree Coalgebras},
+  author={Seely, R. A. G.},
+  year=1989,
+  booktitle=CCSL,
+  url={http://www.math.mcgill.ca/rags/nets/llsac.ps.gz}
+}
+
+@inproceedings{FujiiKM16,
+  title={Towards a Formal Theory of Graded Monads},
+  author={Fujii, Soichiro and Katsumata, Shin-ya and Mellis{\`e}s, Paul-Andr{\'e}},
+  year=2016,
+  booktitle=FOSSACS,
+  doi={10.1007/978-3-662-49630-5_30}
+}
+
+@article{Street72,
+  title={The Formal Theory of Monads},
+  author={Street, Ross},
+  journal=PAA,
+  volume=2,
+  number=2,
+  year=1972,
+  month={1972},
+  doi={10.1016/0022-4049(72)90019-9}
+}
+
+@article{LackS02,
+  title={The Formal Theory of Monads {II}},
+  author={Lack, Stephen and Street, Ross},
+  journal=PAA,
+  volume=175,
+  number={1--3},
+  year=2002,
+  month={November},
+  doi={10.1016/S0022-4049(02)00137-8}
+}
+
+@article{HylandP07,
+  title={The Category Theoretic Understanding of Universal Algebra: Lawvere Theories and Monads},
+  author={Hyland, Martin and Power, John},
+  journal=ENTCS,
+  volume=172,
+  month={April}
+  year=2007,
+  doi={10.1016/j.entcs.2007.02.019}
+}
+
+@misc{Jeffrey97,
+  title={Premonoidal Categoies and a Graphical View of Programs},
+  author={Jeffrey, Alan},
+  year=1997,
+  url={http://fpl.cs.depaul.edu/ajeffrey/premon/paper.html}
+}
+
+@article{BergerMW12,
+  title={Monads with Arities and Their Associated Theories},
+  author={Berger, Clemens and Melli{\`e}s, Paul-Andr{\'e} and Weber, Mark},
+  year=2012,
+  journal=PAA,
+  month={August},
+  volume=216,
+  number={8--9},
+  doi={10.1016/j.jpaa.2012.02.039}
+}
+
+@article{Mellies16,
+  title={Dialogue Categories and Chiralities},
+  author={Melli{\`e}s, Paul-Andr{\'e}},
+  journal=PRIMS,
+  volume=52,
+  issue=4,
+  year=2016,
+  doi={10.4171/PRIMS/185}
+}
+
+@misc{GhaniHWZ18,
+  title={Compositional Game Theory},
+  author={Ghani, Neil and Hedges, Jules and Winshel, Viktor and Zahn, Philipp},
+  year=2018,
+  url={https://www.arxiv.org/abs/1603.04641}
+}
+
+@misc{Sturtz15,
+  title={Categorical Probability Theory},
+  author={Sturtz, Kirk},
+  year=2015,
+  url={https://www.arxiv.org/abs/1406.66030}
+}
+
+@inproceedings{CockxA18,
+  title={Elaborating Dependent (Co)pattern Matching},
+  author={Cockx, Jesper and Abel, Andreas},
+  year=2018,
+  booktitle=ICFP,
+  doi={10.1145/3236770}
+}
+
+@inproceedings{GreenKT07,
+  title={Provenance Semirings},
+  author={Green, Todd J. and Karvounarakis, Grigoris and Tannen, Val},
+  year=2007,
+  booktitle=PODS,
+  doi={10.1145/1265530.1265535}
+}
+
+@article{DeMilloLP79,
+  title={Social Processes and Proofs of Theorems and Programs},
+  author={De Millo, Richard A. and Lipton, Richard J. and Perlis, and Alan J.},
+  journal=CACM,
+  volume=22,
+  number=5,
+  year=1979,
+  month={May},
+  doi={10.1145/359104.359106}
+}
+
+@inproceedings{BentonHN14,
+  title={Abstract Effects and Proof-Relevant Logical Relations},
+  author={Benton, Nick and Hofmann, Martin and Nigam, Vivek},
+  booktitle=POPL,
+  year=2014,
+  doi={10.1145/2535838.2535869}
+}
+
+@misc{McBride11,
+  title={Functional Pearl: Kleisli Arrows of Outrageous Fortune},
+  author={McBride, Conor},
+  year=2011,
+  url={https://personal.cis.strath.ac.uk/conor.mcbride/Kleisli.pdf}
+}
+
+@article{JacobsHH09,
+  title={Categorical Semantics for Arrows},
+  author={Jacobs, Bart and Heunen, Chris and Hasuo, Ichiro},
+  journal=JFP,
+  volume=19,
+  number={3--4},
+  year={2009},
+  month={July},
+  doi={10.1017/S0956796809007308}
+}
+
+@inproceedings{KammarP12,
+  title={Algebaric Foundations for Effect-Dependent Optimisations},
+  author={Kammar, Ohad and Plotkin, Gordon D.},
+  year=2012,
+  booktitle=POPL,
+  doi={10.1145/2103656.2103698}
+}
+
+@techreport{Leijen16,
+  title={Type Directed Compilation of Row-Typed Algebraic Effects},
+  author={Leijen, Daan},
+  institution={Microsoft},
+  year=2016,
+  url={https://www.microsoft.com/en-us/research/wp-content/uploads/2016/08/algeff-tr-2016-1.pdf}
+}
+
+@inproceedings{Leijen14,
+  title={Koka: Programming with Row-Polymorphic Effect Types},
+  author={Leijen, Daan},
+  year=2014,
+  booktitle=MSFP,
+  doi={10.4204/EPTCS.153.8}
+}
+
+@techreport{TateL10,
+  title={Convenient Explicit Effects using Type Inference with Subeffects},
+  author={Tate, Ross and Leijen, Daan},
+  institution={Microsoft},
+  number={MSR-TR-2010-80},
+  year=2010,
+  url={https://www.microsoft.com/en-us/research/publication/convenient-explicit-effects-using-type-inference-with-subeffects/}
+}
+
+@misc{TateL10b,
+  title={A Flexible Semantic Framework for Effects},
+  author={Tate, Ross and Leijen, Daan},
+  year=2010
+}
+
+@inproceedings{Kavvos19,
+  title={Modalities, Cohesion, and Information Flow},
+  author={Kavvos, G. A.},
+  year=2019,
+  booktitle=POPL,
+  doi={10.1145/3290333}
+}
+
+@inproceedings{McBride18,
+  title={Everybody's Got to be Somewhere},
+  author={McBride, Conor},
+  year=2018,
+  booktitle=MSFP,
+  doi={10.4204/EPTCS.275.6}
+}
+
+@article{CraryKP05,
+  title={A Monadic Analysis of Information-Flow Security with Mutable State},
+  author={Crary, Karl and Kliger, Aleksey and Pfenning, Frank},
+  journal=JFP,
+  volume=15,
+  number=2,
+  year=2005,
+  doi={10.1017/S09567968004005441}
+}
+
+@inproceedings{HarrisonH05,
+  title={Achieving Information Flow Security Through Precise Control of Effects},
+  author={Harrison, William L. and Hook, James},
+  year=2005,
+  booktitle=CSFW,
+  doi={10.1109/CSFW.2005.6}
 }
