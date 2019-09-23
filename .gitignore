@@ -5,5 +5,5 @@ auto/*
 *.log
 *~
 *.out
-*.syntex.gz
+*.synctex.gz
 *.pdf
