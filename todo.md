@@ -13,11 +13,11 @@ Things to do in the short and long term.
 
  - Copy over the extensions we wish to add to MTT at some point (Daniel)
 
- - Send email to everyone with results of this interaction
-
  - Copy over the rules of higher order choreographies, along with references (Andrew)
 
  - Copy over the translation into pi calculus (Andrew)
+
+ - Send email to Andrew, Alex, Daniel, Lars, and Deepak with results of this interaction (Daniel)
 
 ## Medium Term (< 3 months)
 
