@@ -141,3 +141,4 @@ setup.log
 *.agdai
 *.nav
 *.snm
+*.synctex.gz
