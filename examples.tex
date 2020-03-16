@@ -1,0 +1,167 @@
+\documentclass{article}
+
+\usepackage[hidelinks]{hyperref}
+\usepackage[dvipsnames]{xcolor}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{bbm}
+\usepackage{stmaryrd}
+\usepackage{mathtools}
+\usepackage{mathpartir}
+\usepackage{enumitem}
+\usepackage{xspace}
+\usepackage{doi}
+\usepackage{ifthen}
+\usepackage{suffix}
+
+\usepackage[authoryear,sort,square]{natbib}
+\bibliographystyle{plainnat}
+
+% Notes
+% AKH: Stolen shamelessly from my frequent collaborator, Ethan Cecchetti
+\newcommand{\newcommenter}[3]{%
+  \newcommand{#1}[1]{%
+    \textcolor{#2}{\small\textsf{[#3: {##1}]}}%
+  }%
+}
+\newcommenter{\akh}{purple}{AKH}
+
+%Example Program Macros
+\newcommand{\programfont}[1]{\textsf{#1}}
+
+
+\newcommand{\If}{\programfont{if}\xspace}
+\newcommand{\Then}{\programfont{then}\xspace}
+\newcommand{\Else}{\programfont{else}\xspace}
+\newcommand{\Match}{\programfont{match}\xspace}
+\newcommand{\With}{\programfont{with}\xspace}
+\newcommand{\In}{\programfont{in}\xspace}
+\newcommand{\InQ}{\programfont{in?}\xspace} %for "In Query"
+\newcommand{\InP}{\programfont{In}\xspace} %for "In Prop"
+\newcommand{\Yes}{\programfont{yes}\xspace}
+\newcommand{\No}{\programfont{no}\xspace}
+\newcommand{\Left}{\programfont{left}\xspace}
+\newcommand{\Right}{\programfont{right}\xspace}
+\newcommand{\End}{\programfont{end}\xspace}
+\newcommand{\Principal}{\programfont{Principal}\xspace}
+\newcommand{\List}{\programfont{List}\xspace}
+\newcommand{\Refl}{\programfont{refl}\xspace}
+\newcommand{\String}{\programfont{string}\xspace}
+\newcommand{\Says}{\programfont{says}\xspace}
+\WithSuffix\newcommand\Says*{\ensuremath{\mathrel{\programfont{says}}}}
+\newcommand{\Trusts}{\programfont{trusts}\xspace}
+\WithSuffix\newcommand\Trusts*{\ensuremath{\mathrel{\programfont{trusts}}}}
+
+\input{programmacro}
+
+\newcommand{\ITE}[3]{\If~#1~\Then~#2~\Else~#3}
+\newmultilevelprogramwithsuffix[3]{\ITE*}{%for "If-Then-Else Multi Line
+  \If~#1\\%
+  \Then~#2\\%
+  \Else~#3%
+}
+\newcommand{\MatchDP}[5]{\Match~#1 \mathrel{\With} |~\Yes~#2 \mathrel{\Rightarrow} #3 |~\No~#4 \mathrel{\Rightarrow} #5 \End}
+\newmultilevelprogramwithsuffix[5]{\MatchDP*}{%for "Match Decision Procedure"
+  \Match~#1~\With\\%
+  \hspace*{0.5em}|~\Yes~#2 \mathrel{\Rightarrow} #3\\%
+  \hspace*{0.5em}|~\No~#4 \mathrel{\Rightarrow} #5\\%
+  \End%
+}
+
+\newcommand{\MatchSum}[5]{\Match~#1 \mathrel{\With} |~\Left~#2 \mathrel{\Rightarrow} #3 |~\Right~#4 \mathrel{\Rightarrow} #5 \End}
+\newmultilevelprogramwithsuffix[5]{\MatchSum*}{%
+  \Match~#1~\With\\%
+  \hspace*{0.5em}|~\Left~#2 \mathrel{\Rightarrow} #3\\%
+  \hspace*{0.5em}|~\Right~#4 \mathrel{\Rightarrow} #5\\%
+  \End%
+}
+
+\begin{document}
+
+\section{Faceted Value}
+\label{sec:faceted-value}
+
+This example is based on faceted information-flow control~\citep{AustinF12}.
+In faceted information-flow control, we keep multiple values for a variable, and then show the ``right'' value of the variable to anyone who asks for it.
+We have simplified this example somewhat, keeping track of only two values for a faceted value: the ``true'' value and the ``default'' value.
+Any principal has access to the value if they are on a whitelist, otherwise they get the default value.
+We are also able to provide a simple proof of noninterference for this construct.
+
+$$
+\begin{array}{lcl}
+  \programfont{facet}_{p,q} &:& p.\mathbb{N} \to p.\mathbb{N} \to \List~\Principal \to q.\mathbb{N}\\
+  \programfont{facet}_{p,q}~s~d~\programfont{WL} &=& \addtocounter{numlevels}{1}\ITE*{\InQ~p~\programfont{WL}}{q.s \to p}{q.d \to p}\addtocounter{numlevels}{-1}
+\end{array}
+$$
+
+$$
+\begin{array}{lcl}
+  \programfont{facet\_NI}_{p,q} &:& \forall~s_1~s_2~d~\programfont{WL}.~(\InP~p~\programfont{WL}) \lor ((\programfont{facet}_{p,q}~s_1~d~\programfont{WL}) = (\programfont{facet}_{p,q}~s_2~d~\programfont{WL}))\\
+  \programfont{facet\_NI}_{p,q} &=& \addtocounter{numlevels}{1}\MatchDP*{\InQ~p~\programfont{WL}}{e}{\Left~e}{n}{\Right~\Refl}\addtocounter{numlevels}{-1}
+\end{array}
+$$
+
+Note that we have the two principals $p$ and $q$ as subscripts on the programs.
+This represents C++-template-style separate compilation, because modality polymorphism is hard in MMT.
+\akh{Daniel and Alex, can you expand on that?}
+
+However, we \emph{do} have a list of \Principal, which is a type with decidable equality (which we know because the program \InQ is defined).
+This is a reflection of the modalities as a type.
+This does a lot of the work for us, but does not allow us to do $\forall p.~p\mathrel{\textsf{says}} \varphi$.
+This is clearly important for many applications, but requires a nontrivial extension to MMT.
+
+\section{Examples from the FLAFOL Paper}
+\label{sec:examples-from-flafol}
+
+The following examples are from the FLAFOL paper~\citep{HirschACAT20}.
+We have dropped the primary example from that paper, since it is inherently about how information-flow labels and authorization interact.
+(Though perhaps an Aura-style embedding could let us recover it?~\citep{JiaVMZZSZ08,JiaZ09})
+
+These examples are designed to probe at the edges of noninterference.
+How to write noninterference and reason about it is one question we need to answer.
+
+\subsection{Hospital Example}
+\label{sec:hospital-example}
+
+This example looks at what happens when trust is ``discoverable;'' that is, when it is just a formula that can be assumed like anything else.
+In FLAFOL, we told a story involving a hospital administrator trying to figure out who was paying based on two insurance cards, and a reinsurance scheme (hence the name).
+This tells us why this is a plausible thing to want, but the basic structure only involves a disjuntion of trust statements.
+
+$$
+\begin{array}{lcl}
+  \programfont{hospital}&:& p.(p \Trusts* q_1 \lor p \Trusts* q_2) \to q_1.(q_1 \Trusts* q_2) \to p.(p \Trusts* q_2)\\
+  \programfont{hospital}~t_1~t_2 &=&\addtocounter{numlevels}{1}\MatchSum*{t_1}{t_1'}{\programfont{compose}~(q_1.t_2 \xrightarrow{t_1'} p)~t_1'}{t_1'}{t_1'}\addtocounter{numlevels}{-1}
+\end{array}
+$$
+
+The interesting thing here is what it means about noninterference.
+Because we can assume a disjunction of trust, we can use statements of principals that~$p$ does not yet trust to determine~$p$'s beliefs.
+(Here, note the use of $t_1'$ in the \Left branch.)
+
+\subsection{Sanitization Example}
+\label{sec:sanitization-example}
+
+This example looks at what happens when we allow ``downgrading'' through functions.
+In FLAFOL, we told a story about a server which was willing to increase the integrity of user inputs when run through a sanitization function.
+
+$$
+\begin{array}{lcl}
+  f &:& p.q \Trusts* q \to r \Trusts* p \to p.(q.\String \to \String) \to q.\String \to r.\String\\
+  f~\chi_1~\chi_2~\programfont{sanitize}~\programfont{inp} & = & p.\programfont{sanitize}(q \xrightarrow{\chi_1} p.q) \xrightarrow{\chi_2} r
+\end{array}
+$$
+
+Currently, the sanitization function's type is uninhabited, but not provably so.
+However, in the body of $f$, we assume that it is inhabited, and reason from there.
+But this allows us to seemingly-break noninterference.
+
+\bibliography{bibliography/akh}
+    
+\end{document}
+
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: t
+%%% End:

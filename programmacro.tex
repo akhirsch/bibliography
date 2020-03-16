@@ -1,0 +1,13 @@
+% This is a trick I came up with while writing my last paper for writing nice multi-line programs.
+% Sadly, it does tend to mess up at least Emacs's automatic spacing, so it goes in its own file.
+
+\newcounter{numlevels}
+\newcommand{\newmultilevelprogram}[3][0]{\newcommand{#2}[#1]{\ifthenelse{\value{numlevels} > 0}{\begin{array}[t]{@{}l@{}}}{\begin{array}{l}}\addtocounter{numlevels}{1}#3\addtocounter{numlevels}{-1}\end{array}}}
+
+\newcommand{\newmultilevelprogramwithsuffix}[3][0]{\WithSuffix\newcommand #2 [#1]{\ifthenelse{\value{numlevels} > 0}{\begin{array}[t]{@{}l@{}}}{\begin{array}{l}}\addtocounter{numlevels}{1}#3\addtocounter{numlevels}{-1}\end{array}}}
+                                                                                                  
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "examples"
+%%% End:
