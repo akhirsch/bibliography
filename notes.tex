@@ -1,0 +1,487 @@
+\documentclass{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[letterpaper, margin=1in, bottom=1in]{geometry}
+\usepackage[authoryear,sort,square]{natbib}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{bbm}
+\usepackage{bbold}
+\usepackage{stmaryrd}
+\usepackage{mathtools}
+\usepackage{mathpartir}
+\usepackage[dvipsnames]{xcolor}
+\usepackage{latex-pl-syntax/pl-syntax}
+\usepackage{xspace}
+\usepackage{suffix}
+\usepackage{turnstile}
+\usepackage{multicol}
+
+\usepackage[hidelinks]{hyperref}
+
+% Notes
+\newcommand{\uncertain}[1]{{\color{red} #1}\xspace}
+\newcommand{\newcommenter}[3]{%
+  \newcommand{#1}[1]{%
+    \textcolor{#2}{\small\textsf{[{#3}: {##1}]}}%
+  }%
+}
+\definecolor{darkgreen}{rgb}{0,0.7,0}
+\newcommenter{\akh}{purple}{AKH}
+
+% AMSTHM Setup
+\newtheorem{thm}{Theorem}
+\newtheorem{lem}{Lemma}
+\newtheorem{cor}{Corollary}
+\newtheorem{conj}{Conjecture}
+\newtheorem{inv}{Invariant}
+\theoremstyle{definition}
+\newtheorem{defn}{Definition}
+
+% Macros
+
+%% Assumptions on expressions
+\newcommand{\bool}{\mathbbm{2}}
+\newcommand{\ett}{\textsf{true}}
+\newcommand{\eff}{\textsf{false}}
+
+%% Evaluation
+\newcommand{\To}{\Rightarrow}
+
+%% Substitution
+\newcommand{\subst}[3]{#1~[#2 \mapsto #3]}
+
+%% Equivalence
+\newcommand{\cleq}{\preceq}
+\newcommand{\ceq}{\approx}
+
+%% Choreography Language
+\newcommand{\own}[2]{#1.#2}
+\newcommand{\cdone}{\mathbb{0}}
+\newcommand{\send}[3][]{#2\nolinebreak \mathrel{\xrightarrow{#1}}\nolinebreak #3}
+\newcommand{\cif}[3]{\textsf{if}~#1 \mathrel{\textsf{then}}\nolinebreak #2 \mathrel{\textsf{else}}\nolinebreak #3}
+\newcommand{\clet}[2]{\textsf{let}~#1\nolinebreak =\nolinebreak #2 \mathrel{\textsf{in}}}
+\newcommand{\copen}[2]{\textsf{open}_{#1}~#2}
+\newcommand{\idchan}{\textsf{id\_chan}}
+\newcommand{\match}{\ensuremath{\mathsf{match}\xspace}}
+\newcommand{\with}{\ensuremath{\mathsf{with}}\xspace}
+\newcommand{\End}{\ensuremath{\mathsf{end}}\xspace}
+\newcommand{\inl}{\ensuremath{\mathsf{inl}}\xspace}
+\newcommand{\inr}{\ensuremath{\mathsf{inr}}\xspace}
+
+\newcommand{\matchsum}[5]{%
+  \begin{array}{l}%
+    \match~#1~\with\\%
+    |~\inl(#2) \mathrel{\Rightarrow} #3\\%
+    |~\inr(#4) \mathrel{\Rightarrow} #5\\%
+    \End%
+  \end{array}%
+}
+\WithSuffix\newcommand\matchsum*[5]{\match~#1~\with\quad|\, \inl(#2)\mathrel{\Rightarrow}#3\quad|\, \inr(#4) \mathrel{\Rightarrow} #5 \quad\End}
+\newcommand{\matchpair}[4]{%
+  \begin{array}{l}%
+    \match~#1~\with\\%
+    |~(#2,~#3) \mathrel{\Rightarrow} #4\\%
+    \End%
+  \end{array}%
+}
+\WithSuffix\newcommand\matchpair*[4]{\match~#1~\with\quad|\, (#2,#3)\mathrel{\Rightarrow} #4 \quad\End}
+
+
+\newcommand{\eppctxt}[2]{\llparenthesis #1 \rrparenthesis_{#2}}
+
+%% IR
+
+   
+
+%% Type Judgments
+\newcommand{\proves}[1][]{\sststile{}{#1}}
+
+%% BL_S Commands
+\newcommand{\says}{\ensuremath{\mathrel{\textsf{says}}}}
+\newcommand{\claims}{\ensuremath{\mathrel{\textsf{claims}}}}
+
+%% Translations
+\newcommand{\transb}[1]{\left\llbracket #1 \right\rrbracket}
+
+\newcommand{\prep}[4]{\mathsf{prepare}_{#1 \xrightarrow{#2} #3}\left(#4\right)}
+
+\bibliographystyle{plainnat}
+
+\begin{document}
+
+
+\section{Overview}
+\label{sec:overview}
+
+Modal logic has been used in the security world for reasoning about distributed systems--in the form of authorization logic--for a long time.
+Other work, such as the work on ML5~\citep{MurphyCH07}, has used modal logic as the basis of type systems for distributed programs.
+
+These two threads of research take very different views of how modal logic models distributed programming.
+Authorization logic~\citep{HirschACAT19-TR,HirschC13,GenoveseGR12,SchneiderWS11,GenoveseGGP11,GargP10,GargA08,Garg08,Abadi08,GargP06,Abadi03} uses multi-modal logic, so that each principal is represented as a modality, traditionally written "p says."
+Since each principal is a reasoner, a propositions-as-types point-of-view regards each principal as a center of computation, such as a thread, processor, or computer in a distributed system.
+ML5~\citep{MurphyCH07} and related works~\citep{JiaW04,AhmedJW03}, in contrast, use a hybrid logic form of S5, a standard modal logic.
+This allows them to model each center of computation as a world in a Kripke semantics for S5, and to model communication via a monotonicity condition on worlds.
+
+While these threads of research differ significantly in their logical form, they have a similar view of distributed programming.
+In both, we reason about distributed programs from outside of the system and direct communication between participants.
+This creates a programming style similar to that used for describing distributed protocols e.g., in the cryptography literature.
+This in contrast to process calculi like $\pi$-calculus, CCS, and join calculus, which write programs as parallel compositions of code for each participant.
+
+In the world of calculi for distributed programming, choreographies~\citep{Cruz-FilipeM17,Cruz-FilipeMP18,CarboneMS14,Montesi13,ZongyanXCH07,CarboneM13} take this same top-down view of distributed programming.
+Choreographies not only allow a programmer to write programs in a top-down manner, but then give the ability to \emph{project} process calculus code for each participant.
+This is referred to as \emph{endpoint projection}.
+This process calculus code is guaranteed by construction to be deadlock free.
+
+Choreographies are designed to lift some \emph{expressions}---which are purely local and which return values---to a process by describing how processes share and use values calculated from those expressions.
+This tells us something about the limits of deadlock-freedom: if expressions can get stuck, then so can choreographies that use those expressions.
+Previous works on choreographies either provide an explicit, terminating, expression language~\citep{Cruz-FilipeM17,CarboneMS14,ZongyanXCH07}; assume that expressions terminate~\citep{Cruz-FilipeMP18}; or provide no guarantee of progress~\citep{CarboneM13}.
+
+Usually, progress is guaranteed by a type system.
+While type systems for choreographies have been studied before~\citep{CarboneM13,CarboneMS14}, these use \emph{session types}, which constrain a process to ensure that it follows the correct pattern of communication.
+\akh{I'm pretty sure there's more type systems for choreographies papers.}
+While this has been used by \citet{CarboneM13}, 
+
+\section{A Multimodal Type System for Choreographies}
+\label{sec:mult-type-syst-chor}
+
+\subsection{Expressions}
+\label{sec:expressions-mmc}
+
+I assume we have an expression language with a typing system.
+We assume that typing judgments for that language have the form $\Gamma \proves e : \tau$.
+
+\subsection{Choreographies}
+\label{sec:choreographies-mmc}
+
+\paragraph{Syntax}
+\begin{syntax}
+  \abstractCategory[Choreography Variables]{X,Y,Z,\ldots}
+  \abstractCategory[Thread Names]{p,q,r,\ldots}
+  \category[Choreographies]{C}
+    \alternative{p.e}
+    \alternative{X}
+    \alternative{\send{p.e}{q.x};~C}
+    \alternative{\cif{p.e}{C_1}{C_2}}
+    \alternative{\clet{X}{C_1}{C_2}}
+\end{syntax}
+  
+\paragraph{Context Projection}
+\noindent\begin{align*}
+  \eppctxt{\cdot}{p} &= \cdot\\
+  \eppctxt{x : p.\tau, \Gamma}{p} &= x : \tau, \eppctxt{\Gamma}{p}\\
+  \eppctxt{x : q.\tau, \Gamma}{p} &= \eppctxt{\Gamma}{p}~\textrm{(where $p \neq q$)}
+\end{align*}
+
+\paragraph{Type System}
+\noindent\begin{mathpar}
+  \infer{\eppctxt{\Gamma}{p} \proves e : \tau }{\Gamma; \Delta \proves p.e : p.\tau}\and
+  \infer{ }{\Gamma; \Delta, X : p.\tau \proves X : p.\tau} \and
+  \infer{\eppctxt{\Gamma}{p} \proves e : \tau\\ \Gamma, x : q.\tau; \Delta \proves C : r.\sigma}{\Gamma; \Delta \proves \send{p.e}{q.x}; C : r.\sigma}\and
+  \infer{\eppctxt{\Gamma}{p} \proves e : \bool\\ \Gamma; \Delta \proves C_1 : q.\tau\\ \Gamma; \Delta \proves C_2 : q.\tau}{\Gamma; \Delta \proves \cif{p.e}{C_1}{C_2} : q.\tau} \and
+  \infer{\Gamma; \Delta, X : p.\tau \proves C_1 : p.\tau \\ \Gamma; \Delta, X : p.\tau \proves C_2 : q.\sigma}{\Gamma; \Delta \proves \clet{X}{C_1}{C_2} : q.\sigma}
+\end{mathpar}
+
+\paragraph{Substitution}
+
+\noindent Substitution on expressions is given.
+
+\begin{align*}
+  \subst{p.e}{X}{C} &= p.e \\
+  \subst{X}{X}{C} &= X \\
+  \subst{Y}{X}{C} &= Y~\text{(assuming that $X \neq Y$)} \\
+  \subst{(\send{\own{p}{e}}{\own{q}{x}};~C_1)}{X}{C_2} &= \send{\own{p}{e}}{\own{q}{x}};~(\subst{C_1}{X}{C_2}) \\
+  \subst{(\cif{\own{p}{e}}{C_1}{C_2})}{X}{C_3} &= \cif{\own{p}{e}}{(\subst{C_1}{X}{C_3})}{(\subst{C_2}{X}{C_3})}\\
+  \subst{(\clet{X}{C_1}{C_2})}{X}{C_3} &= \clet{X}{C_1}{C_2}\\
+  \subst{(\clet{X}{C_1}{C_2})}{Y}{C_3} &= \clet{X}{(\subst{C_1}{Y}{C_3})}{(\subst{C_2}{Y}{C_3})}
+\end{align*}
+
+\begin{align*}
+  \subst{p.e_1}{\own{p}{x}}{e_2} &= p.(\subst{e_1}{x}{e_2})\\
+  \subst{p.e_1}{\own{q}{x}}{e_2} &= p.e_1~\textrm{(where $p \neq q$)}\\
+  \subst{X}{\own{p}{x}}{e} &= X\\
+  \subst{(\send{\own{p}{e_1}}{\own{p}{x}}; C)}{\own{p}{x}}{e_2} &= \send{\own{p}{(\subst{e_1}{x}{e_2})}}{\own{q}{x}}; C\\
+  \subst{(\send{\own{p}{e_1}}{\own{q}{x}}; C)}{\own{p}{y}}{e_2} &= \send{\own{p}{(\subst{e_1}{y}{e_2})}}{\own{q}{x}}; (\subst{C}{\own{p}{y}}{e_2})\\
+  \subst{(\send{\own{p}{e_1}}{\own{q}{x}}; C)}{\own{q}{x}}{e_2} &= \send{\own{p}{e_1}}{\own{q}{x}}; C\\
+  \subst{(\send{\own{p}{e_1}}{\own{q}{x}}; C)}{\own{r}{y}}{e_2} &= \send{\own{p}{e_1}}{\own{q}{x}}; (\subst{C}{\own{r}{y}}{e_2})\\
+  \subst{(\cif{\own{p}{e_1}}{C_1}{C_2})}{\own{p}{x}}{e_2} &= \cif{\own{p}{(\subst{e_1}{x}{e_2})}}{(\subst{C_1}{\own{p}{x}}{e_2})}{(\subst{C_2}{\own{p}{x}}{e_2})}\\
+  \subst{(\cif{\own{p}{e_1}}{C_1}{C_2})}{\own{q}{x}}{e_2} &= \cif{\own{p}{e_1}}{(\subst{C_1}{\own{q}{x}}{e_2})}{(\subst{C_2}{\own{q}{x}}{e_2})}
+\end{align*}
+
+
+\paragraph{Operational Semantics}
+\noindent\begin{mathpar}
+  \infer{e_1 \To e_2}{p.e_1 \To p.e_2} \and
+  \infer{e_1 \To e_2}{\send{\own{p}{e_1}}{\own{q}{x}};~C \To \send{\own{p}{e_2}}{\own{q}{x}};~C} \and
+  \infer{}{\send{\own{p}{v}}{\own{q}{x}}; C \Rightarrow \subst{C}{\own{q}{x}}{v}} \and
+  \infer{e_1 \Rightarrow e_2}{\cif{\own{p}{e_1}}{C_2}{C_3} \To \cif{\own{p}{e_2}}{C_2}{C_3}} \and
+  \infer{}{\cif{\own{p}{\ett}}{C_1}{C_2} \To C_1} \and
+  \infer{}{\cif{\own{p}{\eff}}{C_1}{C_2} \To C_1} \and
+  \infer{}{\clet{X}{C_1}{C_2} \To \subst{C_2}{X}{\clet{X}{C_1}{C_1}}}
+\end{mathpar}
+
+\subsection{Endpoint Projection}
+
+We have a couple of options for how to handle endpoint projection.
+I explore a couple here, and note the strengths and weaknesses of each.
+In particular, I will look at the difficulty of projecting the following simple choreography (adapted from~\citet{AschieriG20}):
+$$\send{\own{\textsf{Alice}}{n}}{\own{\textsf{Bob}}{x}};~\send{\own{\textsf{Bob}}{\textsf{enc}(x)}}{\own{\textsf{Cathy}}{y}};~\send{\own{\textsf{Cathy}}{\textsf{enc}(y)}}{\own{\textsf{Alice}}{z}}; \own{\textsf{Alice}}{z}$$
+This demonstrates the ability for choreographies to deal with cyclic communication, which appears to be hard in session types.
+
+In any case, for any thread name $p$ we write $\transb{C}_p$ for $p$'s endpoint projection of $C$.
+This is a process-calculus program representing $p$'s actions in $C$.
+
+\subsubsection{Intuitionistic Session Types}
+We project into the following $\pi$-calculus (taken from \citet{ToninhoCP12}):
+\begin{syntax}
+  \category[Processes]{P,Q,\ldots}
+  \alternative{0}
+  \alternative{P | Q}
+  \alternative{(\nu y) P}
+  \alternative{x\langle y \rangle.P}
+  \alternative{x(y).P}
+  \alternative{!x(y).P}
+  \alternative{[y \leftrightarrow x]}
+\end{syntax}
+With the following type system:
+\begin{mathpar}
+  \infer{ }{\Gamma;x : A \proves[] [x \leftrightarrow z] :: z : A} \and
+  \infer{\Gamma; \Delta, x : A \proves P :: z : B}{\Gamma, \Delta \proves z(x).P :: z : A \multimap B} \and
+  \infer{\Gamma; \cdot \proves P :: x : A}{\Gamma; \cdot \proves !z(x).P :: z : !A} \and
+  \infer{\Gamma, u : A; \Delta \proves P :: z : C}{\Gamma; \Delta, x : !A \proves P[u \mapsto x] :: z : C} \and
+  \infer{\Gamma; \Delta \proves P :: y : A\\ \Gamma; \Delta', x : B \proves Q :: z : C}{\Gamma; \Delta, \Delta', x : A \multimap B \proves (\nu y)x\langle y \rangle.(P | Q) :: z : C} \and
+  \infer{\Gamma, u : A; \Delta, x : A \proves P :: z : C}{\Gamma, u : A; \Delta \proves (\nu x)u\langle x\rangle.P :: z : C} \and
+  \infer{\Gamma; \Delta \proves P :: x : A\\ \Gamma; \Delta', x : A \proves Q :: z : C}{\Gamma; \Delta, \Delta' \proves (\nu x)(P | Q) :: z : C} \and
+  \infer{\Gamma; \cdot \proves P :: x : A\\ \Gamma, u : A; \Delta \proves Q :: z : C}{\Gamma; \Delta \proves (\nu u)(!u(x).P | Q) :: z : C}
+\end{mathpar}
+
+Now, for a typed choreography $\Gamma; \Delta \proves C : p.\tau$, we define four projections:
+\begin{enumerate}
+\item The \emph{leader type} projection, which will tell us the session type for $p$
+\item The \emph{leader program} projection, which will be the EPP for $p$
+\item The \emph{follower type} projection, which will tell us the session type for all other principals
+\item The \emph{follower program} projection, which will be the EPP for all other principals
+\end{enumerate}
+
+The idea is that for each principal $q \neq p$, we will have
+$$\proves \llbracket C \rrbracket^{\text{FP}}_q : \llbracket C \rrbracket^{\text{FT}}_q$$
+and for $p$ we will have
+$$ \cdot; \{x_q : \llbracket C \rrbracket^{\text{FT}}_q \mid q \neq p\} \proves \llbracket C \rrbracket^{\text{LP}}_p : \llbracket C \rrbracket^{\text{LT}}_p$$
+
+I'm not sure that this will be possible.
+In particular, follower processes can communicate among each other freely, and we don't have any record of that.
+The idea is to use the left-$\multimap$ rule, but this may not be possible as defined.
+
+Another possibility is to get rid of the idea of the leader and follower, and treat everyone as ``their own leader.''
+However, this then would require tying a recursive knot, since everyone needs to be cut into everyone else at the same time.
+
+Reading \emph{Par Means Parallel}~\citep{AschieriG20} suggests that this problem is fundamental whenever there is cyclic communication.
+This lead to me considering the example above.
+Intuitively, we want the endpoint projection of this program to look like:
+$$
+\begin{array}{ll}
+    & m_{1}\langle n \rangle. m_{3}(z). m_{\textsf{out}}\langle z \rangle.0~\textcolor{gray}{\textit{-- Alice's program}}\\
+  | & m_{1}(x). m_{2} \langle \textsf{enc}(x) \rangle.0~\textcolor{gray}{\textit{-- Bob's program}}\\
+  | & m_{2}(y). m_{3} \langle \textsf{enc}(y) \rangle.0~\textcolor{gray}{\textit{-- Cathy's program}}
+\end{array}
+$$
+However, this is impossible to typecheck in \citeauthor{ToninhoCP12}'s~\citeyear{ToninhoCP12} type system.
+To see this, consider the rule
+$$\infer*[right=$\multimap$L]{\Gamma; \Delta \proves P :: y : A\\ \Gamma; \Delta', x : B \proves P :: z : C}{\Gamma; \Delta, \Delta', x : A \multimap B \proves (\nu y)x\langle y \rangle.(P | Q)}$$
+This is the only rule that type-checks message sending.
+However, it requires $P$ and $Q$ to be in parallel \emph{before} the send.
+Thus, endpoint projection cannot proceed in this method.
+
+\subsubsection{Multiparty Session Types}
+
+Another option is to use multiparty session types~\citep{ScalasY19}.
+\akh{I should add more multiparty session types papers to the bibliography.}
+In particular, let's consider the system from ``Less is More: Multiparty Session Types Revisited''~\citep{ScalasY19}.
+This system is defined as follows:
+\begin{syntax}
+  \abstractCategory[Roles]{p,q,\ldots}
+  \category[Channels]{c,d,\ldots} \alternative{x} \alternative{s[p]}
+  \category[Processes]{P,Q,\cdots} \alternative{0} \alternative{P|Q} \alternative{(\nu s) P}
+  \alternativeLine{c[q]\oplus m\langle d\rangle.P}
+  \alternativeLine{c[q]\sum_{i \in I} m_i(x_i).P_i}
+  \alternativeLine{\textsf{def}~D~\textsf{in}~P} \alternative{X \langle\vec{c}\rangle} \alternative{\textsf{err}}
+\end{syntax}
+In the syntax for channels, a channel is either a variable $x$ or a session with a role $s[p]$.
+In the syntax for processes, $c[q]\oplus m\langle d\rangle$ represents sending a selection to role $q$ along $c$, while $c[q]\sum_{i \in I} m_i(x_i).P_i$ represents offering $q$ a choice along $c$.
+In both cases, $m$ is a label determining which branch to proceed along, while $d$ is some data to send along with the selection, and $x_i$ is a variable to be bound to the received data.
+When we only want to represent a send or a receive, we will write $c[q]\langle d \rangle$ and $c[q](x)$, respectively.
+
+In this system, typing judgements are of the form $$\Theta; \Gamma \proves P$$, where $\Theta$ is a context of process variables and $\Gamma$ is a context of channels.
+That is, the judgement is whether $P$ is a well-typed process.
+We also elaborate the form $(\nu s) P$ into $(\nu s : \Gamma) P$, where $\Gamma$ can only contain channels of the form $s[p]$ for some set of roles $p$.
+
+With this in mind, we can write the following intuitive endpoint projection of the example above:
+$$
+\cdot; \left\{
+  \begin{array}{rcl}
+    s[\textsf{Alice}] & : & \textsf{Bob}\oplus\langle \textsf{int}\rangle. \textsf{Cathy}\&(\textsf{int}). \textsf{end}\\
+    s[\textsf{Bob}]   & : & \textsf{Alice}\&(\textsf{int}). \textsf{Cathy}\oplus\langle \textsf{int}\rangle. \textsf{end}\\
+    s[\textsf{Cathy}] & : & \textsf{Bob}\&(\textsf{int}). \textsf{Alice}\oplus\langle \textsf{int}\rangle. \textsf{end}\\
+  \end{array}\right\}
+\proves
+\left(
+  \begin{array}{ll}
+      & s[\textsf{Alice}][\textsf{Bob}]\langle n\rangle. s[\textsf{Alice}][\textsf{Bob}](z).0~\textcolor{gray}{\textit{-- Alice's Program}}\\
+    | & s[\textsf{Bob}][\textsf{Alice}](x). s[\textsf{Bob}][\textsf{Cathy}]\langle \textsf{enc}(x)\rangle. 0~\textcolor{gray}{\textit{-- Bob's Program}}\\
+    | & s[\textsf{Cathy}][\textsf{Bob}](y). s[\textsf{Cathy}][\textsf{Alice}]\langle \textsf{enc}(y)\rangle.0~\textcolor{gray}{\textit{-- Cathy's Program}}\\
+  \end{array}
+\right)
+$$
+This typechecks.
+In fact, this has really good properties: the environment that we provide has the \textbf{terminating} property from~\citet{ScalasY19}, which proves that our projections are deadlock-free and always terminate.
+Moreover, we should be able to show that this is true of any \textsf{let}-free choreography, and that every choreography typechecks under a context with the \textbf{deadlock-free} property.
+
+\newcommand{\ET}{\mathcal{E}\mathcal{T}}
+\newcommand{\EP}{\mathcal{E}\mathcal{P}}
+\newcommand{\CT}{\mathcal{C}\mathcal{T}}
+\newcommand{\CP}{\mathcal{C}\mathcal{P}}
+To actually do the translation, I assume that expressions have two translations:
+\begin{enumerate}
+\item A type translation $\ET(s, p, \pi)$, where $s$ is a session name, $p$ is the principal who is running the expression, and $\pi$ is a proof that $\Gamma \proves e : \tau$ for some $\Gamma$, $e$, and $\tau$.
+\item A program translation $\EP(s, s', p, q, \pi)$ where $s$ and $s'$ is a session name, $p$ is a principal who is running the expression, $q$ is a principal who should receive the output of the expression, and $\pi$ is a proof of $\Gamma \proves e : \tau$ for some $\Gamma$, $e$, and $\tau$.
+\end{enumerate}
+We furthermore assume that $\Gamma, \ET(s,p,\pi), s'[p] : q\langle \tau \rangle.T \proves \EP(s,s',p,q,\pi).P$ whenever $\Gamma, s'[p] : T \proves P$.
+
+We then define two transltions
+\begin{enumerate}
+\item A type translation $\CT(s, p, e, \pi)$ where $s$ is a session name, $p$ is the principal being projected, $e$ is the environment who will receive the final value as a role, and $\pi$ is a proof that $\Delta; \Gamma \proves C : q.\tau$.
+\item A program translation $\CP(s, p, e, \pi)$, where the variables are as above.
+\end{enumerate}
+
+The environment is a special principal.
+It represents an outside actor, and so we don't expect it to do anything other than receive the computation.
+(Perhaps it should have it's own session?)
+Moreover, we only project a type for the environment, never a program.
+
+We define them by induction on $\pi$.
+All session variables bound by $\nu$ are assumed to be fresh.
+\begin{mathpar}
+  \CT\left(s, p, e, \infer{\infer{\pi}{\eppctxt{\Gamma}{p} \proves e : \tau}}{\Gamma;\Delta \proves p.e : p.\tau}\right) = e\langle\tau\rangle.0 \and
+  \CP\left(s, p, e, \infer{\infer{\pi}{\eppctxt{\Gamma}{p} \proves e : \tau}}{\Gamma;\Delta \proves p.e : p.\tau}\right) = (\nu s' : \ET(s',p, \pi)) \EP(s', s, p, e, \pi).0 \\
+  \CT\left(s, q, e, \infer{\infer{\pi}{\eppctxt{\Gamma}{p} \proves e : \tau}}{\Gamma;\Delta \proves p.e : p.\tau}\right) = 0 \and
+  \CP\left(s, q, e, \infer{\infer{\pi}{\eppctxt{\Gamma}{p} \proves e : \tau}}{\Gamma;\Delta \proves p.e : p.\tau}\right) = 0\\
+  \CT\left(s, e, e, \infer{\infer{\pi}{\eppctxt{\Gamma}{p} \proves e : \tau}}{\Gamma;\Delta \proves p.e : p.\tau}\right) = p(\tau).0\\
+\end{mathpar}
+\begin{mathpar}
+  \CT\left(s, p, e, \infer{\infer{\pi_1}{\eppctxt{\Gamma}{p} \proves e : \tau}\\ \infer{\pi_2}{\Gamma, x : q.\tau; \Delta \proves C : r.\sigma}}{\Gamma;\Delta \proves p.e \to q.x; C : r.\sigma}\right) = q\langle\tau\rangle).\CT(s,p,e,\pi_2) \and
+  \CP\left(s, p, e, \infer{\infer{\pi_1}{\eppctxt{\Gamma}{p} \proves e : \tau}\\ \infer{\pi_2}{\Gamma, x : q.\tau; \Delta \proves C : r.\sigma}}{\Gamma;\Delta \proves p.e \to q.x; C : r.\sigma}\right) = (\nu s' : \ET(s',p,\pi_1)) \EP(s', s, p, e, \pi_1). \CP(s, p, e, \pi_2)\\
+  \CT\left(s, q, e, \infer{\infer{\pi_1}{\eppctxt{\Gamma}{p} \proves e : \tau}\\ \infer{\pi_2}{\Gamma, x : q.\tau; \Delta \proves C : r.\sigma}}{\Gamma;\Delta \proves p.e \to q.x; C : r.\sigma}\right) = p(\tau).\CT(s,q,e,\pi_2)\and
+  \CP\left(s, q, e, \infer{\infer{\pi_1}{\eppctxt{\Gamma}{p} \proves e : \tau}\\ \infer{\pi_2}{\Gamma, x : q.\tau; \Delta \proves C : r.\sigma}}{\Gamma;\Delta \proves p.e \to q.x; C : r.\sigma}\right) = p(x). \CP(s, q, e, \pi_2)\\
+  \CT\left(s, r, e, \infer{\infer{\pi_1}{\eppctxt{\Gamma}{p} \proves e : \tau}\\ \infer{\pi_2}{\Gamma, x : q.\tau; \Delta \proves C : r.\sigma}}{\Gamma;\Delta \proves p.e \to q.x; C : r.\sigma}\right) = \CT(s,r,e,\pi_2) \and
+  \CP\left(s, r, e, \infer{\infer{\pi_1}{\eppctxt{\Gamma}{p} \proves e : \tau}\\ \infer{\pi_2}{\Gamma, x : q.\tau; \Delta \proves C : r.\sigma}}{\Gamma;\Delta \proves p.e \to q.x; C : r.\sigma}\right) = \CP(s, r, e, \pi_2)\\
+\end{mathpar}
+\subsection{Refinement and Equivalence}
+
+In previous work, the operational semantics of choreographies were predicated on an equivalence relation $\equiv$ which allowed for re-ordering programs due to concurrency.
+This is similar to the equivalence relation that $\pi$-calculi are often defined up-to.
+In these calculi, this is used to ensure that, for instance $P|Q$ behaves the same as $Q|P$.
+However, this is mostly for convenience in writing the operational semantics, so that we don't have to write rules for both the cases where $P$ sends and $Q$ receives, and vice-versa.
+Since we do not have such difficulties in writing the operational semantics of our choreography language, we do not include this notion of our equivalence in our semantics.
+
+However, that does not mean that our choreographies should not respect that notion of equivalence.
+Indeed, the equivalence of previous works (which we refer to as \emph{strong} equivalence) says that the two choreographies express \emph{the same} protocol.
+Here is strong equivalence in our setting:
+\noindent\begin{mathpar}
+  \infer{ }{C \ceq_S C} \and \infer{C_1 \ceq_S C_2}{C_2 \ceq_S C_1} \and \infer{C_1 \ceq_S C_2 \\ C_2 \ceq_S C_3}{C_1 \ceq_S C_3} \\
+  \infer{C_1 \ceq_S C_2}{\send{\own{p}{e}}{\own{q}{x}}; C_1 \ceq_S \send{\own{p}{e}}{\own{q}{x}}; C_2} \and
+  \infer{C_{11} \ceq_S C_{21}\\ C_{12} \ceq_S C_{22}}{\cif{\own{p}{e_1}}{C_{11}}{C_{12}} \ceq_S \cif{\own{p}{e_1}}{C_{21}}{C_{22}}} \and
+  \infer{C_{11} \ceq_S C_{21}\\ C_{12} \ceq_S C_{22}}{\clet{X}{C_{11}}{C_{12}} \ceq_S \clet{X}{C_{21}}{C_{22}}} \\
+  \infer{p \neq r\\ q \neq r\\ p \neq s\\ q \neq s}{\send{\own{p}{e_1}}{\own{q}{x}}; \send{\own{r}{e_2}}{\own{s}{y}}; C \ceq_S \send{\own{r}{e_2}}{\own{s}{y}}; \send{\own{p}{e_1}}{\own{q}{x}}; C} \and
+  \infer{p \neq q\\ p \neq r}{\cif{\own{p}{e_1}}{\send{\own{q}{e_2}}{\own{r}{x}}; C_1}{\send{\own{q}{e_2}}{\own{r}{x}}; C_2} \ceq_S \send{\own{q}{e_2}}{\own{r}{x}}; \cif{\own{p}{e_1}}{C_1}{C_2}} \and
+  \infer{p \neq q }{\cif{\own{p}{e_1}}{(\cif{\own{q}{e_2}}{C_1}{C_2})}{\cif{(\own{q}{e_2}}{C_3}{C_4})} \ceq_S \cif{\own{q}{e_2}}{(\cif{\own{p}{e_1}}{C_1}{C_3})}{(\cif{\own{p}{e_2}}{C_2}{C_4})}} \and
+  % \infer{ }{\cif{\own{p}{e}}{(\clet{X}{C_1}{C_2})}{(\clet{X}{C_1}{C_3})} \ceq_S \clet{X}{C_1}{(\cif{\own{p}{e}}{C_2}{C_3})}} \and
+  % The above feels like it should be fine, but it's not in my current Coq code, so I'm commenting it out for now.
+  \infer{p \notin \textsf{TN}(C_1)\\ q \notin \textsf{TN}(C_1)}{\clet{X}{C_1}{(\send{\own{p}{e}}{\own{q}{x}}; C_2)} \ceq_S \send{\own{p}{e}}{\own{q}{x}}; \clet{X}{C_1}{C_2}} \and
+  % \infer{X \notin \text{FCV}(C_2)\\ Y \notin \text{FCV}(C_1)}{\clet{X}{C_1}{(\clet{Y}{C_2}{C_3})} \ceq_S \clet{Y}{C_2}{(\clet{X}{C_1}{C_3})}}
+  %similar to the above
+\end{mathpar}
+
+The name ``strong equivalence'' suggests the existence of a counterpart \emph{weak} equivalence.
+Indeed, there is such a notion.
+It is intended to capture the idea that two choreographies express \emph{equivalent} protocols.
+\akh{As far as I'm aware, the notion of equivalent protocols isn't something that's been explored in a lot of detail before.
+  Then again, I haven't looked particularly hard.
+  Perhaps something worth looking in to?}
+Here is weak equivalence for this language:
+\noindent\begin{mathpar}
+  \infer{ }{C \ceq_W C} \and \infer{C_1 \ceq_W C_2}{C_2 \ceq_W C_1} \and \infer{C_1 \ceq_W C_2 \\ C_2 \ceq_W C_3}{C_1 \ceq_W C_3} \\
+  \infer{C_1 \ceq_W C_2}{\send{\own{p}{e}}{\own{q}{x}}; C_1 \ceq_W \send{\own{p}{e}}{\own{q}{x}}; C_2} \and
+  \infer{C_{11} \ceq_W C_{21}\\ C_{12} \ceq_W C_{22}}{\cif{\own{p}{e_1}}{C_{11}}{C_{12}} \ceq_W \cif{\own{p}{e_1}}{C_{21}}{C_{22}}} \and
+  \infer{C_{11} \ceq_W C_{21}\\ C_{12} \ceq_W C_{22}}{\clet{X}{C_{11}}{C_{12}} \ceq_W \clet{X}{C_{21}}{C_{22}}} \\
+  \infer{q \neq r\\ p \neq s\\ q \neq s}{\send{\own{p}{e_1}}{\own{q}{x}}; \send{\own{r}{e_2}}{\own{s}{y}}; C \ceq_W \send{\own{r}{e_2}}{\own{s}{y}}; \send{\own{p}{e_1}}{\own{q}{x}}; C} \and
+  \infer{p \neq r}{\cif{\own{p}{e_1}}{\send{\own{q}{e_2}}{\own{r}{x}}; C_1}{\send{\own{q}{e_2}}{\own{r}{x}}; C_2} \ceq_W \send{\own{q}{e_2}}{\own{r}{x}}; \cif{\own{p}{e_1}}{C_1}{C_2}} \and
+  \infer{p \neq q }{\cif{\own{p}{e_1}}{(\cif{\own{q}{e_2}}{C_1}{C_2})}{\cif{(\own{q}{e_2}}{C_3}{C_4})} \ceq_W \cif{\own{q}{e_2}}{(\cif{\own{p}{e_1}}{C_1}{C_3})}{(\cif{\own{p}{e_2}}{C_2}{C_4})}} \and
+  % \infer{ }{\cif{\own{p}{e}}{(\clet{X}{C_1}{C_2})}{(\clet{X}{C_1}{C_3})} \ceq_W \clet{X}{C_1}{(\cif{\own{p}{e}}{C_2}{C_3})}} \and
+  % The above feels like it should be fine, but it's not in my current Coq code, so I'm commenting it out for now.
+  \infer{ q \notin \textsf{TN}(C_1)}{\clet{X}{C_1}{(\send{\own{p}{e}}{\own{q}{x}}; C_2)} \ceq_W \send{\own{p}{e}}{\own{q}{x}}; \clet{X}{C_1}{C_2}} \and
+  % \infer{X \notin \text{FCV}(C_2)\\ Y \notin \text{FCV}(C_1)}{\clet{X}{C_1}{(\clet{Y}{C_2}{C_3})} \ceq_W \clet{Y}{C_2}{(\clet{X}{C_1}{C_3})}}
+  % Similar to the above
+\end{mathpar}
+\noindent The main difference here is that, in the first rule, $p$ can now be equal to $r$, allowing us to swap two sends by the same principal.
+This changes the protocol from that sender's point-of-view, but does not change anything from anyone else's point-of-view.
+In several other rules, similar changes have been made.
+It is clear that the following lemma holds:
+\begin{lem}[Strong Equivalence Implies Weak Equivalence]
+  $C_1 \ceq_S C_2$ implies $C_1 \ceq_W C_2$.
+\end{lem}
+
+Furthermore, we want our other constructions to respect these notions of equality.
+We express that in the following theorems:
+\begin{thm}
+  If $\Gamma; \Delta \proves C_1$ and $C_1 \ceq_W C_2$ then $\Gamma; \Delta \proves C_2$.
+\end{thm}
+\begin{cor}
+  If $\Gamma; \Delta \proves C_1$ and $C_1 \ceq_S C_2$ then $\Gamma; \Delta \proves C_2$.
+\end{cor}
+
+\begin{thm}[Church-Rosser-Like Diamond Property]
+  Let $X \in \{W,S\}$.
+  If $C_1 \ceq_X C_1'$ and $C_1 \To C_2$, then $C_1' \To^\ast C_2'$ where $C_2 \ceq_X C_2'$.
+\end{thm}
+
+\begin{thm}[Endpoint Projection of Strong Equivalence]
+  If $C_1 \ceq_S C_2$ then for every thread $p$ $\transb{C_1}_p \equiv \transb{C_2}_p$ where $\equiv$ is the equality that the target process calculus is defined up-to.
+\end{thm}
+\begin{thm}[Endpoint Projection of Weak Equivalence]
+  If $C_1 \ceq_W C_2$ then for every thread $p$ $\transb{C_1}_p \cong \transb{C_2}_p$ where $\cong$ is some equivalence on the target process calculus.
+\end{thm}
+
+\subsection{Progress and Preservation}
+\label{sec:progr-pres-mmc}
+\begin{thm}[Lifting Progress]
+  If $\Gamma \proves e : \tau$ implies that there is some $e'$ such that $e \To e'$ for every expression $e$, then for any choreography $C$, $\Delta; \Gamma \proves C : p.\tau$ implies that there is some $C'$ such that $C \To C'$.
+\end{thm}
+
+\begin{thm}[Lifting Preservation]
+  If $\Gamma \proves e : \tau$ and $e \to e'$ implies $\Gamma \proves e' : \tau$, then $\Delta; \Gamma \proves C : p.\tau$ and $C \To C'$ implies $\Delta; \Gamma \proves C' : p.\tau$.
+\end{thm}
+
+
+\subsection{Example Programs}
+A program that sends a variable around in a triangle.
+$$\send{\own{\textsf{Alice}}{n}}{\own{\textsf{Bob}}{x}};~\send{\own{\textsf{Bob}}{\textsf{enc}(x)}}{\own{\textsf{Cathy}}{y}};~\send{\own{\textsf{Cathy}}{\textsf{enc}(y)}}{\own{\textsf{Alice}}{z}}; \own{\textsf{Alice}}{z}$$
+
+A trusted-third-part program:
+$$\send{\own{A}{3}}{\own{C}{x}};~\send{\own{B}{\lambda x.\,e}}{\own{C}{f}}; \own{C}{f~x}$$
+
+\bibliography{bibliography/akh}
+
+\end{document}
+
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: t
+%%% eval: (push '("\\To" . ?⇒) prettify-symbols-alist)
+%%% eval: (push '("\\cleq" . ?≼) prettify-symbols-alist)
+%%% eval: (push '("\\ceq" . ?≈) prettify-symbols-alist)
+%%% TeX-master: t
+%%% End:
+
