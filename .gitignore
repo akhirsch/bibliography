@@ -7,3 +7,5 @@ auto/*
 *.out
 *.synctex.gz
 *.pdf
+*.fdb_latexmk
+*.fls
