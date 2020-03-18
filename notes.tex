@@ -97,7 +97,8 @@
    
 
 %% Type Judgments
-\newcommand{\proves}[1][]{\sststile{}{#1}}
+\newcommand{\proves}{\vdash}
+%\newcommand{\proves}[1][]{\sststile{}{#1}}
 
 %% BL_S Commands
 \newcommand{\says}{\ensuremath{\mathrel{\textsf{says}}}}
@@ -210,6 +211,32 @@ We assume that typing judgments for that language have the form $\Gamma \proves 
   \subst{(\cif{\own{p}{e_1}}{C_1}{C_2})}{\own{q}{x}}{e_2} &= \cif{\own{p}{e_1}}{(\subst{C_1}{\own{q}{x}}{e_2})}{(\subst{C_2}{\own{q}{x}}{e_2})}
 \end{align*}
 
+\paragraph{Equivalence}
+\noindent\begin{mathpar}
+  \infer{ }{C \ceq C} \and \infer{C_1 \ceq C_2}{C_2 \ceq C_1} \and \infer{C_1 \ceq C_2 \\ C_2 \ceq C_3}{C_1 \ceq C_3} \\
+  \infer{C_1 \ceq C_2}{\send{\own{p}{e}}{\own{q}{x}}; C_1 \ceq \send{\own{p}{e}}{\own{q}{x}}; C_2} \and
+  \infer{C_{11} \ceq C_{21}\\ C_{12} \ceq C_{22}}{\cif{\own{p}{e_1}}{C_{11}}{C_{12}} \ceq \cif{\own{p}{e_1}}{C_{21}}{C_{22}}} \and
+  \infer{C_{11} \ceq C_{21}\\ C_{12} \ceq C_{22}}{\clet{X}{C_{11}}{C_{12}} \ceq \clet{X}{C_{21}}{C_{22}}} \\
+  \infer{p \neq r\\ q \neq r\\ p \neq s\\ q \neq s}{\send{\own{p}{e_1}}{\own{q}{x}}; \send{\own{r}{e_2}}{\own{s}{y}}; C \ceq \send{\own{r}{e_2}}{\own{s}{y}}; \send{\own{p}{e_1}}{\own{q}{x}}; C} \and
+  \infer{p \neq q\\ p \neq r}{\cif{\own{p}{e_1}}{\send{\own{q}{e_2}}{\own{r}{x}}; C_1}{\send{\own{q}{e_2}}{\own{r}{x}}; C_2} \ceq \send{\own{q}{e_2}}{\own{r}{x}}; \cif{\own{p}{e_1}}{C_1}{C_2}} \and
+  \infer{p \neq q }{\cif{\own{p}{e_1}}{(\cif{\own{q}{e_2}}{C_1}{C_2})}{\cif{(\own{q}{e_2}}{C_3}{C_4})} \ceq \cif{\own{q}{e_2}}{(\cif{\own{p}{e_1}}{C_1}{C_3})}{(\cif{\own{p}{e_2}}{C_2}{C_4})}} \and
+\end{mathpar}
+
+\begin{thm}[Equivalence Preserves Typing]
+  \label{thm:equiv-pres-types}
+  If $\Gamma \proves C_1 : p.\tau$ and $C_1 \ceq C_2$, then $\Gamma \proves C_2 : p.\tau$
+\end{thm}
+\begin{proof}
+  Proven in Coq.
+\end{proof}
+
+\begin{thm}[Equivalence is Stable under Substitution]
+  \label{thm:equiv-stable-subst}
+  If $C_1 \ceq C_2$, then $\subst{C_1}{\own{p}{x}}{e} \ceq \subst{C_2}{\own{p}{x}}{e}$ and $\subst{C_1}{X}{C} \ceq \subst{C_2}{X}{C}$.
+\end{thm}
+\begin{proof}
+  Proven in Coq.
+\end{proof}
 
 \paragraph{Operational Semantics}
 \noindent\begin{mathpar}
@@ -219,8 +246,30 @@ We assume that typing judgments for that language have the form $\Gamma \proves 
   \infer{e_1 \Rightarrow e_2}{\cif{\own{p}{e_1}}{C_2}{C_3} \To \cif{\own{p}{e_2}}{C_2}{C_3}} \and
   \infer{}{\cif{\own{p}{\ett}}{C_1}{C_2} \To C_1} \and
   \infer{}{\cif{\own{p}{\eff}}{C_1}{C_2} \To C_1} \and
-  \infer{}{\clet{X}{C_1}{C_2} \To \subst{C_2}{X}{\clet{X}{C_1}{C_1}}}
+  \infer{}{\clet{X}{C_1}{C_2} \To \subst{C_2}{X}{\clet{X}{C_1}{C_1}}} \and
+  \infer{C_1 \ceq C_1'\\ C_1' \To C_2'\\ C_2' \ceq C_2}{C_1 \To C_2}
 \end{mathpar}
+
+I was hopeful that (a weaker form of) the final operational semantics rule would be admissible.
+However, this turns out not to be true, because equivalence allows local expressions to be evaluated out-of-order.
+Thus, we add this as a rule to our system.
+
+When I tried to admit this as a rule, I came up with a notion of \emph{weak} equivalence that relaxes some of the side conditions of the equivalence above.
+This also preserves typing and is stable under substitution.
+However, equivalence above is designed such that if $C_1 \ceq C_2$, then projecting $C_1$ and $C_2$ gives syntactically equal, or at least congruent, $\pi$-calculus terms.
+Weak equivalence only gave \emph{bisimilar} $\pi$-calculus terms.
+I'm not sure, given that we are adopting this rule, that it's worth exploring weak equivalence.
+
+\begin{thm}[Lifting Progress]
+  \label{thm:lifting-progress}
+  If $\Gamma \proves e : \tau$ implies that there is some $e'$ such that $e \To e'$ for every expression $e$ and, for every value~$v$ such that $\Gamma \proves c : \bool$, $v$ is either $\ett$ or $\eff$, then for any choreography $C$, $\Delta; \Gamma \proves C : p.\tau$ implies that there is some $C'$ such that $C \To C'$.
+\end{thm}
+
+\begin{thm}[Lifting Preservation]
+  \label{thm:lifting-preservation}
+  If $\Gamma \proves e : \tau$ and $e \to e'$ implies $\Gamma \proves e' : \tau$, then $\Delta; \Gamma \proves C : p.\tau$ and $C \To C'$ implies $\Delta; \Gamma \proves C' : p.\tau$.
+\end{thm}
+
 
 \subsection{Endpoint Projection}
 
@@ -247,7 +296,7 @@ We project into the following $\pi$-calculus (taken from \citet{ToninhoCP12}):
 \end{syntax}
 With the following type system:
 \begin{mathpar}
-  \infer{ }{\Gamma;x : A \proves[] [x \leftrightarrow z] :: z : A} \and
+  \infer{ }{\Gamma;x : A \proves [x \leftrightarrow z] :: z : A} \and
   \infer{\Gamma; \Delta, x : A \proves P :: z : B}{\Gamma, \Delta \proves z(x).P :: z : A \multimap B} \and
   \infer{\Gamma; \cdot \proves P :: x : A}{\Gamma; \cdot \proves !z(x).P :: z : !A} \and
   \infer{\Gamma, u : A; \Delta \proves P :: z : C}{\Gamma; \Delta, x : !A \proves P[u \mapsto x] :: z : C} \and
@@ -377,6 +426,15 @@ All session variables bound by $\nu$ are assumed to be fresh.
   \CT\left(s, r, e, \infer{\infer{\pi_1}{\eppctxt{\Gamma}{p} \proves e : \tau}\\ \infer{\pi_2}{\Gamma, x : q.\tau; \Delta \proves C : r.\sigma}}{\Gamma;\Delta \proves p.e \to q.x; C : r.\sigma}\right) = \CT(s,r,e,\pi_2) \and
   \CP\left(s, r, e, \infer{\infer{\pi_1}{\eppctxt{\Gamma}{p} \proves e : \tau}\\ \infer{\pi_2}{\Gamma, x : q.\tau; \Delta \proves C : r.\sigma}}{\Gamma;\Delta \proves p.e \to q.x; C : r.\sigma}\right) = \CP(s, r, e, \pi_2)\\
 \end{mathpar}
+
+\begin{thm}[Simulation]
+  \label{thm:simulation}
+  If $C_1 \To C_2$ and $\infer{\pi}{\Gamma \proves C_1 : p.\tau}$, then $$\left(\mathop{|}_{q}\CP(s, q, e, \pi)\right) = \left(\mathop{|}_{q}\CP(s, q, e, \text{type-preserving}(\pi))\right)$$
+  where $\text{type-preserving}(-)$ is the function on typing proofs coming from the constructive proof of Theorem~\ref{thm:equiv-pres-types}.
+  Moreover, $\mathop{|}_{q}$ represents the parallel composition of each of the projections.
+\end{thm}
+
+\iffalse
 \subsection{Refinement and Equivalence}
 
 In previous work, the operational semantics of choreographies were predicated on an equivalence relation $\equiv$ which allowed for re-ordering programs due to concurrency.
@@ -452,16 +510,8 @@ We express that in the following theorems:
 \begin{thm}[Endpoint Projection of Weak Equivalence]
   If $C_1 \ceq_W C_2$ then for every thread $p$ $\transb{C_1}_p \cong \transb{C_2}_p$ where $\cong$ is some equivalence on the target process calculus.
 \end{thm}
+\fi
 
-\subsection{Progress and Preservation}
-\label{sec:progr-pres-mmc}
-\begin{thm}[Lifting Progress]
-  If $\Gamma \proves e : \tau$ implies that there is some $e'$ such that $e \To e'$ for every expression $e$, then for any choreography $C$, $\Delta; \Gamma \proves C : p.\tau$ implies that there is some $C'$ such that $C \To C'$.
-\end{thm}
-
-\begin{thm}[Lifting Preservation]
-  If $\Gamma \proves e : \tau$ and $e \to e'$ implies $\Gamma \proves e' : \tau$, then $\Delta; \Gamma \proves C : p.\tau$ and $C \To C'$ implies $\Delta; \Gamma \proves C' : p.\tau$.
-\end{thm}
 
 
 \subsection{Example Programs}
