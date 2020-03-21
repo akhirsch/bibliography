@@ -2,6 +2,6 @@
 Expression.v
 TypedExpression.v
 SoundlyTypedExpression.v
-LOChoreography.v
-TypedLOChoreography.v
-SoundlyTypedLOChoreography.v
+Choreography.v
+TypedChoreography.v
+SoundlyTypedChoreography.v

@@ -1,5 +1,5 @@
-Require Export LOChoreography.
-Require Export TypedLOChoreography.
+Require Export Choreography.
+Require Export TypedChoreography.
 Require Export Expression.
 Require Export TypedExpression.
 Require Export SoundlyTypedExpression.

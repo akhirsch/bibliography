@@ -1,6 +1,6 @@
 Require Export Expression.
 Require Export TypedExpression.
-Require Export LOChoreography.
+Require Export Choreography.
 
 Module TypedChoreography (E : Expression) (TE : TypedExpression E).
   Import E.
