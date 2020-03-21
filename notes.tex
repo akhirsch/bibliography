@@ -55,7 +55,7 @@
 
 %% Equivalence
 \newcommand{\cleq}{\preceq}
-\newcommand{\ceq}{\approx}
+\newcommand{\ceq}{\equiv}
 
 %% Choreography Language
 \newcommand{\own}[2]{#1.#2}
@@ -239,6 +239,9 @@ We assume that typing judgments for that language have the form $\Gamma \proves 
 \end{proof}
 
 \paragraph{Operational Semantics}
+
+
+\subparagraph{Standard Presentation}
 \noindent\begin{mathpar}
   \infer{e_1 \To e_2}{p.e_1 \To p.e_2} \and
   \infer{e_1 \To e_2}{\send{\own{p}{e_1}}{\own{q}{x}};~C \To \send{\own{p}{e_2}}{\own{q}{x}};~C} \and
@@ -250,25 +253,105 @@ We assume that typing judgments for that language have the form $\Gamma \proves 
   \infer{C_1 \ceq C_1'\\ C_1' \To C_2'\\ C_2' \ceq C_2}{C_1 \To C_2}
 \end{mathpar}
 
-I was hopeful that (a weaker form of) the final operational semantics rule would be admissible.
-However, this turns out not to be true, because equivalence allows local expressions to be evaluated out-of-order.
-Thus, we add this as a rule to our system.
+This is the standard presentation.
+However, it turns out to be very difficult to work with, because the equivalence breaks induction.
+We might hope to make the last rule admissible, getting around this.
+However, the last rule allows you to ``reach under'' the current top-level construct to allow steps from other threads to be interleaved.
 
-When I tried to admit this as a rule, I came up with a notion of \emph{weak} equivalence that relaxes some of the side conditions of the equivalence above.
-This also preserves typing and is stable under substitution.
-However, equivalence above is designed such that if $C_1 \ceq C_2$, then projecting $C_1$ and $C_2$ gives syntactically equal, or at least congruent, $\pi$-calculus terms.
-Weak equivalence only gave \emph{bisimilar} $\pi$-calculus terms.
-I'm not sure, given that we are adopting this rule, that it's worth exploring weak equivalence.
+\subparagraph{Presentation with Better Induction Principle}
+In order to get around this, we present the operational semantics differently.
+There are two difficulties here: only allowing operations from other threads, and ensuring that threads that are implicitly blocked from an if statement do not compute.
+To see what goes wrong, consider the following two (non) reductions:
+\noindent\begin{mathpar}
+  \infer{e_2 \To e_3}{\send{\own{p}{e_1}}{\own{q}{x}}; \send{\own{p}{e_2}}{\own{r}{y}}; C \To \send{\own{p}{e_1}}{\own{q}{x}}; \send{\own{p}{e_3}}{\own{r}{y}}} \and
+  \infer{e_2 \To e_4}{\cif{\own{p}{e_1}}{\send{\own{q}{e_2}}{\own{r}{x}}; C_1}{\send{\own{q}{e_3}}{\own{s}{y}}; C_2} \To \cif{\own{p}{e_1}}{\send{\own{q}{e_4}}{\own{r}{x}}; C_1}{\send{\own{q}{e_3}}{\own{s}{y}}; C_2}}
+\end{mathpar}
+In the first, $p$ is a single thread which does work on $e_2$, even though that thread is currently working on sending $e_1$ to $q$.
+In the second, $q$ cannot know which of the two messages it is going to send, and so it should not be able to do work on either side.
+(Intuitively, it is waiting for a message from $p$ to know which action to take.
+We make that intuition explicit in the translation to $\pi$-calculus.)
+
+To take care of the first problem, we annotate the operational semantics with a set of principals~$B$ which are currently blocked (and therefore cannot take action).
+However, this is not enough in the second case, since $q$ is implicitly blocked by a decision.
+In order to take care of this, we also annotate the operational semantics with a \emph{redex}, ensuring that we operate on the same expression, in the same place, on the same thread in both sides of the match statement.
+This, combined with the set of blocked principals, is enough to ensure that implicitly-blocked threads do not progress.
+
+This leads to the following operational semantics:
+
+\begin{syntax}
+  \category[Redeces]{R}
+    \alternative{\text{Done}\, p\, e_1\, e_2}
+    \alternative{\text{SendE}\, p\, e_1\, e_2}
+    \alternative{\text{SendV}\, p\, v}
+    \alternative{\text{IfE}\, p\, e_1\, e_2}
+    \alternative{\text{IfTT}\, p}
+    \alternative{\text{IfFF}\, p}
+    \alternative{\text{Def}}
+\end{syntax}
+
+\noindent\begin{mathpar}
+  \infer{p \notin B\\ e_1 \To e_2} {p.e_1 \xRightarrow{\text{Done}\,p\,e_1\,e_2,~B} p.e_2} \and
+  \infer{p \notin B\\ q \notin B\\ e_1 \To e_2}{\send{\own{p}{e_1}}{\own{q}{x}}; C \xRightarrow{\text{SendE}\,p\,e_1\,e_2,~B} \send{\own{p}{e_2}}{\own{q}{x}}; C} \and
+  \infer{p \notin B\\\ q \notin B}{\send{\own{p}{v}}{\own{q}{x}}; C \xRightarrow{\text{SendV}\,p\,v,~B} \subst{C}{\own{q}{x}}{v}} \and
+  \infer{C_1 \xRightarrow{R,~B \cup \{p,q\}} C_2}{\send{\own{p}{e}}{\own{q}{x}}; C_1 \xRightarrow{R,~B} \send{\own{p}{e}}{\own{q}{x}}; C_2} \and
+  \infer{p \notin B\\ e_1 \To e_2}{\cif{\own{p}{e_1}}{C_1}{C_2} \xRightarrow{\text{IfE}\,p\,e_1\,e_2,~B} \cif{\own{p}{e_2}}{C_1}{C_2}} \and
+  \infer{p \notin B}{\cif{\own{p}{\ett}}{C_1}{C_2} \xRightarrow{\text{IfTT}\,p,~B} C_1} \and
+  \infer{p \notin B}{\cif{\own{p}{\eff}}{C_1}{C_2} \xRightarrow{\text{IfFF}\,p,~B} C_2} \and
+  \infer{C_1 \xRightarrow{R,~B \cup \{p\}} C_3\\ C_2 \xRightarrow{R,~B \cup \{p\}} C_4}{\cif{\own{p}{e}}{C_1}{C_2} \xRightarrow{R,~B} \cif{\own{p}{e}}{C_3}{C_4}} \and
+  \infer{ }{\clet{X}{C_1}{C_2} \xRightarrow{\text{Def},~B} \subst{C_2}{X}{\clet{X}{C_1}{C_1}}}
+\end{mathpar}
+
+\begin{lem}[Step Strengthening]
+  if $C_1 \xRightarrow{R,~B_1} C_2$ and $B_2 \subseteq B_1$, then $C_1 \xRightarrow{R,~B_2} C_2$.
+\end{lem}
+\begin{proof}
+  Proven in Coq.
+\end{proof}
+
+\begin{thm}[Simulation of Equivalence]
+  \label{thm:simulation-equiv}
+  If $C_1 \ceq C_2$ and $C_1 \xRightarrow{R,~B} C_1'$, then there is a $C_2'$ such that $C_2 \xRightarrow{R,~B} C_2'$ and $C_1' \ceq C_2'$.
+\end{thm}
+\begin{proof}
+  Proven in Coq.
+\end{proof}
 
 \begin{thm}[Lifting Progress]
   \label{thm:lifting-progress}
-  If $\Gamma \proves e : \tau$ implies that there is some $e'$ such that $e \To e'$ for every expression $e$ and, for every value~$v$ such that $\Gamma \proves c : \bool$, $v$ is either $\ett$ or $\eff$, then for any choreography $C$, $\Delta; \Gamma \proves C : p.\tau$ implies that there is some $C'$ such that $C \To C'$.
+  If $\proves e : \tau$ implies that there is some $e'$ such that $e \To e'$ for every expression $e$ and, for every value~$v$ such that $\Gamma \proves c : \bool$, $v$ is either $\ett$ or $\eff$, then for any choreography $C$, $; \proves C : p.\tau$ implies that there is some $R$ and $C'$ such that $C \xRightarrow{R,~\varnothing} C'$.
 \end{thm}
+\begin{proof}
+  Proven in Coq.
+\end{proof}
 
 \begin{thm}[Lifting Preservation]
   \label{thm:lifting-preservation}
-  If $\Gamma \proves e : \tau$ and $e \to e'$ implies $\Gamma \proves e' : \tau$, then $\Delta; \Gamma \proves C : p.\tau$ and $C \To C'$ implies $\Delta; \Gamma \proves C' : p.\tau$.
+  If $\Gamma \proves e : \tau$ and $e \to e'$ implies $\Gamma \proves e' : \tau$, then $\Delta; \Gamma \proves C : p.\tau$ and $C \xRightarrow{R,~B} C'$ implies $\Delta; \Gamma \proves C' : p.\tau$.
 \end{thm}
+\begin{proof}
+  Proven in Coq.
+\end{proof}
+
+\begin{thm}[Injection into Standard Presentation]
+  If $C_1 \xRightarrow{R,~B} C_2$, then $C_1 \To C_2$.
+\end{thm}
+\begin{proof}[Proof Sketch]
+  \akh{I think we may have to make the final step and def step rules enforce $B = \varnothing$ to prove this.
+    That would not affect any of the previous proofs in a serious way.}
+  Most of the rules of the two systems are the same, and so can be injected without difficulty.
+  The exceptions are the rules for ``internal'' steps.
+  By the inductive hypothesis and the rules for the standard presentation, these either have the redex at top, or are equivalent to something that does.
+  We can then use equivalence to push the redex to the top, proving the theorem.
+\end{proof}
+
+\begin{thm}[Injection of Standard Presentation]
+  If $C_1 \To C_2$ then there is an $R$ and $C_2'$ such that $C_2 \ceq C_2'$ and $C_1 \xRightarrow{R,~\varnothing} C_2'$.
+\end{thm}
+\begin{proof}[Proof Sketch]
+  Again, most of the rules are the same, and so there is no difficulty.
+  The exception is the equivalence rule.
+  However, we can use Theorem~\ref{thm:simulation-equiv} and transitivity of equivalence to prove the theorem.
+\end{proof}
 
 
 \subsection{Endpoint Projection}
@@ -511,8 +594,6 @@ We express that in the following theorems:
   If $C_1 \ceq_W C_2$ then for every thread $p$ $\transb{C_1}_p \cong \transb{C_2}_p$ where $\cong$ is some equivalence on the target process calculus.
 \end{thm}
 \fi
-
-
 
 \subsection{Example Programs}
 A program that sends a variable around in a triangle.
