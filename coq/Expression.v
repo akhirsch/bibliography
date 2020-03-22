@@ -63,6 +63,4 @@ Module Type Expression.
   Parameter ffValue : ExprVal ff.
   
   Parameter ExprStep : Expr -> Expr -> Prop.
-  Parameter ExprStepIrrefl : forall e : Expr, ~(ExprStep e e).
-  Parameter ExprValNoStep : forall v : Expr, ExprVal v -> forall e : Expr, ~(ExprStep v e).
 End Expression.
