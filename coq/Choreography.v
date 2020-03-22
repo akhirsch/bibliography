@@ -292,12 +292,6 @@ Module Choreography (E : Expression).
       p <> q -> p <> r ->
       C1 ≡' C1' -> C2 ≡' C2' ->
        CSend q e2 r (CIf p e1 C1 C2) ≡' CIf p e1 (CSend q e2 r C1') (CSend q e2 r C2')
-  (* | sswapdefsend1 : forall C1 q e r C2, *)
-  (*     q ∉TN C1 -> r ∉TN C1 -> *)
-  (*     CDef C1 (CSend q e r C2) ≡ CSend q e r (CDef C1 C2) *)
-  (* | sSwapDefSend2 : forall C1 q e r C2, *)
-  (*     q ∉TN C1 -> r ∉TN C1 -> *)
-  (*     CSend q e r (CDef C1 C2) ≡ CDef C1 (CSend q e r C2) *)
   | SwapIfIf' : forall p e1 q e2 C11 C11' C12 C12' C21 C21' C22 C22',
       p <> q ->
       C11 ≡' C11' -> C12 ≡' C12' -> C21 ≡' C21' -> C22 ≡' C22' ->
@@ -350,7 +344,6 @@ Module Choreography (E : Expression).
     - eapply TransEquiv; eauto.
     - specialize (IHequiv C3' equiv'). eapply TransEquiv; eauto.
   Qed.
-  (* Hint Resolve chorEquivTransitive : Chor. *)
 
   Instance chorEquivTrans : Transitive chorEquiv := chorEquivTransitive.
 
@@ -947,70 +940,5 @@ Module Choreography (E : Expression).
     destruct (IHchorEquiv _ _ _ stepC2') as [C3' HC3']; destruct HC3' as [stepC3' equivC3'].
     exists C3'; split; auto. transitivity C2'; auto.
   Qed.
-      
-  (* Reserved Infix "∈TN" (at level 25). *)
-  (* Inductive InThreadNames : Prin -> Chor -> Prop := *)
-  (*   ItnDone : forall p e, p ∈TN CDone p e *)
-  (* | ItnSender : forall p e q C, *)
-  (*     p ∈TN CSend p e q C *)
-  (* | ItnReceiver : forall p e q C, *)
-  (*     q ∈TN CSend p e q C *)
-  (* | ItnContinuation : forall p e q C r, *)
-  (*     r ∈TN C -> *)
-  (*     r ∈TN CSend p e q C *)
-  (* | ItnIfDiscriminate : forall p e C1 C2, *)
-  (*     p ∈TN CIf p e C1 C2 *)
-  (* | ItnIfBranch1 : forall p e C1 C2 q, *)
-  (*     q ∈TN C1 -> *)
-  (*     q ∈TN CIf p e C1 C2 *)
-  (* | ItnIfBranch2 : forall p e C1 C2 q, *)
-  (*     q ∈TN C2 -> *)
-  (*     q ∈TN CIf p e C1 C2 *)
-  (* | ItnDefined : forall p C1 C2, *)
-  (*     p ∈TN C1 -> *)
-  (*     p ∈TN CDef C1 C2 *)
-  (* | ItnBody : forall p C1 C2, *)
-  (*     p ∈TN C2 -> *)
-  (*     p ∈TN CDef C1 C2 *)
-  (* where "p ∈TN C" := (InThreadNames p C). *)
-  (* Hint Constructors InThreadNames : Chor. *)
-
-  (* Reserved Infix "∉TN" (at level 29). *)
-  (* Inductive NotInThreadNames : Prin -> Chor -> Prop := *)
-  (*   NitnDone : forall p q e, *)
-  (*     p <> q -> *)
-  (*     p ∉TN CDone q e *)
-  (* | NitnVar : forall p n, *)
-  (*     p ∉TN CVar n *)
-  (* | NitnSend : forall p q e r C, *)
-  (*     p <> q -> *)
-  (*     p <> r -> *)
-  (*     p ∉TN C -> *)
-  (*     p ∉TN CSend q e r C *)
-  (* | NitnIf : forall p q e C1 C2, *)
-  (*     p <> q -> *)
-  (*     p ∉TN C1 -> *)
-  (*     p ∉TN C2 -> *)
-  (*     p ∉TN CIf q e C1 C2 *)
-  (* | NitnDef : forall p C1 C2, *)
-  (*     p ∉TN C1 -> *)
-  (*     p ∉TN C2 -> *)
-  (*     p ∉TN CDef C1 C2 *)
-  (* where "p ∉TN C" := (NotInThreadNames p C). *)
-  (* Hint Constructors NotInThreadNames : Chor. *)
-
-  (* Theorem LNotInThreadNames : forall p C, p ∉TN C <-> ~ (p ∈TN C). *)
-  (* Proof. *)
-  (*   intros p C; split; intro H. *)
-  (*   - induction H; intro H'; inversion H'; auto. *)
-  (*   - induction C as [q e | n | q e r C | q e C1 IHC1 C2 IHC2 | C1 IHC1 C2 IHC2]; *)
-  (*       auto with Chor. *)
-  (*     -- constructor; intro H'; apply H; rewrite H'; auto with Chor. *)
-  (*     -- constructor; [ | | apply IHC]; intro H'; apply H; auto with Chor. *)
-  (*        all: rewrite H'; auto with Chor. *)
-  (*     -- constructor; [ | apply IHC1 | apply IHC2]; intro H'; apply H; auto with Chor. *)
-  (*        rewrite H'; auto with Chor. *)
-  (*     -- constructor; [apply IHC1 | apply IHC2]; intro H'; apply H; auto with Chor. *)
-  (* Qed. *)
   
 End Choreography.

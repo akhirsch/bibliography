@@ -192,35 +192,6 @@ Module TypedChoreography (E : Expression) (TE : TypedExpression E).
     intro p0; unfold ExprChorIdSubst. fold ExprIdSubst. apply ExprIdSubstTyping.
   Qed.    
 
-  (* Lemma ChorTypingWithoutThread: forall (p : Prin) *)
-  (*                                  (Γ1 Γ2 : Prin -> nat -> ExprTyp) (Δ : nat -> Prin * ExprTyp) *)
-  (*                                  (C : Chor) *)
-  (*                                  (τ : ExprTyp) (q : Prin), *)
-  (*     (forall r n, p <> r -> Γ1 r n = Γ2 r n) -> *)
-  (*     p ∉TN C -> *)
-  (*     Γ1;; Δ ⊢c C ::: τ @ q -> *)
-  (*     Γ2;; Δ ⊢c C ::: τ @ q. *)
-  (* Proof. *)
-  (*   intros p Γ1 Γ2 Δ C; revert p Γ1 Γ2 Δ; *)
-  (*     induction C as [r e | n |r e s C IHC | r e C1 IHC1 C2 IHC2 | C1 IHC1 C2 IHC2]; *)
-  (*     intros p Γ1 Γ2 Δ τ q HΓ pnin typ1; inversion pnin; inversion typ1; auto with Chor. *)
-  (*   - clear p0 H0 q0 H e0 H2 Γ H4 Δ0 H5 p1 H3 e1 H7 tau H6; inversion typ1. *)
-  (*     rewrite <- H8 in *; clear H8. *)
-  (*     apply TDone. apply ExprTypingExt with (Γ := Γ1 r); auto. *)
-  (*   - clear p0 H2 q0 H e0 H0 r0 H1 C0 H4 Γ H9 Δ0 H10 p1 H7 e1 H8 q1 H12 C1 H13 sigma H11 r1 H14; *)
-  (*     rename τ0 into σ. *)
-  (*     apply TSend with (τ := σ); auto with Chor; *)
-  (*       [eapply ExprTypingExt; [ | exact H15]; auto|]. *)
-  (*     eapply IHC with (p := p); [ | | exact H16]; auto. *)
-  (*     intros r0 n H; simpl; destruct (PrinEqDec s r0); destruct n; auto. *)
-  (*   - clear p0 H2 q0 H e0 H0 C0 H1 C4 H4 Γ H10 Δ0 H11 p1 H7 e1 H8 C5 H9 C5 H13 tau H12 q1 H14 C3. *)
-  (*     apply TIf; [eapply ExprTypingExt; [ | exact H15]; auto| |]. *)
-  (*     apply IHC1 with (p := p) (Γ1 := Γ1); auto. *)
-  (*     apply IHC2 with (p := p) (Γ1 := Γ1); auto. *)
-  (*   - clear p0 H1 C0 H C3 H0 Γ H6 Δ0 H7 C4 H4 C5 H5 τ0 H9 p1 H10. *)
-  (*     apply TDef with (q := q0)(σ := σ); eauto. *)
-  (* Qed. *)
-
   Theorem ChorEquiv'Typing : forall (C1 C2 : Chor),
       C1 ≡' C2 ->
       forall (Γ : Prin -> nat -> ExprTyp) (Δ : nat -> Prin * ExprTyp) (τ : ExprTyp) (p : Prin),
@@ -283,27 +254,6 @@ Module TypedChoreography (E : Expression) (TE : TypedExpression E).
   Qed.
 
 
-  (* Lemma CDoneEquiv: forall (p : Prin) (e : Expr) (C : Chor), *)
-  (*     CDone p e ≡ C -> C = CDone p e. *)
-  (* Proof. *)
-  (*   intros p e C2 equiv. remember (CDone p e) as C1. *)
-  (*   induction equiv; inversion HeqC1. *)
-  (*   - reflexivity. *)
-  (*   - specialize (IHequiv1 HeqC1). rewrite HeqC1 in IHequiv1. *)
-  (*     specialize (IHequiv2 IHequiv1). rewrite IHequiv2. rewrite IHequiv1. *)
-  (*     reflexivity. *)
-  (* Qed. *)
-
-  (* Lemma CVarEquiv : forall (n : nat) (C : Chor), *)
-  (*     CVar n ≡ C -> C = CVar n. *)
-  (* Proof. *)
-  (*   intros n C2 equiv; remember (CVar n) as C1. *)
-  (*   induction equiv; inversion HeqC1; auto. *)
-  (*   specialize (IHequiv1 HeqC1). rewrite HeqC1 in IHequiv1. *)
-  (*   specialize (IHequiv2 IHequiv1). rewrite IHequiv1 in IHequiv2. rewrite IHequiv2. *)
-  (*   reflexivity. *)
-  (* Qed. *)
-      
   Theorem RelativePreservation :
     (forall (Γ : nat -> ExprTyp) (e : Expr) (τ : ExprTyp),
         Γ ⊢e e ::: τ
