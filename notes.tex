@@ -281,8 +281,8 @@ This leads to the following operational semantics:
 \begin{syntax}
   \category[Redeces]{R}
     \alternative{\text{Done}\, p\, e_1\, e_2}
-    \alternative{\text{SendE}\, p\, e_1\, e_2}
-    \alternative{\text{SendV}\, p\, v}
+    \alternative{\text{SendE}\, p\, e_1\, e_2\,q}
+    \alternative{\text{SendV}\, p\, v\,q}
     \alternative{\text{IfE}\, p\, e_1\, e_2}
     \alternative{\text{IfTT}\, p}
     \alternative{\text{IfFF}\, p}
@@ -290,23 +290,17 @@ This leads to the following operational semantics:
 \end{syntax}
 
 \noindent\begin{mathpar}
-  \infer{p \notin B\\ e_1 \To e_2} {p.e_1 \xRightarrow{\text{Done}\,p\,e_1\,e_2,~B} p.e_2} \and
-  \infer{p \notin B\\ q \notin B\\ e_1 \To e_2}{\send{\own{p}{e_1}}{\own{q}{x}}; C \xRightarrow{\text{SendE}\,p\,e_1\,e_2,~B} \send{\own{p}{e_2}}{\own{q}{x}}; C} \and
-  \infer{p \notin B\\\ q \notin B}{\send{\own{p}{v}}{\own{q}{x}}; C \xRightarrow{\text{SendV}\,p\,v,~B} \subst{C}{\own{q}{x}}{v}} \and
+  \infer{e_1 \To e_2} {p.e_1 \xRightarrow{\text{Done}\,p\,e_1\,e_2,~\varnothing} p.e_2} \and
+  \infer{p \notin B\\ q \notin B\\ e_1 \To e_2}{\send{\own{p}{e_1}}{\own{q}{x}}; C \xRightarrow{\text{SendE}\,p\,e_1\,e_2\,q,~B} \send{\own{p}{e_2}}{\own{q}{x}}; C} \and
+  \infer{p \notin B\\\ q \notin B}{\send{\own{p}{v}}{\own{q}{x}}; C \xRightarrow{\text{SendV}\,p\,v\,q,~B} \subst{C}{\own{q}{x}}{v}} \and
   \infer{C_1 \xRightarrow{R,~B \cup \{p,q\}} C_2}{\send{\own{p}{e}}{\own{q}{x}}; C_1 \xRightarrow{R,~B} \send{\own{p}{e}}{\own{q}{x}}; C_2} \and
   \infer{p \notin B\\ e_1 \To e_2}{\cif{\own{p}{e_1}}{C_1}{C_2} \xRightarrow{\text{IfE}\,p\,e_1\,e_2,~B} \cif{\own{p}{e_2}}{C_1}{C_2}} \and
   \infer{p \notin B}{\cif{\own{p}{\ett}}{C_1}{C_2} \xRightarrow{\text{IfTT}\,p,~B} C_1} \and
   \infer{p \notin B}{\cif{\own{p}{\eff}}{C_1}{C_2} \xRightarrow{\text{IfFF}\,p,~B} C_2} \and
   \infer{C_1 \xRightarrow{R,~B \cup \{p\}} C_3\\ C_2 \xRightarrow{R,~B \cup \{p\}} C_4}{\cif{\own{p}{e}}{C_1}{C_2} \xRightarrow{R,~B} \cif{\own{p}{e}}{C_3}{C_4}} \and
-  \infer{ }{\clet{X}{C_1}{C_2} \xRightarrow{\text{Def},~B} \subst{C_2}{X}{\clet{X}{C_1}{C_1}}}
+  \infer{ }{\clet{X}{C_1}{C_2} \xRightarrow{\text{Def},~\varnothing} \subst{C_2}{X}{\clet{X}{C_1}{C_1}}}
 \end{mathpar}
 
-\begin{lem}[Step Strengthening]
-  if $C_1 \xRightarrow{R,~B_1} C_2$ and $B_2 \subseteq B_1$, then $C_1 \xRightarrow{R,~B_2} C_2$.
-\end{lem}
-\begin{proof}
-  Proven in Coq.
-\end{proof}
 
 \begin{thm}[Simulation of Equivalence]
   \label{thm:simulation-equiv}
@@ -335,22 +329,15 @@ This leads to the following operational semantics:
 \begin{thm}[Injection into Standard Presentation]
   If $C_1 \xRightarrow{R,~B} C_2$, then $C_1 \To C_2$.
 \end{thm}
-\begin{proof}[Proof Sketch]
-  \akh{I think we may have to make the final step and def step rules enforce $B = \varnothing$ to prove this.
-    That would not affect any of the previous proofs in a serious way.}
-  Most of the rules of the two systems are the same, and so can be injected without difficulty.
-  The exceptions are the rules for ``internal'' steps.
-  By the inductive hypothesis and the rules for the standard presentation, these either have the redex at top, or are equivalent to something that does.
-  We can then use equivalence to push the redex to the top, proving the theorem.
+\begin{proof}
+  Proven in Coq.
 \end{proof}
 
 \begin{thm}[Injection of Standard Presentation]
   If $C_1 \To C_2$ then there is an $R$ and $C_2'$ such that $C_2 \ceq C_2'$ and $C_1 \xRightarrow{R,~\varnothing} C_2'$.
 \end{thm}
-\begin{proof}[Proof Sketch]
-  Again, most of the rules are the same, and so there is no difficulty.
-  The exception is the equivalence rule.
-  However, we can use Theorem~\ref{thm:simulation-equiv} and transitivity of equivalence to prove the theorem.
+\begin{proof}
+  Proven in Coq.
 \end{proof}
 
 
