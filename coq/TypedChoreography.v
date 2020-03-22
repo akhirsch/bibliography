@@ -372,8 +372,8 @@ Module TypedChoreography (E : Expression) (TE : TypedExpression E).
     - inversion H7.
     - specialize (ExprProgress _ _ _ H7 H13); destruct ExprProgress as [eval | estep];
         [| destruct estep as [e' estep]].
-      -- exists (RSendV p e);  exists (C [c| ChorIdSubst; SendSubst p0 e]); auto with Chor.
-      -- exists (RSendE p e e');  exists (CSend p e' p0 C); auto with Chor.
+      -- exists (RSendV p e p0);  exists (C [c| ChorIdSubst; SendSubst p0 e]); auto with Chor.
+      -- exists (RSendE p e e' p0);  exists (CSend p e' p0 C); auto with Chor.
     - specialize (ExprProgress _ _ _ H7 H15); destruct ExprProgress as [eval | estep];
         [destruct (BoolInversion _ _ H7 eval) as [ett | eff] |
          destruct estep as [e' estep]].

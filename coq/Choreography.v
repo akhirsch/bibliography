@@ -547,9 +547,10 @@ Module Choreography (E : Expression).
   | RIfE : Prin -> Expr -> Expr -> Redex
   | RIfTT : Prin -> Redex
   | RIfFF : Prin -> Redex
-  | RSendE : Prin -> Expr -> Expr -> Redex
-  | RSendV : Prin -> Expr -> Redex
+  | RSendE : Prin -> Expr -> Expr -> Prin -> Redex
+  | RSendV : Prin -> Expr -> Prin -> Redex
   | RDef.
+  Hint Constructors Redex : Chor.
   
 
   Definition SendSubst (p : Prin) (v : Expr) : Prin -> nat -> Expr :=
@@ -580,20 +581,19 @@ Module Choreography (E : Expression).
           end.
 
   Inductive RChorStep : Redex -> list Prin -> Chor -> Chor -> Prop :=
-  | DoneEStep : forall (p : Prin) (B : list Prin),
-      ~ In p B ->
-      forall e1 e2 : Expr, ExprStep e1 e2 -> RChorStep (RDone p e1 e2) B (CDone p e1) (CDone p e2)
+  | DoneEStep : forall (p : Prin) (e1 e2 : Expr),
+      ExprStep e1 e2 -> RChorStep (RDone p e1 e2) nil (CDone p e1) (CDone p e2)
   | SendEStep : forall (p q : Prin) (B : list Prin),
       ~ In p B -> ~ In q B ->
       forall (e1 e2 : Expr) (C : Chor),
-        ExprStep e1 e2 -> RChorStep (RSendE p e1 e2) B (CSend p e1 q C) (CSend p e2 q C)
+        ExprStep e1 e2 -> RChorStep (RSendE p e1 e2 q) B (CSend p e1 q C) (CSend p e2 q C)
   | SendIStep : forall (p q : Prin) (e : Expr) (C1 C2 : Chor) (B : list Prin) (R : Redex),
       RChorStep R (p :: q :: B) C1 C2 ->
       RChorStep R B (CSend p e q C1) (CSend p e q C2)
   | SendVStep : forall (p q : Prin) (v : Expr) (C : Chor) (B : list Prin),
       ~ In p B -> ~ In q B ->
       ExprVal v ->
-      RChorStep (RSendV p v) B (CSend p v q C) (C [c| ChorIdSubst; SendSubst q v])
+      RChorStep (RSendV p v q) B (CSend p v q C) (C [c| ChorIdSubst; SendSubst q v])
   | IfEStep : forall (p : Prin) (e1 e2 : Expr) (C1 C2 : Chor) (B : list Prin),
       ~ In p B ->
       ExprStep e1 e2 ->
@@ -608,21 +608,43 @@ Module Choreography (E : Expression).
   | IfFalseStep : forall (p : Prin) (C1 C2 : Chor) (B : list Prin),
       ~ In p B ->
       RChorStep (RIfFF p) B (CIf p ff C1 C2) C2
-  | CDefStep : forall (C1 C2 : Chor) (B : list Prin),
-      RChorStep RDef B (CDef C1 C2) (C2 [c| DefSubst C1; ExprChorIdSubst]).
+  | DefStep : forall (C1 C2 : Chor),
+      RChorStep RDef nil (CDef C1 C2) (C2 [c| DefSubst C1; ExprChorIdSubst]).
   Hint Constructors RChorStep : Chor.
 
-  Lemma RStepStrengthening : forall R B1 C1 C2,
-      RChorStep R B1 C1 C2 -> forall B2, (forall q, In q B2 -> In q B1) -> RChorStep R B2 C1 C2.
+  Ltac RStepRearrangeHelper :=
+      match goal with
+      | [i : ~ In ?p ?B1, ext : forall q, In q ?B1 <-> In q ?B2 |- ~ In ?p ?B2 ] =>
+        let H := fresh in intro H; rewrite <- ext in H; apply i; exact H
+      end.
+
+  Lemma RStepRearrange : forall R B1 C1 C2,
+      RChorStep R B1 C1 C2 -> forall B2, (forall q, In q B1 <-> In q B2) -> RChorStep R B2 C1 C2.
   Proof.
-    intros R B1 C1 C2 step; induction step; intros B2 sub; eauto with Chor.
-    - apply SendEStep; auto.
-    - apply SendIStep; auto. apply IHstep.
-      intros q0 i; destruct i as [eq | i];
-        [left | right; destruct i as [eq | i]; [left | right]]; auto.
-    - apply SendVStep; auto.
-    - apply IfIStep; [apply IHstep1 | apply IHstep2]; intros q i.
-      all: destruct i; [left | right]; auto.
+    intros R B1 C1 C2 step; induction step; intros B2 ext.
+    all: try (constructor; try RStepRearrangeHelper; auto with Chor; fail).
+    - assert (B2 = nil)
+      by (destruct B2; auto;
+          assert (In p0 nil) as H0
+              by (apply ext; left; reflexivity);
+          inversion H0).
+      rewrite H0 in *; clear B2 H0 ext; auto with Chor.
+    - apply SendIStep. apply IHstep.
+      intros r; split.
+      all:intro i; destruct i as [eq | i];
+        [ left; exact eq
+        | destruct i as [eq | i];
+          [ right; left; exact eq
+          | right; right; apply ext; auto]].
+    - apply IfIStep; [apply IHstep1 | apply IHstep2].
+      all: intros q; split.
+      all: intro i; destruct i as [eq | i]; [left; exact eq | right; apply ext; auto].
+    - assert (B2 = nil)
+        by (destruct B2; auto;
+            assert (In p nil) as H0
+                by (apply ext; left; reflexivity);
+            inversion H0).
+      rewrite H. apply DefStep.
   Qed.
 
   Inductive RedexOf : Prin -> Redex -> Prop :=
@@ -630,8 +652,8 @@ Module Choreography (E : Expression).
   | ROIfE : forall p e1 e2, RedexOf p (RIfE p e1 e2)
   | ROIfTT : forall p, RedexOf p (RIfTT p)
   | ROIfFF : forall p, RedexOf p (RIfFF p)
-  | ROSendE : forall p e1 e2, RedexOf p (RSendE p e1 e2)
-  | ROSendV : forall p v, RedexOf p (RSendV p v).
+  | ROSendE : forall p e1 e2 q, RedexOf p (RSendE p e1 e2 q)
+  | ROSendV : forall p v q, RedexOf p (RSendV p v q).
 
   Lemma NoIStepInList : forall p B R,
       In p B ->
@@ -648,6 +670,7 @@ Module Choreography (E : Expression).
     end.
     all: try (apply IHstep; auto; right; right; auto; fail).
     all: try (apply IHstep1; auto; right; auto; fail).
+    inversion H.
   Qed.
 
   Corollary NoDoneIStepInList : forall p B,
@@ -658,15 +681,15 @@ Module Choreography (E : Expression).
   Qed.
   Corollary NoSendEIStepInList : forall p B,
       In p B ->
-      forall e1 e2 C1 C2, ~RChorStep (RSendE p e1 e2) B C1 C2.
+      forall e1 e2 C1 C2 q, ~RChorStep (RSendE p e1 e2 q) B C1 C2.
   Proof.
-    intros p B H e1 e2 C1 C2; apply NoIStepInList with (p := p); auto; apply ROSendE.
+    intros p B H q e1 e2 C1 C2; apply NoIStepInList with (p := p); auto; apply ROSendE.
   Qed.
   Corollary NoSendVIStepInList : forall p B,
       In p B ->
-      forall v C1 C2, ~RChorStep (RSendV p v) B C1 C2.
+      forall v q C1 C2, ~RChorStep (RSendV p v q) B C1 C2.
   Proof.
-    intros p B H v C1 C2; apply NoIStepInList with (p := p); auto; apply ROSendV.
+    intros p B H v q C1 C2; apply NoIStepInList with (p := p); auto; apply ROSendV.
   Qed.
   Corollary NoIfEIStepInList : forall p B,
       In p B ->
@@ -687,7 +710,7 @@ Module Choreography (E : Expression).
    intros p B H C1 C2; apply NoIStepInList with (p := p); auto; apply ROIfFF.
   Qed.    
   
-  Hint Resolve RStepStrengthening NoDoneIStepInList : Chor.
+  Hint Resolve RStepRearrange NoDoneIStepInList : Chor.
   Hint Resolve NoSendEIStepInList NoSendVIStepInList : Chor.
   Hint Resolve NoIfEIStepInList NoIfTTStepInList NoIfFFStepInList: Chor.
 
@@ -760,17 +783,16 @@ Module Choreography (E : Expression).
     - rewrite <- H6 in *; clear R0 H4 B0 H5 p0 H3 e H7 q0 H8 C0 H9 Cstep H6.
       inversion H10.
       -- rewrite H4 in *; rewrite <- H6 in *; rewrite H3 in *; rewrite <- H8 in *.
-         clear R H6 B0 H7 p0 H3 e0 H4 q0 H5 C H9 C3 H8.
          exists (CSend r e3 s (CSend p e1 q C2)); split; eauto with Chor.
          apply SendEStep; auto; ListHelper.
       -- destruct (IHequiv _ _ _ H11) as [C4' HC4'];
            destruct HC4' as [stepC4' equivC4'].
          exists (CSend r e2 s (CSend p e1 q C4')); split; auto with Chor.
          apply SendIStep. apply SendIStep.
-         eapply RStepStrengthening;
+         eapply RStepRearrange;
            [exact stepC4'|].
-         intros q1 H13.
-           destruct H13;
+         intros q1; split; intros H13.
+         all: destruct H13;
            [ right; right; left
            | destruct H12; [right; right; right; left
                            | destruct H12; [left
@@ -807,6 +829,7 @@ Module Choreography (E : Expression).
     - clear R0 H3 B0 H4 p0 H1 e H2 C0 H6 C3 H7.
       inversion H8.
       -- rewrite H1 in *; rewrite H2 in *; rewrite <- H7 in *; rewrite <- H4 in *;
+           rewrite H3 in *;
            clear B0 H6 p0 H1 e0 H2 q0 H3 C H10 C4 H7 R H4.
          inversion H9. 
          rewrite <- H7 in *;
@@ -825,16 +848,25 @@ Module Choreography (E : Expression).
          destruct (IHequiv2 _ _ _ H12) as [C4' HC4']; destruct HC4' as [stepC4' equivC4'].
          exists (CSend q e2 r (CIf p e1 C3' C4')); split; auto with Chor.
          apply SendIStep. apply IfIStep.
-         all: apply RStepStrengthening with (B1 := q :: r :: p :: B); auto.
-         all: intros q0 i; destruct i as [eq | i];
+         all: apply RStepRearrange with (B1 := q :: r :: p :: B); auto.
+         all: intros q0; split; intros i.
+         2,4: destruct i as [eq | i];
            [right; right; left
            | destruct i as [eq | i];
              [left
              | destruct i as [eq | i];
                [right; left
                | right; right; right]]]; auto.
-      -- rewrite H1 in *; rewrite H2 in *;  rewrite <- H4 in *; rewrite <- H7 in *;
-           clear R H3 B0 H4 p0 H1 v H2 q0 H7 C H10 C4 H6.
+         all: destruct i as [eq | i];
+           [right; left; exact eq
+           | destruct i as [eq | i];
+             [ right; right; left; exact eq
+             | destruct i as [eq | i];
+               [ left; exact eq
+               | right; right; right; exact i]]].
+      -- rewrite H1 in *; rewrite H2 in *; rewrite <- H7 in *; rewrite <- H4 in *;
+           rewrite H3 in *;
+           clear R H3 B0 H6 p0 H1 v H2 q0 H7 C H10 C4 H4.
          inversion H9;
            [apply NoSendVIStepInList in H14; [destruct H14 | left; reflexivity] |].
          rewrite <- H10 in *; clear p0 H1 v H2 B0 H6 q0 H3 C H4 C5 H10.
@@ -855,14 +887,22 @@ Module Choreography (E : Expression).
          destruct (IHequiv2 _ _ _ H11) as [C6' H6']; destruct H6' as [stepC6' equivC6'].
          exists (CIf p e1 (CSend q e2 r C5') (CSend q e2 r C6')); split; auto with Chor.
          apply IfIStep; auto; apply SendIStep;
-           apply RStepStrengthening with (B1 := p :: q :: r ::B); auto.
-         all: intros t i; destruct i as [eq | i];
-           [right; left; apply eq (* t = q *)
+           apply RStepRearrange with (B1 := p :: q :: r ::B); auto.
+         all: intros t; split; intros i.
+         2,4: destruct i as [eq | i];
+           [right; left; exact eq (* t = q *)
            | destruct i as [eq | i];
-             [right; right; left; apply eq (* t = r *)
+             [right; right; left; exact eq (* t = r *)
              |destruct i as [eq | i];
               [left; apply eq (* t = p *)
               | right; right; right; exact i]]].
+         all: destruct i as [eq | i];
+           [right; right; left; exact eq
+           | destruct i as [eq | i];
+             [left; exact eq
+             | right; destruct i as [eq | i];
+               [left; exact eq
+               | right; right; exact i]]].
       -- rewrite <- H6 in *; rewrite H1 in *; rewrite <- H5 in *;
            clear B0 H3 p0 H1 e1 H6 C0 H7 C4 H9 C3 H5.
          exists (CSend q e2 r C1'); split; auto with Chor.
@@ -905,8 +945,9 @@ Module Choreography (E : Expression).
            destruct HC6' as [stepC6' equivC6'].
          exists (CIf q e2 (CIf p e1 C0' C3') (CIf p e1 C5' C6')); split; auto with Chor.
          apply IfIStep; apply IfIStep; eauto with Chor.
-         all: apply RStepStrengthening with (B1 := q :: p :: B); auto.
-         all: intros t i; destruct i as [eq | i];
+         all: apply RStepRearrange with (B1 := q :: p :: B); auto.
+         all: intros t; split; intros i.
+         all: destruct i as [eq | i];
            [(* t = p *) right; left; exact eq
                       | destruct i as [eq | i];
                         [ (* t = q *) left; exact eq
@@ -939,6 +980,274 @@ Module Choreography (E : Expression).
     destruct HC2' as [stepC2' equivC2'].
     destruct (IHchorEquiv _ _ _ stepC2') as [C3' HC3']; destruct HC3' as [stepC3' equivC3'].
     exists C3'; split; auto. transitivity C2'; auto.
+  Qed.
+
+  Inductive StdChorStep : Chor -> Chor -> Prop :=
+  | StdDoneEStep : forall (p : Prin) (e1 e2 : Expr),
+      ExprStep e1 e2
+      -> StdChorStep (CDone p e1) (CDone p e2)
+  | StdSendEStep : forall (p q : Prin) (e1 e2 : Expr) (C : Chor),
+      ExprStep e1 e2
+      -> StdChorStep (CSend p e1 q C) (CSend p e2 q C)
+  | StdSendVStep : forall (p q : Prin) (v : Expr) (C : Chor),
+      ExprVal v
+      -> StdChorStep (CSend p v q C) (C [c| ChorIdSubst; SendSubst q v])
+  | StdIfEStep : forall (p : Prin) (e1 e2 : Expr) (C1 C2 : Chor),
+      ExprStep e1 e2
+      -> StdChorStep (CIf p e1 C1 C2) (CIf p e2 C1 C2)
+  | StdIfTrueStep : forall (p : Prin) (C1 C2 : Chor),
+      StdChorStep (CIf p tt C1 C2) C1
+  | StdIfFalseStep : forall (p : Prin) (C1 C2 : Chor),
+      StdChorStep (CIf p ff C1 C2) C2
+  | StdCDefStep : forall (C1 C2 : Chor),
+      StdChorStep (CDef C1 C2) (C2 [c| DefSubst C1; ExprChorIdSubst])
+  | StdEquivStep : forall (C1 C1' C2 C2' : Chor),
+      C1 ≡ C1'
+      -> StdChorStep C1' C2'
+      -> C2 ≡ C2'
+      -> StdChorStep C1 C2.
+  Hint Constructors StdChorStep : StdChor.
+
+  Theorem StdToRStep : forall (C1 C2 : Chor),
+      StdChorStep C1 C2
+      -> exists R C2', C2 ≡ C2' /\ RChorStep R nil C1 C2'.
+  Proof.
+    intros C1 C2 stdstep; induction stdstep.
+    all:try ( eexists; eexists; split; [reflexivity | constructor; auto]).
+    rename H into equiv1; rename H0 into equiv2;
+      destruct IHstdstep as [R H]; destruct H as [C2'' H]; destruct H as [equiv2' step].
+    destruct (EquivSimulation _ C1 (chorEquivSym _ _ equiv1) _ _ _ step) as [C2''' H];
+      destruct H as [step' equiv2''].
+    exists R; exists C2'''; split; auto.
+    transitivity C2'; auto. transitivity C2''; auto.
+  Qed.
+
+  Inductive RedexOnTop : Redex -> Chor -> Prop :=
+  | DoneOnTop : forall p e1 e2, RedexOnTop (RDone p e1 e2) (CDone p e1)
+  | SendEOnTop : forall p e1 e2 q C, RedexOnTop (RSendE p e1 e2 q) (CSend p e1 q C)
+  | SendVOnTop : forall p v q C, RedexOnTop (RSendV p v q) (CSend p v q C)
+  | IfEOnTop : forall p e1 e2 C1 C2, RedexOnTop (RIfE p e1 e2) (CIf p e1 C1 C2)
+  | IfTTOnTop : forall p C1 C2, RedexOnTop (RIfTT p) (CIf p tt C1 C2)
+  | IfFFOnTop : forall p C1 C2, RedexOnTop (RIfFF p) (CIf p ff C1 C2)
+  | DefOnTop : forall C1 C2, RedexOnTop RDef (CDef C1 C2).
+  Hint Constructors RedexOnTop : StdChor.
+
+  Lemma RStepOnTop : forall (R : Redex) (B : list Prin) (C1 C2 : Chor),
+      RChorStep R B C1 C2 ->
+      exists C1' C2', C1 ≡ C1' /\ C2 ≡ C2' /\ RChorStep R B C1' C2' /\ RedexOnTop R C1'.
+  Proof.
+    intros R B C1 C2 step; induction step.
+    all: try(eexists; eexists; split; [|split; [|split]]; eauto with Chor StdChor; fail).
+    - destruct IHstep as [C1' H]; destruct H as [C2' H]; destruct H as [equiv1 H];
+        destruct H as [equiv2 H]; destruct H as [step' ontop].
+      destruct R; inversion ontop;
+      match goal with
+      | [ C1'equiv : ?C = C1' |- _] => rewrite <- C1'equiv in step'
+      end; inversion step'.
+      all: try (match goal with
+                | [H : RChorStep (?RC ?q ?e1 ?e2 ?r) (?q :: ?B') ?C1' ?C2' |- _] =>
+                  apply NoIStepInList with (p := q) in H;
+                  [destruct H | left; reflexivity | constructor]
+                | [H : RChorStep (?RC ?q ?e1 ?r) (?q :: ?B') ?C1' ?C2' |- _] =>
+                  apply NoIStepInList with (p := q) in H;
+                  [destruct H | left; reflexivity | constructor]
+                | [H : RChorStep (?RC ?q ?e) (?q :: ?B') ?C1' ?C2' |- _] =>
+                  apply NoIStepInList with (p := q) in H;
+                  [destruct H | left; reflexivity | constructor]
+                | [H : RChorStep (?RC ?q) (?q :: ?B') ?C1' ?C2' |- _] =>
+                  apply NoIStepInList with (p := q) in H;
+                  [destruct H | left; reflexivity | constructor]
+                end).
+      -- exists (CIf p0 e0 (CSend p e q C0) (CSend p e q C3)).
+         exists (CIf p0 e1 (CSend p e q C0) (CSend p e q C3)).
+         split; [|split;[|split]]; auto with Chor StdChor.
+         --- transitivity (CSend p e q C1'); auto with Chor.
+             rewrite <- H3. apply SwapIfSend; auto with Chor.
+             intro eq; apply H10; left; symmetry; exact eq.
+             intro eq; apply H10; right; left; symmetry; exact eq.
+         --- transitivity (CSend p e q C2'); auto with Chor.
+             rewrite <- H7; apply SwapIfSend; auto with Chor.
+             intro eq; apply H10; left; symmetry; exact eq.
+             intro eq; apply H10; right; left; symmetry; exact eq.
+         --- constructor; auto.
+             intro i; apply H10; right; right; exact i.
+      -- exists (CIf p0 tt (CSend p e q C0) (CSend p e q C3));
+           exists (CSend p e q C0);
+           rewrite H4 in *;
+           split; [| split; [| split]]; auto with Chor StdChor.
+         --- transitivity (CSend p e q C1'); auto with Chor.
+             rewrite <- H1. apply SwapIfSend; auto with Chor.
+             intro eq; apply H6; left; symmetry; exact eq.
+             intro eq; apply H6; right; left; symmetry; exact eq.
+         --- apply IfTrueStep. intro i; apply H6; right; right; exact i.
+      -- exists (CIf p0 ff (CSend p e q C0) (CSend p e q C3));
+           exists (CSend p e q C3);
+           rewrite H4 in *; 
+           split; [| split; [| split]]; auto with Chor StdChor.
+         --- transitivity (CSend p e q C1'); auto with Chor.
+             rewrite <- H1. apply SwapIfSend; auto with Chor.
+             intro eq; apply H6; left; symmetry; exact eq.
+             intro eq; apply H6; right; left; symmetry; exact eq.
+         --- apply IfFalseStep. intro i; apply H6; right; right; exact i.
+      -- exists (CSend p0 e0 q0 (CSend p e q C));
+           exists (CSend p0 e1 q0 (CSend p e q C));
+           split; [| split; [| split]]; rewrite H3; auto with Chor StdChor.
+         --- transitivity (CSend p e q C1'); auto with Chor.
+             rewrite <- H4. apply SwapSendSend; auto with Chor.
+             intro eq; apply H11; left; exact eq.
+             intro eq; apply H11; right; left; exact eq.
+             intro eq; apply H12; left; exact eq.
+             intro eq; apply H12; right; left; exact eq.
+         --- transitivity (CSend p e q C2'); auto with Chor.
+             rewrite <- H9. apply SwapSendSend; auto with Chor.
+             intro eq; apply H11; left; exact eq.
+             intro eq; apply H11; right; left; exact eq.
+             intro eq; apply H12; left; exact eq.
+             intro eq; apply H12; right; left; exact eq.
+         --- apply SendEStep; auto;
+               intro i; [apply H11 | apply H12]; right; right; exact i.
+      -- exists (CSend p0 e0 q0 (CSend p e q C));
+           exists (CSend p e q C [c| ChorIdSubst; SendSubst q0 e0]);
+           split; [| split; [| split]]; rewrite H2; auto with Chor StdChor.
+         --- transitivity (CSend p e q C1'); auto with Chor.
+             rewrite <- H3. apply SwapSendSend; auto with Chor.
+             intro eq; apply H8; left; exact eq.
+             intro eq; apply H8; right; left; exact eq.
+             intro eq; apply H10; left; exact eq.
+             intro eq; apply H10; right; left; exact eq.
+         --- transitivity (CSend p e q C2'); auto with Chor.
+             rewrite <- H9. simpl. unfold SendSubst at 2.
+             destruct (PrinEqDec p1 p) as [eq | _];
+               [exfalso; apply H10; left; symmetry; exact eq|].
+             fold ExprIdSubst. rewrite ExprIdentitySubstSpec.
+             assert (C [c|ChorIdSubst; SendSubst p1 e0]
+                     = C [c|SendUpChorSubst ChorIdSubst q;
+                            ChorUpExprSubst (SendSubst p1 e0) q]).
+             apply ChorSubstExt.
+             intro n; symmetry; apply SendUpChorIdSubst.
+             intros p5 n; symmetry; apply UpSendSubst.
+             intro eq; apply H10; right; left; symmetry; exact eq.
+             rewrite H12; auto with Chor.
+         --- apply SendVStep; auto with Chor.
+             intro i; apply H8; right; right; exact i.
+             intro i; apply H10; right; right; exact i.
+    - destruct IHstep1 as [C1' H]; destruct H as [C3' H]; destruct H as [equiv1 H];
+        destruct H as [equiv3 H]; destruct H as [step13 ontop1].
+      destruct IHstep2 as [C2' H]; destruct H as [C4' H]; destruct H as [equiv2 H];
+        destruct H as [equiv4 H]; destruct H as [step24 ontop2].
+      destruct R; inversion ontop1; inversion ontop2;
+        match goal with
+        | [ C1'equiv : ?C = C1' |- _] => rewrite <- C1'equiv in step13
+        end;
+        inversion step13;
+        match goal with
+        | [C2'equiv : ?C = C2' |- _] => rewrite <- C2'equiv in step24
+        end;
+        inversion step24.
+      all: try (match goal with
+                | [H : RChorStep (?RC ?q ?e1 ?e2 ?r) (?q :: ?B') ?C1' ?C2' |- _] =>
+                  apply NoIStepInList with (p := q) in H;
+                  [destruct H | left; reflexivity | constructor]
+                | [H : RChorStep (?RC ?q ?e ?r) (?q :: ?B') ?C1' ?C2' |- _] =>
+                  apply NoIStepInList with (p := q) in H;
+                  [destruct H | left; reflexivity | constructor]
+                | [H : RChorStep (?RC ?q ?e) (?q :: ?B') ?C1' ?C2' |- _] =>
+                  apply NoIStepInList with (p := q) in H;
+                  [destruct H | left; reflexivity | constructor]
+                | [H : RChorStep (?RC ?q) (?q :: ?B') ?C1' ?C2' |- _] =>
+                  apply NoIStepInList with (p := q) in H;
+                  [destruct H | left; reflexivity | constructor]
+                end).
+      -- exists (CIf p0 e0 (CIf p e C0 C6) (CIf p e C5 C7));
+           exists (CIf p0 e1 (CIf p e C0 C6) (CIf p e C5 C7));
+           split; [| split; [| split]]; auto with Chor StdChor.
+         --- transitivity (CIf p e C1' C2'); auto with Chor.
+             rewrite <- H3; rewrite <- H7.
+             apply SwapIfIf; auto with Chor.
+             intro eq; apply H23; left; exact eq.
+         --- transitivity (CIf p e C3' C4'); auto with Chor.
+             rewrite <- H11; rewrite <- H20.
+             apply SwapIfIf; auto with Chor.
+             intro eq; apply H23; left; exact eq.
+         --- apply IfEStep; auto with Chor.
+             intro i; apply H23; right; exact i.
+      -- exists (CIf p0 tt (CIf p e C0 C6) (CIf p e C5 C7));
+           exists (CIf p e C0 C6);
+           split; [| split; [| split]]; auto with Chor StdChor.
+         --- transitivity (CIf p e C1' C2'); auto with Chor.
+             rewrite <- H1; rewrite <- H3. apply SwapIfIf; auto with Chor.
+             intro eq; apply H14; left; exact eq.
+         --- transitivity (CIf p e C3' C4'); auto with Chor.
+             rewrite <- H6; rewrite <- H12; auto with Chor.
+         --- apply IfTrueStep. intro i; apply H14; right; exact i.
+      -- exists (CIf p0 ff (CIf p e C0 C6) (CIf p e C5 C7));
+           exists (CIf p e C5 C7);
+           split; [| split; [| split]]; auto with Chor StdChor.
+         --- transitivity (CIf p e C1' C2'); auto with Chor.
+             rewrite <- H1; rewrite <- H3. apply SwapIfIf; auto with Chor.
+             intro eq; apply H14; left; exact eq.
+         --- transitivity (CIf p e C3' C4'); auto with Chor.
+             rewrite <- H6; rewrite <- H12; auto with Chor.
+         --- apply IfFalseStep. intro i; apply H14; right; exact i.
+      -- exists (CSend p0 e0 p1 (CIf p e C C0));
+           exists (CSend p0 e1 p1 (CIf p e C C0));
+           split; [| split; [| split]]; auto with Chor StdChor.
+         --- transitivity (CIf p e C1' C2'); auto with Chor.
+             rewrite <- H4; rewrite <- H9. apply SwapSendIf; auto with Chor.
+             intro eq; apply H26; left; exact eq.
+             intro eq; apply H27; left; exact eq.
+         --- transitivity (CIf p e C3' C4'); auto with Chor.
+             rewrite <- H14; rewrite <- H24. apply SwapSendIf; auto with Chor.
+             intro eq; apply H26; left; exact eq.
+             intro eq; apply H27; left; exact eq.
+         --- apply SendEStep; auto.
+             intro i; apply H26; right; exact i.
+             intro i; apply H27; right; exact i.
+      -- exists (CSend p0 e0 p1 (CIf p e C C0));
+           exists (CIf p e C C0 [c|ChorIdSubst; SendSubst p1 e0]);
+           split; [| split; [| split]]; auto with Chor StdChor.
+         --- transitivity (CIf p e C1' C2'); auto with Chor.
+             rewrite <- H3; rewrite <- H7. apply SwapSendIf; auto with Chor.
+             intro eq; apply H21; left; exact eq.
+             intro eq; apply H23; left; exact eq.
+         --- transitivity (CIf p e C3' C4'); auto with Chor.
+             rewrite <- H13; rewrite <- H22.
+             simpl. unfold SendSubst at 3.
+             destruct (PrinEqDec p1 p) as [eq | _];
+               [exfalso; apply H23; left; symmetry; exact eq |].
+             fold ExprIdSubst. rewrite ExprIdentitySubstSpec. reflexivity.
+         --- apply SendVStep; auto.
+             intro i; apply H21; right; exact i.
+             intro i; apply H23; right; exact i.
+  Qed.
+
+  Lemma RStepOnTopToStd : forall (C1 C2 : Chor) (R : Redex) (B : list Prin),
+      RedexOnTop R C1 ->
+      RChorStep R B C1 C2 ->
+      StdChorStep C1 C2.
+  Proof.
+    intros C1 C2 R B ontop rstep; induction rstep; inversion ontop;
+      auto with Chor StdChor.
+    - rewrite <- H in ontop. inversion ontop. rewrite <- H in rstep; rewrite H1 in rstep.
+      apply NoSendEIStepInList in rstep; [destruct rstep| left; reflexivity].
+    - rewrite <- H in ontop; inversion ontop. rewrite <- H in rstep; rewrite H1 in rstep.
+      apply NoSendVIStepInList in rstep; [destruct rstep | left; reflexivity].
+    - rewrite <- H in ontop; inversion ontop. rewrite <- H in rstep1; rewrite H1 in rstep1.
+      apply NoIfEIStepInList in rstep1; [destruct rstep1 | left; reflexivity].
+    - rewrite <- H in ontop; inversion ontop. rewrite <- H in rstep1; rewrite H1 in rstep1.
+      apply NoIfTTStepInList in rstep1; [destruct rstep1 | left; reflexivity].
+    - rewrite <- H in ontop; inversion ontop. rewrite <- H in rstep1; rewrite H1 in rstep1.
+      apply NoIfFFStepInList in rstep1; [destruct rstep1 | left; reflexivity].
+  Qed.
+  Theorem RStepToStd : forall (C1 C2 : Chor) (R : Redex) (B : list Prin),
+      RChorStep R B C1 C2 -> StdChorStep C1 C2.
+  Proof.
+    intros C1 C2 R B rstep.
+    apply RStepOnTop in rstep;
+      destruct rstep as [C1' H]; destruct H as [C2' H];
+      destruct H as [equiv1 H]; destruct H as [equiv2 H]; destruct H as [rstep ontop].
+    apply StdEquivStep with (C1' := C1') (C2' := C2'); auto.
+    apply RStepOnTopToStd with (R := R) (B := B); auto.
   Qed.
   
 End Choreography.
