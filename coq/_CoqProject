@@ -5,3 +5,6 @@ SoundlyTypedExpression.v
 Choreography.v
 TypedChoreography.v
 SoundlyTypedChoreography.v
+LambdaCalc.v
+STLC.v
+STLCSound.v

@@ -313,9 +313,8 @@ Module Choreography (E : Expression).
     | CDef C1 C2 =>
       DefContext' C1 C1 C2 C2 (Equiv'Refl C1) (Equiv'Refl C2)
     end.
-
-  Instance chorEquiv'Refl : Reflexive chorEquiv' := Equiv'Refl.
   Hint Resolve Equiv'Refl : Chor.
+  Instance chorEquiv'Refl : Reflexive chorEquiv' := Equiv'Refl.
   
   Theorem Equiv'Sym : forall (C1 C2 : Chor), C1 ≡' C2 -> C2 ≡' C1.
   Proof.
@@ -344,13 +343,12 @@ Module Choreography (E : Expression).
     - eapply TransEquiv; eauto.
     - specialize (IHequiv C3' equiv'). eapply TransEquiv; eauto.
   Qed.
-
   Instance chorEquivTrans : Transitive chorEquiv := chorEquivTransitive.
 
   Instance chorEquivSym : Symmetric chorEquiv.
   Proof.
     unfold Symmetric; intros C1 C2 equiv; induction equiv; auto with Chor.
-    - transitivity C2; auto with Chor. 
+    - transitivity C2; auto with Chor.
   Qed.
   Hint Resolve chorEquivSym : Chor.
 
