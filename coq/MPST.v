@@ -3,7 +3,13 @@ Require Import Coq.Arith.Arith.
 Require Import Coq.Classes.RelationClasses.
 Require Import Coq.Arith.PeanoNat.
 
-Module MPST.
+Require Export Expression.
+Require Export TypedExpression.
+
+Module MPST (E : Expression) (TE : TypedExpression E).
+  Import E.
+  Import TE.
+  
   Parameter Role : Set.
   Parameter RoleEqDec : forall p q : Role, {p = q} + {p <> q}.
   Hint Resolve RoleEqDec : PiC.
@@ -141,12 +147,15 @@ Module MPST.
   | EChoice : Role -> SessionType -> SessionType
   | IChoice : Role -> SessionType -> SessionType -> SessionType
   | SendT : Role -> SessionType -> SessionType -> SessionType
-  | ReceiveT : Role -> SessionType -> SessionType -> SessionType.
+  | ReceiveT : Role -> SessionType -> SessionType -> SessionType
+  | SendDT : Role -> ExprTyp -> SessionType -> SessionType
+  | ReceiveDT : Role -> ExprTyp -> SessionType -> SessionType.
   Hint Constructors SessionType : PiC.
   Definition SessionTypeEqDec : forall S1 S2 : SessionType, {S1 = S2} + {S1 <> S2}.
   Proof.
     intros S1 S2; decide equality; auto with PiC.
     apply Nat.eq_dec.
+    all: apply ExprTypEqDec.
   Qed.
 
   Fixpoint SessionTypeRename (S : SessionType) (ξ : nat -> nat) : SessionType :=
@@ -158,6 +167,8 @@ Module MPST.
     | IChoice p S1 S2 => IChoice p (SessionTypeRename S1 ξ) (SessionTypeRename S2 ξ)
     | SendT p S1 S2 => SendT p (SessionTypeRename S1 ξ) (SessionTypeRename S2 ξ)
     | ReceiveT p S1 S2 => ReceiveT p (SessionTypeRename S1 ξ) (SessionTypeRename S2 ξ)
+    | SendDT p τ S' => SendDT p τ (SessionTypeRename S' ξ)
+    | ReceiveDT p τ S' => ReceiveDT p τ (SessionTypeRename S' ξ)
     end.
   Notation "S ⟨s| ξ ⟩" := (SessionTypeRename S ξ) (at level 15).
 
@@ -168,7 +179,7 @@ Module MPST.
     intro S; induction S; intros ξ1 ξ2 ext_eq; simpl; auto.
     1: rewrite IHS with (ξ2 := RenamingUp ξ2); auto.
     apply RenamingUpExt; auto.
-    rewrite IHS with (ξ2 := ξ2); auto.
+    1,5,6: rewrite IHS with (ξ2 := ξ2); auto.
     all: rewrite IHS1 with (ξ2 := ξ2); auto; rewrite IHS2 with (ξ2 := ξ2); auto.
   Qed.
   Hint Resolve SessionTypeRenameExt : PiC.
@@ -180,7 +191,7 @@ Module MPST.
     rewrite SessionTypeRenameExt with (ξ2 := IdRenaming).
     rewrite IHS; reflexivity.
     apply IdRenamingUp.
-    rewrite IHS; auto.
+    1,5,6: rewrite IHS; auto.
     all: rewrite IHS1; rewrite IHS2; auto.
   Qed.
   Hint Resolve SessionTypeIdRenamingSpec : PiC.
@@ -212,6 +223,8 @@ Module MPST.
     | IChoice p S1 S2 => IChoice p (SessionTypeSubst S1 σ) (SessionTypeSubst S2 σ)
     | SendT p S1 S2 => SendT p (SessionTypeSubst S1 σ) (SessionTypeSubst S2 σ)
     | ReceiveT p S1 S2 => ReceiveT p (SessionTypeSubst S1 σ) (SessionTypeSubst S2 σ)
+    | SendDT p τ S' => SendDT p τ (SessionTypeSubst S' σ)
+    | ReceiveDT p τ S' => ReceiveDT p τ (SessionTypeSubst S' σ)
     end.
   Notation "S [s| σ ]" := (SessionTypeSubst S σ) (at level 15).
 
@@ -222,7 +235,7 @@ Module MPST.
     intro S; induction S; intros σ1 σ2 ext_eq; simpl; auto with PiC.
     rewrite IHS with (σ2 := SessionTypeSubstUp σ2); auto.
     apply SessionTypeSubstUpExt; auto.
-    rewrite IHS with (σ2 := σ2); auto.
+    1,5,6:rewrite IHS with (σ2 := σ2); auto.
     all: rewrite IHS1 with (σ2 := σ2); auto; rewrite IHS2 with (σ2 := σ2); auto.
   Qed.    
   Hint Resolve SessionTypeSubstExt : PiC.
@@ -245,7 +258,7 @@ Module MPST.
     intro S; induction S; simpl; auto.
     rewrite SessionTypeSubstExt with (σ2 := SessionTypeIdSubst);
       [rewrite IHS; auto | apply SessionTypeIdSubstUp].
-    rewrite IHS; auto.
+    1,5,6:rewrite IHS; auto.
     all: rewrite IHS1; rewrite IHS2; auto.
   Qed.
   Hint Resolve SessionTypeIdSubstSpec : PiC.
@@ -286,7 +299,13 @@ Module MPST.
   | SubReceive : forall p S1 S2 T1 T2,
       SessionSubtype T1 S1 (* Note Contravariance! *)
       -> SessionSubtype S2 T2
-      -> SessionSubtype (ReceiveT p S1 S2) (ReceiveT p T1 T2).
+      -> SessionSubtype (ReceiveT p S1 S2) (ReceiveT p T1 T2)
+  | SubSendDT : forall p τ S1 S2,
+      SessionSubtype S1 S2
+      -> SessionSubtype (SendDT p τ S1) (SendDT p τ S2)
+  | SubReceiveDT : forall p τ S1 S2,
+      SessionSubtype S1 S2
+      -> SessionSubtype (ReceiveDT p τ S1) (ReceiveDT p τ S2).
   Infix "≤s" := SessionSubtype (at level 16).
   Hint Constructors SessionSubtype : PiC.
 
@@ -294,7 +313,15 @@ Module MPST.
   Instance sessionSubtypeTrans : Transitive SessionSubtype := SubTrans.
 
   Inductive PiCtxtRed : (Chan -> SessionType) -> (Chan -> SessionType) -> Prop :=
-    CommCtxtR : forall (Γ Δ : Chan -> SessionType) (s : nat) (p q  : Role)
+    DataCommCtxtR : forall (Γ Δ : Chan -> SessionType) (s : nat) (p q : Role) (τ : ExprTyp)
+                      (S1 S2 : SessionType),
+      Γ (Session s p) = SendDT q τ S1
+      -> Γ (Session s q) = ReceiveDT p τ S2
+      -> Δ (Session s p) = S1
+      -> Δ (Session s q) = S2
+      -> (forall χ : Chan, (Session s p) <> χ -> (Session s q) <> χ -> Γ χ = Δ χ)
+      -> PiCtxtRed Γ Δ                         
+  | CommCtxtR : forall (Γ Δ : Chan -> SessionType) (s : nat) (p q  : Role)
                   (S1 S2 T1 T2 : SessionType),
       Γ (Session s p) = SendT q S1 S2
       -> Γ (Session s q) = ReceiveT p T1 T2
@@ -389,11 +416,14 @@ Module MPST.
   | PiVar : nat -> PiCalc
   | Par : PiCalc -> PiCalc -> PiCalc
   | ν : PiCalc -> PiCalc
-  | Sel : Chan -> Role -> bool -> PiCalc -> PiCalc
+  | Sel : Chan -> Role -> Coq.Init.Datatypes.bool -> PiCalc -> PiCalc
   | Branch : Chan -> Role -> PiCalc -> PiCalc -> PiCalc
   | Send : Chan -> Role -> Chan -> PiCalc -> PiCalc
   | Receive : Chan -> Role -> PiCalc -> PiCalc
-  | Def : PiCalc -> PiCalc -> PiCalc.
+  | Def : PiCalc -> PiCalc -> PiCalc
+  | SendD : Chan -> Role -> Expr -> PiCalc -> PiCalc
+  | ReceiveD : Chan -> Role -> PiCalc -> PiCalc
+  | IfThenElse : Expr -> PiCalc -> PiCalc -> PiCalc.
   Notation "P ∥ Q" := (Par P Q) (at level 20).
 
   Fixpoint PiCalcRename (P : PiCalc) (ξ : nat -> nat) : PiCalc :=
@@ -407,6 +437,9 @@ Module MPST.
     | Send χ1 p χ2 P => Send χ1 p χ2 (PiCalcRename P ξ)
     | Receive χ p P => Receive χ p (PiCalcRename P ξ)
     | Def P Q => Def (PiCalcRename P (RenamingUp ξ)) (PiCalcRename Q (RenamingUp ξ))
+    | SendD χ p e P => SendD χ p e (PiCalcRename P ξ)
+    | ReceiveD χ p P => ReceiveD χ p (PiCalcRename P ξ)
+    | IfThenElse e P Q => IfThenElse e (PiCalcRename P ξ) (PiCalcRename Q ξ)
     end.
   Notation "P ⟨π| ξ ⟩" := (PiCalcRename P ξ) (at level 15).
   Lemma PiCalcRenameExt : forall (P : PiCalc) (ξ1 ξ2 : nat -> nat),
@@ -414,8 +447,8 @@ Module MPST.
       P ⟨π| ξ1⟩ = P ⟨π| ξ2⟩.
   Proof.
     intros P; induction P; simpl; intros ξ1 ξ2 ext_eq; auto.
-    1,4: erewrite IHP1; eauto with PiC; erewrite IHP2; eauto.
-    1,2,3,4: erewrite IHP; eauto.
+    1,4,10: erewrite IHP1; eauto with PiC; erewrite IHP2; eauto.
+    1,2,3,4,6,7: erewrite IHP; eauto.
     rewrite IHP1 with (ξ2 := RenamingUp ξ2); auto with PiC;
       rewrite IHP2 with (ξ2 := RenamingUp ξ2); auto with PiC.
   Qed.
@@ -431,6 +464,9 @@ Module MPST.
     | Send χ1 p χ2 P => Send (χ1 ⟨ch| ξ⟩) p (χ2 ⟨ch| ξ⟩) (PiCalcRenameChan P ξ)
     | Receive χ p P => Receive (χ ⟨ch| ξ⟩) p (PiCalcRenameChan P (RenamingUp ξ))
     | Def P Q => Def (PiCalcRenameChan P ξ) (PiCalcRenameChan Q ξ)
+    | SendD χ p e P => SendD (χ ⟨ch| ξ⟩) p e (PiCalcRenameChan P ξ)
+    | ReceiveD χ p P => ReceiveD (χ ⟨ch| ξ⟩) p (PiCalcRenameChan P ξ)
+    | IfThenElse e P Q => IfThenElse e (PiCalcRenameChan P ξ) (PiCalcRenameChan Q ξ)
     end.
   Notation "P ⟨πch| ξ ⟩" := (PiCalcRenameChan P ξ) (at level 15).
 
@@ -439,10 +475,10 @@ Module MPST.
       -> P ⟨πch| ξ1⟩ = P ⟨πch| ξ2⟩.
   Proof.
     intros P; induction P; intros ξ1 ξ2 ext_eq; simpl; auto.
-    3,4,5,6: assert (c ⟨ch| ξ1⟩ = c ⟨ch| ξ2⟩) as Hc by (apply ChanRenameExt; auto);
+    3,4,5,6,8,9: assert (c ⟨ch| ξ1⟩ = c ⟨ch| ξ2⟩) as Hc by (apply ChanRenameExt; auto);
       rewrite Hc; auto.
-    2,3,5: rewrite IHP with (ξ2 := ξ2); auto.
-    1,3,5: rewrite IHP1 with (ξ2 := ξ2); auto; rewrite IHP2 with (ξ2 := ξ2); auto.
+    2,3,5,7,8: rewrite IHP with (ξ2 := ξ2); auto.
+    1,3,5,6: rewrite IHP1 with (ξ2 := ξ2); auto; rewrite IHP2 with (ξ2 := ξ2); auto.
     - assert (c0 ⟨ch| ξ1⟩ = c0 ⟨ch| ξ2⟩) as Hc0 by (apply ChanRenameExt; auto);
         rewrite Hc0; auto.
     - rewrite IHP with (ξ2 := RenamingUp ξ2); auto.
@@ -476,6 +512,9 @@ Module MPST.
     | Receive χ p P =>
       Receive (ChanSessionRename χ ξ) p (PiCalcSessionRename P ξ)
     | Def P Q => Def (PiCalcSessionRename P ξ) (PiCalcSessionRename Q ξ)
+    | SendD χ p e P => SendD (χ ⟨chs| ξ⟩) p e (PiCalcSessionRename P ξ)
+    | ReceiveD χ p P => ReceiveD (χ ⟨chs| ξ⟩) p (PiCalcSessionRename P ξ)
+    | IfThenElse e P Q => IfThenElse e (PiCalcSessionRename P ξ) (PiCalcSessionRename Q ξ)
     end.
   Notation "P ⟨πs| ξ ⟩" := (PiCalcSessionRename P ξ) (at level 15).
 
@@ -484,10 +523,11 @@ Module MPST.
       -> P ⟨πs| ξ1⟩ = P ⟨πs| ξ2⟩.
   Proof.
     intro P; induction P; intros ξ1 ξ2 ext_eq; simpl; auto with PiC.
-    1,4,7: rewrite IHP1 with (ξ2 := ξ2); auto; rewrite IHP2 with (ξ2 := ξ2); auto with PiC.
-    1,3,4,5: assert (c ⟨chs| ξ1⟩ = c⟨chs| ξ2⟩) as Hc
+    1,4,7,10: rewrite IHP1 with (ξ2 := ξ2); auto; rewrite IHP2 with (ξ2 := ξ2);
+      auto with PiC.
+    1,3,4,5,6,7: assert (c ⟨chs| ξ1⟩ = c⟨chs| ξ2⟩) as Hc
         by (auto with PiC); rewrite Hc; auto.
-    1,2,3: rewrite IHP with (ξ2 := ξ2); auto.
+    1,2,3,4,5: rewrite IHP with (ξ2 := ξ2); auto.
     - assert (c0 ⟨chs| ξ1⟩ = c0⟨chs| ξ2⟩) as Hc0
         by (auto with PiC); rewrite Hc0; auto.
     - rewrite IHP with (ξ2 := RenamingUp ξ2); auto with PiC.
@@ -498,15 +538,58 @@ Module MPST.
   Lemma PiCalcSessionIdRenaming : forall (P : PiCalc), P⟨πs| IdRenaming⟩ = P.
   Proof.
     intro P; induction P; simpl; auto with PiC.
-    1,4,7: rewrite IHP1; rewrite IHP2; auto.
-    1,3,4,5: repeat rewrite ChanIdSessionRenaming; auto.
-    1,2,3: rewrite IHP; auto.
+    1,4,7,10: rewrite IHP1; rewrite IHP2; auto.
+    1,3,4,5,6,7: repeat rewrite ChanIdSessionRenaming; auto.
+    1,2,3,4,5: rewrite IHP; auto.
     rewrite PiCalcSessionRenameExt with (ξ2 := IdRenaming); auto with PiC.
     rewrite IHP; reflexivity.
   Qed.
   Hint Resolve PiCalcSessionIdRenaming : PiC.
   Hint Rewrite PiCalcSessionIdRenaming : PiC.
 
+  Fixpoint PiCalcExprRename (P : PiCalc) (ξ : nat -> nat) : PiCalc :=
+    match P with
+    | EndPi => EndPi
+    | PiVar n => PiVar n
+    | Par P Q => (PiCalcExprRename P ξ) ∥ (PiCalcExprRename Q ξ)
+    | ν P => ν (PiCalcExprRename P ξ)
+    | Sel χ p b P => Sel χ p b (PiCalcExprRename P ξ)
+    | Branch χ p P Q => Branch χ p (PiCalcExprRename P ξ) (PiCalcExprRename Q ξ)
+    | Send χ1 p χ2 P => Send χ1 p χ2 (PiCalcExprRename P ξ)
+    | Receive χ p P => Receive χ p (PiCalcExprRename P ξ)
+    | Def P Q => Def (PiCalcExprRename P ξ) (PiCalcExprRename Q ξ)
+    | SendD χ p e P => SendD χ p (e ⟨e|ξ⟩) (PiCalcExprRename P ξ)
+    | ReceiveD χ p P => ReceiveD χ p (PiCalcExprRename P (RenamingUp ξ))
+    | IfThenElse e P Q => IfThenElse (e ⟨e| ξ⟩) (PiCalcExprRename P ξ) (PiCalcExprRename Q ξ)
+    end.
+  Notation "P ⟨πe| ξ ⟩" := (PiCalcExprRename P ξ) (at level 15).
+
+  Lemma PiCalcExprRenameExt : forall (P : PiCalc) (ξ1 ξ2 : nat -> nat),
+      (forall n, ξ1 n = ξ2 n)
+      -> P ⟨πe| ξ1⟩ = P ⟨πe| ξ2⟩.
+  Proof.
+    intro P; induction P; intros ξ1 ξ2 ext_eq; simpl; auto.
+    1,4,7,10: rewrite IHP1 with (ξ2 := ξ2); auto; rewrite IHP2 with (ξ2 := ξ2); auto.
+    2,3,4,5,6: rewrite IHP with (ξ2 := ξ2); auto.
+    1,2: rewrite ExprRenameExt with (ξ2 := ξ2); auto.
+    rewrite IHP with (ξ2 := RenamingUp ξ2); auto with PiC.
+  Qed.
+  Hint Resolve PiCalcExprRenameExt : PiC.
+  Hint Rewrite PiCalcExprRenameExt : PiC.
+
+  Lemma PiCalcExprIdRenaming : forall (P : PiCalc),
+      P ⟨πe| IdRenaming⟩ = P.
+  Proof.
+    intro P; induction P; simpl; auto.
+    2,3,5,6,8: rewrite IHP; auto.
+    1,3,4,6: rewrite IHP1; rewrite IHP2; auto.
+    1,2: rewrite ExprIdRenamingSpec; reflexivity.
+    rewrite PiCalcExprRenameExt with (ξ2 := IdRenaming); [|apply IdRenamingUp].
+    rewrite IHP; auto.
+  Qed.
+  Hint Resolve PiCalcExprIdRenaming : PiC.
+  Hint Rewrite PiCalcExprIdRenaming : PiC.  
+  
   Definition PiCalcSubstUp : (nat -> PiCalc) -> nat -> PiCalc :=
     fun σ n => match n with
             | 0 => PiVar n
@@ -533,6 +616,9 @@ Module MPST.
     | Send χ1 p χ2 P => Send χ1 p χ2 (PiCalcSubst P σ)
     | Receive χ p P => Receive χ p (PiCalcSubst P σ)
     | Def P Q => Def (PiCalcSubst P (PiCalcSubstUp σ)) (PiCalcSubst Q (PiCalcSubstUp σ))
+    | SendD χ p e P => SendD χ p e (PiCalcSubst P σ)
+    | ReceiveD χ p P => ReceiveD χ p (PiCalcSubst P σ)
+    | IfThenElse e P Q => IfThenElse e (PiCalcSubst P σ) (PiCalcSubst Q σ)
     end.
   Notation "P [π| σ ]" := (PiCalcSubst P σ) (at level 15).
 
@@ -541,8 +627,8 @@ Module MPST.
       -> P [π|σ1] = P [π|σ2].
   Proof.
     intro P; induction P; intros σ1 σ2 ext_eq; simpl; auto with PiC.
-    1,4: erewrite IHP1; eauto; erewrite IHP2; eauto.
-    1,2,3,4: erewrite IHP; eauto.
+    1,4,10: erewrite IHP1; eauto; erewrite IHP2; eauto.
+    1,2,3,4,6,7: erewrite IHP; eauto.
     rewrite IHP1 with (σ2 := PiCalcSubstUp σ2); [rewrite IHP2 with (σ2 := PiCalcSubstUp σ2)|];
       auto with PiC.
   Qed.
@@ -560,8 +646,8 @@ Module MPST.
   Lemma PiCalcIdSubstSpec : forall (P : PiCalc), P[π| PiCalcIdSubst] = P.
   Proof.
     intro P; induction P; simpl; auto with PiC.
-    2,3,5,6: rewrite IHP; reflexivity.
-    1,2: rewrite IHP1; rewrite IHP2; reflexivity.
+    2,3,5,6,8,9: rewrite IHP; reflexivity.
+    1,2,4: rewrite IHP1; rewrite IHP2; reflexivity.
     repeat rewrite PiCalcSubstExt
       with (σ1 := PiCalcSubstUp PiCalcIdSubst) (σ2 := PiCalcIdSubst);
       [rewrite IHP1; rewrite IHP2; reflexivity| |];
@@ -581,6 +667,9 @@ Module MPST.
     | Send χ1 p χ2 P => Send (χ1 [ch| σ]) p (χ2 [ch| σ]) (PiCalcSubstChan P σ)
     | Receive χ p P => Receive (χ [ch| σ]) p (PiCalcSubstChan P (ChanSubstUp σ))
     | Def P Q => Def (PiCalcSubstChan P σ) (PiCalcSubstChan Q σ)
+    | SendD χ p e P => SendD (χ [ch| σ]) p e (PiCalcSubstChan P σ)
+    | ReceiveD χ p P => ReceiveD (χ [ch| σ]) p (PiCalcSubstChan P σ)
+    | IfThenElse e P Q => IfThenElse e (PiCalcSubstChan P σ) (PiCalcSubstChan Q σ)
     end.
   Notation "P [πch| σ ]" := (PiCalcSubstChan P σ) (at level 15).
 
@@ -589,8 +678,9 @@ Module MPST.
       -> P [πch| σ1] = P [πch| σ2].
   Proof.
     intro P; induction P; intros σ1 σ2 ext_eq; simpl; auto with PiC.
-    2,3,5: rewrite IHP with (σ2 := σ2); auto with PiC.
-    1,4,6: rewrite IHP1 with (σ2 := σ2); auto; rewrite IHP2 with (σ2 := σ2); auto with PiC.
+    2,3,5,8,9: rewrite IHP with (σ2 := σ2); auto with PiC.
+    1,6,8,9: rewrite IHP1 with (σ2 := σ2); auto; rewrite IHP2 with (σ2 := σ2);
+      auto with PiC.
     all: assert (c[ch|σ1] = c[ch|σ2]) as Hc by (auto with PiC); rewrite Hc; auto.
     - assert (c0[ch|σ1] = c0[ch|σ2]) as Hc0 by (auto with PiC); rewrite Hc0; auto.
     - rewrite IHP with (σ2 := ChanSubstUp σ2); auto with PiC.
@@ -602,13 +692,59 @@ Module MPST.
   Proof.
     intro P; induction P; simpl; auto with PiC.
     all: autorewrite with PiC.
-    2,3,5: rewrite IHP; reflexivity.
-    1,2,4: rewrite IHP1; rewrite IHP2; reflexivity.
+    2,3,5,8,9: rewrite IHP; reflexivity.
+    1,2,4,5: rewrite IHP1; rewrite IHP2; reflexivity.
     assert (P [πch|ChanSubstUp ChanIdSubst] = P[πch|ChanIdSubst]) by (auto with PiC).
     rewrite H; rewrite IHP; reflexivity.
   Qed.
   Hint Resolve PiCalcSubstId : PiC.
   Hint Rewrite PiCalcSubstId : PiC.
+
+  Fixpoint PiCalcExprSubst (P : PiCalc) (σ : nat -> Expr) : PiCalc :=
+    match P with
+    | EndPi => EndPi
+    | PiVar n => PiVar n
+    | Par P Q => (PiCalcExprSubst P σ) ∥ (PiCalcExprSubst Q σ)
+    | ν P => ν (PiCalcExprSubst P σ)
+    | Sel χ p b P => Sel χ p b (PiCalcExprSubst P σ)
+    | Branch χ p P Q => Branch χ p (PiCalcExprSubst P σ) (PiCalcExprSubst Q σ)
+    | Send χ1 p χ2 P => Send χ1 p χ2 (PiCalcExprSubst P σ)
+    | Receive χ p P => Receive χ p (PiCalcExprSubst P σ)
+    | Def P Q => Def (PiCalcExprSubst P σ) (PiCalcExprSubst Q σ)
+    | SendD χ p e P => SendD χ p (e [e|σ]) (PiCalcExprSubst P σ)
+    | ReceiveD χ p P => ReceiveD χ p (PiCalcExprSubst P (ExprUpSubst σ))
+    | IfThenElse e P Q => IfThenElse (e [e|σ]) (PiCalcExprSubst P σ) (PiCalcExprSubst Q σ)
+    end.
+  Notation "P [πe| σ ]" := (PiCalcExprSubst P σ) (at level 15).
+
+  Theorem PiCalcExprSubstExt : forall (P : PiCalc) (σ1 σ2 : nat -> Expr),
+      (forall n, σ1 n = σ2 n)
+      -> P [πe| σ1] = P [πe| σ2].
+  Proof.
+    intros P; induction P; intros σ1 σ2 ext_eq; simpl; auto.
+    1,4,7,10: rewrite IHP1 with (σ2 := σ2); auto; rewrite IHP2 with (σ2 := σ2); auto.
+    2,3,4,5,6: rewrite IHP with (σ2 := σ2); auto.
+    1,2: rewrite ExprSubstExt with (σ2 := σ2); auto.
+    rewrite IHP with (σ2 := ExprUpSubst σ2); [reflexivity|].
+    intro n; unfold ExprUpSubst; destruct n; auto; rewrite ext_eq; reflexivity.
+  Qed.
+  Hint Resolve PiCalcExprSubstExt : PiC.
+  Hint Rewrite PiCalcExprSubstExt : PiC.
+
+  Theorem PiCaclExprSubstId : forall (P : PiCalc),
+      P [πe| ExprIdSubst] = P.
+  Proof.
+    intro P; induction P; simpl; auto.
+    8,10: rewrite ExprIdentitySubstSpec.
+    1,4,7,9: rewrite IHP1; rewrite IHP2; reflexivity.
+    1,2,3,4,5: rewrite IHP; reflexivity.
+    rewrite PiCalcExprSubstExt with (σ2 := ExprIdSubst).
+    rewrite IHP; reflexivity.
+    intro n; unfold ExprUpSubst; unfold ExprIdSubst; destruct n; simpl; auto.
+    apply ExprRenameVar.
+  Qed.
+  Hint Resolve PiCaclExprSubstId : PiC.
+  Hint Rewrite PiCaclExprSubstId : PiC.
 
   Inductive PiEquiv' : PiCalc -> PiCalc -> Prop :=
     SwapBranch : forall P Q, PiEquiv' (P ∥ Q) (Q ∥ P)
@@ -651,7 +787,27 @@ Module MPST.
                                                       | 0 => Def P (PiVar 0)
                                                       | S n' => PiVar n'
                                                       end.
+  Definition SendExprSubst (e : Expr) : nat -> Expr := fun n =>
+                                                     match n with
+                                                     | 0 => e
+                                                     | S n' => ExprVar n'
+                                                     end.
+    
   Inductive PiRed : PiCalc -> PiCalc -> Prop :=
+  | IfThenElseE : forall e1 e2 P Q,
+      ExprStep e1 e2
+      -> PiRed (IfThenElse e1 P Q) (IfThenElse e2 P Q)
+  | IfThenElseTrue : forall P Q,
+      PiRed (IfThenElse tt P Q) P
+  | IfThenElseFalse : forall P Q,
+      PiRed (IfThenElse ff P Q) Q
+  | RCommE : forall χ p e1 e2 P,
+      ExprStep e1 e2
+      -> PiRed (SendD χ p e1 P) (SendD χ p e2 P)
+  | RCommD : forall s p q v P Q,
+      ExprVal v ->
+      PiRed ((SendD (Session s p) q v P) ∥ (ReceiveD (Session s q) p Q))
+            (P ∥ (Q [πe|SendExprSubst v]))
   | RComm : forall s p q χ P Q,
       PiRed ((Send (Session s p) q χ P) ∥ (Receive (Session s q) p Q))
             (P ∥ (Q [πch|SendSubst χ]))
@@ -710,29 +866,29 @@ Module MPST.
     fun Γ χ T => Γ χ ≤s T.
   Notation "Γ ⊢ch χ ::: T" := (ChannelTyping Γ χ T) (at level 30).
 
-  (* TODO: Parallel *)
+  (* TODO: Add in stuff about sending and receiving data *)
   
-  Reserved Notation "Θ ⋅ Γ ⊢st P" (at level 30).
-  Inductive ProcessTyping : nat -> (Chan -> SessionType) -> PiCalc -> Prop :=
-  | EndST : forall Θ Γ, EndCtxt Γ -> Θ ⋅ Γ ⊢st EndPi
-  | VarST : forall Θ Γ n, n < Θ -> Θ ⋅ Γ ⊢st PiVar n
-  | DefST : forall Θ Γ P Q,
-      (S Θ) ⋅ Γ ⊢st P
-      -> (S Θ) ⋅ Γ ⊢st Q
-      -> Θ ⋅ Γ ⊢st Def P Q
-  | SendST : forall Θ Γ p χ1 χ2 P S1 S2,
+  Reserved Notation "Θ ;; Γ ⋅ Δ ⊢st P" (at level 30).
+  Inductive ProcessTyping : nat -> (Chan -> SessionType) -> (nat -> ExprTyp) -> PiCalc -> Prop :=
+  | EndST : forall Θ Γ Δ, EndCtxt Γ -> Θ ;; Γ ⋅ Δ ⊢st EndPi
+  | VarST : forall Θ Γ Δ n, n < Θ -> EndCtxt Γ -> Θ ;; Γ ⋅ Δ ⊢st PiVar n
+  | DefST : forall Θ Γ Δ P Q,
+      (S Θ) ;; Γ ⋅ Δ ⊢st P
+      -> (S Θ) ;; Γ ⋅ Δ ⊢st Q
+      -> Θ ;; Γ ⋅ Δ ⊢st Def P Q
+  | SendST : forall Θ Γ Δ p χ1 χ2 P S1 S2,
       χ1 <> χ2 (* To guarantee linearity *)
       -> Γ ⊢ch χ1 ::: SendT p S1 S2
       -> Γ ⊢ch χ2 ::: S1
-      -> Θ ⋅ (fun χ' => if ChanEqDec χ1 χ'
+      -> Θ ;; (fun χ' => if ChanEqDec χ1 χ'
                     then S2
                     else if ChanEqDec χ2 χ'
                          then EndType (* Again, to guarantee linearity *)
-                         else Γ χ') ⊢st P
-      -> Θ ⋅ Γ ⊢st (Send χ1 p χ2 P)
-  | ReadST : forall Θ Γ p χ P S1 S2,
+                         else Γ χ') ⋅ Δ ⊢st P
+      -> Θ ;; Γ ⋅ Δ ⊢st (Send χ1 p χ2 P)
+  | ReceiveST : forall Θ Γ Δ p χ P S1 S2,
       Γ ⊢ch χ ::: ReceiveT p S1 S2
-      -> Θ ⋅ (fun χ' => match χ' with
+      -> Θ ;; (fun χ' => match χ' with
                     | ChanVar n => match n with
                                   | 0 => S1
                                   | S n' => if ChanEqDec (ChanVar n') χ
@@ -742,50 +898,71 @@ Module MPST.
                     | Session _ _ => if ChanEqDec χ' χ
                                     then S2
                                     else Γ χ
-                    end) ⊢st P
-      -> Θ ⋅ Γ ⊢st (Receive χ p P)
-  | BranchST : forall Θ Γ χ p P1 P2 S1 S2,
-      Γ ⊢ch χ ::: IChoice p S1 S2
-      -> Θ ⋅ (fun χ' => if ChanEqDec χ χ'
-                    then S1
-                    else Γ χ') ⊢st P1
-      -> Θ ⋅ (fun χ' => if ChanEqDec χ χ'
-                    then S2
-                    else Γ χ') ⊢st P2
-      -> Θ ⋅ Γ ⊢st Branch χ p P1 P2
-  | SelST : forall Θ Γ χ p b P S,
-      Γ ⊢ch χ ::: EChoice p S
-      -> Θ ⋅ (fun χ' => if ChanEqDec χ χ'
+                    end) ⋅ Δ ⊢st P
+      -> Θ ;; Γ ⋅ Δ ⊢st (Receive χ p P)
+  | SendDST : forall Θ Γ Δ χ p e τ P S,
+      Δ ⊢e e ::: τ
+      -> Γ ⊢ch χ ::: SendDT p τ S
+      -> Θ ;; (fun χ' => if ChanEqDec χ χ'
                     then S
-                    else Γ χ') ⊢st P
-      -> Θ ⋅ Γ ⊢st Sel χ p b P
-  | NuST : forall Θ Γ Δ P,
+                    else Γ χ') ⋅ Δ ⊢st P
+      -> Θ ;; Γ ⋅ Δ ⊢st SendD χ p e P
+  | ReceiveDST : forall Θ Γ Δ χ p τ P S,
+      Γ ⊢ch χ ::: ReceiveDT p τ S
+      -> Θ ;; (fun χ' => if ChanEqDec χ χ'
+                   then S
+                   else Γ χ') ⋅ (fun n => match n with
+                                       | 0 => τ
+                                       | S n' => Δ n'
+                                       end) ⊢st P
+      -> Θ ;; Γ ⋅ Δ ⊢st ReceiveD χ p P 
+  | BranchST : forall Θ Γ Δ χ p P1 P2 S1 S2,
+      Γ ⊢ch χ ::: IChoice p S1 S2
+      -> Θ ;; (fun χ' => if ChanEqDec χ χ'
+                    then S1
+                    else Γ χ') ⋅ Δ ⊢st P1
+      -> Θ ;; (fun χ' => if ChanEqDec χ χ'
+                    then S2
+                    else Γ χ') ⋅ Δ ⊢st P2
+      -> Θ ;; Γ ⋅ Δ ⊢st Branch χ p P1 P2
+  | SelST : forall Θ Γ Δ χ p b P S,
+      Γ ⊢ch χ ::: EChoice p S
+      -> Θ ;; (fun χ' => if ChanEqDec χ χ'
+                    then S
+                    else Γ χ') ⋅ Δ ⊢st P
+      -> Θ ;; Γ ⋅ Δ ⊢st Sel χ p b P
+  | NuST : forall Θ Γ1 Γ2 Δ P,
       (forall χ : Chan, (exists p : Role, χ = Session 0 p)
-                   \/ Δ χ ≤s EndType)
-      -> LiveCtxt Δ
-      -> Θ ⋅ (fun χ => match χ with
-                   | ChanVar _ => Γ χ
+                   \/ Γ2 χ ≤s EndType)
+      -> LiveCtxt Γ2
+      -> Θ ;; (fun χ => match χ with
+                   | ChanVar _ => Γ1 χ
                    | Session n p => match n with
-                                   | 0 => Δ χ
-                                   | S n' => Γ (Session n' p)
+                                   | 0 => Γ2 χ
+                                   | S n' => Γ1 (Session n' p)
                                    end
-                   end) ⊢st P
-      -> Θ ⋅ Γ ⊢st ν P
-  | ParST : forall Θ Γ Δ1 Δ2 P Q,
-      Θ ⋅ Δ1 ⊢st P
-      -> Θ ⋅ Δ2 ⊢st Q
-      -> (forall χ, Δ1 χ = EndType \/ Δ2 χ = EndType) (* Linearity *)
-      -> (forall χ, if SessionTypeEqDec (Δ1 χ) EndType then Γ χ = Δ2 χ else Γ χ = Δ1 χ)
-      -> Θ ⋅ Γ ⊢st P ∥ Q      
-  where "Θ ⋅ Γ ⊢st P" := (ProcessTyping Θ Γ P).
+                   end) ⋅ Δ ⊢st P
+      -> Θ ;; Γ1 ⋅ Δ ⊢st ν P
+  | ParST : forall Θ Γ Γ1 Γ2 Δ P Q,
+      Θ ;; Γ1 ⋅ Δ ⊢st P
+      -> Θ ;; Γ2 ⋅ Δ ⊢st Q
+      -> (forall χ, Γ1 χ = EndType \/ Γ2 χ = EndType) (* Linearity *)
+      -> (forall χ, if SessionTypeEqDec (Γ1 χ) EndType then Γ χ = Γ2 χ else Γ χ = Γ1 χ)
+      -> Θ ;; Γ ⋅ Δ ⊢st P ∥ Q
+  | IfST : forall Θ Γ Δ e P Q,
+      Δ ⊢e e ::: bool
+      -> Θ ;; Γ ⋅ Δ ⊢st P
+      -> Θ ;; Γ ⋅ Δ ⊢st Q
+      -> Θ ;; Γ ⋅ Δ ⊢st IfThenElse e P Q          
+  where "Θ ;; Γ ⋅ Δ ⊢st P" := (ProcessTyping Θ Γ Δ P).
 
   (* An immediate consequence of 4.16 from "Less is More" *)
-  Axiom SubjRed : forall (Θ : nat) (Γ : Chan -> SessionType) (P : PiCalc),
-      Θ ⋅ Γ ⊢st P -> LiveCtxt Γ -> forall P' : PiCalc, PiRed P P' -> Θ ⋅ Γ ⊢st P'.
+  Axiom SubjRed : forall (Θ : nat) (Γ : Chan -> SessionType) (Δ : nat -> ExprTyp) (P : PiCalc),
+      Θ ;; Γ ⋅ Δ ⊢st P -> LiveCtxt Γ -> forall P' : PiCalc, PiRed P P' -> Θ ;; Γ ⋅ Δ ⊢st P'.
 
   (* From Theorem 5.15 of "Less is More" *)
-  Axiom TypingDF : forall (Θ : nat) (Γ : Chan -> SessionType) (P : PiCalc),
-      LiveCtxt Γ -> Θ ⋅ Γ ⊢st P -> PiCalcLive P.
+  Axiom TypingDF : forall (Θ : nat) (Γ : Chan -> SessionType) (Δ : nat -> ExprTyp) (P : PiCalc),
+      LiveCtxt Γ -> Θ ;; Γ ⋅ Δ ⊢st P -> PiCalcDF P.
 
 End MPST.
       
