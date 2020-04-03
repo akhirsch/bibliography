@@ -413,14 +413,30 @@ We define this equivalence \emph{co}inductively:
   \label{lem:type-refl}
   For any session type~$S$, $S \equiv S$.
 \end{lem}
+\begin{proof}
+  Proven in Coq.
+\end{proof}
 \begin{lem}[Type Equivalence Symmetry]
   \label{lem:type-sym}
   For any session types~$S$ and $T$, $S \equiv T$ implies $T \equiv S$.
 \end{lem}
+\begin{proof}
+  Proven in Coq.
+\end{proof}
+
+Note that this relation is \emph{not} transitive.
+Indeed, it is easy to prove that for any type $T$, $T \equiv \mu t. t$; thus, if we were to add transitivity, then the relation would be trivial.
+
+We can recover transitivity by limiting our focus to \emph{guarded} types.
+Guarded types always have a non-$\mu$, non-variable type constructor immediately after every $\mu$.
+Then, we get the following theorem:
 \begin{lem}[Type Equivalence Transitivity]
   \label{lem:type-trans}
-  For any session types~$S_1$, $S_2$, and $S_3$, $S_1 \equiv S_2$ and $S_2 \equiv S_3$ implies $S_1 \equiv S_3$.
+  For any guarded session types~$S_1$, $S_2$, and $S_3$, $S_1 \equiv S_2$ and $S_2 \equiv S_3$ implies $S_1 \equiv S_3$.
 \end{lem}
+\begin{proof}
+  Proven in Coq.
+\end{proof}
 
 Since we view programs as mappings from roles to threads of computation, we can view a session typing context as a mapping from roles to session types.
 We can then define a context stepping relation inductively as follows:
