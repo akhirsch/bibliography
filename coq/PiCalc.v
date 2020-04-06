@@ -2,13 +2,14 @@ Require Import Expression.
 
 Require Import Coq.Classes.RelationClasses.
 Require Import Coq.Logic.JMeq.
-
+Require Import Coq.Arith.Arith.
 
 Module PiCalc (E : Expression).
   Import E.
 
   Parameter Role : Set.
-  
+  Parameter RoleEqDec : forall p q : Role, {p = q} + {p <> q}.
+
   Inductive Proc : Set :=
     EndProc : Proc
   | VarProc : nat -> Proc
@@ -20,6 +21,13 @@ Module PiCalc (E : Expression).
   | IChoice : Role -> Proc -> Proc -> Proc
   | IfThenElse : Expr -> Proc -> Proc -> Proc.
   Hint Constructors Proc : PiC.
+
+  Definition ProcEqDec : forall P Q : Proc, {P = Q} + {P <> Q}.
+    decide equality.
+    apply Nat.eq_dec.
+    1,7: apply ExprEqDec.
+    all: apply RoleEqDec.
+  Qed.
 
   Definition ProcRenamingUp : (nat -> nat) -> nat -> nat :=
     fun ξ n => match n with

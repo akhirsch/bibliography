@@ -1,12 +1,14 @@
 Require Export Expression.
+Require Import PiCalc.
+
 Require Import Coq.Arith.Arith.
 Require Import Coq.Program.Wf.
 Require Import Coq.Logic.JMeq.
 Require Import Coq.Classes.RelationClasses.
 Require Import Coq.Lists.List.
+Require Import Sorted Orders Coq.Sorting.Mergesort Permutation.
 
-Module Choreography (E : Expression).
-  Import E.
+Module Choreography (Import E : Expression).
 
   Parameter Prin : Set.
   Parameter PrinEqDec : forall p q : Prin, {p = q} + {p <> q}.
@@ -1247,5 +1249,410 @@ Module Choreography (E : Expression).
     apply StdEquivStep with (C1' := C1') (C2' := C2'); auto.
     apply RStepOnTopToStd with (R := R) (B := B); auto.
   Qed.
+
+  Parameter PrinOrder : Prin -> Prin -> Prop.
+  Notation "p ≤p q" := (PrinOrder p q) (at level 20).
+  Notation "p ≰p q" := (~ PrinOrder p q) (at level 20).
+  Parameter PrinOrderDec : forall p q, {p ≤p q} + {p ≰p q}.
+  Parameter PrinOrderTotal : forall p q, p ≤p q \/ q ≤p p.
+  Parameter PrinOrderRefl : forall p, p ≤p p.
+  Parameter PrinOrderAntisym : forall p q, p ≤p q -> q ≤p p -> p = q.
+  Parameter PrinOrderTrans : forall p q r, p ≤p q -> q ≤p r -> p ≤p r.
+  Module PrinOrderM <: TotalLeBool.
+    Definition t := Prin.
+    Definition leb p q :=
+      match PrinOrderDec p q with
+      | left _ => true
+      | right _ => false
+      end.
+    Open Scope bool_scope.
+    Theorem leb_total : forall p q, leb p q = true \/ leb q p = true.
+    Proof.
+      intros p q; unfold leb; destruct (PrinOrderDec p q);
+        destruct (PrinOrderDec q p); auto.
+      destruct (PrinOrderTotal p q); auto.
+    Qed.
+  End PrinOrderM.
+  
+  Module Import PrinSort := Sort PrinOrderM.
+
+  Fixpoint ThreadNames (C : Chor) : list Prin :=
+    match C with
+    | CDone p _ => p :: nil
+    | CVar _ => nil
+    | CSend p _ q C' => p :: q :: (ThreadNames C')
+    | CIf p _ C1 C2 => p :: (ThreadNames C1) ++ (ThreadNames C2)
+    | CDef C1 C2 => (ThreadNames C1) ++ (ThreadNames C2)
+    end.
+
+  Reserved Infix "∈TN" (at level 20).
+  Inductive InThreadNames : Prin -> Chor -> Prop :=
+  | InDone : forall p e, p ∈TN (CDone p e)
+  | InSend1 : forall p e q C', p ∈TN (CSend p e q C')
+  | InSend2 : forall p e q C', q ∈TN (CSend p e q C')
+  | InSend3 : forall r p e q C', r ∈TN C' -> r ∈TN (CSend p e q C')
+  | InIf1 : forall p e C1 C2, p ∈TN (CIf p e C1 C2)
+  | InIf2 : forall q p e C1 C2, q ∈TN C1 -> q ∈TN (CIf p e C1 C2)
+  | InIf3 : forall q p e C1 C2, q ∈TN C2 -> q ∈TN (CIf p e C1 C2)
+  | InDef1 : forall p C1 C2, p ∈TN C1 -> p ∈TN (CDef C1 C2)
+  | InDef2 : forall p C1 C2, p ∈TN C2 -> p ∈TN (CDef C1 C2)
+  where "p ∈TN C" := (InThreadNames p C).
+
+  Lemma InThreadNamesSpec : forall p C, p ∈TN C <-> In p (ThreadNames C).
+  Proof.
+    intros p C; revert p; induction C; intro r; split; intro i; simpl in *.
+    all: try (match goal with
+              | [H : ?r ∈TN ?C |- _] => inversion H
+              end); auto.
+    all: repeat (match goal with
+                 | [H : In ?a (?b :: ?l) |- _] => simpl in H
+                 | [H : In ?a (?l1 ++ ?l2) |- _] => apply in_app_or in H
+                 | [H : ?P \/ ?Q |- _] => destruct H
+                 | [H : ?P /\ ?Q |- _] => destruct H
+                 | [H : False |- _ ] => destruct H
+                 end).
+    2,6,7: right.
+    all: try (rewrite H; constructor; auto; fail).
+    all: try (constructor; rewrite IHC; auto; fail).
+    all: try (constructor; rewrite IHC1; auto; fail).
+    all: try (constructor; rewrite IHC2; auto; fail).
+    - right; rewrite <- IHC; auto.
+    - apply in_or_app; left; rewrite <- IHC1; exact H1.
+    - apply in_or_app; right; rewrite <- IHC2; exact H1.
+    - apply in_or_app; left; rewrite <- IHC1; exact H1.
+    - apply in_or_app; right; rewrite <- IHC2; exact H1.
+  Qed.             
+
+  Lemma ThreadNamesInvariant' : forall C1 C2 : Chor,
+      C1 ≡' C2 -> forall p : Prin, p ∈TN C1 <-> p ∈TN C2.
+  Proof.
+    intros C1 C2 equiv; induction equiv; intros t; split; intros i; auto;
+      repeat match goal with
+             | [i : ?p ∈TN (_ _) |- _] => inversion i; clear i
+             end.
+    all: try (constructor; auto; fail).
+    all: try (constructor; apply IHequiv; auto; fail).
+    all: try (constructor; rewrite <- IHequiv; auto; fail).
+    all: try (constructor; rewrite IHequiv1; auto; fail).
+    all: try (constructor; rewrite <- IHequiv1; auto; fail).
+    all: try (constructor; rewrite IHequiv2; auto; fail).
+    all: try (constructor; rewrite <- IHequiv2; auto; fail).
+    all: try (constructor; constructor; auto; fail).
+    all: try (constructor; constructor; rewrite IHequiv; auto; fail).
+    all: try (constructor; constructor; rewrite <- IHequiv; auto; fail).
+    all: try (constructor; constructor; rewrite IHequiv1; auto; fail).
+    all: try (constructor; constructor; rewrite <- IHequiv1; auto; fail).
+    all: try (constructor; constructor; rewrite <- IHequiv2; auto; fail).
+    all: try (constructor; constructor; rewrite IHequiv2; auto; fail).
+    - apply InIf2; apply InIf3; apply IHequiv3; exact H8.
+    - apply InIf3; apply InIf3; apply IHequiv4; exact H8.
+    - apply InIf3; apply InIf2; apply IHequiv3; exact H8.
+    - apply InIf3; apply InIf3; apply IHequiv4; exact H8.
+  Qed.
+    
+  Lemma ThreadNamesInvariant : forall C1 C2 : Chor,
+      C1 ≡ C2 -> forall p : Prin, p ∈TN C1 <-> p ∈TN C2.
+  Proof.
+    intros C1 C2 equiv; induction equiv.
+    - intro p; apply ThreadNamesInvariant'; auto.
+    - intro p. apply ThreadNamesInvariant' with (p := p) in H. rewrite H.
+      apply IHequiv.
+  Qed.
+
+  Fixpoint nubPrin (l : list Prin) : list Prin :=
+    match l with
+    | nil => nil
+    | x :: xs => x :: (remove PrinEqDec x (nubPrin xs))
+    end.
+  Lemma In_remove : forall (p q : Prin) (l : list Prin),
+      p <> q -> In p l -> In p (remove PrinEqDec q l).
+  Proof.
+    intros p q l; revert p q; induction l as [| r l']; intros p q n i; [inversion i|].
+    simpl in *. destruct (PrinEqDec q r) as [ e|_].
+    destruct i as [eq | i ]; [exfalso; apply n; transitivity r; auto | apply IHl'; auto].
+    destruct i as [eq | i]; [left; exact eq | right; apply IHl'; auto].
+  Qed.
+
+  Lemma In_remove' : forall (p q : Prin) (l : list Prin),
+      In p (remove PrinEqDec q l) -> p <> q /\ In p l.
+  Proof.
+    intros p q l; revert p q; induction l as [| r l']; intros p q; split.
+    1,2: inversion H.
+    simpl in H. destruct (PrinEqDec q r). apply IHl'; auto.
+    simpl in H. destruct H; [| apply IHl'; auto].
+    intro e; apply n; transitivity p; auto.
+    simpl in H. destruct (PrinEqDec q r). right; apply (IHl' p q); auto.
+    destruct H; [left; auto | right; apply (IHl' p q); auto].
+  Qed.
+
+  Lemma In_nub : forall (p : Prin) (l : list Prin),
+      In p l <-> In p (nubPrin l).
+  Proof.
+    intros p l; revert p; induction l as [| q l']; intros p; split; intro i.
+    1,2: inversion i.
+    destruct (PrinEqDec p q) as [e | n]; [left; auto|].
+    destruct i; simpl; [left; auto|right].
+    apply In_remove with (q := q); auto.
+    apply IHl'; auto.
+    simpl in i. destruct i; [left; auto|].
+    apply In_remove' in H; destruct H.
+    right; apply IHl'; auto.
+  Qed.
+
+  Fixpoint countPrin (p : Prin) (l : list Prin) : nat :=
+    match l with
+    | nil => 0
+    | q :: l' => if PrinEqDec p q
+               then 1 + countPrin p l'
+               else countPrin p l'
+    end.
+
+  Lemma countZero : forall (p : Prin) (l : list Prin),
+      ~ In p l <-> countPrin p l = 0.
+  Proof.
+    intros p l; revert p; induction l as [| q l'].
+    all: intro p; split; [intro i | intro c].
+    - simpl; reflexivity.
+    - intro H; inversion H.
+    - simpl. destruct (PrinEqDec p q).
+      -- exfalso; apply i; left; auto.
+      -- apply IHl'. intro i'; apply i; right; exact i'.
+    - simpl in c. destruct (PrinEqDec p q); [inversion c|].
+      intro i; destruct i as [e | i].
+      apply n; symmetry; exact e.
+      apply IHl' in c; apply c; exact i.
+  Qed.
+
+  Lemma countPermutation : forall (p : Prin) (l l' : list Prin),
+      Permutation l l' -> countPrin p l = countPrin p l'.
+  Proof.
+    intros p l l' perm; revert p; induction perm; intro p; auto; simpl.
+    - destruct (PrinEqDec p x); auto.
+    - destruct (PrinEqDec p y); destruct (PrinEqDec p x); auto.
+    - transitivity (countPrin p l'); auto.
+  Qed.
+  
+  Lemma remove_count : forall (p q : Prin) (l : list Prin),
+      countPrin p (remove PrinEqDec q l) <= countPrin p l.
+  Proof.
+    intros p q l; revert p q; induction l as [| r l']; intros p q; simpl; [reflexivity|].
+    destruct (PrinEqDec p r); destruct (PrinEqDec q r).
+    - apply Nat.le_le_succ_r; apply IHl'.
+    - simpl. destruct (PrinEqDec p r) as [_| n']; [| exfalso; apply n'; exact e].
+      apply le_n_S. apply IHl'.
+    - apply IHl'.
+    - simpl. destruct (PrinEqDec p r) as [ e|_]; [exfalso; apply n; exact e|].
+      apply IHl'.
+  Qed.
+
+  Lemma nubPrinCount : forall (p : Prin) (l : list Prin),
+      In p l -> countPrin p (nubPrin l) = 1.
+  Proof.
+    intros p l; revert p; induction l as [| q l']; intros p i.
+    - inversion i.
+    - simpl in *. destruct (PrinEqDec p q).
+      rewrite e. assert (countPrin q (remove PrinEqDec q (nubPrin l')) = 0) as c
+        by (apply countZero; apply remove_In).
+      rewrite c; reflexivity.
+      destruct i as [ e|i]; [exfalso; apply n; symmetry; exact e|].
+      assert (countPrin p (remove PrinEqDec q (nubPrin l')) <= 1).
+      rewrite <- IHl' with (p := p); [|exact i]. apply remove_count.
+      apply Nat.le_1_r in H. destruct H; [| auto].
+      exfalso. rewrite <- countZero in H; apply H.
+      apply In_remove; auto.
+      apply -> In_nub; auto.
+  Qed.
+
+  Lemma nubPrinCount' : forall (p : Prin) (l : list Prin),
+      countPrin p (nubPrin l) <= 1.
+  Proof.
+    intros p l.
+    destruct (ListDec.In_dec PrinEqDec p l). rewrite nubPrinCount; auto.
+    assert (~ In p (nubPrin l)). intro H; apply n; apply In_nub; exact H.
+    rewrite countZero in H.  rewrite H. auto.
+  Qed.
+
+  Lemma HdRel_In : forall {A : Type} (R : A -> A -> Prop) (a b : A) (l : list A),
+      Transitive R -> Sorted R l -> HdRel R a l -> In b l -> R a b.
+  Proof.
+    intros A R a b l; revert R a b; induction l as [| x xs]; intros R a b trans S H i;
+      [inversion i|].
+    destruct i; inversion H; [rewrite <- H0; auto|].
+    clear b0 l H1 H3.
+    inversion S; clear a0 l H1 H3.
+    assert (R x b) by (apply IHxs; auto).
+    unfold Transitive in trans; apply trans with (y := x); auto.
+  Qed.
+
+  Lemma CountBoundedCons : forall (p q : Prin) (l : list Prin),
+      countPrin p l <= countPrin p (q :: l).
+  Proof.
+    intros p q l. simpl. destruct (PrinEqDec p q); auto.
+  Qed.
+    
+
+  Lemma SortedCountUnique : forall (l1 l2 : list Prin),
+      (forall p, In p l1 <-> In p l2)
+      -> Sorted PrinOrder l1 -> Sorted PrinOrder l2
+      -> (forall p, countPrin p l1 <= 1) -> (forall p, countPrin p l2 <= 1)
+      -> l1 = l2.
+  Proof.
+    intros l1 l2 set_eq sorted1 sorted2 count1 count2.
+    revert l2 set_eq sorted2 count2; induction sorted1; intros l2 set_eq sorted2 count2.
+    - destruct l2; [reflexivity|].
+      assert (In p nil) as H by (apply set_eq; left; reflexivity); inversion H.
+    - inversion sorted2.
+      assert (In a nil) as i
+          by (rewrite H0; apply set_eq; left; reflexivity); inversion i.
+      assert (a ≤p a0).
+      destruct (PrinEqDec a a0); [rewrite e; apply PrinOrderRefl|].
+      apply HdRel_In with (l1 := l); auto; [unfold Transitive; apply PrinOrderTrans|].
+      rewrite <- H2 in set_eq. assert (In a0 (a0 :: l0)) by (left; reflexivity).
+      apply set_eq in H3. destruct H3; [exfalso; apply n; auto|exact H3].
+      assert (a0 ≤p a).
+      destruct (PrinEqDec a0 a); [rewrite e; apply PrinOrderRefl|].
+      assert (In a (a :: l)) by (left; reflexivity). rewrite set_eq in H4.
+      rewrite <- H2 in H4. destruct H4; [exfalso; apply n; auto|].
+      apply HdRel_In with (l1 := l0); auto; exact PrinOrderTrans.
+      assert (a = a0) by (apply PrinOrderAntisym; auto).
+      rewrite H5.  rewrite IHsorted1 with (l2 := l0); auto.
+      intros p; transitivity (countPrin p (a :: l)); [apply CountBoundedCons | auto].
+      rewrite <- H2 in set_eq. intro p; split; intro i.
+      assert (In p (a0 :: l0)) by (apply set_eq; right; auto).
+      destruct H6; [| exact H6].
+      assert (countPrin p l <> 0).
+      intro c. rewrite <- countZero in c; apply c; auto.
+      specialize (count1 p); simpl in count1.
+      destruct (PrinEqDec p a) as [_| n]; [| exfalso; apply n; transitivity a0; auto].
+      destruct (countPrin p l); [exfalso; apply H7; auto | inversion count1; inversion H9].
+      assert (In p (a :: l)) by (apply set_eq; right; auto).
+      destruct H6; [| exact H6].
+      assert (countPrin p l0 <> 0).
+      intro c. rewrite <- countZero in c; apply c; auto.
+      rewrite <- H2 in count2; specialize (count2 p); simpl in count2.
+      destruct (PrinEqDec p a0) as [_| n]; [| exfalso; apply n; transitivity a; auto].
+      destruct (countPrin p l0); [exfalso; apply H7; auto | inversion count2; inversion H9].
+      intro p;
+        transitivity (countPrin p (a0 :: l0));
+        [apply CountBoundedCons | rewrite <- H2 in count2; auto].
+  Qed.
+
+  Definition CommList : Chor -> Chor -> list Prin :=
+    fun C1 C2 => PrinSort.sort (nubPrin (ThreadNames C1 ++ ThreadNames C2)).
+
+  Lemma CommListEq' : forall C1 C2 C1' C2' : Chor,
+      C1 ≡' C1' -> C2 ≡' C2' -> CommList C1 C2 = CommList C1' C2'.
+  Proof.
+    intros C1 C2 C1' C2' equiv equiv'.
+    unfold CommList.
+    apply SortedCountUnique.
+    - intro p; split; intro i.
+      -- apply Permutation_in with (l' := nubPrin (ThreadNames C1 ++ ThreadNames C2)) in i;
+           [| apply Permutation_sym; apply Permuted_sort].
+         rewrite <- In_nub in i.
+         apply in_app_or in i.
+        apply Permutation_in with (l := nubPrin (ThreadNames C1' ++ ThreadNames C2'));
+           [apply Permuted_sort|].
+         rewrite <- In_nub.
+         apply in_or_app.
+         destruct i as [i | i]; [left | right]; rewrite <- InThreadNamesSpec.
+         rewrite <- ThreadNamesInvariant' with (C1 := C1); auto.
+         2:rewrite <- ThreadNamesInvariant' with (C1 := C2); auto.
+         1,2: rewrite InThreadNamesSpec; auto.
+      -- apply Permutation_in with (l' := nubPrin (ThreadNames C1' ++ ThreadNames C2')) in i;
+           [| apply Permutation_sym; apply Permuted_sort].
+         rewrite <- In_nub in i.
+         apply in_app_or in i.
+         apply Permutation_in with (l := nubPrin (ThreadNames C1 ++ ThreadNames C2));
+           [apply Permuted_sort|].
+         rewrite <- In_nub.
+         apply in_or_app.
+         destruct i as [i | i]; [left | right]; rewrite <- InThreadNamesSpec.
+         rewrite <- ThreadNamesInvariant' with (C1 := C1'); [| symmetry; auto].
+         2: rewrite <- ThreadNamesInvariant' with (C1 := C2'); auto.
+         1,2: rewrite InThreadNamesSpec; auto.
+         symmetry; auto.
+    - remember (Sorted_sort (nubPrin (ThreadNames C1 ++ ThreadNames C2))).
+      rewrite Sorted_LocallySorted_iff.
+      clear Heql. rename l into std.
+      remember (sort (nubPrin (ThreadNames C1 ++ ThreadNames C2))) as l.
+      clear Heql.
+      induction std; [constructor|constructor|].
+      constructor; auto. destruct (PrinOrderDec a b); [auto | inversion H].
+    - remember (Sorted_sort (nubPrin (ThreadNames C1' ++ ThreadNames C2'))).
+      rewrite Sorted_LocallySorted_iff.
+      clear Heql. rename l into std.
+      remember (sort (nubPrin (ThreadNames C1' ++ ThreadNames C2'))) as l.
+      clear Heql.
+      induction std; [constructor|constructor|].
+      constructor; auto. destruct (PrinOrderDec a b); [auto | inversion H].
+    - intro p; rewrite countPermutation with (l' := nubPrin (ThreadNames C1 ++ ThreadNames C2)).
+      apply nubPrinCount'.
+      apply Permutation_sym; apply Permuted_sort.
+    - intro p; rewrite countPermutation with (l' := nubPrin (ThreadNames C1' ++ ThreadNames C2')).
+      apply nubPrinCount'.
+      apply Permutation_sym; apply Permuted_sort.
+  Qed.
+
+  Lemma CommListEq :  forall C1 C2 C1' C2' : Chor,
+      C1 ≡ C1' -> C2 ≡ C2' -> CommList C1 C2 = CommList C1' C2'.
+  Proof.
+    intros C1 C2 C1' C2' equiv1; revert C2 C2'; induction equiv1;
+      intros C2' C2'' equiv2.
+    induction equiv2.
+    - apply CommListEq'; auto.
+    - rewrite <- IHequiv2.
+      apply CommListEq'; [reflexivity | auto].
+    - transitivity (CommList C2 C2'). apply CommListEq'; [auto | reflexivity].
+      apply IHequiv1; auto.
+  Qed.
+
+  
+
+  Module PC := PiCalc E.
+  Parameter PrinToRole : Prin -> PC.Role.
+  Parameter PrinToRoleInj: forall p q, PrinToRole p = PrinToRole q -> p = q.
+  Coercion PrinToRole : Prin >-> PC.Role.
+  Parameter Env : PC.Role.
+  Parameter EnvNotPrin : forall p : Prin, Env <> p.
+
+  Fixpoint DoCommsLeft (l : list Prin) (P : PC.Proc) : PC.Proc :=
+    match l with
+    | nil => P
+    | q :: l' => PC.EChoiceL q (DoCommsLeft l' P)
+    end.
+
+  Fixpoint DoCommsRight (l : list Prin) (P : PC.Proc) : PC.Proc :=
+    match l with
+    | nil => P
+    | q :: l' => PC.EChoiceR q (DoCommsRight l' P)
+    end.
+  
+  Fixpoint EPP (C : Chor) (p : Prin) : PC.Proc :=
+    match C with
+    | CDone q e =>
+      if PrinEqDec p q
+      then PC.SendProc Env e PC.EndProc
+      else PC.EndProc
+    | CVar n => PC.VarProc n
+    | CSend q e r C' =>
+      if PrinEqDec p q
+      then PC.SendProc r e (EPP C' p)
+      else if PrinEqDec p r
+           then PC.RecvProc q (EPP C' p)
+           else EPP C' p
+    | CIf q e C1 C2 =>
+      if PrinEqDec p q
+      then PC.IfThenElse e (DoCommsLeft (CommList C1 C2) (EPP C1 p))
+                      (DoCommsRight (CommList C1 C2) (EPP C2 p))
+      else let P := (EPP C1 p) in
+           let Q := (EPP C2 p) in
+           if PC.ProcEqDec P PC.EndProc
+           then if PC.ProcEqDec Q PC.EndProc
+                then PC.EndProc
+                else PC.IChoice q P Q
+           else PC.IChoice q P Q             
+    | CDef C1 C2 => PC.DefProc (EPP C1 p) (EPP C2 p)
+    end.
   
 End Choreography.
