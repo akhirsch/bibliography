@@ -7,6 +7,7 @@ Require Import Coq.Logic.JMeq.
 Require Import Coq.Classes.RelationClasses.
 Require Import Coq.Lists.List.
 Require Import Sorted Orders Coq.Sorting.Mergesort Permutation.
+Require Import Program.Tactics.
 
 Module Choreography (Import E : Expression).
 
@@ -628,7 +629,8 @@ Module Choreography (Import E : Expression).
           assert (In p0 nil) as H0
               by (apply ext; left; reflexivity);
           inversion H0).
-      rewrite H0 in *; clear B2 H0 ext; auto with Chor.
+      subst.
+      clear ext; auto with Chor.
     - apply SendIStep. apply IHstep.
       intros r; split.
       all:intro i; destruct i as [eq | i];
@@ -763,7 +765,7 @@ Module Choreography (Import E : Expression).
         RChorStep R B C1 C1' -> exists C2', RChorStep R B C2 C2' /\ C1' ≡ C2'.
   Proof.
     intros C1 C2 equiv; induction equiv; intros R B Cstep step;
-      eauto with Chor; inversion step; eauto with Chor.
+      eauto with Chor; inversion step; eauto with Chor; subst.
     - exists (CSend p e2 q C2); split; auto with Chor.
     - destruct (IHequiv _ _ _ H6) as [C3' HC3'].
       destruct (HC3') as [step' equivC3].
@@ -774,16 +776,14 @@ Module Choreography (Import E : Expression).
       destruct (IHequiv2 _ _ _ H7) as [C22' HC22'];
         destruct HC22' as [stepC22' equivC22'].
       exists (CIf p e C12' C22'); split; auto with Chor.
-    - exists C12; rewrite <- H2; split; auto with Chor.
-    - exists C22; rewrite <- H2; split; auto with Chor.
+    - exists C12; split; auto with Chor.
+    - exists C22; split; auto with Chor.
     - exists (C22 [c| DefSubst C12; ExprChorIdSubst]); split; auto with Chor.
       apply EquivStableSubst; auto with Chor.
       intro n; unfold DefSubst; destruct n; auto with Chor.
     - exists (CSend r e2 s (CSend p e3 q C2)); split; auto with Chor.
-    - rewrite <- H6 in *; clear R0 H4 B0 H5 p0 H3 e H7 q0 H8 C0 H9 Cstep H6.
-      inversion H10.
-      -- rewrite H4 in *; rewrite <- H6 in *; rewrite H3 in *; rewrite <- H8 in *.
-         exists (CSend r e3 s (CSend p e1 q C2)); split; eauto with Chor.
+    - inversion H10; subst.
+      -- exists (CSend r e3 s (CSend p e1 q C2)); split; eauto with Chor.
          apply SendEStep; auto; ListHelper.
       -- destruct (IHequiv _ _ _ H11) as [C4' HC4'];
            destruct HC4' as [stepC4' equivC4'].
@@ -794,9 +794,9 @@ Module Choreography (Import E : Expression).
          intros q1; split; intros H13.
          all: destruct H13;
            [ right; right; left
-           | destruct H12; [right; right; right; left
-                           | destruct H12; [left
-                                           | destruct H12; [right; left
+           | destruct H3; [right; right; right; left
+                           | destruct H3; [left
+                                           | destruct H3; [right; left
                                                            | right; right; right; right]]]];
            auto.
       -- exists (CSend p e1 q (C2 [c| ChorIdSubst; SendSubst s e2]));
@@ -811,8 +811,8 @@ Module Choreography (Import E : Expression).
            by (apply ChorSubstExt;
                [ intro n; symmetry; apply SendUpChorIdSubst
                | symmetry; apply UpSendSubst; auto]).
-         rewrite H14; reflexivity.
-         rewrite H14. apply SendVStep; auto; ListHelper.
+         rewrite H3; reflexivity.
+         rewrite H3. apply SendVStep; auto; ListHelper.
     - exists (CSend r e2 s C2 [c| ChorIdSubst; SendSubst q e1]).
         split; auto with Chor.
         simpl.
@@ -823,29 +823,19 @@ Module Choreography (Import E : Expression).
                 = C2 [c| ChorIdSubst; SendSubst q e1])
           by (apply ChorSubstExt; [intro n; apply SendUpChorIdSubst
                                   | apply UpSendSubst; auto]).
-        rewrite H13.
+        rewrite H3.
         apply SendVStep; auto with Chor.
     - exists (CSend q e2 r (CIf p e3 C1' C2')); split; auto with Chor.
-    - clear R0 H3 B0 H4 p0 H1 e H2 C0 H6 C3 H7.
-      inversion H8.
-      -- rewrite H1 in *; rewrite H2 in *; rewrite <- H7 in *; rewrite <- H4 in *;
-           rewrite H3 in *;
-           clear B0 H6 p0 H1 e0 H2 q0 H3 C H10 C4 H7 R H4.
-         inversion H9. 
-         rewrite <- H7 in *;
-           clear p0 H1 e0 H2 e4 H3 B0 H6 q0 H4 C H10 C5 H7.
+    - inversion H8; subst.
+      -- inversion H9; subst.
          exists (CSend q e3 r (CIf p e1 C1' C2')); split; auto with Chor.
          apply SendEStep; auto; try ListHelper.
-         exfalso. apply NoSendEIStepInList in H14; auto. left; reflexivity.
-      -- rewrite <- H4 in *; clear R0 H2 B0 H3 p0 H1 e H6 q0 H7 C0 H10 C4 H4.
-         inversion H9.
-         1: rewrite <- H4 in H11; rewrite H1 in H11;
-           apply NoSendEIStepInList in H11; [destruct H11 | left; reflexivity].
-         2: { rewrite <- H4 in H11. rewrite H1 in H11.
-              apply NoSendVIStepInList in H11; [destruct H11 | left; reflexivity]. }
-         rewrite <- H4 in *; clear R0 H2 B0 H3 p0 H1 e H6 q0 H7 C0 H10 C5 H4.
-         destruct (IHequiv1 _ _ _ H11) as [C3' HC3']; destruct HC3' as [stepC3' equivC3'].
-         destruct (IHequiv2 _ _ _ H12) as [C4' HC4']; destruct HC4' as [stepC4' equivC4'].
+         exfalso. apply NoSendEIStepInList in H13; auto. left; reflexivity.
+      -- inversion H9; subst.
+         1: apply NoSendEIStepInList in H10; [destruct H10 | left; reflexivity].
+         2: apply NoSendVIStepInList in H10; [destruct H10 | left; reflexivity].
+         destruct (IHequiv1 _ _ _ H10) as [C3' HC3']; destruct HC3' as [stepC3' equivC3'].
+         destruct (IHequiv2 _ _ _ H11) as [C4' HC4']; destruct HC4' as [stepC4' equivC4'].
          exists (CSend q e2 r (CIf p e1 C3' C4')); split; auto with Chor.
          apply SendIStep. apply IfIStep.
          all: apply RStepRearrange with (B1 := q :: r :: p :: B); auto.
@@ -864,12 +854,8 @@ Module Choreography (Import E : Expression).
              | destruct i as [eq | i];
                [ left; exact eq
                | right; right; right; exact i]]].
-      -- rewrite H1 in *; rewrite H2 in *; rewrite <- H7 in *; rewrite <- H4 in *;
-           rewrite H3 in *;
-           clear R H3 B0 H6 p0 H1 v H2 q0 H7 C H10 C4 H4.
-         inversion H9;
-           [apply NoSendVIStepInList in H14; [destruct H14 | left; reflexivity] |].
-         rewrite <- H10 in *; clear p0 H1 v H2 B0 H6 q0 H3 C H4 C5 H10.
+      -- inversion H9; subst;
+           [apply NoSendVIStepInList in H13; [destruct H13 | left; reflexivity] |].
          exists (CIf p e1 C1' C2' [c| ChorIdSubst; SendSubst r e2]); split; auto with Chor.
          apply SendVStep; auto; try ListHelper.
          simpl. unfold SendSubst at 3.
@@ -879,12 +865,11 @@ Module Choreography (Import E : Expression).
     - exists (CSend q e2 r C1'); split; auto with Chor.
     - exists (CSend q e2 r C2'); split; auto with Chor.
     - exists (CIf p e1 (CSend q e3 r C1') (CSend q e3 r C2')); split; auto with Chor.
-    - clear R0 H2 B0 H3 p0 H1 e H5 q0 H6 C0 H7. inversion H8.
-      -- rewrite H1 in *; rewrite H2 in *; clear B0 H5 p0 H1 e0 H2 C0 H7 C4 H9.
-         exists (CIf p e3 (CSend q e2 r C1') (CSend q e2 r C2')); split; auto with Chor.
+    - inversion H8; subst.
+      -- exists (CIf p e3 (CSend q e2 r C1') (CSend q e2 r C2')); split; auto with Chor.
          apply IfEStep; auto; ListHelper.
-      -- destruct (IHequiv1 _ _ _ H10) as [C5' H5']; destruct H5' as [stepC5' equivC5'].
-         destruct (IHequiv2 _ _ _ H11) as [C6' H6']; destruct H6' as [stepC6' equivC6'].
+      -- destruct (IHequiv1 _ _ _ H9) as [C5' H5']; destruct H5' as [stepC5' equivC5'].
+         destruct (IHequiv2 _ _ _ H10) as [C6' H6']; destruct H6' as [stepC6' equivC6'].
          exists (CIf p e1 (CSend q e2 r C5') (CSend q e2 r C6')); split; auto with Chor.
          apply IfIStep; auto; apply SendIStep;
            apply RStepRearrange with (B1 := p :: q :: r ::B); auto.
@@ -903,13 +888,9 @@ Module Choreography (Import E : Expression).
              | right; destruct i as [eq | i];
                [left; exact eq
                | right; right; exact i]]].
-      -- rewrite <- H6 in *; rewrite H1 in *; rewrite <- H5 in *;
-           clear B0 H3 p0 H1 e1 H6 C0 H7 C4 H9 C3 H5.
-         exists (CSend q e2 r C1'); split; auto with Chor.
+      -- exists (CSend q e2 r C1'); split; auto with Chor.
          apply IfTrueStep; ListHelper.
-      -- rewrite <- H6 in *; rewrite H1 in *; rewrite <- H5 in *;
-           clear B0 H3 p0 H1 e1 H6 C0 H7 C4 H9 C3 H5.
-         exists (CSend q e2 r C2'); split; auto with Chor.
+      -- exists (CSend q e2 r C2'); split; auto with Chor.
          apply IfFalseStep; ListHelper.
     - exists (CIf p e1 (C1'[c| ChorIdSubst; SendSubst r e2])
              (C2'[c|ChorIdSubst; SendSubst r e2])); split; auto with Chor.
@@ -918,30 +899,22 @@ Module Choreography (Import E : Expression).
         [exfalso; apply H0; symmetry; exact eq|].
       fold ExprIdSubst; rewrite ExprIdentitySubstSpec; auto with Chor.
     - exists (CIf q e2 (CIf p e3 C11' C21') (CIf p e3 C12' C22')); split; auto with Chor.
-    - clear R0 H2 B0 H3 p0 H0 e H1 C1 H5 C2 H6.
-      inversion H7.
-      -- rewrite H0 in *; rewrite H1 in *; rewrite <- H2 in *; rewrite <- H5 in *;
-           clear B0 H3 p0 H0 e0 H1 C1 H6 C2 H9 C3 H5.
-         inversion H8.
-         2: { apply NoIfEIStepInList in H13; [destruct H13| left; reflexivity]. }
-         rewrite <- H6 in *; clear p0 H0 e0 H1 e4 H5 B0 H3 C1 H9 C2 H12 C4 H6.
+    - inversion H7; subst.
+      -- inversion H8; subst.
+         2: { apply NoIfEIStepInList in H12; [destruct H12| left; reflexivity]. }
          exists (CIf q e3 (CIf p e1 C11' C21') (CIf p e1 C12' C22')); split; auto with Chor.
          apply IfEStep; auto. ListHelper.
-      -- rewrite <- H5 in *; clear R0 H2 B0 H3 p0 H0 e H1 C1 H6 C2 H9 C3 H5.
-         inversion H8.
-         1: {rewrite <- H2 in *; rewrite H0 in *; apply NoIfEIStepInList in H10;
-             [destruct H10| left; reflexivity]. }
-         2: { rewrite <- H1 in H10; rewrite H0 in H10;
-              apply NoIfTTStepInList in H10; [destruct H10 | left; reflexivity]. }
-         2: { rewrite <- H1 in H10; rewrite H0 in H10;
-              apply NoIfFFStepInList in H10; [destruct H10 | left; reflexivity]. }
-         destruct (IHequiv1 _ _ _ H10) as [C0' HC0'];
+      -- inversion H8; subst.
+         apply NoIfEIStepInList in H9; [destruct H9| left; reflexivity].
+         2: apply NoIfTTStepInList in H10; [destruct H10 | left; reflexivity].
+         2: apply NoIfFFStepInList in H10; [destruct H10 | left; reflexivity].
+         destruct (IHequiv1 _ _ _ H9) as [C0' HC0'];
            destruct HC0' as [stepC0' equivC0'].
-         destruct (IHequiv2 _ _ _ H11) as [C5' HC5'];
+         destruct (IHequiv2 _ _ _ H10) as [C5' HC5'];
            destruct HC5' as [stepC5' equivC5'].
-         destruct (IHequiv3 _ _ _ H12) as [C3' HC3'];
+         destruct (IHequiv3 _ _ _ H11) as [C3' HC3'];
            destruct HC3' as [stepC3' equivC3'].
-         destruct (IHequiv4 _ _ _ H13) as [C6' HC6'];
+         destruct (IHequiv4 _ _ _ H12) as [C6' HC6'];
            destruct HC6' as [stepC6' equivC6'].
          exists (CIf q e2 (CIf p e1 C0' C3') (CIf p e1 C5' C6')); split; auto with Chor.
          apply IfIStep; apply IfIStep; eauto with Chor.
@@ -952,20 +925,14 @@ Module Choreography (Import E : Expression).
                       | destruct i as [eq | i];
                         [ (* t = q *) left; exact eq
                                     | right; right; exact i]].
-      -- rewrite <- H1 in *; rewrite H0 in *; rewrite <- H5 in *; rewrite <- H3 in *;
-           clear R H1 B0 H2 p0 H0 e2 H5 C1 H6 C2 H9 C3 H3.
-         inversion H8;
-           [apply NoIfTTStepInList in H11; [destruct H11 | left; reflexivity] |].
+      -- inversion H8; subst;
+           [apply NoIfTTStepInList in H10; [destruct H10 | left; reflexivity] |].
          exists (CIf p e1 C11' C21'); split; auto with Chor.
          apply IfTrueStep; ListHelper.
-         rewrite <- H3 in *; apply IfContext; apply Equiv'; auto.
-      -- rewrite <- H1 in *; rewrite H0 in *; rewrite <- H5 in *; rewrite <- H3 in *;
-           clear R H1 B0 H2 p0 H0 e2 H5 C1 H6 C2 H9 C3 H3.
-         inversion H8;
-           [apply NoIfFFStepInList in H11; [destruct H11 | left; reflexivity] |].
+      -- inversion H8; subst;
+           [apply NoIfFFStepInList in H10; [destruct H10 | left; reflexivity] |].
          exists (CIf p e1 C12' C22'); split; auto with Chor.
          apply IfFalseStep; ListHelper.
-         rewrite <- H3 in *; apply IfContext; apply Equiv'; auto.
     - exists (CIf q e2 C11' C12'); split; auto with Chor.
     - exists (CIf q e2 C21' C22'); split; auto with Chor.
   Qed.
@@ -1618,17 +1585,307 @@ Module Choreography (Import E : Expression).
 
   Fixpoint DoCommsLeft (l : list Prin) (P : PC.Proc) : PC.Proc :=
     match l with
-    | nil => P
+    | nil => PC.EChoiceL Env P
     | q :: l' => PC.EChoiceL q (DoCommsLeft l' P)
     end.
 
   Fixpoint DoCommsRight (l : list Prin) (P : PC.Proc) : PC.Proc :=
     match l with
-    | nil => P
+    | nil => PC.EChoiceR Env P
     | q :: l' => PC.EChoiceR q (DoCommsRight l' P)
     end.
+
+  Definition DefValuation :  (nat -> list Prin) -> list Prin -> nat -> list Prin :=
+    fun v l n => match n with
+              | 0 => l
+              | S n' => v n'
+              end.
+
+  (* A way to minimize communication during ifs.
+   * I like this idea a lot, but I'm blowing up every time I try to reason about it.
+   * Perhaps it could be done better, but for now I'm just abandoning it.
+   *)
   
-  Fixpoint EPP (C : Chor) (p : Prin) : PC.Proc :=
+  (* Fixpoint ChorSize (C : Chor) : nat := *)
+  (*   match C with *)
+  (*   | CDone _ _ => 0 *)
+  (*   | CVar _ => 0 *)
+  (*   | CSend _ _ _ C' => S (ChorSize C') *)
+  (*   | CIf _ _ C1 C2 => S (ChorSize C1 + ChorSize C2) *)
+  (*   | CDef C1 C2 => S (ChorSize C1 + ChorSize C2) *)
+  (*   end. *)
+
+
+  (* Obligation Tactic := program_simpl; simpl; *)
+  (*                       repeat (match goal with *)
+  (*                            | [ |- context[?n + 0]] => rewrite <- plus_n_O *)
+  (*                            | [ |- ?n < S (?n + ?m) ] => apply le_lt_n_Sm; apply le_plus_l *)
+  (*                            | [ |- ?n < S (?m + ?n) ] => apply le_lt_n_Sm; apply le_plus_r *)
+  (*                            | [ |- ?n + ?m < S (?n + S ?m) ] => *)
+  (*                              apply le_lt_n_Sm; apply plus_le_compat_l; apply le_n_Sn *)
+  (*                            | [ |- ?n + ?m < S (S ?n + ?m) ] => *)
+  (*                              apply le_lt_n_Sm; apply plus_le_compat_r; apply le_n_Sn *)
+  (*                            | [ |- ?n + ?m < S (?p + ?n + S ?m) ]=> *)
+  (*                                apply le_lt_n_Sm; *)
+  (*                                  transitivity (n + S m); *)
+  (*                                  [ apply plus_le_compat_l; apply le_n_Sn *)
+  (*                                  | apply plus_le_compat_r; apply le_plus_r] *)
+  (*                            | [ |- ?n + ?m < S (?n + ?p + S ?m) ]=> *)
+  (*                                apply le_lt_n_Sm; *)
+  (*                                  transitivity (n + S m); *)
+  (*                                  [ apply plus_le_compat_l; apply le_n_Sn *)
+  (*                                  | apply plus_le_compat_r; apply le_plus_l] *)
+  (*                            end). *)
+
+  (* Program Fixpoint NeededComms (C1 C2 : Chor) (v1 v2 : nat -> list Prin) *)
+  (*         {measure (ChorSize C1 + ChorSize C2)} : list Prin := *)
+  (*   match C1 with *)
+  (*   | CDone p e => *)
+  (*     match C2 with *)
+  (*     | CDone q e' => *)
+  (*       if PrinEqDec p q *)
+  (*       then if ExprEqDec e e' *)
+  (*            then nil *)
+  (*            else p :: nil *)
+  (*       else p :: q :: nil *)
+  (*     | CVar n => p :: v2 n *)
+  (*     | CSend q _ r C2' => *)
+  (*       if PrinEqDec p q *)
+  (*       then p :: q :: r :: ThreadNames C2' *)
+  (*       else if PrinEqDec p r *)
+  (*            then p :: q :: r :: ThreadNames C2' *)
+  (*            else q :: r :: NeededComms C1 C2' v1 v2 *)
+  (*     | CIf q _ C21 C22 =>  *)
+  (*       if PrinEqDec p q *)
+  (*       then p :: q :: ThreadNames C21 ++ ThreadNames C22 *)
+  (*       else q :: NeededComms C1 C21 v1 v2 ++ NeededComms C1 C22 v1 v2 *)
+  (*     | CDef C21 C22 => NeededComms C1 C22 v1 (DefValuation v2 (ThreadNames C21)) *)
+  (*     end *)
+  (*   | CVar n => *)
+  (*     match C2 with *)
+  (*     | CDone p _ => p :: v1 n *)
+  (*     | CVar m => if Nat.eq_dec n m *)
+  (*                then nil *)
+  (*                else v1 n ++ v2 m *)
+  (*     | CSend p _ q C2' => p :: q :: NeededComms C1 C2' v1 v2 *)
+  (*     | CIf p _ C21 C22 => p :: NeededComms C1 C21 v1 v2 ++ NeededComms C1 C22 v1 v2 *)
+  (*     | CDef C21 C22 => NeededComms C1 C22 v1 (DefValuation v2 (ThreadNames C21)) *)
+  (*     end *)
+  (*   | CSend p e q C1' => *)
+  (*     match C2 with *)
+  (*     | CDone r e => if PrinEqDec r p then *)
+  (*                     p :: q :: r :: ThreadNames C1' *)
+  (*                   else if PrinEqDec r q *)
+  (*                        then p :: q :: r :: ThreadNames C1' *)
+  (*                        else p :: NeededComms C1' C2 v1 v2 *)
+  (*     | CVar _ => p :: q :: NeededComms C1' C2 v1 v2 *)
+  (*     | CSend r e' s C2' => *)
+  (*       if ExprEqDec e e' then *)
+  (*         if PrinEqDec p r then *)
+  (*           p :: q :: r :: s :: NeededComms C1' C2' v1 v2 *)
+  (*         else if PrinEqDec p s then *)
+  (*                p :: q :: r :: s :: NeededComms C1' C2' v1 v2 *)
+  (*              else if PrinEqDec q r then *)
+  (*                     p :: q :: r :: s :: NeededComms C1' C2' v1 v2 *)
+  (*                   else if PrinEqDec q s then *)
+  (*                          p :: q :: r :: s :: NeededComms C1' C2' v1 v2 *)
+  (*                        else NeededComms C1' C2' v1 v2 *)
+  (*       else p :: q :: r :: s :: NeededComms C1' C2' v1 v2 *)
+  (*     | CIf r _ C21 C22 => *)
+  (*       if PrinEqDec p r *)
+  (*       then p :: r :: NeededComms C1' C21 v1 v2 *)
+  (*       else if PrinEqDec q r *)
+  (*            then p :: r :: NeededComms C1' C22 v1 v2 *)
+  (*            else NeededComms C1' C21 v1 v2 ++ NeededComms C1' C22 v1 v2 *)
+  (*     | CDef C21 C22 => NeededComms C1 C22 v1 (DefValuation v2 (ThreadNames C21)) *)
+  (*     end *)
+  (*   | CIf p e C11 C12 => *)
+  (*     match C2 with *)
+  (*     | CDone q _ => *)
+  (*       if PrinEqDec p q *)
+  (*       then p :: ThreadNames C11 ++ ThreadNames C12 *)
+  (*       else p :: NeededComms C11 C2 v1 v2 ++ NeededComms C12 C2 v1 v2 *)
+  (*     | CVar n => p :: NeededComms C11 C2 v1 v2 ++ NeededComms C12 C2 v1 v2 *)
+  (*     | CSend q _ r C2' => *)
+  (*       if PrinEqDec p q *)
+  (*       then p :: r :: NeededComms C11 C2' v1 v2 ++ NeededComms C12 C2' v1 v2 *)
+  (*       else if PrinEqDec p r *)
+  (*            then p :: q :: NeededComms C11 C2' v1 v2 ++ NeededComms C12 C2' v1 v2 *)
+  (*            else NeededComms C11 C2' v1 v2 ++ NeededComms C12 C2' v1 v2 *)
+  (*     | CIf q e' C21 C22 => *)
+  (*       if PrinEqDec p q *)
+  (*       then if ExprEqDec e e' *)
+  (*            then NeededComms C11 C21 v1 v2 ++ NeededComms C12 C22 v1 v2 *)
+  (*            else p :: NeededComms C11 C21 v1 v2 ++ NeededComms C12 C22 v1 v2 *)
+  (*       else p :: q :: NeededComms C11 C21 v1 v2 ++ NeededComms C12 C22 v1 v2 *)
+  (*     | CDef C21 C22 => NeededComms C11 C22 v1 (DefValuation v2 (ThreadNames C21)) ++ *)
+  (*                      NeededComms C12 C22 v1 (DefValuation v2 (ThreadNames C21)) *)
+  (*     end *)
+  (*   | CDef C11 C12 => NeededComms C12 C2 (DefValuation v1 (ThreadNames C11)) v2 *)
+  (*   end. *)
+  (* Next Obligation. *)
+  (*   apply le_lt_n_Sm. apply plus_le_compat_l. apply Nat.le_le_succ_r. *)
+  (*   apply le_plus_l. *)
+  (* Defined. *)
+  (* Next Obligation. *)
+  (*   apply le_lt_n_Sm. apply plus_le_compat_l. apply Nat.le_le_succ_r. *)
+  (*   apply le_plus_r. *)
+  (* Defined. *)
+  (* Next Obligation. *)
+  (*   apply le_lt_n_Sm. apply plus_le_compat_l. apply Nat.le_le_succ_r. *)
+  (*   apply le_plus_l. *)
+  (* Defined. *)
+  (* Next Obligation. *)
+  (*   apply le_lt_n_Sm. apply plus_le_compat_l. apply Nat.le_le_succ_r. *)
+  (*   apply le_plus_r. *)
+  (* Defined. *)
+  (* Next Obligation. *)
+  (*   apply lt_n_S. apply plus_lt_compat_l. apply le_lt_n_Sm. apply le_plus_r. *)
+  (* Defined. *)
+  (* Next Obligation. *)
+  (*   apply le_lt_n_Sm. rewrite <- plus_assoc. apply plus_le_compat_l. *)
+  (*   rewrite Nat.add_comm. apply le_plus_trans. *)
+  (*   apply Nat.le_le_succ_r. apply le_plus_l. *)
+  (* Defined. *)
+  (* Next Obligation. *)
+  (*   apply le_lt_n_Sm. transitivity (ChorSize C12 + S (ChorSize C21  + ChorSize C22)). *)
+  (*   apply plus_le_compat_l. apply Nat.le_le_succ_r. apply le_plus_r. *)
+  (*   apply plus_le_compat_r. apply le_plus_r. *)
+  (* Defined. *)
+  (* Next Obligation. *)
+  (*   apply le_lt_n_Sm. transitivity (ChorSize C11 + S (ChorSize C21 + ChorSize C22)). *)
+  (*   apply plus_le_compat_l. apply Nat.le_le_succ_r. apply le_plus_l. *)
+  (*   apply plus_le_compat_r. apply le_plus_l. *)
+  (* Defined. *)
+  (* Next Obligation. *)
+  (*   apply le_lt_n_Sm. transitivity (ChorSize C12 + S (ChorSize C21  + ChorSize C22)). *)
+  (*   apply plus_le_compat_l. apply Nat.le_le_succ_r. apply le_plus_r. *)
+  (*   apply plus_le_compat_r. apply le_plus_r. *)
+  (* Defined. *)
+  (* Next Obligation. *)
+  (*   apply le_lt_n_Sm. transitivity (ChorSize C11 + S (ChorSize C21 + ChorSize C22)). *)
+  (*   apply plus_le_compat_l. apply Nat.le_le_succ_r. apply le_plus_l. *)
+  (*   apply plus_le_compat_r. apply le_plus_l. *)
+  (* Defined. *)
+  (* Next Obligation. *)
+  (*   apply le_lt_n_Sm. transitivity (ChorSize C12 + S (ChorSize C21  + ChorSize C22)). *)
+  (*   apply plus_le_compat_l. apply Nat.le_le_succ_r. apply le_plus_r. *)
+  (*   apply plus_le_compat_r. apply le_plus_r. *)
+  (* Defined. *)
+  (* Next Obligation. *)
+  (*   apply le_lt_n_Sm. transitivity (ChorSize C11 + S (ChorSize C21 + ChorSize C22)). *)
+  (*   apply plus_le_compat_l. apply Nat.le_le_succ_r. apply le_plus_r. *)
+  (*   apply plus_le_compat_r. apply le_plus_l. *)
+  (* Defined. *)
+  (* Next Obligation.     *)
+  (*   apply le_lt_n_Sm. transitivity (ChorSize C12 + S (ChorSize C21  + ChorSize C22)). *)
+  (*   apply plus_le_compat_l. apply Nat.le_le_succ_r. apply le_plus_r. *)
+  (*   apply plus_le_compat_r. apply le_plus_r. *)
+  (* Defined. *)
+  (* Next Obligation. *)
+  (*   apply le_lt_n_Sm. rewrite plus_assoc_reverse. apply le_plus_r. *)
+  (* Defined. *)
+
+  (* Lemma NeededCommsSelf : forall (C : Chor) (v1 v2 : nat -> list Prin), *)
+  (*     NeededComms C C v1 v2 = nil. *)
+  (* Proof. *)
+  (*   unfold NeededComms; unfold NeededComms_func; unfold Fix_sub; *)
+  (*     unfold Fix_F_sub. *)
+  (*   intro C; induction C; intros v1 v2.  *)
+  (*   Ltac NCS := simpl; repeat match goal with *)
+  (*                  | [|- context[PrinEqDec ?p ?p]] => *)
+  (*                    let n := fresh "n" in *)
+  (*                    destruct (PrinEqDec p p) as [_ | n]; *)
+  (*                      [|exfalso; apply n; reflexivity] *)
+  (*                  | [|- context[ExprEqDec ?e ?e]] => *)
+  (*                    let n := fresh "n" in *)
+  (*                    destruct (ExprEqDec e e) as [_ | n]; *)
+  (*                    [|exfalso; apply n; reflexivity] *)
+  (*                  | [|- context[Nat.eq_dec ?n ?n]] => *)
+  (*                    let neq := fresh "n" in *)
+  (*                    destruct (Nat.eq_dec n n) as [_| neq]; *)
+  (*                    [| exfalso; apply neq; reflexivity] *)
+  (*                            end; try reflexivity. *)
+  (*   - NCS. *)
+  (*   - NCS. *)
+  (*   - simpl. NCS. *)
+  (*   - NCS. *)
+  (*   - NCS. *)
+
+  Fixpoint MergeProcs (p : PC.Role) (P1 P2 : PC.Proc) : PC.Proc :=
+    match P1 with
+    | PC.EndProc =>
+      match P2 with
+      | PC.EndProc => PC.IChoice p PC.EndProc PC.EndProc
+      | _ => PC.IChoice p PC.EndProc P2
+      end
+    | PC.VarProc n => PC.IChoice p P1 P2
+    | PC.DefProc _ _ => 
+      PC.IChoice p P1 P2
+    | PC.SendProc q e P1' =>
+      match P2 with
+      | PC.SendProc r e' P2' =>
+        if PC.RoleEqDec q r
+        then if ExprEqDec e e'
+             then if PC.RoleEqDec p q
+                  then PC.IChoice p P1 P2
+                  else PC.SendProc q e (MergeProcs p P1' P2')
+             else PC.IChoice p P1 P2
+        else PC.IChoice p P1 P2
+      | _ => PC.IChoice p P1 P2
+      end
+    | PC.RecvProc q P1' =>
+      match P2 with
+      |PC.RecvProc r P2' =>
+       if PC.RoleEqDec q r
+       then if PC.RoleEqDec p q
+            then PC.IChoice p P1 P2
+            else PC.RecvProc q (MergeProcs p P1' P2')
+       else PC.IChoice p P1 P2
+      | _ => PC.IChoice p P1 P2
+      end
+    | PC.EChoiceL q P1' =>
+      match P2 with
+      | PC.EChoiceL r P2' =>
+        if PC.RoleEqDec q r
+        then (* if PC.RoleEqDec p q *)
+             (* then PC.IChoice p P1 P2 *)
+             (* else *) PC.EChoiceL q (MergeProcs p P1' P2')
+        else PC.IChoice p P1 P2
+      | _ => PC.IChoice p P1 P2
+      end
+    | PC.EChoiceR q P1' => 
+      match P2 with
+      | PC.EChoiceR r P2' =>
+        if PC.RoleEqDec q r
+        then (* if PC.RoleEqDec p q *)
+             (* then PC.IChoice p P1 P2 *)
+             (* else *) PC.EChoiceR q (MergeProcs p P1' P2')
+        else PC.IChoice p P1 P2
+      | _ => PC.IChoice p P1 P2
+      end
+    | PC.IChoice q P11 P12 =>
+      match P2 with
+      | PC.IChoice r P21 P22 =>
+        if PC.RoleEqDec q r
+        then if PC.RoleEqDec p q
+             then PC.IChoice p P1 P2
+             else PC.IChoice q (MergeProcs p P11 P21) (MergeProcs p P12 P22)
+        else PC.IChoice p P1 P2
+      | _ => PC.IChoice p P1 P2
+      end
+    | PC.IfThenElse e P11 P12 =>
+      match P2 with
+      | PC.IfThenElse e' P21 P22 =>
+        if ExprEqDec e e'
+        then PC.IfThenElse e (MergeProcs p P11 P21) (MergeProcs p P12 P22)
+        else PC.IChoice p P1 P2
+      | _ => PC.IChoice p P1 P2
+      end
+    end.
+  
+    
+  Fixpoint EPP' (C : Chor) (p : Prin) (l : list Prin) : PC.Proc :=
     match C with
     | CDone q e =>
       if PrinEqDec p q
@@ -1637,22 +1894,117 @@ Module Choreography (Import E : Expression).
     | CVar n => PC.VarProc n
     | CSend q e r C' =>
       if PrinEqDec p q
-      then PC.SendProc r e (EPP C' p)
+      then PC.SendProc r e (EPP' C' p l)
       else if PrinEqDec p r
-           then PC.RecvProc q (EPP C' p)
-           else EPP C' p
+           then PC.RecvProc q (EPP' C' p l)
+           else EPP' C' p l
     | CIf q e C1 C2 =>
       if PrinEqDec p q
-      then PC.IfThenElse e (DoCommsLeft (CommList C1 C2) (EPP C1 p))
-                      (DoCommsRight (CommList C1 C2) (EPP C2 p))
-      else let P := (EPP C1 p) in
-           let Q := (EPP C2 p) in
-           if PC.ProcEqDec P PC.EndProc
-           then if PC.ProcEqDec Q PC.EndProc
-                then PC.EndProc
-                else PC.IChoice q P Q
-           else PC.IChoice q P Q             
-    | CDef C1 C2 => PC.DefProc (EPP C1 p) (EPP C2 p)
+      then let l' := remove PrinEqDec p l in
+           PC.IfThenElse e (DoCommsLeft l' (EPP' C1 p l)) (DoCommsRight l' (EPP' C2 p l))
+      else MergeProcs q (EPP' C1 p l) (EPP' C2 p l)
+    | CDef C1 C2 => PC.DefProc (EPP' C1 p l) (EPP' C2 p l)
     end.
+
+  Definition EPP (C : Chor) (p : Prin) := EPP' C p (PrinSort.sort (nubPrin (ThreadNames C))).
+
+  Fixpoint InPrinList (r : PC.Role) (l : list Prin) : option Prin :=
+    match l with
+    | nil => None
+    | cons p l => if PC.RoleEqDec p r
+                 then Some p
+                 else InPrinList r l       
+    end.
+
+  Fixpoint ProjectEnv (C : Chor) : PC.Proc :=
+    match C with
+    | CDone p e => PC.RecvProc p PC.EndProc
+    | CVar n => PC.VarProc n
+    | CSend q e r C' => ProjectEnv C'
+    | CIf p e C1 C2 => PC.IChoice p (ProjectEnv C1) (ProjectEnv C2)
+    | CDef C1 C2 => PC.DefProc (ProjectEnv C1) (ProjectEnv C2)
+    end.
+    
+
+  Definition FullEPP (C : Chor) : PC.Role -> PC.Proc :=
+    fun r => match InPrinList r (ThreadNames C) with
+          | Some p => EPP C p
+          | None => if PC.RoleEqDec r Env
+                   then ProjectEnv C
+                   else PC.EndProc
+          end.
+  Lemma MergeCommsLeft : forall (p : Prin) (l : list Prin) (P Q : PC.Proc),
+      MergeProcs p (DoCommsLeft l P) (DoCommsLeft l Q) = DoCommsLeft l (MergeProcs p P Q).
+  Proof.
+    intros p l; revert p; induction l; intros p P Q; simpl.
+    - destruct (PC.RoleEqDec Env Env) as [_ | neq]; [|exfalso; apply neq; reflexivity].
+      destruct (PC.RoleEqDec p Env) as [eq | _]; [exfalso; apply (EnvNotPrin p); auto|].
+      reflexivity.
+    - destruct (PC.RoleEqDec a a) as [_ | neq]; [|exfalso; apply neq; reflexivity].
+      rewrite IHl; reflexivity.
+  Qed.      
+  Lemma MergeCommsRight : forall (p : Prin) (l : list Prin) (P Q : PC.Proc),
+      MergeProcs p (DoCommsRight l P) (DoCommsRight l Q) = DoCommsRight l (MergeProcs p P Q).
+  Proof.
+    intros p l; revert p; induction l; intros p P Q; simpl.
+    - destruct (PC.RoleEqDec Env Env) as [_ | neq]; [|exfalso; apply neq; reflexivity].
+      destruct (PC.RoleEqDec p Env) as [eq | _]; [exfalso; apply (EnvNotPrin p); auto|].
+      reflexivity.
+    - destruct (PC.RoleEqDec a a) as [_ | neq]; [|exfalso; apply neq; reflexivity].
+      rewrite IHl; reflexivity.
+  Qed.      
+
+  Lemma SwapMerge : forall p q P1 P2 P3 P4,
+      MergeProcs p (MergeProcs q P1 P2) (MergeProcs q P3 P4)
+      = MergeProcs q (MergeProcs p P1 P3) (MergeProcs p P2 P4).
+  Proof.
+    intros p q P1; induction P1; simpl; destruct P2; simpl.
+  Abort.
   
+Theorem Equiv'Project : forall (C1 C2 : Chor),
+      C1 ≡' C2 -> forall (p : Prin) (l : list Prin), EPP' C1 p l = EPP' C2 p l.
+  Proof.
+    intros C1 C2 equiv'; induction equiv'; intros t l; unfold EPP; simpl in *; auto.
+    all: try (rewrite IHequiv'1; rewrite IHequiv'2; reflexivity).
+    all: repeat match goal with
+                | [ H1 : ?a <> ?c, H2 : ?b = ?a, H3 : ?b = ?c |- _ ] =>
+                  exfalso; apply H1; transitivity b; [symmetry; exact H2 | exact H3]
+                | [ |- context[PrinEqDec ?a ?b] ] =>
+                  destruct (PrinEqDec a b); simpl
+                | [ H : ?a <> ?a |- _ ] => exfalso; apply H; reflexivity
+                end;
+      try (rewrite IHequiv'); try (rewrite IHequiv'1; rewrite IHequiv'2); auto; simpl.
+    all: repeat match goal with
+                | [ H : PrinToRole ?a = PrinToRole ?b |- _ ] =>
+                  match goal with
+                  | [ H : a = b |- _ ] => fail 1
+                  | _ => assert (a = b) by (apply PrinToRoleInj; auto)
+                  end
+                | [ H1 : ?a <> ?b, H2 : ?a = ?b |- _] =>
+                  exfalso; apply H1; exact H1
+                | [ H1 : ?b <> ?a, H2 : ?a = ?b |- _] =>
+                  exfalso; apply H1; symmetry; exact H1
+                | [ H1 : ?a <> ?c, H2 : ?a = ?b, H3 : ?b = ?c |- _ ] =>
+                  exfalso; apply H1; transitivity b; auto
+                | [ H1 : ?a <> ?c, H2 : ?a = ?b, H3 : ?c = ?b |- _ ] =>
+                  exfalso; apply H1; transitivity b; auto
+                | [ H1 : ?a <> ?c, H2 : ?b = ?a, H3 : ?b = ?c |- _ ] =>
+                  exfalso; apply H1; transitivity b; auto
+                | [ H1 : ?a <> ?c, H2 : ?b = ?a, H3 : ?c = ?b |- _ ] =>
+                  exfalso; apply H1; transitivity b; auto
+                | [ |- context[PrinEqDec ?a ?b] ] =>
+                  destruct (PrinEqDec a b); simpl
+                | [ H : ?a <> ?a |- _ ] => exfalso; apply H; reflexivity
+                | [ |- context[PC.RoleEqDec ?a ?b] ] =>
+                  destruct (PC.RoleEqDec a b)
+                | [ |- context[ExprEqDec ?a ?b] ] =>
+                  destruct (ExprEqDec a b)
+                end;
+      try (rewrite IHequiv'); try (rewrite IHequiv'1; rewrite IHequiv'2); auto.
+    rewrite MergeCommsLeft. rewrite MergeCommsRight.
+    rewrite IHequiv'3. rewrite IHequiv'4. reflexivity.
+    rewrite MergeCommsLeft. rewrite MergeCommsRight. rewrite IHequiv'3. rewrite IHequiv'4.
+    reflexivity.
+    Abort.
+      
 End Choreography.
