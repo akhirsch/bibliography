@@ -2,10 +2,10 @@
 Expression.v
 TypedExpression.v
 SoundlyTypedExpression.v
-CompilableExpression.v
 Choreography.v
 TypedChoreography.v
 SoundlyTypedChoreography.v
+CompilableChoreography.v
 LambdaCalc.v
 STLC.v
 STLCSound.v
