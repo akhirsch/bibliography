@@ -5,10 +5,12 @@ Require Import Coq.Arith.PeanoNat.
 
 Require Export Expression.
 Require Export TypedExpression.
+Require Export SoundlyTypedExpression.
 
-Module MPST (E : Expression) (TE : TypedExpression E).
+Module MPST (E : Expression) (TE : TypedExpression E) (STE : SoundlyTypedExpression E TE).
   Import E.
   Import TE.
+  Import STE.
   
   Parameter Role : Set.
   Parameter RoleEqDec : forall p q : Role, {p = q} + {p <> q}.
@@ -265,12 +267,8 @@ Module MPST (E : Expression) (TE : TypedExpression E).
   Hint Rewrite SessionTypeIdSubstSpec : PiC.
 
   CoInductive SessionSubtype : SessionType -> SessionType -> Prop :=
-  | SubRefl: forall S : SessionType, SessionSubtype S S
-  | SubTrans : forall S T U : SessionType,
-      SessionSubtype S T
-      -> SessionSubtype T U
-      -> SessionSubtype S U
   | SubEnd : SessionSubtype (EndType) (EndType)
+  | SubVar : forall n : nat, SessionSubtype (TypeVar n) (TypeVar n)
   | SubμL : forall S T : SessionType,
       SessionSubtype (SessionTypeSubst S (fun n =>
                                           match n with
@@ -308,6 +306,105 @@ Module MPST (E : Expression) (TE : TypedExpression E).
       -> SessionSubtype (ReceiveDT p τ S1) (ReceiveDT p τ S2).
   Infix "≤s" := SessionSubtype (at level 16).
   Hint Constructors SessionSubtype : PiC.
+
+  CoFixpoint SubtypeRefl (T : SessionType) : T ≤s T :=
+    match T with
+    | EndType => SubEnd
+    | TypeVar n => SubVar n
+    | μ T' => SubμL _ _ (SubμR _ _ (SubtypeRefl _))
+    | EChoice p T1 => SubEChoice p T1 T1 (SubtypeRefl _)
+    | IChoice p T1 T2 => SubIChoice p T1 T2 T1 T2 (SubtypeRefl T1) (SubtypeRefl T2)
+    | SendT p T1 T2 => SubSend p T1 T2 T1 T2 (SubtypeRefl T1) (SubtypeRefl T2)
+    | ReceiveT p T1 T2 => SubReceive p T1 T2 T1 T2 (SubtypeRefl T1) (SubtypeRefl T2)
+    | SendDT p τ T' => SubSendDT p τ T' T' (SubtypeRefl T')
+    | ReceiveDT p τ T' => SubReceiveDT p τ T' T' (SubtypeRefl T')
+    end.
+
+  CoFixpoint SubtypeSym {S1 S2 : SessionType} (sub12 : S1 ≤s S2) : S2 ≤s S1 :=
+    match sub12 with
+    | SubEnd => SubEnd
+    | SubVar n => SubVar n
+    | SubμL T1 T2 pf => SubμR T2 T1 (SubtypeSym pf)
+    | SubμR T1 T2 pf => SubμL T2 T1 (SubtypeSym pf)
+    | SubEChoice p T1 T2 pf => SubEChoice p T2 T1 (SubtypeSym pf)
+    | SubIChoice p S1 S2 T1 T2 pf1 pf2 =>
+      SubIChoice p _ _ _ _ (SubtypeSym pf1)  (SubtypeSym pf2)
+    | SubSend p S1 S2 T1 T2 pf1 pf2 =>
+      SubSend p _ _ _ _ (SubtypeSym pf1) (SubtypeSym pf2)
+    | SubReceive p S1 S2 T1 T2 pf1 pf2 =>
+      SubReceive p _ _ _ _ (SubtypeSym pf1) (SubtypeSym pf2)
+    | SubSendDT p τ S1 S2 pf => SubSendDT p τ _ _ (SubtypeSym pf)
+    | SubReceiveDT p τ S1 S2 pf => SubReceiveDT p τ S2 S1 (SubtypeSym pf)
+    end.
+
+  Program CoFixpoint SubtypeSubst {S1 S2 : SessionType} (sub12 : S1 ≤s S2)
+          (σ : nat -> SessionType) : S1 [s| σ] ≤s S2 [s| σ] :=
+    match sub12 with
+    | SubEnd => SubEnd
+    | SubVar n => SubtypeRefl (σ n)
+    | SubμL T1 T2 pf => _
+    | SubμR T1 T2 pf => _
+    | SubEChoice p T1 T2 pf => SubEChoice p _ _ (SubtypeSubst pf σ)
+    | SubIChoice p S1 S2 T1 T2 pf1 pf2 =>
+      SubIChoice p _ _ _ _ (SubtypeSubst pf1 σ) (SubtypeSubst pf2 σ)
+    | SubSend p S1 S2 T1 T2 x x0 => _
+    | SubReceive p S1 S2 T1 T2 x x0 => _
+    | SubSendDT p τ S1 S2 x => _
+    | SubReceiveDT p τ S1 S2 x => _
+    end.
+  Next Obligation.
+  Admitted.
+  Next Obligation.
+  Admitted.
+  Next Obligation.
+    
+    
+
+  Program CoFixpoint SubtypeTrans {S1 S2 S3 : SessionType} (sub12 : S1 ≤s S2) (sub23 : S2 ≤s S3)
+    : S1 ≤s S3 :=
+    match sub12 with
+    | SubEnd => sub23
+    | SubVar n => sub23
+    | SubμL T1 T2 pf => SubμL T1 S3 (SubtypeTrans pf sub23)
+    | SubμR T1 T2 pf1 =>
+      match sub23 with
+      | SubEnd => _
+      | SubVar n => _
+      | SubμL T1 T2 pf2 => _
+      | SubμR T1 T2 x => _
+      | SubEChoice p T1 T2 x => _
+      | SubIChoice p S1 S2 T1 T2 x x0 => _
+      | SubSend p S1 S2 T1 T2 x x0 => _
+      | SubReceive p S1 S2 T1 T2 x x0 => _
+      | SubSendDT p τ S1 S2 x => _
+      | SubReceiveDT p τ S1 S2 x => _
+      end
+    | SubEChoice p T1 T2 x => _
+    | SubIChoice p T1 T2 T1' T2' x x0 => _
+    | SubSend p S1 S2 T1 T2 x x0 => _
+    | SubReceive p S1 S2 T1 T2 x x0 => _
+    | SubSendDT p τ S1 S2 x => _
+    | SubReceiveDT p τ S1 S2 x => _
+    end.
+  Next Obligation.
+    
+  Next Obligation.
+  
+  Theorem EndSubtype : forall T : SessionType, EndType ≤s T -> T = EndType.
+  Proof.
+    intro T; induction T; intro endsub; auto with PiC.
+    all: try (inversion endsub; fail).
+    inversion endsub.
+  
+  CoFixpoint SubtypeTrans {S1 S2 S3 : SessionType} (sub12 : S1 ≤s S2) (sub23 : S2 ≤s S3)
+    : S1 ≤ S3 :=
+    
+  
+  Lemma SubtypeRefl : forall S : SessionType, S ≤s S.
+  Proof.
+    intros S; induction S; auto with PiC.
+    apply SubμR. apply SubμL.
+
 
   Instance sessionSubtypeRefl  : Reflexive SessionSubtype  := SubRefl.
   Instance sessionSubtypeTrans : Transitive SessionSubtype := SubTrans.
@@ -955,6 +1052,8 @@ Module MPST (E : Expression) (TE : TypedExpression E).
       -> Θ ;; Γ ⋅ Δ ⊢st Q
       -> Θ ;; Γ ⋅ Δ ⊢st IfThenElse e P Q          
   where "Θ ;; Γ ⋅ Δ ⊢st P" := (ProcessTyping Θ Γ Δ P).
+
+  Inductive WithClosedExpressions
 
   (* An immediate consequence of 4.16 from "Less is More" *)
   Axiom SubjRed : forall (Θ : nat) (Γ : Chan -> SessionType) (Δ : nat -> ExprTyp) (P : PiCalc),
