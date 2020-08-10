@@ -1,4 +1,5 @@
-Require Import Expression.
+Require Export Expression.
+Require Export Locations.
 
 Require Import Coq.Classes.RelationClasses.
 Require Import Coq.Logic.JMeq.
@@ -6,26 +7,25 @@ Require Import Coq.Arith.Arith.
 Require Import Coq.Lists.List.
 Require Import Coq.Sorting.Permutation.
 Require Import Coq.Sorting.Sorted.
-Require Import Program.Tactics.
+
 From Equations Require Import Equations.
 
-Module PiCalc (E : Expression).
+Module PiCalc (E : Expression) (L : Locations).
+        
   Import E.
-
-  Import ListNotations.
-
-  Parameter Role : Set.
-  Parameter RoleEqDec : forall p q : Role, {p = q} + {p <> q}.
+  Module LN := (LocationNotations L).
+  Import LN.
+  Module LF := (LocationFacts L).
 
   Inductive Proc : Set :=
     EndProc : Proc
   | VarProc : nat -> Proc
   | DefProc : Proc -> Proc -> Proc
-  | SendProc : Role -> Expr -> Proc -> Proc
-  | RecvProc : Role -> Proc -> Proc
-  | EChoiceL : Role -> Proc -> Proc
-  | EChoiceR : Role -> Proc -> Proc
-  | IChoice : Role -> Proc -> Proc -> Proc
+  | SendProc : L.t -> Expr -> Proc -> Proc
+  | RecvProc : L.t -> Proc -> Proc
+  | EChoiceL : L.t -> Proc -> Proc
+  | EChoiceR : L.t -> Proc -> Proc
+  | IChoice : L.t -> Proc -> Proc -> Proc
   | IfThenElse : Expr -> Proc -> Proc -> Proc.
   (* | Par : Proc -> Proc -> Proc. *)
   Hint Constructors Proc : PiC.
@@ -34,7 +34,7 @@ Module PiCalc (E : Expression).
     decide equality.
     apply Nat.eq_dec.
     1,7: apply ExprEqDec.
-    all: apply RoleEqDec.
+    all: apply L.eq_dec.
   Qed.
 
   Definition ProcRenamingUp : (nat -> nat) -> nat -> nat :=
@@ -262,14 +262,14 @@ Module PiCalc (E : Expression).
             | S n' => VarProc n'
             end.
 
-  Inductive PiCalcStep : (Role -> Proc) -> (Role -> Proc) -> Prop :=
-    CommEStep : forall (p q : Role) (e e' : Expr) (P : Proc) (Π Π' : Role -> Proc) (* (CC : PiCalcRedContext) *),
+  Inductive PiCalcStep : (L.t -> Proc) -> (L.t -> Proc) -> Prop :=
+    CommEStep : forall (p q : L.t) (e e' : Expr) (P : Proc) (Π Π' : L.t -> Proc) (* (CC : PiCalcRedContext) *),
       ExprStep e e'
       -> Π p = (* ApplyRedContext CC *) (SendProc q e P)
       -> (forall r, r <> p -> Π r = Π' r)
       -> Π' p = (* ApplyRedContext CC *) (SendProc q e' P)
       -> PiCalcStep Π Π'
-  | CommVStep : forall (p q : Role) (v : Expr) (P Q : Proc) (Π Π' : Role -> Proc) (* (CC CC' : PiCalcRedContext) *),
+  | CommVStep : forall (p q : L.t) (v : Expr) (P Q : Proc) (Π Π' : L.t -> Proc) (* (CC CC' : PiCalcRedContext) *),
       p <> q
       -> ExprVal v
       -> Π p = (* ApplyRedContext CC *) (SendProc q v P)
@@ -278,28 +278,28 @@ Module PiCalc (E : Expression).
       -> Π' p = (* ApplyRedContext CC *) P
       -> Π' q = (* ApplyRedContext CC' *) (Q [πe| CommSubst v])
       -> PiCalcStep Π Π'
-  | IfEStep : forall (p : Role) (e e' : Expr) (P Q : Proc) (Π Π' : Role -> Proc) (* (CC : PiCalcRedContext) *),
+  | IfEStep : forall (p : L.t) (e e' : Expr) (P Q : Proc) (Π Π' : L.t -> Proc) (* (CC : PiCalcRedContext) *),
       ExprStep e e'
       -> Π p = (* ApplyRedContext CC *) (IfThenElse e P Q)
       -> (forall r, r <> p -> Π r = Π' r)
       -> Π' p = (* ApplyRedContext CC *) (IfThenElse e' P Q)
       -> PiCalcStep Π Π'
-  | IfTrueStep : forall (p : Role) (P Q : Proc) (Π Π' : Role -> Proc) (* (CC : PiCalcRedContext) *),
+  | IfTrueStep : forall (p : L.t) (P Q : Proc) (Π Π' : L.t -> Proc) (* (CC : PiCalcRedContext) *),
       Π p = (* ApplyRedContext CC *) (IfThenElse tt P Q)
       -> (forall r, r <> p -> Π r = Π' r)
       -> Π' p = (* ApplyRedContext CC  *)P
       -> PiCalcStep Π Π'
-  | IfFalseStep : forall (p : Role) (P Q : Proc) (Π Π' : Role -> Proc) (* (CC : PiCalcRedContext) *),
+  | IfFalseStep : forall (p : L.t) (P Q : Proc) (Π Π' : L.t -> Proc) (* (CC : PiCalcRedContext) *),
       Π p = (* ApplyRedContext CC *) (IfThenElse ff P Q)
       -> (forall r, r <> p -> Π r = Π' r)
       -> Π' p = (* ApplyRedContext CC *) Q
       -> PiCalcStep Π Π'
-  | DefStep : forall (p : Role) (P Q : Proc) (Π Π' : Role -> Proc) (* (CC : PiCalcRedContext) *),
+  | DefStep : forall (p : L.t) (P Q : Proc) (Π Π' : L.t -> Proc) (* (CC : PiCalcRedContext) *),
       Π p = (* ApplyRedContext CC *) (DefProc P Q)
       -> (forall r, r <> p -> Π r = Π' r)
       -> Π' p = (* ApplyRedContext CC *) (Q [π| PiDefSubst P])
       -> PiCalcStep Π Π'
-  | ChooseLStep : forall (p q : Role) (P Q1 Q2 : Proc) (Π Π' : Role -> Proc) (* (CC CC' : PiCalcRedContext) *),
+  | ChooseLStep : forall (p q : L.t) (P Q1 Q2 : Proc) (Π Π' : L.t -> Proc) (* (CC CC' : PiCalcRedContext) *),
       p <> q
       -> Π p = (* ApplyRedContext CC *) (EChoiceL q P)
       -> Π q = (* ApplyRedContext CC'  *)(IChoice p Q1 Q2)
@@ -307,7 +307,7 @@ Module PiCalc (E : Expression).
       -> Π' p = (* ApplyRedContext CC *) P
       -> Π' q = (* ApplyRedContext CC' *) Q1
       -> PiCalcStep Π Π'
-  | ChooseRStep : forall (p q : Role) (P Q1 Q2 : Proc) (Π Π' : Role -> Proc) (* (CC CC' : PiCalcRedContext) *),
+  | ChooseRStep : forall (p q : L.t) (P Q1 Q2 : Proc) (Π Π' : L.t -> Proc) (* (CC CC' : PiCalcRedContext) *),
       p <> q
       -> Π p = (* ApplyRedContext CC *) (EChoiceR q P)
       -> Π q = (* ApplyRedContext CC' *) (IChoice p Q1 Q2)
@@ -316,12 +316,12 @@ Module PiCalc (E : Expression).
       -> Π' q = (* ApplyRedContext CC' *) Q2
       -> PiCalcStep Π Π'.
 
-  Inductive PiManyStep : (Role -> Proc) -> (Role -> Proc) -> Prop :=
-  | PiZeroStep : forall (Π : Role -> Proc), PiManyStep Π Π
-  | PiExtraStep : forall {Π1 Π2 Π3 : Role -> Proc},
+  Inductive PiManyStep : (L.t -> Proc) -> (L.t -> Proc) -> Prop :=
+  | PiZeroStep : forall (Π : L.t -> Proc), PiManyStep Π Π
+  | PiExtraStep : forall {Π1 Π2 Π3 : L.t -> Proc},
       PiCalcStep Π1 Π2 -> PiManyStep Π2 Π3 -> PiManyStep Π1 Π3.
 
-  Definition PiOneStep (Π1 Π2 : Role -> Proc) (step : PiCalcStep Π1 Π2) : PiManyStep Π1 Π2 :=
+  Definition PiOneStep (Π1 Π2 : L.t -> Proc) (step : PiCalcStep Π1 Π2) : PiManyStep Π1 Π2 :=
     PiExtraStep step (PiZeroStep Π2).
 
   Instance PiManyStepRefl : Reflexive PiManyStep := PiZeroStep.
@@ -335,8 +335,8 @@ Module PiCalc (E : Expression).
     apply IHmstep1. exact mstep34.
   Defined.
 
-  Inductive DeadlockFree : (Role -> Proc) -> Prop :=
-    mkDF : forall Π : Role -> Proc,
+  Inductive DeadlockFree : (L.t -> Proc) -> Prop :=
+    mkDF : forall Π : L.t -> Proc,
       ((forall p, Π p = EndProc) \/ (exists Π', PiCalcStep Π Π'))
       -> (forall Π', PiCalcStep Π Π' -> DeadlockFree Π')
       -> DeadlockFree Π.
@@ -352,8 +352,8 @@ Module PiCalc (E : Expression).
                | mkDF _ _ x => x
                end.
 
-  Inductive Live : (Role -> Proc) -> Prop :=
-    mkLive : forall Π : Role -> Proc,
+  Inductive Live : (L.t -> Proc) -> Prop :=
+    mkLive : forall Π : L.t -> Proc,
       (forall p q e P, Π p = SendProc q e P -> exists Π', PiManyStep Π Π' /\ Π' p = P)
       -> (forall p q P, Π p = RecvProc q P -> exists Π', PiManyStep Π Π' /\ Π' p = P)
       -> (forall p q P, Π p = EChoiceL q P -> exists Π', PiManyStep Π Π' /\ Π' p = P)
@@ -1960,10 +1960,10 @@ Module PiCalc (E : Expression).
   (* (*     destruct (Nat.eq_dec n n) as [_|neq]; [reflexivity|exfalso; apply neq; auto]. *) *)
   (* (*   -  *) *)
   
-  (* Theorem PiCalcEquivStep : forall Π1 Π2 Π1' : Role -> Proc, *)
-  (*     (forall p : Role, Π1 p ≡π Π1' p) -> *)
+  (* Theorem PiCalcEquivStep : forall Π1 Π2 Π1' : L.t -> Proc, *)
+  (*     (forall p : L.t, Π1 p ≡π Π1' p) -> *)
   (*     PiCalcStep Π1 Π2 -> *)
-  (*     exists Π2', (forall p : Role, Π2 p ≡π Π2' p) /\ PiCalcStep Π1' Π2'. *)
+  (*     exists Π2', (forall p : L.t, Π2 p ≡π Π2' p) /\ PiCalcStep Π1' Π2'. *)
   (* Proof. *)
   (*   intros Π1 Π2 Π1' ext_equiv step; revert Π1' ext_equiv; induction step; *)
   (*     intros Π1' ext_equiv. *)
@@ -1974,18 +1974,18 @@ Module PiCalc (E : Expression).
   (*       destruct Hc as [Cequiv Hc]; destruct Hc as [equiv eq]; subst. *)
   (*     destruct (SendEquivInv _ _ _ _ equiv) as [Q'' HQ'']; *)
   (*          destruct HQ'' as [equiv'' eqQ'']; subst. *)
-  (*     exists (fun r => if RoleEqDec p r *)
+  (*     exists (fun r => if L.eq_dec p r *)
   (*              then ApplyRedContext CC2 (SendProc q e' Q'') *)
   (*              else Π1' r); split. *)
-  (*     -- intro r; destruct (RoleEqDec p r); subst. *)
+  (*     -- intro r; destruct (L.eq_dec p r); subst. *)
   (*        rewrite H2. apply CCEquiv; auto with PiC. *)
   (*        transitivity (Π r). rewrite H1; auto with PiC. *)
   (*        apply ext_equiv. *)
   (*     -- apply CommEStep with (p := p) (q := q) (e := e) (e' := e') (P := Q'') (CC := CC2); *)
   (*          auto. *)
-  (*        intros r H3; destruct (RoleEqDec p r); subst; *)
+  (*        intros r H3; destruct (L.eq_dec p r); subst; *)
   (*          [exfalso; apply H3; auto | reflexivity]. *)
-  (*        destruct (RoleEqDec p p); subst; auto. exfalso; apply n; auto. *)
+  (*        destruct (L.eq_dec p p); subst; auto. exfalso; apply n; auto. *)
   (*   - pose proof (ext_equiv p) as equivp. *)
   (*     rewrite H1 in equivp. *)
   (*     apply CCEquivInversion in equivp; [| simpl; auto]. *)
@@ -2000,24 +2000,24 @@ Module PiCalc (E : Expression).
   (*       destruct HQ''' as [equiv''' eqQ''']; subst. *)
   (*     destruct (RecvEquivInv _ _ _ equivQ) as [Q'''' HQ'''']; *)
   (*       destruct HQ'''' as [equiv'''' eqQ'''']; subst. *)
-  (*     exists (fun r => if RoleEqDec p r *)
+  (*     exists (fun r => if L.eq_dec p r *)
   (*              then ApplyRedContext CC2 Q''' *)
-  (*              else if RoleEqDec q r *)
+  (*              else if L.eq_dec q r *)
   (*                   then ApplyRedContext CC3 (Q'''' [πe|CommSubst v]) *)
   (*                   else Π1' r); split. *)
-  (*     -- intros p0. destruct (RoleEqDec p p0); subst. *)
+  (*     -- intros p0. destruct (L.eq_dec p p0); subst. *)
   (*        rewrite H4. apply CCEquiv; auto with PiC. *)
-  (*        destruct (RoleEqDec q p0); subst. *)
+  (*        destruct (L.eq_dec q p0); subst. *)
   (*        rewrite H5. apply CCEquiv; auto with PiC. *)
   (*        apply EquivESubstStable; auto. *)
   (*        transitivity (Π p0); auto. rewrite H3; auto. reflexivity. *)
   (*     -- apply CommVStep with (v := v) (p := p)(q := q) (P := Q''') (Q := Q'''') (CC := CC2) (CC' := CC3); auto with PiC. *)
-  (*        intros r H6 H7. destruct (RoleEqDec p r); subst; [exfalso; apply H6; auto|]. *)
-  (*        destruct (RoleEqDec q r); subst; [exfalso; apply H7; auto|]. *)
+  (*        intros r H6 H7. destruct (L.eq_dec p r); subst; [exfalso; apply H6; auto|]. *)
+  (*        destruct (L.eq_dec q r); subst; [exfalso; apply H7; auto|]. *)
   (*        reflexivity. *)
-  (*        destruct (RoleEqDec p p) as [_|n]; [reflexivity|exfalso; apply n; auto]. *)
-  (*        destruct (RoleEqDec p q) as [eqpq|_]; subst; [exfalso; apply H; auto|]. *)
-  (*        destruct (RoleEqDec q q) as [_|n];[reflexivity|exfalso; apply n; auto]. *)
+  (*        destruct (L.eq_dec p p) as [_|n]; [reflexivity|exfalso; apply n; auto]. *)
+  (*        destruct (L.eq_dec p q) as [eqpq|_]; subst; [exfalso; apply H; auto|]. *)
+  (*        destruct (L.eq_dec q q) as [_|n];[reflexivity|exfalso; apply n; auto]. *)
   (*   - pose proof (ext_equiv p) as equivp. rewrite H0 in equivp. *)
   (*     apply CCEquivInversion in equivp; simpl; auto. *)
   (*     destruct equivp as [CC2 H']; destruct H' as [Q' H']; *)
@@ -2025,17 +2025,17 @@ Module PiCalc (E : Expression).
   (*     destruct (IfThenElseEquivInv _ _ _ _ equiv') as [P' H']; *)
   (*       destruct H' as [R' H']; destruct H' as [equivP H']; destruct H' as [equivQ eq]; *)
   (*         subst. *)
-  (*     exists (fun r => if RoleEqDec p r *)
+  (*     exists (fun r => if L.eq_dec p r *)
   (*              then ApplyRedContext CC2 (IfThenElse e' P' R') *)
   (*              else Π1' r); split. *)
-  (*     -- intro r; destruct (RoleEqDec p r); subst. *)
+  (*     -- intro r; destruct (L.eq_dec p r); subst. *)
   (*        rewrite H2. apply CCEquiv; auto with PiC. *)
   (*        rewrite <- H1; auto. *)
   (*     -- apply IfEStep with (p := p) (e := e) (e' := e') (P := P') (Q := R') (CC := CC2); *)
   (*          auto with PiC. *)
   (*        intros r H3. *)
-  (*        destruct (RoleEqDec p r) as [eq|_]; [exfalso; apply H3; auto|reflexivity]. *)
-  (*        destruct (RoleEqDec p p) as [_|n]; [reflexivity|exfalso;apply n; auto]. *)
+  (*        destruct (L.eq_dec p r) as [eq|_]; [exfalso; apply H3; auto|reflexivity]. *)
+  (*        destruct (L.eq_dec p p) as [_|n]; [reflexivity|exfalso;apply n; auto]. *)
   (*   - pose proof (ext_equiv p) as equivp. rewrite H in equivp. *)
   (*     apply CCEquivInversion in equivp; simpl; auto. *)
   (*     destruct equivp as [CC2 eqv]; destruct eqv as [Q' eqv]; *)
@@ -2043,17 +2043,17 @@ Module PiCalc (E : Expression).
   (*     destruct (IfThenElseEquivInv _ _ _ _ IfEquiv) as [P' H']; *)
   (*       destruct H' as [R' H']; destruct H' as [equivP H']; destruct H' as [equivQ eq']; *)
   (*         subst. *)
-  (*     exists (fun r => if RoleEqDec p r *)
+  (*     exists (fun r => if L.eq_dec p r *)
   (*              then ApplyRedContext CC2 P' *)
   (*              else Π1' r); split. *)
-  (*     -- intro r; destruct (RoleEqDec p r); subst. *)
+  (*     -- intro r; destruct (L.eq_dec p r); subst. *)
   (*        rewrite H1. apply CCEquiv; auto with PiC. *)
   (*        rewrite <- H0; auto with PiC. *)
   (*     -- apply IfTrueStep with (p := p) (P := P') (Q := R') (CC := CC2). *)
   (*        rewrite <- eq. reflexivity. *)
-  (*        intros r n. destruct (RoleEqDec p r) as [eqrp|_]; *)
+  (*        intros r n. destruct (L.eq_dec p r) as [eqrp|_]; *)
   (*                      [exfalso; apply n; auto| reflexivity]. *)
-  (*        destruct (RoleEqDec p p) as [_|n]; [reflexivity|exfalso; apply n; auto]. *)
+  (*        destruct (L.eq_dec p p) as [_|n]; [reflexivity|exfalso; apply n; auto]. *)
   (*   - pose proof (ext_equiv p) as equivp. rewrite H in equivp. *)
   (*     apply CCEquivInversion in equivp; simpl; auto. *)
   (*     destruct equivp as [CC2 eqv]; destruct eqv as [Q' eqv]; *)
@@ -2061,17 +2061,17 @@ Module PiCalc (E : Expression).
   (*     destruct (IfThenElseEquivInv _ _ _ _ IfEquiv) as [P' H']; *)
   (*       destruct H' as [R' H']; destruct H' as [equivP H']; destruct H' as [equivQ eq']; *)
   (*         subst. *)
-  (*     exists (fun r => if RoleEqDec p r *)
+  (*     exists (fun r => if L.eq_dec p r *)
   (*              then ApplyRedContext CC2 R' *)
   (*              else Π1' r); split. *)
-  (*     -- intro r; destruct (RoleEqDec p r); subst. *)
+  (*     -- intro r; destruct (L.eq_dec p r); subst. *)
   (*        rewrite H1. apply CCEquiv; auto with PiC. *)
   (*        rewrite <- H0; auto with PiC. *)
   (*     -- apply IfFalseStep with (p := p) (P := P') (Q := R') (CC := CC2). *)
   (*        rewrite <- eq. reflexivity. *)
-  (*        intros r n. destruct (RoleEqDec p r) as [eqrp|_]; *)
+  (*        intros r n. destruct (L.eq_dec p r) as [eqrp|_]; *)
   (*                      [exfalso; apply n; auto| reflexivity]. *)
-  (*        destruct (RoleEqDec p p) as [_|n]; [reflexivity|exfalso; apply n; auto]. *)
+  (*        destruct (L.eq_dec p p) as [_|n]; [reflexivity|exfalso; apply n; auto]. *)
   (*   - pose proof (ext_equiv p) as equivp. rewrite H in equivp. *)
   (*     apply CCEquivInversion in equivp; simpl; auto. *)
   (*     destruct equivp as [CC2 eqv]; destruct eqv as [Q' eqv]; *)
@@ -2079,19 +2079,19 @@ Module PiCalc (E : Expression).
   (*     destruct (DefEquivInv _ _ _ DefEquiv) as [P' H']; *)
   (*       destruct H' as [R' H']; destruct H' as [equivP H']; *)
   (*         destruct H' as [equivR H']; subst. *)
-  (*     exists (fun r => if RoleEqDec p r *)
+  (*     exists (fun r => if L.eq_dec p r *)
   (*              then ApplyRedContext CC2 (R' [π|PiDefSubst P']) *)
   (*              else Π1' r); split. *)
-  (*     -- intro r. destruct (RoleEqDec p r); subst. *)
+  (*     -- intro r. destruct (L.eq_dec p r); subst. *)
   (*        rewrite H1. apply CCEquiv; auto with PiC. apply EquivSubstStable; auto. *)
   (*        unfold PiDefSubst. intro n; destruct n; auto with PiC. *)
   (*        apply EquivSubstStable; auto. *)
   (*        destruct n; auto with PiC. *)
   (*        rewrite <- H0; auto with PiC. *)
   (*     -- apply DefStep with (p := p) (P := P') (Q := R') (CC := CC2); auto with PiC. *)
-  (*        intros r n; destruct (RoleEqDec p r) as [ e|_]; *)
+  (*        intros r n; destruct (L.eq_dec p r) as [ e|_]; *)
   (*          [exfalso; apply n; auto|reflexivity]. *)
-  (*        destruct (RoleEqDec p p) as [_|n]; [reflexivity|exfalso; apply n; auto]. *)
+  (*        destruct (L.eq_dec p p) as [_|n]; [reflexivity|exfalso; apply n; auto]. *)
   (*   - pose proof (ext_equiv p) as equivp; rewrite H0 in equivp. *)
   (*     pose proof (ext_equiv q) as equivq; rewrite H1 in equivq. *)
   (*     apply CCEquivInversion in equivp; simpl; auto. *)
@@ -2105,25 +2105,25 @@ Module PiCalc (E : Expression).
   (*     destruct (IChoiceEquivInv _ _ _ _ ICequiv) as [Q1' H']; *)
   (*       destruct H' as [Q2' H']; destruct H' as [equivQ1 H']; *)
   (*         destruct H' as [equivQ2 eq']; subst. *)
-  (*     exists (fun r => if RoleEqDec p r *)
+  (*     exists (fun r => if L.eq_dec p r *)
   (*              then ApplyRedContext CC2 P' *)
-  (*              else if RoleEqDec q r *)
+  (*              else if L.eq_dec q r *)
   (*                   then ApplyRedContext CC3 Q1' *)
   (*                   else Π1' r); split. *)
-  (*     -- intro r. destruct (RoleEqDec p r); subst. *)
+  (*     -- intro r. destruct (L.eq_dec p r); subst. *)
   (*        rewrite H3. apply CCEquiv; auto with PiC. *)
-  (*        destruct (RoleEqDec q r); subst. rewrite H4. apply CCEquiv; auto with PiC. *)
+  (*        destruct (L.eq_dec q r); subst. rewrite H4. apply CCEquiv; auto with PiC. *)
   (*        rewrite <- H2; auto. *)
   (*     -- apply ChooseLStep with (p := p) (q := q) (P := P') (Q1 := Q1') (Q2 := Q2') *)
   (*                               (CC := CC2) (CC' := CC3); auto. *)
   (*        intros r H5 H6. *)
-  (*        destruct (RoleEqDec p r) as [ e|_]; [exfalso; apply H5; auto|]. *)
-  (*        destruct (RoleEqDec q r) as [ e|_]; [exfalso; apply H6; auto|]. *)
+  (*        destruct (L.eq_dec p r) as [ e|_]; [exfalso; apply H5; auto|]. *)
+  (*        destruct (L.eq_dec q r) as [ e|_]; [exfalso; apply H6; auto|]. *)
   (*        reflexivity. *)
-  (*        destruct (RoleEqDec p p) as [_|n]; [|exfalso; apply n; auto]. *)
+  (*        destruct (L.eq_dec p p) as [_|n]; [|exfalso; apply n; auto]. *)
   (*        reflexivity. *)
-  (*        destruct (RoleEqDec p q) as [ e|_]; [exfalso; apply H; auto|]. *)
-  (*        destruct (RoleEqDec q q) as [_|n]; [|exfalso; apply n; auto]. *)
+  (*        destruct (L.eq_dec p q) as [ e|_]; [exfalso; apply H; auto|]. *)
+  (*        destruct (L.eq_dec q q) as [_|n]; [|exfalso; apply n; auto]. *)
   (*        reflexivity. *)
   (*   - pose proof (ext_equiv p) as equivp; rewrite H0 in equivp. *)
   (*     pose proof (ext_equiv q) as equivq; rewrite H1 in equivq. *)
@@ -2138,40 +2138,29 @@ Module PiCalc (E : Expression).
   (*     destruct (IChoiceEquivInv _ _ _ _ ICequiv) as [Q1' H']; *)
   (*       destruct H' as [Q2' H']; destruct H' as [equivQ1 H']; *)
   (*         destruct H' as [equivQ2 eq']; subst. *)
-  (*     exists (fun r => if RoleEqDec p r *)
+  (*     exists (fun r => if L.eq_dec p r *)
   (*              then ApplyRedContext CC2 P' *)
-  (*              else if RoleEqDec q r *)
+  (*              else if L.eq_dec q r *)
   (*                   then ApplyRedContext CC3 Q2' *)
   (*                   else Π1' r); split. *)
-  (*     -- intro r. destruct (RoleEqDec p r); subst. *)
+  (*     -- intro r. destruct (L.eq_dec p r); subst. *)
   (*        rewrite H3. apply CCEquiv; auto with PiC. *)
-  (*        destruct (RoleEqDec q r); subst. rewrite H4. apply CCEquiv; auto with PiC. *)
+  (*        destruct (L.eq_dec q r); subst. rewrite H4. apply CCEquiv; auto with PiC. *)
   (*        rewrite <- H2; auto. *)
   (*     -- apply ChooseRStep with (p := p) (q := q) (P := P') (Q1 := Q1') (Q2 := Q2') *)
   (*                               (CC := CC2) (CC' := CC3); auto. *)
   (*        intros r H5 H6. *)
-  (*        destruct (RoleEqDec p r) as [ e|_]; [exfalso; apply H5; auto|]. *)
-  (*        destruct (RoleEqDec q r) as [ e|_]; [exfalso; apply H6; auto|]. *)
+  (*        destruct (L.eq_dec p r) as [ e|_]; [exfalso; apply H5; auto|]. *)
+  (*        destruct (L.eq_dec q r) as [ e|_]; [exfalso; apply H6; auto|]. *)
   (*        reflexivity. *)
-  (*        destruct (RoleEqDec p p) as [_|n]; [|exfalso; apply n; auto]. *)
+  (*        destruct (L.eq_dec p p) as [_|n]; [|exfalso; apply n; auto]. *)
   (*        reflexivity. *)
-  (*        destruct (RoleEqDec p q) as [ e|_]; [exfalso; apply H; auto|]. *)
-  (*        destruct (RoleEqDec q q) as [_|n]; [|exfalso; apply n; auto]. *)
+  (*        destruct (L.eq_dec p q) as [ e|_]; [exfalso; apply H; auto|]. *)
+  (*        destruct (L.eq_dec q q) as [_|n]; [|exfalso; apply n; auto]. *)
   (*        reflexivity. *)
   (* Qed. *)
 
-  Parameter RoleOrder : Role -> Role -> Prop.
-  Notation "p ≤r q" := (RoleOrder p q) (at level 20).
-  Notation "p ≰r q" := (~ RoleOrder p q) (at level 20).
-  Notation "p <r q" := (p ≤r q /\ p <> q) (at level 20).
-  Parameter RoleOrderDec : forall p q, {p ≤r q} + {p ≰r q}.
-  Parameter RoleOrderTotal : forall p q, p ≤r q \/ q ≤r p.
-  Parameter RoleOrderRefl : forall p, p ≤r p.
-  Parameter RoleOrderAntisym : forall p q, p ≤r q -> q ≤r p -> p = q.
-  Parameter RoleOrderTrans : forall p q r, p ≤r q -> q ≤r r -> p ≤r r.
-
-
-  Definition BothIChoice {A : Type} (P Q : Proc) (default : A) (f : Role -> Proc -> Proc -> Role -> Proc -> Proc -> A)  : A :=
+  Definition BothIChoice {A : Type} (P Q : Proc) (default : A) (f : L.t -> Proc -> Proc -> L.t -> Proc -> Proc -> A)  : A :=
     match P with
     | IChoice p P1 P2 =>
       match Q with
@@ -2184,58 +2173,585 @@ Module PiCalc (E : Expression).
 
   Inductive Action : Set :=
     EndAct : Action
+  | UnknownAct : Action
   | VarAct : nat -> Action
-  | DefAct : Action
-  | SendAct : Role -> Expr -> Action
-  | RecvAct : Role -> Action
-  | EChoiceLAct : Role -> Action
-  | EChoiceRAct : Role -> Action
-  | IChoiceAct : Role -> Action
+  | DefAct : Proc -> Action
+  | SendAct : L.t -> Expr -> Action
+  | RecvAct : L.t -> Action
+  | EChoiceLAct : L.t -> Action
+  | EChoiceRAct : L.t -> Action
+  | IChoiceAct : L.t -> Action
   | IfThenElseAct : Expr -> Action.
 
   Definition ActionEqDec : forall A1 A2 : Action, {A1 = A2} + {A1 <> A2}.
-    decide equality.
-    all: try (apply RoleEqDec).
-    all: try (apply ExprEqDec).
-    apply Nat.eq_dec.
+    decide equality; try (apply L.eq_dec); try (apply ProcEqDec); try (apply ExprEqDec); apply Nat.eq_dec.
   Defined.
 
-  Inductive ICTreeA : (list Role) -> (option Action) -> Set :=
-    LeafTreeEnd        : forall p, ICTreeA [p] (Some EndAct)
-  | LeafTreeVar        : forall p n, ICTreeA [p] (Some (VarAct n))
-  | LeafTreeDef        : forall p, Proc -> Proc -> Proc -> Proc ->
-                              ICTreeA [p] (Some DefAct)
+  (* Definiting this via Equations gives us access to the graph automatically. *)
+  Equations ActionOf (P : Proc) : Action :=
+    {
+      ActionOf EndProc := EndAct;
+      ActionOf (VarProc n) := VarAct n;
+      ActionOf (DefProc P Q) := DefAct P;
+      ActionOf (SendProc p e P) := SendAct p e;
+      ActionOf (RecvProc p P) := RecvAct p;
+      ActionOf (EChoiceL p P) := EChoiceLAct p;
+      ActionOf (EChoiceR p P) := EChoiceRAct p;
+      ActionOf (IChoice p P Q) := IChoiceAct p;
+      ActionOf (IfThenElse e P Q) := IfThenElseAct e
+    }.
+
+  (*
+    Things got really complicated when using the correct-by-construction type I had for different ICTrees before.
+    So, I'm doing more idiomatic Coq and defining a "IsDifferentICTree" proposition.
+    I'm then going to need functions to put an ICTree in order, etc.
+   *)
+  Inductive IChoiceTree : Set :=
+    ICTLeaf : L.t -> Proc -> Proc -> IChoiceTree
+  | ICTBranch : L.t -> IChoiceTree -> IChoiceTree -> IChoiceTree.
+
+  Fixpoint IChoiceTreeToProc (t : IChoiceTree) : Proc :=
+    match t with
+    | ICTLeaf p P Q => IChoice p P Q
+    | ICTBranch p l r => IChoice p (IChoiceTreeToProc l) (IChoiceTreeToProc r)
+    end.
+  
+  Definition FirstDecider (t : IChoiceTree) : L.t :=
+    match t with
+    | ICTLeaf p _ _ => p
+    | ICTBranch p _ _ => p
+    end.
+
+  Inductive IsOrderedICTree : IChoiceTree -> Prop :=
+    IsOrderedLeaf : forall p P Q, IsOrderedICTree (ICTLeaf p P Q)
+  | IsOrderedBranch : forall p t1 t2, (FirstDecider t1) <= p -> (FirstDecider t2) <= p -> IsOrderedICTree t1 -> IsOrderedICTree t2 -> IsOrderedICTree (ICTBranch p t1 t2).
+
+  Program Fixpoint CheckOrderedICTree (t : IChoiceTree) : {IsOrderedICTree t} + {~ IsOrderedICTree t} :=
+    match t with
+    | ICTLeaf p P Q => left (IsOrderedLeaf p P Q)
+    | ICTBranch p t1 t2 =>
+      match L.compare (FirstDecider t1) p with
+      | left lt1 =>
+        match L.tOrderDec (FirstDecider t2) p with
+        | left lt2 =>
+          match CheckOrderedICTree t1 with
+          | left ord1 =>
+            match CheckOrderedICTree t2 with
+            | left ord2 => left (IsOrderedBranch p t1 t2 lt1 lt2 ord1 ord2)
+            | right n => right _
+            end
+          | right n => right _
+          end
+        | right n => right _
+        end
+      | right n => right _
+      end
+    end.
+  Next Obligation.
+    intro H; inversion H; auto.
+  Defined.
+  Next Obligation.
+    intro H; inversion H; auto.
+  Defined.
+  Next Obligation.
+    intro H; inversion H; auto.
+  Defined.
+  Next Obligation.
+    intro H; inversion H; auto.
+  Defined.
+    
+  Inductive IsBalancedICTreewrt : IChoiceTree -> list L.t -> Prop :=
+    IsBalancedLeaf : forall p P Q, IsBalancedICTreewrt (ICTLeaf p P Q) [p]
+  | IsBalancedBranch : forall p t1 t2 l, IsBalancedICTreewrt t1 l -> IsBalancedICTreewrt t2 l -> IsBalancedICTreewrt (ICTBranch p t1 t2) (p :: l).
+
+  Program Fixpoint CheckBalancedICTreewrt (t : IChoiceTree) (l : list L.t) : {IsBalancedICTreewrt t l} + {~ IsBalancedICTreewrt t l} :=
+    match t with
+    | ICTLeaf p P Q =>
+      match l with
+      | [] => right _
+      | [q] => match L.eq_dec p q with
+              | left e => left (IsBalancedLeaf p P Q)
+              | right n => right _
+              end
+      | _ => right _
+      end
+    | ICTBranch p t1 t2 =>
+      match l with
+      | [] => right _
+      | q :: l' => match L.eq_dec p q with
+                 | left e => match CheckBalancedICTreewrt t1 l' with
+                            | left b1 =>
+                              match CheckBalancedICTreewrt t2 l' with
+                              | left b2 => left (IsBalancedBranch p t1 t2 l' b1 b2)
+                              | right n => right _
+                              end
+                            | right n => right _
+                            end
+                 | right n => right _
+                 end
+      end
+    end.
+  Next Obligation.
+    intro H; inversion H.
+  Defined.
+  Next Obligation.
+    intro H; inversion H; subst; apply n; auto.
+  Defined.
+  Next Obligation.
+    intro H1; inversion H1; subst; apply (H p); auto.
+  Defined.
+  Next Obligation.
+    split; [intro q |]; intro eq; discriminate eq.
+  Defined.
+  Next Obligation.
+    intro H; inversion H.
+  Defined.
+  Next Obligation.
+    intro H; inversion H; subst; apply n; auto.
+  Defined.
+  Next Obligation.
+    intro H; inversion H; subst; apply n; auto.
+  Defined.
+  Next Obligation.
+    intro H; inversion H; subst; apply n; auto.
+  Defined.
+
+  Fixpoint FindBalancingList (t : IChoiceTree) : option (list L.t) :=
+    match t with
+    | ICTLeaf p _ _ => Some [p]
+    | ICTBranch p t1 t2 =>
+      match FindBalancingList t1 with
+      | Some l => match CheckBalancedICTreewrt t2 l with
+                 | left _ => Some (p :: l)
+                 | right _ => None
+                 end
+      | None => None
+      end
+    end.
+
+  Lemma FindBalancingListSound : forall (t : IChoiceTree) (l : list L.t), FindBalancingList t = Some l -> IsBalancedICTreewrt t l.
+  Proof.
+    intro t; induction t; intros l eq; cbn in *.
+    - inversion eq; subst; clear eq; constructor.
+    - destruct (FindBalancingList t1); [| inversion eq].
+      destruct (CheckBalancedICTreewrt t2 l0); [| inversion eq]. inversion eq; subst; clear eq.
+      constructor; auto.
+  Qed.
+
+  Lemma FindBalancingListComplete : forall (t : IChoiceTree) (l : list L.t), IsBalancedICTreewrt t l -> FindBalancingList t = Some l.
+  Proof.
+    intro t; induction t; intros l b; inversion b; subst; cbn; auto.
+    specialize (IHt1 l0 H3); rewrite IHt1.
+    destruct (CheckBalancedICTreewrt t2 l0) as [_|n]; [|exfalso; apply n]; auto.
+  Qed.    
+
+  Definition IsBalancedICTree : IChoiceTree -> Prop := fun t => exists l, IsBalancedICTreewrt t l.
+
+  Program Definition CheckBalancedICTree : forall t : IChoiceTree, {IsBalancedICTree t} + {~ IsBalancedICTree t} :=
+    fun t => match FindBalancingList t with
+          | Some l => left (ex_intro _ l _)
+          | None => right _
+          end.
+  Next Obligation.
+    apply FindBalancingListSound; symmetry; auto.
+  Defined.
+  Next Obligation.
+    intro H; inversion H. apply FindBalancingListComplete in H0.
+    assert (Some x = None) as eq by (transitivity (FindBalancingList t); auto); discriminate eq.
+  Defined.
+
+  Fixpoint NumberOfChoices (t : IChoiceTree) (p : L.t) : nat :=
+    match t with
+    | ICTLeaf q _ _ => if L.eq_dec p q then 1 else 0
+    | ICTBranch q t1 t2 => (if L.eq_dec p q then 1 else 0) + (Nat.max (NumberOfChoices t1 p) (NumberOfChoices t2 p))
+    end.
+
+  Inductive IsDecider : L.t -> IChoiceTree -> Prop :=
+  | IsLeafDecider : forall p P Q, IsDecider p (ICTLeaf p P Q)
+  | IsCurrentBranchDecider : forall p t1 t2, IsDecider p (ICTBranch p t1 t2)
+  | IsLeftChildDecider : forall p q t1 t2, IsDecider p t1 -> IsDecider p (ICTBranch q t1 t2)
+  | IsRightChildDecider : forall p q t1 t2, IsDecider p t2 -> IsDecider p (ICTBranch q t1 t2).
+
+  Program Fixpoint IsDeciderDec (p : L.t) (t : IChoiceTree) : {IsDecider p t} + {~ IsDecider p t} :=
+    match t with
+    | ICTLeaf q P Q =>
+      match L.eq_dec p q with
+      | left e => left (IsLeafDecider p P Q)
+      | right n => right (fun id => _)
+      end
+    | ICTBranch q t1 t2 =>
+      match L.eq_dec p q with
+      | left e => left (IsCurrentBranchDecider p t1 t2)
+      | right n1 =>
+        match IsDeciderDec p t1 with
+        | left id1 => left (IsLeftChildDecider p q t1 t2 id1)
+        | right n2 =>
+          match IsDeciderDec p t2 with
+          | left id2 => left (IsRightChildDecider p q t1 t2 id2)
+          | right n3 => right (fun id => _)
+          end
+        end
+      end
+    end.
+  Next Obligation.
+    inversion id; subst; apply n; reflexivity.
+  Defined.
+  Next Obligation.
+    inversion id; subst; [apply n1 | apply n2 | apply n3]; auto.
+  Defined.      
+
+  Theorem IsDeciderOfBalancedwrt : forall (p : L.t) (t1 t2 : IChoiceTree) (l : list L.t), IsBalancedICTreewrt t1 l -> IsBalancedICTreewrt t2 l -> IsDecider p t1 -> IsDecider p t2.
+  Proof.
+    intros p t1 t2 l ibt1 ibt2 id1; revert t2 l ibt1 ibt2; induction id1; intros t2' l0 ibt1 ibt2; inversion ibt1; subst; inversion ibt2; subst; try (constructor; auto; fail).
+    - inversion H4.
+    - apply IsLeftChildDecider. apply IHid1 with (l := l); auto.
+    - inversion H4.
+    - apply IsRightChildDecider. apply IHid1 with (l := l); auto.
+  Qed.
+
+  Fixpoint Deciders (t : IChoiceTree) : list L.t :=
+    match t with
+    | ICTLeaf p _ _ => [p]
+    | ICTBranch p t1 t2 => p :: Deciders t1
+    end.
+
+  Theorem BalancedDecidersBalancingList : forall (t : IChoiceTree), IsBalancedICTree t -> FindBalancingList t = Some (Deciders t).
+  Proof.
+    intro t; induction t; intros ibt; cbn; auto.
+    inversion ibt; subst. cbn in H. destruct (FindBalancingList t1) eqn:eq; [destruct (CheckBalancedICTreewrt t2 l) |]; inversion H; subst.
+    - apply FindBalancingListSound in eq. specialize (IHt1 (ex_intro _ l eq)); inversion IHt1; subst; reflexivity.
+    - assert (Some l = Some l0) as eq' by (transitivity (FindBalancingList t1); apply FindBalancingListComplete in H4; auto); inversion eq'; subst; clear eq'.
+      exfalso; apply n; exact H5.
+    - apply FindBalancingListComplete in H4; discriminate (eq_trans (eq_sym H4) eq).
+  Qed.
+
+  Theorem DecidersSound : forall (t : IChoiceTree) (p : L.t), In p (Deciders t) -> IsDecider p t.
+  Proof.
+    intro t; induction t as [q P Q | q t1 IHt1 t2 IHt2]; intros p i; cbn in i; destruct i as [eq | i]; subst; [ constructor | inversion i | constructor|].
+    apply IsLeftChildDecider; apply IHt1; exact i.
+  Qed.
+
+  Theorem BalancedDecidersComplete : forall (t : IChoiceTree) (p : L.t), IsBalancedICTree t -> IsDecider p t -> In p (Deciders t).
+  Proof.
+    intro t; induction t as [q P Q | q t1 IHt1 t2 IHt2]; intros p ibt decp; cbn in *.
+    left; inversion decp; reflexivity.
+    inversion decp; auto; subst; right; apply IHt1; auto.
+    unfold IsBalancedICTree in ibt. destruct ibt as [l ibt]; inversion ibt; subst. exists l0; auto.
+    destruct ibt as [l ibt]; inversion ibt; subst. exists l0; auto.
+    destruct ibt as [l ibt]; inversion ibt; subst.
+    apply IsDeciderOfBalancedwrt with (t1 := t2) (l := l0); auto.
+  Qed.
+
+  Lemma ThisIsDumb : RoleMap.key = Role.
+    unfold RoleMap.key. unfold RoleOrderedType.t.
+
+  Record DecisionType (t : IChoiceTree) : Type := {
+    raw_type : RoleMap.t nat;
+    all_deciders : forall p : Role, IsDecider p t -> RoleMap.mem p raw_type = true
+    }.
+  
+  Inductive IsSameActionTreeA : IChoiceTree -> Action -> Prop :=
+    IsSameActionTreeLeaf : forall p P Q A, ActionOf P = A -> ActionOf Q = A -> IsSameActionTreeA (ICTLeaf p P Q) A
+  | IsSameActionTreeBranch : forall p t1 t2 A, IsSameActionTreeA t1 A -> IsSameActionTreeA t2 A -> IsSameActionTreeA (ICTBranch p t1 t2) A.
+
+  Program Fixpoint CheckSameActionTreeA (t : IChoiceTree) (A : Action) : {IsSameActionTreeA t A} + {~ IsSameActionTreeA t A} :=
+    match t with
+    | ICTLeaf p P Q =>
+      match ActionEqDec (ActionOf P) A with
+      | left eq1 =>
+        match ActionEqDec (ActionOf Q) A with
+        | left eq2 => left (IsSameActionTreeLeaf p P Q A eq1 eq2)
+        | right n => right _
+        end  
+      | right n => right _
+      end
+    | ICTBranch p t1 t2 =>
+      match CheckSameActionTreeA t1 A with
+      | left ista1 =>
+        match CheckSameActionTreeA t2 A with
+        | left ista2 => left (IsSameActionTreeBranch p t1 t2 A ista1 ista2)
+        | right n => right _
+        end
+      | right n => right _
+      end
+    end.
+  Next Obligation.
+    inversion H; subst; apply n; auto.
+  Defined.
+  Next Obligation.
+    inversion H; subst; apply n; auto.
+  Defined.
+  Next Obligation.
+    inversion H; subst; apply n; auto.
+  Defined.
+  Next Obligation.
+    inversion H; subst; apply n; auto.
+  Defined.
+
+  Fixpoint FindOnlyAction (t : IChoiceTree) : option Action :=
+    match t with
+    | ICTLeaf _ P Q =>
+      if ActionEqDec (ActionOf P) (ActionOf Q) then Some (ActionOf P) else None
+    | ICTBranch _ t1 t2 =>
+      match FindOnlyAction t1 with
+      | Some A => if CheckSameActionTreeA t2 A then Some A else None
+      | None => None
+      end
+    end.
+
+  Lemma FindOnlyActionSound : forall (t : IChoiceTree) (A : Action), FindOnlyAction t = Some A -> IsSameActionTreeA t A.
+  Proof.
+    intros t A eq; induction t as [p P Q | p t1 IHt1 t2 IHt2]; cbn in eq.
+    destruct (ActionEqDec (ActionOf P) (ActionOf Q)); inversion eq; constructor; auto.
+    destruct (FindOnlyAction t1) as [B|]; [destruct (CheckSameActionTreeA t2 B)|]; inversion eq; subst.
+    clear eq; specialize (IHt1 eq_refl); constructor; auto.
+  Qed.
+
+  Lemma FindOnlyActionComplete : forall (t : IChoiceTree) (A : Action), IsSameActionTreeA t A -> FindOnlyAction t = Some A.
+  Proof.
+    intros t A isat; induction isat as [p P Q A eq1 eq2 | p t1 t2 A isat1 IHisat1 isat2 IHisat2]; cbn.
+    destruct (ActionEqDec (ActionOf P) (ActionOf Q)); subst; auto; exfalso; apply n; auto.
+    rewrite IHisat1. destruct (CheckSameActionTreeA t2 A); auto; exfalso; apply n; auto.
+  Qed.
+  
+  Definition IsSameActionTree : IChoiceTree -> Prop := fun t : IChoiceTree => exists A : Action, IsSameActionTreeA t A.
+
+  Definition CheckSameActionTree : forall t : IChoiceTree, {IsSameActionTree t} + {~ IsSameActionTree t}.
+    intro t. destruct (FindOnlyAction t) as [A|] eqn:eq; [left; exists A; apply FindOnlyActionSound; auto|right].
+    intro H; unfold IsSameActionTree in H; destruct H as [A H]; apply FindOnlyActionComplete in H.
+    assert (Some A = None) as H' by (transitivity (FindOnlyAction t); auto); discriminate H'.
+  Defined.
+
+  Definition IsSameTree : IChoiceTree -> Prop := fun t : IChoiceTree => IsSameActionTree t /\ IsOrderedICTree t /\ IsBalancedICTree t.
+  Definition CheckSameTree : forall t : IChoiceTree, {IsSameTree t} + {~ IsSameTree t}.
+    intro t.
+    destruct (CheckSameActionTree t); [ | right; intro ist; unfold IsSameTree in ist; destruct ist; apply n; auto].
+    destruct (CheckOrderedICTree t); [ | right; intro ist; destruct ist as [_ H]; destruct H; apply n; auto].
+    destruct (CheckBalancedICTree t); [ | right; intro ist; destruct ist as [_ H]; destruct H; apply n; auto].
+    left; split; [| split]; auto.
+  Defined.
+
+  Definition IsDifferentTree : IChoiceTree -> Prop := fun t : IChoiceTree => IsOrderedICTree t /\ (~IsSameActionTree t \/ ~IsBalancedICTree t).
+  Definition CheckDifferentTree : forall t : IChoiceTree, {IsDifferentTree t} + {~ IsDifferentTree t}.
+    intro t.
+    destruct (CheckOrderedICTree t) as [ord | n]; [ | right; intro idt; destruct idt as [ord _]; apply n; exact ord].
+    destruct (CheckSameActionTree t) as [sat | n]; [|left; split; [|left]; auto].
+    destruct (CheckBalancedICTree t) as [bal | n]; [|left; split; [|right]; auto].
+    right; intro idt; destruct idt as [_ H]; destruct H as [n | n]; apply n; auto.
+  Defined.
+  
+  (* SameTree l A is the type of ichoice trees such that every option has the same action.
+     Here, l is the list of principals that participate in the tree.
+   *)
+  Inductive SameTree : list Role -> Action -> Set :=
+    SameLeaf : forall (p : Role) (P Q : Proc) (A : Action), ActionOf P = A -> ActionOf Q = A -> SameTree [p] A
+  | SameBranch : forall (p : Role) {l : list Role} {A : Action}, (forall q, In q l -> q ≤r p) -> SameTree l A -> SameTree l A -> SameTree (p :: l) A.
+
+  Equations SameTreeToProc {l : list Role} {A : Action} (st : SameTree l A) : Proc :=
+    {
+      SameTreeToProc (SameLeaf p P Q _ _ _) := IChoice p P Q;
+      SameTreeToProc (SameBranch p _ ll rr) := IChoice p (SameTreeToProc ll) (SameTreeToProc rr)
+    }.
+
+  Equations FirstDecider {l : list Role} {A : Action} (st : SameTree l A) : Role :=
+    {
+      FirstDecider (SameLeaf p _ _ _ _ _) := p;
+      FirstDecider (SameBranch p _ ll rr) := p
+    }.
+
+  Lemma FirstDeciderHead : forall (l : list Role) {A : Action} (st : SameTree l A), exists l', l = (FirstDecider st) :: l'.
+  Proof.
+    intros l A st. funelim (FirstDecider st); simp FirstDecider; [exists [] | exists l0]; reflexivity.
+  Qed.
+
+  Lemma SameTreeListSorted : forall (l : list Role) {A : Action}, SameTree l A -> Sorted (fun p q => q ≤r p) l.
+  Proof.
+    intros l A st; induction st. constructor; constructor. constructor; auto.
+    destruct l; constructor. apply r. left; reflexivity.
+  Qed.
+
+  Fixpoint SameTreeSize {l : list Role} {A : Action} (st : SameTree l A) : nat :=
+    match st with
+    | SameLeaf p P Q A x x0 => 1
+    | SameBranch p _ ll rr => S (SameTreeSize ll + SameTreeSize rr)
+    end.
+
+  Definition SameTreeExt : Set := {l : list Role & {A : Action & SameTree l A}}.
+  
+  Inductive DiffTree : Role -> Set :=
+    DiffLeaf : forall (p : Role) (P Q : Proc),
+      ActionOf P <> ActionOf Q -> DiffTree p
+  | DiffDiffTree : forall (p : Role) {q r : Role} (dt1 : DiffTree q) (dt2 : DiffTree r),
+      q ≤r p -> r ≤r p -> DiffTree p
+  | SameDiffTree : forall (p : Role) {q : Role} {l : list Role} {A : Action}  (st : SameTree l A) (dt : DiffTree q),
+      q ≤r p -> (FirstDecider st) ≤r p -> DiffTree p
+  | DiffSameTree : forall (p : Role) {q : Role} {l : list Role} {A : Action} (dt : DiffTree q) (st : SameTree l A),
+      q ≤r p -> (FirstDecider st) ≤r p -> DiffTree p
+  | SameSameTreeDiffAction : forall (p : Role) {l1 l2 : list Role} {A1 A2 : Action} (st1 : SameTree l1 A1) (st2 : SameTree l2 A2),
+      (FirstDecider st1) ≤r p -> (FirstDecider st2) ≤r p -> A1 <> A2 -> DiffTree p
+  | SameSameTreeDiffList : forall (p : Role) {l1 l2 : list Role} {A1 A2 : Action} (st1 : SameTree l1 A1) (st2 : SameTree l2 A2),
+      (FirstDecider st1) ≤r p -> (FirstDecider st2) ≤r p -> l1 <> l2 -> DiffTree p.
+
+  Definition DiffTreeExt : Set := {p : Role & DiffTree p}.
+
+  Fixpoint DiffTreeSize {p : Role} (dt : DiffTree p) : nat :=
+    match dt with
+    | DiffLeaf p P Q x => 1
+    | DiffDiffTree p dt1 dt2 _ _ => S (DiffTreeSize dt1 + DiffTreeSize dt2)
+    | SameDiffTree p st dt _ _ => S (SameTreeSize st + DiffTreeSize dt)
+    | DiffSameTree p dt st _ _ => S (DiffTreeSize dt + SameTreeSize st)
+    | SameSameTreeDiffAction p st1 st2 _ _ _ => S (SameTreeSize st1 + SameTreeSize st2)
+    | SameSameTreeDiffList p st1 st2 _ _ _ => S (SameTreeSize st1 + SameTreeSize st2)
+    end.
+
+  Fixpoint DiffTreeToProc {p : Role} (dt : DiffTree p) : Proc :=
+    match dt with
+    | DiffLeaf p P Q _ => IChoice p P Q
+    | DiffDiffTree p ll rr _ _ => IChoice p (DiffTreeToProc ll) (DiffTreeToProc rr)
+    | SameDiffTree p ll rr _ _ => IChoice p (SameTreeToProc ll) (DiffTreeToProc rr)
+    | DiffSameTree p ll rr _ _ => IChoice p (DiffTreeToProc ll) (SameTreeToProc rr)
+    | SameSameTreeDiffAction p ll rr _ _ _ => IChoice p (SameTreeToProc ll) (SameTreeToProc rr)
+    | SameSameTreeDiffList p ll rr _ _ _ => IChoice p (SameTreeToProc ll) (SameTreeToProc rr)
+    end.
+
+  Definition ICTree : Set := SameTreeExt + DiffTreeExt.
+
+  Show Match sigT.
+  Program Fixpoint TreeBranch (p : Role) (t1 : ICTree) (t2 : ICTree) : ICTree :=
+    match t1 with
+    | inl (existT _ l1 (existT _ A1 st1)) =>
+      match t2 with
+      | inl (existT _ l2 (existT _ A2 st2)) =>
+        match ActionEqDec A1 A2 with
+        | left e => _
+        | right n => _
+        end
+      | inr (existT _ p2 dt2) => _
+      end
+    | inr (existT _ p1 dt1) =>
+      match t2 with
+      | inl (existT _ l2 (existT _ A2 st2)) => _
+      | inr (existT _ p2 dt2) => _
+      end
+    end.
+  Next Obligation.
+
+
+  Inductive Justification : Set :=
+    InvolvedSend : Expr -> Justification
+  | InvolvedRecv : Justification
+  | InvolvedECL : Justification
+  | InvolvedECR : Justification
+  | InvolvedIC : Justification
+  | Different : forall {p : Role}, DiffTree p -> Justification.
+
+  Inductive Justifies : Justification -> Role -> Proc -> Proc -> Prop :=
+    ISJust : forall p e P Q, Justifies (InvolvedSend e) p (SendProc p e P) (SendProc p e Q)
+  | IRJust : forall p P Q, Justifies InvolvedRecv p (RecvProc p P) (RecvProc p Q)
+  | IECLJust : forall p P Q, Justifies InvolvedECL p (EChoiceL p P) (EChoiceL p Q)
+  | IECRJust : forall p P Q, Justifies InvolvedECR p (EChoiceR p P) (EChoiceR p Q)
+  | IICJust : forall p P1 Q1 P2 Q2, Justifies InvolvedIC p (IChoice p P1 Q1) (IChoice p P2 Q2)
+  | DifferentJust : forall p P Q (d : DiffTree p), (DiffTreeToProc d = IChoice p P Q) -> Justifies (Different d) p P Q.
+
+  Inductive DiffOrSameTree : Set :=
+    ItsAST : forall (l : list Role) (A : Action), SameTree l A -> DiffOrSameTree
+  | ItsADT : forall {p : Role}, DiffTree p -> DiffOrSameTree.
+
+    Fixpoint ProcSize (P : Proc) : nat :=
+    match P with
+    | EndProc => 1
+    | VarProc n => 1
+    | DefProc P Q => 1 + (ProcSize P) + (ProcSize Q)
+    | SendProc p e P => 1 + (ProcSize P)
+    | RecvProc p P => 1 + (ProcSize P)
+    | EChoiceL p P => 1 + (ProcSize P)
+    | EChoiceR p P => 1 + (ProcSize P)
+    | IChoice p P Q => 1 + (ProcSize P) + (ProcSize Q)
+    | IfThenElse e P Q => 1 + (ProcSize P) + (ProcSize Q)
+    end.
+
+  Equations toDiffOrSameTree (p : Role) (P Q : Proc) : DiffOrSameTree by wf (ProcSize P + ProcSize Q) lt :=
+    {
+      toDiffOrSameTree p EndProc EndProc := ItsAST _ EndAct (SameLeaf p EndProc EndProc EndAct eq_refl eq_refl);
+      toDiffOrSameTree p EndProc _ := ItsADT (DiffLeaf p EndProc Q _);
+      toDiffOrSameTree p (VarProc n) (VarProc n) := ItsAST [p] (VarAct n) (SameLeaf p (VarProc n) (VarProc n) (VarAct n) eq_refl eq_refl);
+      toDiffOrSameTree p (VarProc n) _ := ItsADT (DiffLeaf p (VarProc n) Q _);
+      toDiffOrSameTree p (DefProc P Q1) (DefProc P Q2) := ItsAST [p] (DefAct P) (SameLeaf p (DefProc P Q1) (DefProc P Q2) (DefAct P) eq_refl eq_refl);
+      toDiffOrSameTree p (DefProc P Q1) _ := ItsADT (DiffLeaf p (DefProc P Q1) Q _);
+      toDiffOrSameTree p (SendProc q e P) (SendProc q e Q) := ItsAST [p] (SendAct q e) (SameLeaf p (SendProc q e P) (SendProc q e Q) (SendAct q e) eq_refl eq_refl);
+      toDiffOrSameTree p (SendProc q e P) _ := ItsADT (DiffLeaf p (SendProc q e P) Q _);
+      toDiffOrSameTree p (RecvProc q P) (RecvProc q Q) := ItsAST _ (RecvAct q) (SameLeaf p (RecvProc q P) (RecvProc q Q) (RecvAct q) eq_refl eq_refl);
+      toDiffOrSameTree p (RecvProc q P) _ := ItsADT (DiffLeaf p (RecvProc q P) Q _);
+      toDiffOrSameTree p (EChoiceL q P) (EChoiceL q Q) := ItsAST _ (EChoiceLAct q) (SameLeaf p (EChoiceL q P) (EChoiceL q Q) (EChoiceLAct q) eq_refl eq_refl);
+      toDiffOrSameTree p (EChoiceL q P) _ := ItsADT (DiffLeaf p (EChoiceL q P) Q _);
+      toDiffOrSameTree p (EChoiceR q P) (EChoiceR q Q) := ItsAST _ (EChoiceRAct q) (SameLeaf p (EChoiceR q P) (EChoiceR q Q) (EChoiceRAct q) eq_refl eq_refl);
+      toDiffOrSameTree p (EChoiceR q P) _ := ItsADT (DiffLeaf p (EChoiceR q P) Q _);
+      toDiffOrSameTree p (IfThenElse e P1 Q1) (IfThenElse e P2 Q2) := ItsAST _ (IfThenElseAct e) (SameLeaf p (IfThenElse e P1 Q1) (IfThenElse e P2 Q2) (IfThenElseAct e) eq_refl eq_refl);
+      toDiffOrSameTree p (IfThenElse e P1 Q1) _ := ItsADT (DiffLeaf p (IfThenElse e P1 Q1) Q _);
+      toDiffOrSameTree p (IChoice q P1 Q1) (IChoice q P2 Q2) with toDiffOrSameTree q P1 Q1 :=
+        {
+        toDiffOrSameTree p (IChoice q P1 Q1) (IChoice q P2 Q2) (ItsAST l1 A1 st1) with toDiffOrSameTree q P2 Q2 :=
+          {
+          toDiffOrSameTree p (IChoice q P1 Q1) (IChoice q P2 Q2) (ItsAST l1 A1 st1) (ItsAST l2 A2 st2) with ActionEqDec A1 A2 :=
+            {
+            toDiffOrSameTree p (IChoice q P1 Q1) (IChoice q P2 Q2) (ItsAST l1 A1 st1) (ItsAST l2 ?(A1) st2) (left eq_refl) with list_eq_dec L.eq_dec l1 l2 :=
+              {
+              toDiffOrSameTree p (IChoice q P1 Q1) (IChoice q P2 Q2) (ItsAST l1 A1 st1) (ItsAST ?(l1) ?(A1) st2) (left eq_refl) (left eq_refl) := ItsAST _ _ (SameBranch _ _ st1 st2);
+              toDiffOrSameTree p (IChoice q P1 Q1) (IChoice q P2 Q2) (ItsAST l1 A1 st1) (ItsAST l2 ?(A1) st2) (left eq_refl) (right n) := ItsADT (SameSameTreeDiffList _ st1 st2 _ _ n)
+              };
+            toDiffOrSameTree p (IChoice q P1 Q1) (IChoice q P2 Q2) (ItsAST l1 A1 st1) (ItsAST l2 A2 st2) (right n) := (ItsADT (SameSameTreeDiffAction _ st1 st2 _ _ n))
+            };
+          toDiffOrSameTree p (IChoice q P1 Q1) (IChoice q P2 Q2) (ItsAST l1 A1 st1) (ItsADT dt2) := (ItsADT (SameDiffTree _ st1 dt2 _ _))
+          };
+        toDiffOrSameTree p (IChoice q P1 Q1) (IChoice q P2 Q2) (ItsADT dt1) := _
+        };
+      toDiffOrSameTree p (IChoice q P1 Q1) _ := ItsADT (DiffLeaf p (IChoice q P1 Q1) Q _)
+    }.
+  
+  Equations justify (p : Role) (P Q : Proc) : option Justification :=
+    {
+      justify p (SendProc p e P) (SendProc p e Q) := Some (InvolvedSend p e);
+      justify p (RecvProc p P) (RecvProc p Q) := Some (InvolvedRecv);
+      justify p (EChoiceL p P) (EChoiceL p Q) := Some (InvolvedECL);
+      justify _ _ _ := None
+    }.
+  
+  Inductive ICTreeA : (list Role) -> Action -> Set :=
+    LeafTreeEnd        : forall p, ICTreeA [p] EndAct
+  | LeafTreeVar        : forall p n, ICTreeA [p] (VarAct n)
+  | LeafTreeDef        : forall p P, Proc -> Proc ->
+                              ICTreeA [p] (DefAct P)
   | LeafTreeSend       : forall p q e, Proc -> Proc ->
-                                  ICTreeA [p] (Some (SendAct q e))
+                                  ICTreeA [p] (SendAct q e)
   | LeafTreeRecv       : forall p q, Proc -> Proc ->
-                                ICTreeA [p] (Some (RecvAct q))
+                                ICTreeA [p] (RecvAct q)
   | LeafTreeEChoiceL   : forall p q, Proc -> Proc ->
-                                ICTreeA [p] (Some (EChoiceLAct q))
+                                ICTreeA [p] (EChoiceLAct q)
   | LeafTreeEChoiceR   : forall p q, Proc -> Proc ->
-                                ICTreeA [p] (Some (EChoiceRAct q))
+                                ICTreeA [p] (EChoiceRAct q)
   | LeafTreeIChoice    : forall p q, Proc -> Proc -> Proc -> Proc ->
-                              ICTreeA [p] (Some (IChoiceAct q))
+                              ICTreeA [p] (IChoiceAct q)
   | LeafTreeIfThenElse : forall p e, Proc -> Proc -> Proc -> Proc ->
-                                ICTreeA [p] (Some (IfThenElseAct e))
-  | LeafTreeMixed      : forall p, Proc -> Proc -> ICTreeA [p] None
-  | ICTreeCons         : forall p l A, (forall q, In q l -> p <r q) ->
+                                ICTreeA [p] (IfThenElseAct e)
+  | LeafTreeMixed      : forall p, Proc -> Proc -> ICTreeA [p] UnknownAct
+  | ICTreeCons         : forall p l A, (forall q, In q l -> p ≤r q) ->
                                   ICTreeA l A -> ICTreeA l A -> ICTreeA (p :: l) A.
 
-  Theorem ICTreeASorted : forall l A, ICTreeA l A -> Sorted (fun p q => p <r q) l.
+  Theorem ICTreeASorted : forall l A, ICTreeA l A -> Sorted (fun p q => p ≤r q) l.
   Proof.
     intros l A t; induction t; auto.
     constructor; auto.
     clear IHt1 IHt2 t1 t2 A.
     induction l; auto. constructor; auto.
-    apply a; left; reflexivity.
+    apply r; left; reflexivity.
   Qed.
 
-  Fixpoint ForgetAction {l : list Role} {A : option Action} (t : ICTreeA l A)
-    : ICTreeA l None
+  Fixpoint ForgetAction {l : list Role} {A : Action} (t : ICTreeA l A)
+    : ICTreeA l UnknownAct
     := match t with
       | LeafTreeEnd p => LeafTreeMixed p (EndProc) (EndProc)
       | LeafTreeVar p n => LeafTreeMixed p (VarProc n) (VarProc n)
-      | LeafTreeDef p P1 Q1 P2 Q2 => LeafTreeMixed p (DefProc P1 Q1) (DefProc P2 Q2)
+      | LeafTreeDef p P Q1 Q2 => LeafTreeMixed p (DefProc P Q1) (DefProc P Q2)
       | LeafTreeSend p q e P1 P2 => LeafTreeMixed p (SendProc q e P1) (SendProc q e P2)
       | LeafTreeRecv p q P1 P2 => LeafTreeMixed p (RecvProc q P1) (RecvProc q P2)
       | LeafTreeEChoiceL p q P1 P2 => LeafTreeMixed p (EChoiceL q P1) (EChoiceL q P2)
@@ -2246,43 +2762,59 @@ Module PiCalc (E : Expression).
         LeafTreeMixed p (IfThenElse e P1 Q1) (IfThenElse e P2 Q2)
       | LeafTreeMixed p P1 P2 => LeafTreeMixed p P1 P2
       | ICTreeCons p l A lt t1 t2 =>
-        ICTreeCons p l None lt (ForgetAction t1) (ForgetAction t2)
+        ICTreeCons p l UnknownAct lt (ForgetAction t1) (ForgetAction t2)
       end.
 
   Fixpoint InsertRole (p : Role) (l : list Role) : list Role :=
     match l with
     | [] => [p]
-    | q :: l => if RoleEqDec p q
-              then q :: l
-              else if RoleOrderDec p q
-                   then p :: q :: l
-                   else q :: (InsertRole p l)
+    | q :: l => if RoleOrderDec q p
+              then q :: (InsertRole p l)
+              else p :: q :: l
     end.
 
-  Lemma InsertRoleSorted : forall (p : Role) (l : list Role),
-      Sorted (fun p q => p <r q) l -> Sorted (fun p q => p <r q) (InsertRole p l).
+  Lemma InInsertRole : forall (p : Role) (l : list Role) (q : Role), In q (InsertRole p l) <-> p = q \/ In q l.
   Proof.
-    intros p l; revert p; induction l as [| q l]; intros p std; simpl; auto.
-    destruct (RoleEqDec p q); subst; auto.
-    destruct (RoleOrderDec p q).
-    constructor; auto.
-    constructor; auto.
-    apply IHl. inversion std; subst; auto.
-    inversion std; subst.
-    destruct l; simpl. constructor; split; auto.
-    destruct (RoleOrderTotal q p); auto. exfalso; apply n0; auto.
-    destruct (RoleEqDec p r); subst. constructor; split; auto.
-    destruct (RoleOrderTotal q r); auto. exfalso; apply n0; auto.
-    destruct (RoleOrderDec p r); constructor; auto.
-    split; auto. destruct (RoleOrderTotal q p); auto. exfalso; apply n0; auto.
-    inversion std; subst. inversion H4; subst; auto.
+    intros p l; induction l; simpl; intro q; split; auto; intro H.
+    all: destruct (RoleOrderDec a p); simpl; auto.
+    - destruct H. right; left; auto. apply IHl in H; destruct H; [left | right; right]; auto.
+    - destruct H; [right | destruct H; [left | right]]; auto; apply IHl; [left | right]; auto.
   Qed.
 
-  Fixpoint FlattenICTA {l : list Role} {A : option Action} (t : ICTreeA l A) : Proc :=
+  Lemma SortedLeast : forall {A : Type} (R : A -> A -> Prop) (Rtrans : forall a b c : A, R a b -> R b c -> R a c) (a : A) (l : list A), Sorted R (a :: l) -> forall b : A, In b l -> R a b.
+  Proof.
+    intros A R Rtrans a l std b I.
+    induction l; [inversion I|].
+    destruct I; subst; [inversion std; subst; inversion H2; subst; auto|].
+    apply IHl; auto.
+    inversion std; subst; inversion H2; subst.
+    constructor; auto.
+    inversion H3; subst. destruct l; [inversion H|].
+    inversion H5; subst. constructor. eapply Rtrans; eauto.
+  Qed.
+  
+  Lemma InsertRoleSorted : forall (p : Role) (l : list Role),
+      Sorted (fun p q => p ≤r q) l -> Sorted (fun p q => p ≤r q) (InsertRole p l).
+  Proof.
+    intros p l; revert p; induction l as [| q l]; intros p std; simpl; auto.
+    destruct (RoleOrderDec q p); constructor; auto.
+    - apply IHl; inversion std; auto.
+    - assert (InsertRole p l = InsertRole p l) as H by reflexivity; revert H; generalize (InsertRole p l) at 2 3.
+      intros l0 e; destruct l0; constructor.
+      inversion std; subst.
+      assert (In r0 (InsertRole p l)) as I by (rewrite e; left; reflexivity).
+      apply InInsertRole in I; destruct I; subst; auto.
+      specialize (IHl p H1).
+      apply SortedLeast with (b := r0) in std; auto.
+      exact RoleOrderTrans.
+    - destruct (RoleOrderTotal p q); [constructor | exfalso; apply n]; auto.
+  Qed.
+
+  Fixpoint FlattenICTA {l : list Role} {A : Action} (t : ICTreeA l A) : Proc :=
     match t with
     | LeafTreeEnd p => IChoice p EndProc EndProc
     | LeafTreeVar p n => IChoice p (VarProc n) (VarProc n)
-    | LeafTreeDef p P1 Q1 P2 Q2 => IChoice p (DefProc P1 Q1) (DefProc P2 Q2)
+    | LeafTreeDef p P Q1 Q2 => IChoice p (DefProc P Q1) (DefProc P Q2)
     | LeafTreeSend p q e P1 P2 => IChoice p (SendProc q e P1) (SendProc q e P2)
     | LeafTreeRecv p q P1 P2 => IChoice p (RecvProc q P1) (RecvProc q P2)
     | LeafTreeEChoiceL p q P1 P2 => IChoice p (EChoiceL q P1) (EChoiceL q P2)
@@ -2296,7 +2828,7 @@ Module PiCalc (E : Expression).
     end.
 
   Record ICTree (l : list Role) : Set :=
-    mkTree { TheAction : option Action ;
+    mkTree { TheAction : Action ;
              TheTree   : ICTreeA l TheAction
            }.
   Arguments TheAction [l].
@@ -2306,13 +2838,13 @@ Module PiCalc (E : Expression).
     FlattenICTA (TheTree t).
 
   Definition ICTEnd : forall p : Role, ICTree [p]  :=
-    fun p => mkTree [p] (Some EndAct) (LeafTreeEnd p).
+    fun p => mkTree [p] EndAct (LeafTreeEnd p).
 
   Definition ICTVar : forall p : Role, nat -> ICTree [p] :=
     fun p n => mkTree _ _ (LeafTreeVar p n).
 
-  Definition ICTDef : forall p : Role, Proc -> Proc -> Proc -> Proc -> ICTree [p] :=
-    fun p P1 Q1 P2 Q2 => mkTree _ _ (LeafTreeDef p P1 Q1 P2 Q2).
+  Definition ICTDef : forall p : Role, Proc -> Proc -> Proc -> ICTree [p] :=
+    fun p P Q1 Q2 => mkTree _ _ (LeafTreeDef p P Q1 Q2).
 
   Definition ICTSend : forall p : Role, Role -> Expr -> Proc -> Proc -> ICTree [p] :=
     fun p q e P1 P2 => mkTree _ _ (LeafTreeSend p q e P1 P2).
@@ -2336,67 +2868,72 @@ Module PiCalc (E : Expression).
     fun p P1 P2 => mkTree _ _ (LeafTreeMixed p P1 P2).
 
   Equations ICTConsA : forall (p : Role) (l : list Role) (A1 A2 : Action),
-      (forall q, In q l -> p <r q) -> ICTreeA l (Some A1) -> ICTreeA l (Some A2) -> ICTree (p :: l) :=
+      (forall q, In q l -> p ≤r q) -> ICTreeA l A1 -> ICTreeA l A2 -> ICTree (p :: l) :=
     ICTConsA p l EndAct EndAct lt t1 t2 :=
-      mkTree _ _ (ICTreeCons p l (Some EndAct) lt t1 t2) ;
+      mkTree _ _ (ICTreeCons p l EndAct lt t1 t2) ;
     ICTConsA p l (VarAct n) (VarAct m) lt t1 t2 with Nat.eq_dec n m => {
       ICTConsA p l (VarAct n) (VarAct ?(n)) lt t1 t2 (left eq_refl) :=
-        mkTree _ _ (ICTreeCons p l (Some (VarAct n)) lt t1 t2) ;
+        mkTree _ _ (ICTreeCons p l (VarAct n) lt t1 t2) ;
       ICTConsA p l (VarAct n) (VarAct m) lt t1 t2 (right _) :=
-        mkTree _ _ (ICTreeCons p l None lt (ForgetAction t1) (ForgetAction t2))
+        mkTree _ _ (ICTreeCons p l UnknownAct lt (ForgetAction t1) (ForgetAction t2))
       };
-    ICTConsA p l DefAct DefAct lt t1 t2 :=
-      mkTree _ _ (ICTreeCons p l (Some DefAct) lt t1 t2);
-    ICTConsA p l (SendAct q e) (SendAct r e') lt t1 t2 with RoleEqDec q r => {
+    ICTConsA p l (DefAct P1) (DefAct P2) lt t1 t2 with ProcEqDec P1 P2 =>
+    {
+      ICTConsA p l (DefAct P1) (DefAct ?(P1)) lt t1 t2 (left eq_refl) := mkTree _ _ (ICTreeCons p l (DefAct P1) lt t1 t2);
+      ICTConsA p l (DefAct P1) (DefAct P2) lt t1 t2 (right _) :=
+        mkTree _ _ (ICTreeCons p l UnknownAct lt (ForgetAction t1) (ForgetAction t2))
+    }; 
+    ICTConsA p l (SendAct q e) (SendAct r e') lt t1 t2 with L.eq_dec q r => {
         ICTConsA p l (SendAct q e) (SendAct ?(q) e') lt t1 t2 (left eq_refl) with ExprEqDec e e' => {
           ICTConsA p l (SendAct q e) (SendAct ?(q) ?(e)) lt t1 t2 (left eq_refl) (left eq_refl) :=
-            mkTree _ _ (ICTreeCons p l (Some (SendAct q e)) lt t1 t2);
+            mkTree _ _ (ICTreeCons p l (SendAct q e) lt t1 t2);
           ICTConsA p l (SendAct q e) (SendAct ?(q) e') lt t1 t2 (left eq_refl) (right _) :=
-            mkTree _ _ (ICTreeCons p l None lt (ForgetAction t1 ) (ForgetAction t2))
+            mkTree _ _ (ICTreeCons p l UnknownAct lt (ForgetAction t1 ) (ForgetAction t2))
         };
         ICTConsA p l (SendAct q e) (SendAct r e') lt t1 t2 (right _) :=
-          mkTree _ _ (ICTreeCons p l None lt (ForgetAction t1 ) (ForgetAction t2))
+          mkTree _ _ (ICTreeCons p l UnknownAct lt (ForgetAction t1 ) (ForgetAction t2))
       };
-    ICTConsA p l (RecvAct q) (RecvAct r) lt t1 t2 with RoleEqDec q r => {
+    ICTConsA p l (RecvAct q) (RecvAct r) lt t1 t2 with L.eq_dec q r => {
         ICTConsA p l (RecvAct q) (RecvAct ?(q)) lt t1 t2 (left eq_refl) :=
-          mkTree _ _ (ICTreeCons p l (Some (RecvAct q)) lt t1 t2);
+          mkTree _ _ (ICTreeCons p l  (RecvAct q) lt t1 t2);
         ICTConsA p l _ _ lt t1 t2 (right _) :=
-          mkTree _ _ (ICTreeCons p l None lt (ForgetAction t1) (ForgetAction t2))
+          mkTree _ _ (ICTreeCons p l UnknownAct lt (ForgetAction t1) (ForgetAction t2))
       };
-   ICTConsA p l (EChoiceLAct q) (EChoiceLAct r) lt t1 t2 with RoleEqDec q r => {
+   ICTConsA p l (EChoiceLAct q) (EChoiceLAct r) lt t1 t2 with L.eq_dec q r => {
         ICTConsA p l (EChoiceLAct q) (EChoiceLAct ?(q)) lt t1 t2 (left eq_refl) :=
-          mkTree _ _ (ICTreeCons p l (Some (EChoiceLAct q)) lt t1 t2);
+          mkTree _ _ (ICTreeCons p l ((EChoiceLAct q)) lt t1 t2);
         ICTConsA p l _ _ lt t1 t2 (right _) :=
-          mkTree _ _ (ICTreeCons p l None lt (ForgetAction t1) (ForgetAction t2))
+          mkTree _ _ (ICTreeCons p l UnknownAct lt (ForgetAction t1) (ForgetAction t2))
       };
-   ICTConsA p l (EChoiceRAct q) (EChoiceRAct r) lt t1 t2 with RoleEqDec q r => {
+   ICTConsA p l (EChoiceRAct q) (EChoiceRAct r) lt t1 t2 with L.eq_dec q r => {
         ICTConsA p l (EChoiceRAct q) (EChoiceRAct ?(q)) lt t1 t2 (left eq_refl) :=
-          mkTree _ _ (ICTreeCons p l (Some (EChoiceRAct q)) lt t1 t2);
+          mkTree _ _ (ICTreeCons p l ((EChoiceRAct q)) lt t1 t2);
         ICTConsA p l _ _ lt t1 t2 (right _) :=
-          mkTree _ _ (ICTreeCons p l None lt (ForgetAction t1) (ForgetAction t2))
+          mkTree _ _ (ICTreeCons p l UnknownAct lt (ForgetAction t1) (ForgetAction t2))
       };
-   ICTConsA p l (IChoiceAct q) (IChoiceAct r) lt t1 t2 with RoleEqDec q r => {
+   ICTConsA p l (IChoiceAct q) (IChoiceAct r) lt t1 t2 with L.eq_dec q r => {
         ICTConsA p l (IChoiceAct q) (IChoiceAct ?(q)) lt t1 t2 (left eq_refl) :=
-          mkTree _ _ (ICTreeCons p l (Some (IChoiceAct q)) lt t1 t2);
+          mkTree _ _ (ICTreeCons p l ((IChoiceAct q)) lt t1 t2);
         ICTConsA p l _ _ lt t1 t2 (right _) :=
-          mkTree _ _ (ICTreeCons p l None lt (ForgetAction t1) (ForgetAction t2))
+          mkTree _ _ (ICTreeCons p l UnknownAct lt (ForgetAction t1) (ForgetAction t2))
       };
    ICTConsA p l (IfThenElseAct e1) (IfThenElseAct e2) lt t1 t2 with ExprEqDec e1 e2 => {
         ICTConsA p l (IfThenElseAct e1) (IfThenElseAct ?(e1)) lt t1 t2 (left eq_refl) :=
-          mkTree _ _ (ICTreeCons p l (Some (IfThenElseAct e1)) lt t1 t2);
+          mkTree _ _ (ICTreeCons p l ((IfThenElseAct e1)) lt t1 t2);
         ICTConsA p l _ _ lt t1 t2 (right _) :=
-          mkTree _ _ (ICTreeCons p l None lt (ForgetAction t1) (ForgetAction t2))
+          mkTree _ _ (ICTreeCons p l UnknownAct lt (ForgetAction t1) (ForgetAction t2))
       };
    ICTConsA p l _ _  lt t1 t2 :=
-      mkTree _ _ (ICTreeCons p l None lt (ForgetAction t1) (ForgetAction t2)).
+     mkTree _ _ (ICTreeCons p l UnknownAct lt (ForgetAction t1) (ForgetAction t2)).
 
-  Equations ICTCons : forall (p : Role) (l : list Role),
-      (forall q, In q l -> p <r q) -> ICTree l -> ICTree l -> ICTree (p :: l) :=
-    ICTCons p l lt (mkTree ?(l) (Some A1) t1) (mkTree ?(l) (Some A2) t2) :=
-      ICTConsA p l A1 A2 lt t1 t2;
-    ICTCons p l lt (mkTree ?(l) _ t1) (mkTree ?(l) _ t2) :=
-        mkTree _ _ (ICTreeCons p l None lt (ForgetAction t1) (ForgetAction t2)).
-
+  Definition ICTCons : forall (p : Role) (l : list Role),
+      (forall q, In q l -> p ≤r q) -> ICTree l -> ICTree l -> ICTree (p :: l) :=
+    fun p l lt t1 t2 => match t1 with
+                     | mkTree _ A1 t1 =>
+                       match t2 with
+                       |mkTree _ A2 t2 => ICTConsA p l A1 A2 lt t1 t2
+                       end
+                     end.
         
   Equations Sapling : forall (p : Role), Proc -> Proc -> ICTree [p] :=
     {
@@ -2406,8 +2943,12 @@ Module PiCalc (E : Expression).
         Sapling p (VarProc n) (VarProc ?(n)) (left eq_refl) := ICTVar p n;
         Sapling p (VarProc n) (VarProc m) (right _) := ICTMixed p (VarProc n) (VarProc m)
       };
-      Sapling p (DefProc P1 Q1) (DefProc P2 Q2) := ICTDef p P1 Q1 P2 Q2;
-      Sapling p (SendProc q e1 P1) (SendProc r e2 P2) with RoleEqDec q r =>
+      Sapling p (DefProc P1 Q1) (DefProc P2 Q2) with ProcEqDec P1 P2 =>
+      {
+        Sapling p (DefProc P1 Q1) (DefProc ?(P1) Q2) (left eq_refl) := ICTDef p P1 Q1 Q2;
+        Sapling p (DefProc P1 Q1) (DefProc P2 Q2) (right _) := ICTMixed p (DefProc P1 Q1) (DefProc P2 Q2)
+      };
+      Sapling p (SendProc q e1 P1) (SendProc r e2 P2) with L.eq_dec q r =>
       {
         Sapling p (SendProc q e1 P1) (SendProc ?(q) e2 P2) (left eq_refl) with ExprEqDec e1 e2 =>
         {
@@ -2418,28 +2959,28 @@ Module PiCalc (E : Expression).
         Sapling p (SendProc q e1 P1) (SendProc r e2 P2) (right _) :=
           ICTMixed p (SendProc q e1 P1) (SendProc r e2 P2)
       };
-      Sapling p (RecvProc q P1) (RecvProc r P2) with RoleEqDec q r =>
+      Sapling p (RecvProc q P1) (RecvProc r P2) with L.eq_dec q r =>
       {
         Sapling p (RecvProc q P1) (RecvProc ?(q) P2) (left eq_refl) :=
           ICTRecv p q P1 P2;
         Sapling p (RecvProc q P1) (RecvProc r P2) (right _) :=
           ICTMixed p (RecvProc q P1) (RecvProc r P2)
       };
-      Sapling p (EChoiceL q P1) (EChoiceL r P2) with RoleEqDec q r =>
+      Sapling p (EChoiceL q P1) (EChoiceL r P2) with L.eq_dec q r =>
       {
         Sapling p (EChoiceL q P1) (EChoiceL ?(q) P2) (left eq_refl) :=
           ICTEChoiceL p q P1 P2;
         Sapling p (EChoiceL q P1) (EChoiceL r P2) (right _) :=
           ICTMixed p (EChoiceL q P1) (EChoiceL r P2)
       };
-      Sapling p (EChoiceR q P1) (EChoiceR r P2) with RoleEqDec q r =>
+      Sapling p (EChoiceR q P1) (EChoiceR r P2) with L.eq_dec q r =>
       {
         Sapling p (EChoiceR q P1) (EChoiceR ?(q) P2) (left eq_refl) :=
           ICTEChoiceR p q P1 P2;
         Sapling p (EChoiceR q P1) (EChoiceR r P2) (right _) :=
           ICTMixed p (EChoiceR q P1) (EChoiceR r P2)
       };
-      Sapling p (IChoice q P1 Q1) (IChoice r P2 Q2) with RoleEqDec q r =>
+      Sapling p (IChoice q P1 Q1) (IChoice r P2 Q2) with L.eq_dec q r =>
       {
         Sapling p (IChoice q P1 Q1) (IChoice ?(q) P2 Q2) (left eq_refl) :=
           ICTIChoice p q P1 Q1 P2 Q2;
@@ -2457,138 +2998,155 @@ Module PiCalc (E : Expression).
     }.
 
   Derive NoConfusion for Action.
-  Equations MergeTree {l : list Role} {p : Role} (t : ICTreeA l (Some (IChoiceAct p)))
-    : option (ICTree (InsertRole p l)) :=
+
+  Equations Lefts {l : list Role} {p : Role} (t : ICTreeA l (IChoiceAct p)) : ICTree l :=
     {
-      MergeTree (LeafTreeIChoice q p P1 Q1 P2 Q2) with RoleEqDec p q =>
+      Lefts (LeafTreeIChoice q p P1 Q1 P2 Q2) := Sapling q P1 P2;
+      Lefts (ICTreeCons q l _ lt t1' t2') := ICTCons q l lt (Lefts t1') (Lefts t2')
+    }.
+  Equations Rights {l : list Role} {p : Role} (t : ICTreeA l (IChoiceAct p)) : ICTree l :=
+    {
+      Rights (LeafTreeIChoice q p P1 Q1 P2 Q2) := Sapling q Q1 Q2;
+      Rights (ICTreeCons q l _ lt t1' t2') := ICTCons q l lt (Rights t1') (Rights t2')
+    }.
+  
+  (* If every leaf is an internal choice, merges that choice into the tree. *)
+  Equations MergeTree {l : list Role} {p : Role} (t : ICTreeA l (IChoiceAct p))
+    : ICTree (InsertRole p l) :=
+    {
+      MergeTree (LeafTreeIChoice q p P1 Q1 P2 Q2) with RoleOrderDec q p =>
       {
-        MergeTree (LeafTreeIChoice ?(p) p P1 Q1 P2 Q2) (left eq_refl) :=
-          None;
-        MergeTree (LeafTreeIChoice q p P1 Q1 P2 Q2) (right _) := _ (* with RoleOrderTotal p q => *)
-        (* { *)
-        (*   MergeTree(LeafTreeIChoice q p P1 Q1 P2 Q2) (right _) (or_introl _) := *)
-        (*     Some (ICTCons p [q] _ (Sapling q P1 P2) (Sapling q Q1 Q2)); *)
-        (*   MergeTree(LeafTreeIChoice q p P1 Q1 P2 Q2) (right _) (or_intror _) := *)
-        (*     Some (ICTCons q [p] _ (Sapling p P1 Q1) (Sapling p P2 Q2)) *)
-        (* } *)
+        MergeTree(LeafTreeIChoice q p P1 Q1 P2 Q2) (left o) :=
+          ICTCons q [p] _ (Sapling p P1 P2) (Sapling p Q1 Q2);
+        MergeTree(LeafTreeIChoice q p P1 Q1 P2 Q2) (right n) :=
+          ICTCons p [q] _ (Sapling q P1 Q1) (Sapling q P2 Q2)
       };
-      MergeTree (ICTreeCons q l _ lt t1' t2') with MergeTree t1' =>
+      MergeTree (ICTreeCons q l _ lt t1' t2') with RoleOrderDec q p =>
       {
-        MergeTree (ICTreeCons q l _ lt t1' t2') (Some (mkTree _ A1 t1)) with MergeTree t2' =>
-        {
-          MergeTree (ICTreeCons q l _ lt t1' t2') (Some (mkTree _ A1 t1)) (Some (mkTree A2 t2)) := _;
-          MergeTree (ICTreeCons q l _ lt t1' t2') (Some (mkTree _ A1 t1)) None := None
-        };
-        MergeTree (ICTreeCons q l _ lt t1' t2) None := None
+        MergeTree (ICTreeCons q l (IChoiceAct p) lt t1' t2') (left o) :=
+          ICTCons q _ _ (MergeTree t1') (MergeTree t2');
+        MergeTree (p := p) (ICTreeCons q l (IChoiceAct p) lt t1' t2') (right n) :=
+          ICTCons p _ _ (ICTCons q  _ _ (Lefts t1') (Lefts t2')) (ICTCons q _ _ (Rights t1') (Rights t2'))
       }
     }.
   Next Obligation.
-    destruct (RoleOrderDec p q) as [leq|nleq].
-    - assert (forall r, In r [q] -> p <r r) as lt
-           by (intros r i; destruct i as [eq|f]; [subst; split; auto|destruct f]).
-      exact (Some (ICTCons p [q] lt (Sapling q P1 P2) (Sapling q Q1 Q2))).
-    - assert (q ≤r p) as leq
-          by (destruct (RoleOrderTotal q p); [auto | exfalso; apply nleq; auto]).
-      assert (forall r, In r [p] -> q <r r) as lt
-           by (intros r i; destruct i as [eq|f]; [subst; split; auto|destruct f]).
-      exact (Some (ICTCons q [p] lt (Sapling p P1 P2) (Sapling p Q1 Q2))).
+    destruct H; [| inversion H]; subst; auto.
   Defined.
   Next Obligation.
-    rename p1 into p.
-    destruct (RoleEqDec p q) as [_|neq]; [exact None| apply Some].
-    destruct (RoleOrderDec p q) as [leq|nleq];
-      [| assert (q ≤r p) as leq
-           by (destruct (RoleOrderTotal q p); [auto | exfalso; apply nleq; auto]);
-         clear nleq].
-    - destruct l; simpl in *; [inversion t1'|].
-      destruct (RoleEqDec p r);
-        [exfalso; apply neq; apply (RoleOrderAntisym); [|apply lt; left]; auto|].
-      destruct (RoleOrderDec p r).
-      -- inversion t1; subst. inversion t2; subst.
-         rename H2 into t11; rename H4 into t12; rename H5 into t21; rename H7 into t22.
-         apply ICTConsA with (A1 := A1) (A2 := A2).
-         intros s i;
-           destruct i as [e | i];
-           [subst; split; auto| destruct i as [e | i];
-                                [subst;split; auto | apply H1; right; auto]].
-         all: apply ICTCons.
-         assert (q <r r) by (apply lt; left; auto).
-         1,4: intros s i; destruct i as [e | i]; [subst; auto | apply lt; right; auto].
-         exact t11.
+    destruct H; [| inversion H]; subst; auto.
+    rename q0 into q; destruct (RoleOrderTotal p q); auto.
+    exfalso; apply n; auto.
+  Defined.
+  Next Obligation.
+    apply InInsertRole in H; destruct H; subst; auto.
+  Defined.
+  Next Obligation.
+    assert (p ≤r q) as pleq by (destruct (RoleOrderTotal p q); [|exfalso; apply n]; auto);
+      destruct H; subst; auto; apply RoleOrderTrans with (q := q); auto.
+  Defined.
+  (* Inductive ICTreeA : (list Role) -> Action -> Set := *)
+  (*   LeafTreeEnd        : forall p, ICTreeA [p] EndAct *)
+  (* | LeafTreeVar        : forall p n, ICTreeA [p] (VarAct n) *)
+  (* | LeafTreeDef        : forall p, Proc -> Proc -> Proc -> Proc -> *)
+  (*                             ICTreeA [p] DefAct *)
+  (* | LeafTreeSend       : forall p q e, Proc -> Proc -> *)
+  (*                                 ICTreeA [p] (SendAct q e) *)
+  (* | LeafTreeRecv       : forall p q, Proc -> Proc -> *)
+  (*                               ICTreeA [p] (RecvAct q) *)
+  (* | LeafTreeEChoiceL   : forall p q, Proc -> Proc -> *)
+  (*                               ICTreeA [p] (EChoiceLAct q) *)
+  (* | LeafTreeEChoiceR   : forall p q, Proc -> Proc -> *)
+  (*                               ICTreeA [p] (EChoiceRAct q) *)
+  (* | LeafTreeIChoice    : forall p q, Proc -> Proc -> Proc -> Proc -> *)
+  (*                             ICTreeA [p] (IChoiceAct q) *)
+  (* | LeafTreeIfThenElse : forall p e, Proc -> Proc -> Proc -> Proc -> *)
+  (*                               ICTreeA [p] (IfThenElseAct e) *)
+  (* | LeafTreeMixed      : forall p, Proc -> Proc -> ICTreeA [p] UnknownAct *)
+  (* | ICTreeCons         : forall p l A, (forall q, In q l -> p ≤r q) -> *)
+  (*                                 ICTreeA l A -> ICTreeA l A -> ICTreeA (p :: l) A. *)
+
+  Fixpoint ProcSize (P : Proc) : nat :=
+    match P with
+    | EndProc => 1
+    | VarProc n => 1
+    | DefProc P Q => 1 + (ProcSize P) + (ProcSize Q)
+    | SendProc p e P => 1 + (ProcSize P)
+    | RecvProc p P => 1 + (ProcSize P)
+    | EChoiceL p P => 1 + (ProcSize P)
+    | EChoiceR p P => 1 + (ProcSize P)
+    | IChoice p P Q => 1 + (ProcSize P) + (ProcSize Q)
+    | IfThenElse e P Q => 1 + (ProcSize P) + (ProcSize Q)
+    end.
+  
+  Fixpoint ICTreeASize {l : list Role} {A : Action} (t : ICTreeA l A) : nat :=
+    match t with
+    | LeafTreeEnd p => 1
+    | LeafTreeVar p n => 1
+    | LeafTreeDef p P Q1 Q2 => 1 + (ProcSize P) + (ProcSize Q1) + (ProcSize Q2)
+    | LeafTreeSend p q e P1 P2 => 1 + (ProcSize P1) + (ProcSize P2)
+    | LeafTreeRecv p q P1 P2 => 1 + (ProcSize P1) + (ProcSize P2)
+    | LeafTreeEChoiceL p q P1 P2 => 1 + (ProcSize P1) + (ProcSize P2)
+    | LeafTreeEChoiceR p q P1 P2 => 1 + (ProcSize P1) + (ProcSize P2)
+    | LeafTreeIChoice p q P1 Q1 P2 Q2 => 1 + (ProcSize P1) + (ProcSize Q1) + (ProcSize P2) + (ProcSize Q2)
+    | LeafTreeIfThenElse p e P1 Q1 P2 Q2 => 1 + (ProcSize P1) + (ProcSize Q1) + (ProcSize P2) + (ProcSize Q2)
+    | LeafTreeMixed p P1 P2 => 1 + (ProcSize P1) + (ProcSize P2)
+    | ICTreeCons p l A std t1 t2 => 1 + ICTreeASize t1  + ICTreeASize t2
+    end.
+
+  Definition ICTreeSize {l : list Role} (t : ICTree l) : nat :=
+    match t with
+    | mkTree _ TheAction TheTree => ICTreeASize TheTree
+    end.
+
+  Lemma SaplingSize : forall p P Q, ICTreeSize (Sapling p P Q) <= 1 + (ProcSize P) + (ProcSize Q).
+  Proof.
+    intros p P Q.
+    funelim (Sapling p P Q); simp Sapling; auto.
+    all: try (rewrite Heq); try (rewrite Heq0); autorewrite with Sapling; simpl; auto.
+    2,3: rewrite Heq; autorewrite with Sapling; simpl.
+    3: reflexivity.
+    all: try (rewrite Nat.add_succ_r; apply le_n_S; repeat apply Nat.le_le_succ_r).
+    all: try reflexivity.
+    - apply plus_le_compat_l. apply le_plus_r.
+    - rewrite plus_assoc; reflexivity.
+    - rewrite plus_assoc; reflexivity.
+  Qed.
+
+  Lemma ProcSizeBounded : forall P : Proc, 1 <= ProcSize P.
+  Proof.
+    intros P. destruct P; simpl; auto; apply le_n_S; apply Nat.le_0_l.
+  Qed.
+
+  Lemma ICTConsSize : forall p l lt t1 t2, ICTreeSize (ICTCons p l lt t1 t2) <= S(ICTreeSize t1 + ICTreeSize t2).
+  Proof.
+    intros p l lt t1 t2. unfold ICTCons; destruct t1 as [A1 t1]; destruct t2 as [A2 t2].
+    funelim (ICTConsA p l A1 A2 lt t1 t2); autorewrite with ICTConsA; simpl.
+    all: auto.
     
 
-  
-  Inductive Action : Set :=
-    EndAct : Action
-  | VarAct : nat -> Action
-  | DefAct : list Proc -> list Proc -> Action
-  | SendAct : Role -> Expr -> list Proc -> Action
-  | RecvAct : Role -> list Proc -> Action
-  | EChoiceLAct : Role -> list Proc -> Action
-  | EChoiceRAct : Role -> list Proc -> Action
-  | IChoiceAct : Role -> list Proc -> list Proc -> Action
-  | IfThenElseAct : Expr -> list Proc -> list Proc -> Action.
-  
-  Fixpoint MatchAllAction' (current : Action) (l : list Proc) : option Action :=
-    match l with
-    | [] => Some current
-    | P :: l =>
-      match (current, P) with
-      | (EndAct, EndProc) =>
-        MatchAllAction' EndAct l
-      | (VarAct n, VarProc m) =>
-        if Nat.eq_dec n m
-        then MatchAllAction' (VarAct n) l
-        else None
-      | (DefAct Ps Qs, DefProc P Q) =>
-        MatchAllAction' (DefAct (Ps ++ [P]) (Qs ++ [Q])) l
-      | (SendAct p e Ps, SendProc q e' P) =>
-        if RoleEqDec p q
-        then if ExprEqDec e e'
-             then MatchAllAction' (SendAct p e (Ps ++ [P])) l
-             else None
-        else None
-      | (RecvAct p Ps, RecvProc q P) =>
-        if RoleEqDec p q
-        then MatchAllAction' (RecvAct p (Ps ++ [P])) l
-        else None
-      | (EChoiceLAct p Ps, EChoiceL q P) =>
-        if RoleEqDec p q
-        then MatchAllAction' (EChoiceLAct p (Ps ++ [P])) l
-        else None
-      | (EChoiceRAct p Ps, EChoiceR q P) =>
-        if RoleEqDec p q
-        then MatchAllAction' (EChoiceRAct p (Ps ++ [P])) l
-        else None
-      | (IChoiceAct p Ps Qs, IChoice q P Q) =>
-        if RoleEqDec p q
-        then MatchAllAction' (IChoiceAct p (Ps ++ [P]) (Qs ++ [Q])) l
-        else None
-      | (IfThenElseAct e Ps Qs, IfThenElse e' P Q) =>
-        if ExprEqDec e e'
-        then MatchAllAction' (IfThenElseAct e (Ps ++ [P]) (Qs ++ [Q])) l
-        else None
-      | _ => None
-      end
-    end.
+  Lemma LeftsSize : forall {l : list Role} {p : Role} (t : ICTreeA l (IChoiceAct p)), ICTreeSize (Lefts t) < ICTreeASize t.
+  Proof.
+    intros l p t.
+    funelim (Lefts t); autorewrite with Lefts; simpl.
+    - apply Nat.lt_le_trans with (m := 2 + (ProcSize p18) + (ProcSize p20)); [apply le_n_S; apply SaplingSize |].
+      simpl. apply le_n_S. transitivity (ProcSize p18 + 1 + ProcSize p20 + ProcSize p21).
+      -- rewrite Nat.add_succ_r. simpl. rewrite Nat.add_0_r. apply le_n_S. apply le_plus_l.
+      -- repeat rewrite <- plus_assoc. apply plus_le_compat_l. apply plus_le_compat_r. apply ProcSizeBounded.
+    - 
+      
 
-  Definition MatchAllAction (l : list Proc) : option Action :=
-    match l with
-    | [] => None
-    |  P :: l =>
-       match P with
-       | EndProc => MatchAllAction' EndAct l
-       | VarProc n => MatchAllAction' (VarAct n) l
-       | DefProc P Q => MatchAllAction' (DefAct [P] [Q]) l
-       | SendProc p e P => MatchAllAction' (SendAct p e [P]) l
-       | RecvProc p P => MatchAllAction' (RecvAct p [P]) l
-       | EChoiceL p P => MatchAllAction' (EChoiceLAct p [P]) l
-       | EChoiceR p P => MatchAllAction' (EChoiceRAct p [P]) l
-       | IChoice p P Q => MatchAllAction' (IChoiceAct p [P] [Q]) l
-       | IfThenElse e P Q => MatchAllAction' (IfThenElseAct e [P] [Q]) l
-       end
-    end.
-
+  Lemma MergeTreeSize : 
+  
+  Equations ICTreeMinProc {l : list Role} (t : ICTree l) : Proc by wf (ICTreeSize t) lt :=
+    {
+      ICTreeMinProc (mkTree _ (LeafTreeEnd p)) := EndProc;
+      ICTreeMinProc (mkTree _ (LeafTreeVar p n)) := VarProc n;
+      ICTreeMinProc (mkTree _ (LeafTreeDef p P Q1 Q2)) := DefProc P (ICTreeMinProc (Sapling p Q1 Q2));
+      ICTreeMinProc (mkTree _ (LeafTreeSend p q e P1 P2)) := Send q e (ICTreeMinProc (Sapling p P1 P2));
+      ICTreeMinProc (mkTree _ (LeafTreeRecv p q P1 P2)) := Recv q (ICTreeMinProc (Sapling p P1 P2));
+      ICTreeMinProc (mkTree _ (LeafTreeEChoiceL p q P1 P2)) := EChoiceL q (ICTreeMinProc (Sapling p P1 P2));
+      ICTreeMinProc (mkTree _ (LeafTreeEChoiceR p q P1 P2)) := EChoiceR q (ICTreeMinProc (Sapling p P1 P2));
+    }.
   
   
   Fixpoint InsertIChoice (p : Role) (P Q : Proc) : Proc :=
@@ -2596,9 +3154,9 @@ Module PiCalc (E : Expression).
     in BothIChoice
          P Q default
          (fun q P1 P2 r Q1 Q2 =>
-            if RoleEqDec q r
+            if L.eq_dec q r
             then if RoleOrderDec q p
-                 then if RoleEqDec p q
+                 then if L.eq_dec p q
                       then default
                       else IChoice q (InsertIChoice p P1 Q1) (InsertIChoice p P2 Q2)
                  else default
@@ -2619,11 +3177,11 @@ Module PiCalc (E : Expression).
                           rewrite e in *
                         end
                       (* | [ |-context[InsertIChoice ?a ?b] ] => destruct a; simpl; auto *)
-                      | [ |- context[RoleEqDec ?a ?a]] =>
+                      | [ |- context[L.eq_dec ?a ?a]] =>
                         let n := fresh "n" in
-                        destruct (RoleEqDec a a) as [_|n];
+                        destruct (L.eq_dec a a) as [_|n];
                         [|exfalso; apply n; reflexivity]; simpl; auto
-                      | [ |- context[RoleEqDec ?a ?b]] => destruct (RoleEqDec a b); subst; simpl; auto
+                      | [ |- context[L.eq_dec ?a ?b]] => destruct (L.eq_dec a b); subst; simpl; auto
                       | [ |- context[RoleOrderDec ?a ?b]] => destruct (RoleOrderDec a b); simpl; auto
                       end.
   (* Lemma InsertIChoiceFlip : forall p q P1_1 P1_2 P2_1 P2_2, *)
@@ -2640,17 +3198,17 @@ Module PiCalc (E : Expression).
 
 
   (*     all: let n := fresh "n" in *)
-  (*          destruct (RoleEqDec p p) as [_|n]; [|exfalso; apply n; reflexivity]. *)
+  (*          destruct (L.eq_dec p p) as [_|n]; [|exfalso; apply n; reflexivity]. *)
   (*     all: let n := fresh "n" in *)
-  (*          destruct (RoleEqDec q q) as [_|n]; [|exfalso; apply n; reflexivity]. *)
+  (*          destruct (L.eq_dec q q) as [_|n]; [|exfalso; apply n; reflexivity]. *)
   (*     all: destruct ( *)
     
   (*   all: destruct P1_2; destruct P2_1; simpl; auto. *)
   (*   (* all: destruct P2_2; optimize_heap. *) *)
   (*   all: try (let n := fresh "n" in *)
-  (*             destruct (RoleEqDec p p) as [_|n]; [|exfalso; apply n; reflexivity]). *)
+  (*             destruct (L.eq_dec p p) as [_|n]; [|exfalso; apply n; reflexivity]). *)
   (*   all: try (let n := fresh "n" in *)
-  (*             destruct (RoleEqDec q q) as [_|n]; [|exfalso; apply n; reflexivity]). *)
+  (*             destruct (L.eq_dec q q) as [_|n]; [|exfalso; apply n; reflexivity]). *)
   (*   Optimize Proof. Optimize Heap. *)
 
   (*   all: try (let l1 := fresh "l" in *)
@@ -2682,30 +3240,30 @@ Module PiCalc (E : Expression).
   (*        end. *)
   (*   Optimize Proof. Optimize Heap. *)
   (*   all: try (let e := fresh "e" in *)
-  (*             destruct (RoleEqDec q p) as [e |_]; *)
+  (*             destruct (L.eq_dec q p) as [e |_]; *)
   (*             [exfalso; apply neq; auto| try reflexivity]). *)
   (*   all: try (let e := fresh "e" in *)
-  (*             destruct (RoleEqDec p q) as [e |_]; *)
+  (*             destruct (L.eq_dec p q) as [e |_]; *)
   (*             [exfalso; apply neq; auto| try reflexivity]). *)
   (*   Optimize Proof. Optimize Heap. *)
   (*   Show. *)
   (*   all: destruct P2_2; simpl; auto. *)
-  (*   all: try (let n := fresh "n" in destruct (RoleEqDec q q) as [_|n]; *)
+  (*   all: try (let n := fresh "n" in destruct (L.eq_dec q q) as [_|n]; *)
   (*                                   [| exfalso; apply n; reflexivity]; *)
   (*                                   try reflexivity). *)
   (*   Optimize Proof. Optimize Heap. *)
   (*   Show. *)
-  (*   all: try (destruct (RoleEqDec r r0); simpl; auto). *)
+  (*   all: try (destruct (L.eq_dec r r0); simpl; auto). *)
   (*   all: try (destruct (RoleOrderDec r q); simpl; auto). *)
   (*   Optimize Proof. Optimize Heap. *)
-  (*   all: try (destruct (RoleEqDec q r); simpl; auto; subst). *)
+  (*   all: try (destruct (L.eq_dec q r); simpl; auto; subst). *)
   (*   Optimize Proof. Optimize Heap. *)
   (*   Show. *)
-  (*   destruct (RoleEqDec r0 r0) as [_|n]; [|exfalso; apply n; reflexivity]. *)
+  (*   destruct (L.eq_dec r0 r0) as [_|n]; [|exfalso; apply n; reflexivity]. *)
   (*   reflexivity. *)
   (*   Optimize Proof. Optimize Heap. *)
     
-  (*   all: try (let n := fresh "n" in destruct (RoleEqDec r0 r0) as [_|n]; *)
+  (*   all: try (let n := fresh "n" in destruct (L.eq_dec r0 r0) as [_|n]; *)
   (*                                   [|exfalso; apply n; reflexivity]; try reflexivity). *)
 
 
@@ -2722,9 +3280,9 @@ Module PiCalc (E : Expression).
     | SendProc q e P1' =>
       match P2 with
       | SendProc r e' P2' =>
-        if RoleEqDec q r
+        if L.eq_dec q r
         then if ExprEqDec e e'
-             then if RoleEqDec p q
+             then if L.eq_dec p q
                   then IChoice p P1 P2
                   else SendProc q e (MergeProcs p P1' P2')
              else IChoice p P1 P2
@@ -2734,8 +3292,8 @@ Module PiCalc (E : Expression).
     | RecvProc q P1' =>
       match P2 with
       |RecvProc r P2' =>
-       if RoleEqDec q r
-       then if RoleEqDec p q
+       if L.eq_dec q r
+       then if L.eq_dec p q
             then IChoice p P1 P2
             else RecvProc q (MergeProcs p P1' P2')
        else IChoice p P1 P2
@@ -2744,8 +3302,8 @@ Module PiCalc (E : Expression).
     | EChoiceL q P1' =>
       match P2 with
       | EChoiceL r P2' =>
-        if RoleEqDec q r
-        then (* if RoleEqDec p q *)
+        if L.eq_dec q r
+        then (* if L.eq_dec p q *)
              (* then IChoice p P1 P2 *)
              (* else *) EChoiceL q (MergeProcs p P1' P2')
         else IChoice p P1 P2
@@ -2754,8 +3312,8 @@ Module PiCalc (E : Expression).
     | EChoiceR q P1' => 
       match P2 with
       | EChoiceR r P2' =>
-        if RoleEqDec q r
-        then (* if RoleEqDec p q *)
+        if L.eq_dec q r
+        then (* if L.eq_dec p q *)
              (* then IChoice p P1 P2 *)
              (* else *) EChoiceR q (MergeProcs p P1' P2')
         else IChoice p P1 P2
@@ -2764,8 +3322,8 @@ Module PiCalc (E : Expression).
     | IChoice q P11 P12 =>
       match P2 with
       | IChoice r P21 P22 =>
-        if RoleEqDec q r
-        then if RoleEqDec p q
+        if L.eq_dec q r
+        then if L.eq_dec p q
              then IChoice p P1 P2
              else if RoleOrderDec p q
                   then IChoice p P1 P2
@@ -2799,10 +3357,10 @@ Module PiCalc (E : Expression).
     - destruct P2; destruct P3; destruct P4; simpl; auto.
       all:
         let n := fresh "n" in
-        destruct (RoleEqDec p p) as [_|n]; [|exfalso; apply n; auto];
-        destruct (RoleEqDec q q) as [_|n]; [|exfalso; apply n; auto].
-      all: destruct (RoleEqDec p q); subst.
-      all: try (let n := fresh "n" in destruct (RoleEqDec q q) as [_|n]; [|exfalso; apply n; auto]); auto.
+        destruct (L.eq_dec p p) as [_|n]; [|exfalso; apply n; auto];
+        destruct (L.eq_dec q q) as [_|n]; [|exfalso; apply n; auto].
+      all: destruct (L.eq_dec p q); subst.
+      all: try (let n := fresh "n" in destruct (L.eq_dec q q) as [_|n]; [|exfalso; apply n; auto]); auto.
       Optimize Proof. Optimize Heap.
       Show.
       all: repeat match goal with
@@ -2820,11 +3378,11 @@ Module PiCalc (E : Expression).
                    rewrite e in *
                end
              (* | [ |-context[InsertIChoice ?a ?b] ] => destruct a; simpl; auto *)
-             | [ |- context[RoleEqDec ?a ?a]] =>
+             | [ |- context[L.eq_dec ?a ?a]] =>
                let n := fresh "n" in
-               destruct (RoleEqDec a a) as [_|n];
+               destruct (L.eq_dec a a) as [_|n];
                  [|exfalso; apply n; reflexivity]; simpl; auto
-             | [ |- context[RoleEqDec ?a ?b]] => destruct (RoleEqDec a b); subst; simpl; auto
+             | [ |- context[L.eq_dec ?a ?b]] => destruct (L.eq_dec a b); subst; simpl; auto
              | [ |- context[ExprEqDec ?a ?a]] =>
                let n := fresh "n" in
                destruct (ExprEqDec a a) as [_|n];
@@ -2835,9 +3393,9 @@ Module PiCalc (E : Expression).
 
       
       match goal with
-      | [ |- context[RoleEqDec ?a ?a]] =>
+      | [ |- context[L.eq_dec ?a ?a]] =>
         let n := fresh "n" in
-        destruct (RoleEqDec a a) as [_|n]; [|exfalso; apply n; reflexivity]
+        destruct (L.eq_dec a a) as [_|n]; [|exfalso; apply n; reflexivity]
       | [ |- context[RoleEq
       
   Fixpoint Normalize (P : Proc) : Proc :=
