@@ -2,41 +2,42 @@ Require Export Expression.
 Require Export TypedExpression.
 Require Export Choreography.
 
-Module TypedChoreography (E : Expression) (TE : TypedExpression E).
+Module TypedChoreography (L : Locations) (E : Expression) (TE : TypedExpression E).
   Import E.
   Import TE.
-  Include (Choreography E).
+  Include (Choreography E L).
 
   Reserved Notation "G ;; D ⊢c C ::: tau @ p" (at level 30).
-  Inductive ctyping : (Prin -> nat -> ExprTyp) -> (nat -> Prin * ExprTyp) -> Chor -> ExprTyp -> Prin -> Prop :=
-  | TDone : forall (Γ : Prin -> nat -> ExprTyp) (Δ : nat -> Prin * ExprTyp)
-              (p : Prin) (e : Expr) (tau : ExprTyp),
+  Inductive ctyping : (L.t -> nat -> ExprTyp) -> (nat -> L.t * ExprTyp) -> Chor -> ExprTyp -> L.t -> Prop :=
+  | TDone : forall (Γ : L.t -> nat -> ExprTyp) (Δ : nat -> L.t * ExprTyp)
+              (p : L.t) (e : Expr) (tau : ExprTyp),
        (Γ p) ⊢e e ::: tau ->
   (* ------------------------------ *)
       Γ ;; Δ ⊢c CDone p e ::: tau @ p
-  | TVar : forall (Γ : Prin -> nat -> ExprTyp) (Δ : nat -> Prin * ExprTyp) (n : nat),
+  | TVar : forall (Γ : L.t -> nat -> ExprTyp) (Δ : nat -> L.t * ExprTyp) (n : nat),
   (* ----------------------------- *)
       Γ ;; Δ ⊢c CVar n ::: snd (Δ n) @ fst (Δ n)
-  | TSend : forall (Γ : Prin -> nat -> ExprTyp) (Δ : nat -> Prin * ExprTyp)
-              (p : Prin) (e : Expr) (τ : ExprTyp) (q : Prin) (C : Chor) (r : Prin) (sigma : ExprTyp),
+  | TSend : forall (Γ : L.t -> nat -> ExprTyp) (Δ : nat -> L.t * ExprTyp)
+              (p : L.t) (e : Expr) (τ : ExprTyp) (q : L.t) (C : Chor) (r : L.t) (sigma : ExprTyp),
       (Γ p) ⊢e e ::: τ ->
-      (fun r n => if PrinEqDec q r
+      (fun r n => if L.eq_dec q r
                then match n with
                     | 0 => τ
                     | S n => Γ r n
                     end
                else Γ r n);; Δ ⊢c C ::: sigma @ r ->
+      p <> q ->
   (* --------------------------------------- *)
       Γ ;; Δ ⊢c (CSend p e q C) ::: sigma @ r
-  | TIf : forall (Γ : Prin -> nat -> ExprTyp) (Δ : nat -> Prin * ExprTyp)
-            (p : Prin) (e : Expr) (C1 C2 : Chor) (q : Prin) (tau : ExprTyp),
+  | TIf : forall (Γ : L.t -> nat -> ExprTyp) (Δ : nat -> L.t * ExprTyp)
+            (p : L.t) (e : Expr) (C1 C2 : Chor) (q : L.t) (tau : ExprTyp),
       (Γ p) ⊢e e ::: bool ->
       Γ ;; Δ ⊢c C1 ::: tau @ q ->
       Γ ;; Δ ⊢c C2 ::: tau @ q ->
   (* --------------------------------- *)
       Γ;; Δ ⊢c CIf p e C1 C2 ::: tau @ q
-  | TDef : forall (Γ : Prin -> nat -> ExprTyp) (Δ : nat -> Prin * ExprTyp)
-             (C1 C2 : Chor) (p q : Prin) (τ σ : ExprTyp),
+  | TDef : forall (Γ : L.t -> nat -> ExprTyp) (Δ : nat -> L.t * ExprTyp)
+             (C1 C2 : Chor) (p q : L.t) (τ σ : ExprTyp),
       Γ;; (fun n =>
             match n with
             | 0 => (q, σ)
@@ -53,61 +54,60 @@ Module TypedChoreography (E : Expression) (TE : TypedExpression E).
   Hint Constructors ctyping : Chor.
 
 
-  Theorem ChorWeakening : forall (Γ1 Γ2 : Prin -> nat -> ExprTyp) (Δ1 Δ2 : nat -> Prin * ExprTyp)
-                            (ξe : Prin -> nat -> nat) (ξc : nat -> nat),
+  Theorem ChorWeakening : forall (Γ1 Γ2 : L.t -> nat -> ExprTyp) (Δ1 Δ2 : nat -> L.t * ExprTyp)
+                            (ξe : L.t -> nat -> nat) (ξc : nat -> nat),
       (forall p n, Γ1 p n = Γ2 p (ξe p n)) ->
       (forall n, Δ1 n = Δ2 (ξc n)) ->
-      forall (τ : ExprTyp) (r : Prin) (C : Chor),
+      forall (τ : ExprTyp) (r : L.t) (C : Chor),
         Γ1;; Δ1 ⊢c C ::: τ @ r ->
         Γ2;; Δ2 ⊢c C⟨c| ξc; ξe⟩ ::: τ @ r.
   Proof.
     intros Γ1 Γ2 Δ1 Δ2 ξe ξc subΓ subΔ τ r C; revert Γ1 Γ2 Δ1 Δ2 ξe ξc subΓ subΔ τ r;
-      induction C; intros Γ1 Γ2 Δ1 Δ2 ξe ξc subΓ subΔ τ r typing; simpl; inversion typing.
+      ChorInduction C; intros Γ1 Γ2 Δ1 Δ2 ξe ξc subΓ subΔ τ r typing; simpl; inversion typing.
     - apply TDone. apply ExprWeakening with (Γ := Γ1 p).
       rewrite <- H4; apply subΓ.
       rewrite H4; auto.
     - rewrite subΔ. apply TVar; auto.
     - inversion typing.
-      rewrite <- H4 in *.
-      clear sigma H3 Γ H1 Δ H2 p1 H e0 H0 p0 H4 C0 H5 r0 H6.
+      rewrite <- H4 in *; subst.
       unfold ChorUpExprRename. unfold ExprUpRename.
       rename τ0 into σ; apply TSend with (τ := σ);
-        [apply ExprWeakening with (Γ := Γ1 p); auto|]; auto.
-      apply IHC with (Γ1 := fun (r : Prin) (n : nat) => if PrinEqDec q r then match n with
+        [apply ExprWeakening with (Γ := Γ1 p); auto| |]; auto.
+      apply IHC with (Γ1 := fun (r : L.t) (n : nat) => if L.eq_dec q r then match n with
                                                                          | 0 => σ
                                                                          |S n0 => Γ1 r n0
                                                                          end
                                                   else Γ1 r n) (Δ1 := Δ1); auto.
       intros s n.
-      destruct (PrinEqDec q s); simpl.
+      destruct (L.eq_dec q s); simpl.
       destruct n; auto.
       auto.
-    - apply TIf; [eapply ExprWeakening; eauto | eapply IHC1; eauto | eapply IHC2; eauto].
-    - eapply TDef. eapply IHC1; eauto.
+    - apply TIf; [eapply ExprWeakening; eauto | eapply IHC0; eauto | eapply IHC1; eauto].
+    - eapply TDef. eapply IHC0; eauto.
       intro n; simpl. unfold ChorUpRename. destruct n; auto.
-      eapply IHC2; eauto.
+      eapply IHC1; eauto.
       intro n; simpl. unfold ChorUpRename. destruct n; auto.
   Qed.
   
-  Theorem ChorTypingExt : forall (Γ1 Γ2 : Prin -> nat -> ExprTyp) (Δ1 Δ2 : nat -> Prin * ExprTyp)
-                            (C : Chor) (p : Prin) (τ : ExprTyp),
-      (forall (p : Prin) (n : nat), Γ1 p n = Γ2 p n) ->
+  Theorem ChorTypingExt : forall (Γ1 Γ2 : L.t -> nat -> ExprTyp) (Δ1 Δ2 : nat -> L.t * ExprTyp)
+                            (C : Chor) (p : L.t) (τ : ExprTyp),
+      (forall (p : L.t) (n : nat), Γ1 p n = Γ2 p n) ->
       (forall n : nat, Δ1 n = Δ2 n) ->
       Γ1;; Δ1 ⊢c C ::: τ @ p -> Γ2;; Δ2 ⊢c C ::: τ @ p.
   Proof.
     intros Γ1 Γ2 Δ1 Δ2 C p τ eqΓ eqΔ typing; revert Γ1 Γ2 Δ1 Δ2 p τ eqΓ eqΔ typing;
-      induction C; intros Γ1 Γ2 Δ1 Δ2 r τ eqΓ eqΔ typing.
+      ChorInduction C; intros Γ1 Γ2 Δ1 Δ2 r τ eqΓ eqΔ typing.
     - inversion typing; apply TDone.
       apply ExprTypingExt with (Γ := Γ1 r); auto.
     - inversion typing. rewrite eqΔ; apply TVar.
-    - inversion typing. apply TSend with (τ := τ0); [eapply ExprTypingExt; eauto |].
-      eapply IHC; [| auto | exact H8].
-      intros p3 n; simpl. destruct (PrinEqDec p0 p3); auto.
+    - inversion typing. apply TSend with (τ := τ0); [eapply ExprTypingExt; eauto | |auto].
+      eapply IHC; [| auto | exact H8]; subst.
+      intros p3 n; simpl. destruct (L.eq_dec q p3); auto.
       destruct n; auto.
-    - inversion typing.
-      apply TIf; [eapply ExprTypingExt; eauto| eapply IHC1 | eapply IHC2]; eauto.
-    - inversion typing.
-      eapply TDef; [eapply IHC1 | eapply IHC2].
+    - inversion typing; subst.
+      apply TIf; [eapply ExprTypingExt; eauto| eapply IHC0 | eapply IHC1]; eauto.
+    - inversion typing; subst.
+      eapply TDef; [eapply IHC0 | eapply IHC1].
       3: exact H3.
       all: eauto.
       all: intro n; simpl; destruct n; auto.
@@ -115,50 +115,49 @@ Module TypedChoreography (E : Expression) (TE : TypedExpression E).
 
   Definition ChorSubstTyping Γ1 Δ1 σc σe Γ2 Δ2 :=
     (forall n : nat, Γ2;; Δ2 ⊢c (σc n) ::: (snd (Δ1 n)) @ (fst (Δ1 n))) /\
-    (forall p : Prin, (Γ1 p) ⊢es (σe p) ⊣ (Γ2 p)).
+    (forall p : L.t, (Γ1 p) ⊢es (σe p) ⊣ (Γ2 p)).
 
   Theorem ChorSubstTypingSpec : forall Γ1 Δ1 σc σe Γ2 Δ2,
-      (ChorSubstTyping Γ1 Δ1 σc σe Γ2 Δ2) -> forall (C : Chor) (τ : ExprTyp) (p : Prin),
+      (ChorSubstTyping Γ1 Δ1 σc σe Γ2 Δ2) -> forall (C : Chor) (τ : ExprTyp) (p : L.t),
           (Γ1;; Δ1 ⊢c C ::: τ @ p) -> (Γ2;; Δ2 ⊢c (C [c| σc; σe]) ::: τ @ p).
   Proof.
     intros Γ1 Δ1 σc σe Γ2 Δ2 substyping C;
       revert Γ1 Δ1 σc σe Γ2 Δ2 substyping;
-      induction C;
+      ChorInduction C;
       intros Γ1 Δ1 σc σe Γ2 Δ2 substyping τ r typing; simpl.
     all: unfold ChorSubstTyping in substyping; destruct substyping as [st1 st2].
-    all: inversion typing.
+    all: inversion typing; subst.
     - apply TDone; eapply ExprSubstType; eauto.
     - apply st1.
-    - eapply TSend. simpl. eapply ExprSubstType; eauto.
-      apply IHC with (Γ1 := fun r n => if PrinEqDec p0 r then match n with
+    - eapply TSend; auto. simpl. eapply ExprSubstType; eauto.
+      apply IHC with (Γ1 := fun r n => if L.eq_dec q r then match n with
                                                           | 0 => τ0
                                                           | S n0 => Γ1 r n0
                                                           end else Γ1 r n)
-      (Δ1 := Δ1); [unfold ChorSubstTyping; split |].
+      (Δ1 := Δ1); [unfold ChorSubstTyping; split |]; auto.
       -- intros n.
          unfold SendUpChorSubst. eapply ChorWeakening; eauto.
-         intros p2 m; destruct (PrinEqDec p0 p2); reflexivity.
+         intros p1 m; destruct (L.eq_dec q p1); reflexivity.
       -- unfold ChorUpExprSubst. intro p2. eapply ExprSubstRWeakening.
          intro n; reflexivity.
          unfold ExprSubstTyping. intro n; simpl.
-         destruct (PrinEqDec p0 p2). destruct n. apply ExprVarTyping.
+         destruct (L.eq_dec q p2). destruct n. apply ExprVarTyping.
          apply ExprWeakening with (Γ := Γ2 p2); auto.
          apply st2. apply st2.
-      -- apply H8.
     - apply TIf; 
-        [ eapply ExprSubstType; eauto | eapply IHC1; eauto | eapply IHC2; eauto];
+        [ eapply ExprSubstType; eauto | eapply IHC0; eauto | eapply IHC1; eauto];
         unfold ChorSubstTyping; split; auto.
 
-    - eapply TDef; [eapply IHC1; eauto | eapply IHC2; eauto];
+    - eapply TDef; [eapply IHC0; eauto | eapply IHC1; eauto];
         unfold ChorSubstTyping; split; eauto;
           unfold ChorUpSubst.
       all: intro n; destruct n; [apply TVar | eapply ChorWeakening; eauto].
   Qed.
 
-  Lemma SendSubstTyping : forall (Γ : Prin -> nat -> ExprTyp) (Δ : nat -> Prin * ExprTyp)
-                            (p : Prin) (e : Expr) (τ : ExprTyp),
+  Lemma SendSubstTyping : forall (Γ : L.t -> nat -> ExprTyp) (Δ : nat -> L.t * ExprTyp)
+                            (p : L.t) (e : Expr) (τ : ExprTyp),
       Γ p ⊢e e ::: τ ->
-      ChorSubstTyping (fun r n => if PrinEqDec p r
+      ChorSubstTyping (fun r n => if L.eq_dec p r
                                then match n with
                                     | 0 => τ
                                     | S n => Γ r n
@@ -169,12 +168,12 @@ Module TypedChoreography (E : Expression) (TE : TypedExpression E).
     unfold ChorSubstTyping; split; auto.
     - intro n; unfold ChorIdSubst; auto with Chor.
     - intro q. unfold ExprSubstTyping.
-      unfold SendSubst; destruct (PrinEqDec p q); intro m;
+      unfold SendSubst; destruct (L.eq_dec p q); intro m;
         [rewrite <- e0; destruct m; auto|]; apply ExprVarTyping.
   Qed.
 
-  Lemma DefSubstTyping : forall (Γ : Prin -> nat -> ExprTyp) (Δ : nat -> Prin * ExprTyp) (C : Chor)
-    (σ : ExprTyp) (p : Prin),
+  Lemma DefSubstTyping : forall (Γ : L.t -> nat -> ExprTyp) (Δ : nat -> L.t * ExprTyp) (C : Chor)
+    (σ : ExprTyp) (p : L.t),
       (Γ;; fun n =>
             match n with
             | 0 => (p, σ)
@@ -194,7 +193,7 @@ Module TypedChoreography (E : Expression) (TE : TypedExpression E).
 
   Theorem ChorEquiv'Typing : forall (C1 C2 : Chor),
       C1 ≡' C2 ->
-      forall (Γ : Prin -> nat -> ExprTyp) (Δ : nat -> Prin * ExprTyp) (τ : ExprTyp) (p : Prin),
+      forall (Γ : L.t -> nat -> ExprTyp) (Δ : nat -> L.t * ExprTyp) (τ : ExprTyp) (p : L.t),
         Γ;; Δ ⊢c C1 ::: τ @ p -> Γ;; Δ ⊢c C2 ::: τ @ p.
   Proof.
     intros C1 C2 equiv; induction equiv; intros Γ Δ τ Alice typ; auto with Chor.
@@ -207,16 +206,16 @@ Module TypedChoreography (E : Expression) (TE : TypedExpression E).
         rename τ0 into σ; rename H11 into ltyp1; rename H12 into ContTyp1.
       inversion ContTyp1. clear Γ0 H5 Δ0 H6 p0 H3 e H4 q0 H8 C H9 sigma H7 r0 H10;
         rename H11 into ltyp2; rename H12 into ContTyp2; rename τ0 into ρ.
-      destruct (PrinEqDec q r) as [e | _]; [exfalso; apply H0; apply e | ].
-      apply TSend with (τ := ρ); [apply ltyp2 |].
-      apply TSend with (τ := σ).
-      -- destruct (PrinEqDec s p) as [e | _]; [exfalso; apply H1; symmetry; apply e |].
+      destruct (L.eq_dec q r) as [e | _]; [exfalso; apply H0; apply e | ].
+      apply TSend with (τ := ρ); [apply ltyp2 | |]; auto.
+      apply TSend with (τ := σ); auto.
+      -- destruct (L.eq_dec s p) as [e | _]; [exfalso; apply H1; symmetry; apply e |].
          apply ltyp1.
       -- apply IHequiv in ContTyp2. eapply ChorTypingExt; [ | | exact ContTyp2]; auto.
-         intros t n; simpl. destruct (PrinEqDec s t) as [e3 | n1].
-         destruct (PrinEqDec q t) as [e4 | n2]; [exfalso; apply H2; transitivity t; auto|].
+         intros t n; simpl. destruct (L.eq_dec s t) as [e3 | n1].
+         destruct (L.eq_dec q t) as [e4 | n2]; [exfalso; apply H2; transitivity t; auto|].
          destruct n; auto.
-         destruct (PrinEqDec q t); auto.
+         destruct (L.eq_dec q t); auto.
     - inversion typ; clear Γ0 H4 Δ0 H5 p0 H1 e H2 C0 H3 C3 H7 tau H6 q0 H8;
         rename H9 into ltyp1; rename H10 into Btyp11; rename H11 into Btyp21.
       inversion Btyp11; clear Γ0 H3 Δ0 H4 p0 H1 e H2 q0 H6 C H7 sigma H5 r0 H8;
@@ -225,13 +224,13 @@ Module TypedChoreography (E : Expression) (TE : TypedExpression E).
         rename τ0 into ρ; rename H9 into ltyp3; rename H10 into typC2.
       apply TSend with (τ := σ); auto.
       apply TIf; [| apply IHequiv1 in typC1; auto |].
-      destruct (PrinEqDec r p) as [eq | _ ]; [exfalso; apply H0; symmetry; exact eq| auto ].
+      destruct (L.eq_dec r p) as [eq | _ ]; [exfalso; apply H0; symmetry; exact eq| auto ].
       rewrite (ExprTypingUnique _ _ _ _ ltyp2 ltyp3); apply IHequiv2 in typC2; auto.
     - inversion typ; clear Γ0 H3 Δ0 H4 p0 H1 e H2 q0 H6 C H7 sigma H5 r0 H8;
         rename τ0 into σ; rename H9 into ltyp1; rename H10 into typif.
       inversion typif; clear Γ0 H4 Δ0 H5 p0 H1 e H2 C0 H3 C3 H7 tau H6 q0 H8;
         rename H9 into ltyp2; rename H10 into typC1; rename H11 into typC2.
-      destruct (PrinEqDec r p) as [eq | _]; [exfalso; apply H0; symmetry; exact eq |].
+      destruct (L.eq_dec r p) as [eq | _]; [exfalso; apply H0; symmetry; exact eq |].
       apply TIf; auto.
       all: apply TSend with (τ := σ); auto.
     - inversion typ; clear Γ0 H3 Δ0 H4 p0 H0 C1 H2 C2 H6 tau H5 q0 H7 e H1;
@@ -245,7 +244,7 @@ Module TypedChoreography (E : Expression) (TE : TypedExpression E).
 
   Theorem ChorEquivTyping : forall (C1 C2 : Chor),
       C1 ≡ C2 ->
-      forall (Γ : Prin -> nat -> ExprTyp) (Δ : nat -> Prin * ExprTyp) (τ : ExprTyp) (p : Prin),
+      forall (Γ : L.t -> nat -> ExprTyp) (Δ : nat -> L.t * ExprTyp) (τ : ExprTyp) (p : L.t),
         Γ;; Δ ⊢c C1 ::: τ @ p -> Γ;; Δ ⊢c C2 ::: τ @ p.
   Proof.
     intros C1 C2 equiv; induction equiv; intros Γ Δ τ p typ.
@@ -259,26 +258,24 @@ Module TypedChoreography (E : Expression) (TE : TypedExpression E).
         Γ ⊢e e ::: τ
         -> forall e' : Expr, ExprStep e e'
                        -> Γ ⊢e e' ::: τ) ->
-    forall (Γ : Prin -> nat -> ExprTyp) (Δ : nat -> Prin * ExprTyp) (C : Chor) (τ : ExprTyp) (p : Prin),
-      Γ;; Δ ⊢c C ::: τ @ p -> forall (R : Redex) (B : list Prin) (C': Chor),
+    forall (Γ : L.t -> nat -> ExprTyp) (Δ : nat -> L.t * ExprTyp) (C : Chor) (τ : ExprTyp) (p : L.t),
+      Γ;; Δ ⊢c C ::: τ @ p -> forall (R : Redex) (B : list L.t) (C': Chor),
         RChorStep R B C C' -> Γ;; Δ ⊢c C' ::: τ @ p.
   Proof.
     intros ExprPreservation Γ Δ C τ p typing; induction typing;
-      intros R B C' step; inversion step.
+      intros R B C' step; inversion step; subst; auto.
     - apply TDone; apply ExprPreservation with (e := e); auto.
     - apply TSend with (τ := τ); auto; apply ExprPreservation with (e := e); auto.
-    - specialize (IHtyping _ _ _ H7). apply TSend with (τ := τ); auto.
+    - specialize (IHtyping _ _ _ H8). apply TSend with (τ := τ); auto.
     - eapply ChorSubstTypingSpec; [apply SendSubstTyping|]; eauto.
       apply ExprValueTyping with (Γ := Γ p); auto.
     - apply TIf; auto. apply ExprPreservation with (e := e); auto.
     - specialize (IHtyping1 _ _ _ H7). specialize (IHtyping2 _ _ _ H8).
       apply TIf; auto.
-    - rewrite <- H3; auto.
-    - rewrite <- H3; auto.
     - eapply ChorSubstTypingSpec; [apply DefSubstTyping|]; eauto.
   Qed.
 
-  Theorem ChorValueTyping : forall (C : Chor) (τ : ExprTyp) (p : Prin),
+  Theorem ChorValueTyping : forall (C : Chor) (τ : ExprTyp) (p : L.t),
       ChorVal C ->
        forall Γ1 Γ2 Δ1 Δ2, Γ1;; Δ1 ⊢c C ::: τ @ p -> Γ2;; Δ2 ⊢c C ::: τ @ p.
   Proof.
@@ -288,12 +285,12 @@ Module TypedChoreography (E : Expression) (TE : TypedExpression E).
     apply TDone. eapply ExprValueTyping; eauto.
   Qed.
 
-  Inductive ChorClosedBelow : (Prin -> nat) -> nat -> Chor -> Prop :=
+  Inductive ChorClosedBelow : (L.t -> nat) -> nat -> Chor -> Prop :=
   | DoneClosedBelow : forall n m p e, ExprClosedBelow (n p) e -> ChorClosedBelow n m (CDone p e)
   | CVarClosedBelow : forall n m k, k < m -> ChorClosedBelow n m (CVar k)
   | SendClosedBelow : forall p e q C n m,
       ExprClosedBelow (n p) e
-      -> ChorClosedBelow (fun r => if PrinEqDec q r then S (n q) else n r) m C 
+      -> ChorClosedBelow (fun r => if L.eq_dec q r then S (n q) else n r) m C 
       -> ChorClosedBelow n m (CSend p e q C)
   | IfClosedBelow : forall n m p e C1 C2,
     ExprClosedBelow (n p) e -> ChorClosedBelow n m C1 -> ChorClosedBelow n m C2
@@ -301,42 +298,41 @@ Module TypedChoreography (E : Expression) (TE : TypedExpression E).
   | DefClosedBelow : forall n m C1 C2, ChorClosedBelow n (S m) C1
                          -> ChorClosedBelow n (S m) C2
                          -> ChorClosedBelow n m (CDef C1 C2).
-  Lemma ChorClosedBelowTyping : forall (Γ1 Γ2 : Prin -> nat -> ExprTyp)
-                                  (Δ1 Δ2 : nat -> Prin * ExprTyp)
-                                  (C : Chor) (τ : ExprTyp) (p : Prin)
-                                  (n : Prin -> nat) (m : nat),
+  Lemma ChorClosedBelowTyping : forall (Γ1 Γ2 : L.t -> nat -> ExprTyp)
+                                  (Δ1 Δ2 : nat -> L.t * ExprTyp)
+                                  (C : Chor) (τ : ExprTyp) (p : L.t)
+                                  (n : L.t -> nat) (m : nat),
       ChorClosedBelow n m C ->
-      (forall (p : Prin) (k : nat), k < (n p) -> Γ1 p k = Γ2 p k) ->
+      (forall (p : L.t) (k : nat), k < (n p) -> Γ1 p k = Γ2 p k) ->
       (forall k : nat, k < m -> Δ1 k = Δ2 k) ->
       Γ1;; Δ1 ⊢c C ::: τ @ p -> Γ2;; Δ2 ⊢c C ::: τ @ p.
   Proof.
-    intros Γ1 Γ2 Δ1 Δ2 C; revert Γ1 Γ2 Δ1 Δ2; induction C;
+    intros Γ1 Γ2 Δ1 Δ2 C; revert Γ1 Γ2 Δ1 Δ2; ChorInduction C;
       try (rename n into n');
-      intros Γ1 Γ2 Δ1 Δ2 τ q n m closedC eqΓ eqΔ typ; inversion closedC; inversion typ.
-    - apply TDone; apply ExprClosedBelowTyping with (Γ := Γ1 q) (n := n q); auto.
-      rewrite <- H9; auto.
+      intros Γ1 Γ2 Δ1 Δ2 τ q' n m closedC eqΓ eqΔ typ; inversion closedC; inversion typ; subst.
+    - apply TDone; apply ExprClosedBelowTyping with (Γ := Γ1 q') (n := n q'); auto.
     - rewrite eqΔ; auto; apply TVar.
-    - apply TSend with (τ := τ0).
+    - apply TSend with (τ := τ0); auto.
       apply ExprClosedBelowTyping with (Γ := Γ1 p) (n := n p); auto.
-      apply IHC with (Γ1 := fun r n => if PrinEqDec p0 r then match n with
+      apply IHC with (Γ1 := fun r n => if L.eq_dec q r then match n with
                                                           | 0 => τ0
                                                           | S n0 => Γ1 r n0
                                                           end else Γ1 r n)
-                     (Δ1 := Δ1) (n := fun r => if PrinEqDec p0 r then S (n p0) else n r) (m := m); auto.
-      intros p3 k lt_k_Sn. destruct (PrinEqDec p0 p3). destruct k; auto;
-      apply eqΓ. rewrite <- e2; apply Lt.lt_S_n; auto. apply eqΓ; auto.
+                     (Δ1 := Δ1) (n := fun r => if L.eq_dec q r then S (n q) else n r) (m := m); auto.
+      intros p3 k lt_k_Sn. destruct (L.eq_dec q p3). destruct k; auto;
+      apply eqΓ. rewrite <- e0. apply Lt.lt_S_n; auto. apply eqΓ; auto.
     - apply TIf. apply ExprClosedBelowTyping with (Γ := Γ1 p) (n := n p); auto.
-      eapply IHC1; eauto. eapply IHC2; eauto.
-    - apply TDef with (q := q0) (σ := σ).
-      eapply IHC1; eauto. intros k lt_k_Sm. simpl. destruct k; auto.
+      eapply IHC0; eauto. eapply IHC1; eauto.
+    - apply TDef with (q := q) (σ := σ).
+      eapply IHC0; eauto. intros k lt_k_Sm. simpl. destruct k; auto.
       apply eqΔ. apply Lt.lt_S_n; auto.
-      eapply IHC2; eauto. intros k lt_k_Sm. simpl. destruct k; auto.
+      eapply IHC1; eauto. intros k lt_k_Sm. simpl. destruct k; auto.
       apply eqΔ. apply Lt.lt_S_n; auto.
   Qed.
 
   Definition ChorClosed := ChorClosedBelow (fun _ => 0) 0.
-  Lemma ChorClosedTyping : forall (Γ1 Γ2 : Prin -> nat -> ExprTyp) (Δ1 Δ2 : nat -> Prin * ExprTyp)
-                             (C : Chor) (τ : ExprTyp)(p : Prin),
+  Lemma ChorClosedTyping : forall (Γ1 Γ2 : L.t -> nat -> ExprTyp) (Δ1 Δ2 : nat -> L.t * ExprTyp)
+                             (C : Chor) (τ : ExprTyp)(p : L.t),
       ChorClosed C -> Γ1;; Δ1 ⊢c C ::: τ @ p -> Γ2;; Δ2 ⊢c C ::: τ @ p.
   Proof.
     intros Γ1 Γ2 Δ1 Δ2 C τ p H H0.
@@ -357,30 +353,29 @@ Module TypedChoreography (E : Expression) (TE : TypedExpression E).
         ExprVal e \/ exists e' : Expr, ExprStep e e') ->
     (forall (v : Expr) (Γ : nat -> ExprTyp),
         Γ ⊢e v ::: bool -> ExprVal v -> {v = tt} + {v = ff}) ->
-    forall (C : Chor) (Γ : Prin -> nat -> ExprTyp) (Δ : nat -> Prin * ExprTyp) (τ : ExprTyp) (p : Prin),
+    forall (C : Chor) (Γ : L.t -> nat -> ExprTyp) (Δ : nat -> L.t * ExprTyp) (τ : ExprTyp) (p : L.t),
       ChorClosed C -> Γ;; Δ ⊢c C ::: τ @ p ->
       ChorVal C \/ exists R C', RChorStep R nil C C'.
   Proof.
-    intros ExprProgress BoolInversion C; induction C; intros Γ Δ τ q closedC typ;
-      inversion typ; inversion closedC.
+    intros ExprProgress BoolInversion C; ChorInduction C; intros Γ Δ τ q' closedC typ;
+      inversion typ; subst; inversion closedC; subst.
     2,3,4,5: right.
-    - specialize (ExprProgress _ _ _ H5 H9).
+    - specialize (ExprProgress _ _ _ H5 H2).
       destruct ExprProgress as [eval | estep]; [left; apply VDone; auto
                                                | right; destruct estep as [e' estep]].
-      rewrite <- H4;
-        exists (RDone p e e');  exists (CDone p e'); apply DoneEStep; auto.
-    - inversion H7.
-    - specialize (ExprProgress _ _ _ H7 H13); destruct ExprProgress as [eval | estep];
+      exists (RDone q' e e');  exists (CDone q' e'); apply DoneEStep; auto.
+    - inversion H2.
+    - specialize (ExprProgress _ _ _ H7 H3); destruct ExprProgress as [eval | estep];
         [| destruct estep as [e' estep]].
-      -- exists (RSendV p e p0);  exists (C [c| ChorIdSubst; SendSubst p0 e]); auto with Chor.
-      -- exists (RSendE p e e' p0);  exists (CSend p e' p0 C); auto with Chor.
-    - specialize (ExprProgress _ _ _ H7 H15); destruct ExprProgress as [eval | estep];
+      -- exists (RSendV p e q);  exists (C [c| ChorIdSubst; SendSubst q e]); auto with Chor.
+      -- exists (RSendE p e e' q);  exists (CSend p e' q C); auto with Chor.
+    - specialize (ExprProgress _ _ _ H7 H4); destruct ExprProgress as [eval | estep];
         [destruct (BoolInversion _ _ H7 eval) as [ett | eff] |
          destruct estep as [e' estep]].
-      -- rewrite ett in *; exists (RIfTT p);  exists C1; auto with Chor.
-      -- rewrite eff in *; exists (RIfFF p);  exists C2; auto with Chor.
-      -- exists (RIfE p e e');  exists (CIf p e' C1 C2); auto with Chor.
-    - exists RDef;  exists (C2 [c| DefSubst C1; ExprChorIdSubst]); auto with Chor.
+      -- rewrite ett in *; exists (RIfTT p);  exists C0; auto with Chor.
+      -- rewrite eff in *; exists (RIfFF p);  exists C1; auto with Chor.
+      -- exists (RIfE p e e');  exists (CIf p e' C0 C1); auto with Chor.
+    - exists RDef;  exists (C1 [c| DefSubst C0; ExprChorIdSubst]); auto with Chor.
   Qed.
       
 End TypedChoreography.

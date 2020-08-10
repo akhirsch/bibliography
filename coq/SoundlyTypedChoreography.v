@@ -4,13 +4,13 @@ Require Export Expression.
 Require Export TypedExpression.
 Require Export SoundlyTypedExpression.
 
-Module SoundlyTypedChoreography (E : Expression) (TE : TypedExpression E) (STE : SoundlyTypedExpression E TE).
+Module SoundlyTypedChoreography (E : Expression) (TE : TypedExpression E) (STE : SoundlyTypedExpression E TE) (L : Locations).
   Import E. Import TE. Import STE.
-  Include (TypedChoreography E TE).
+  Include (TypedChoreography L E TE).
 
     Theorem Preservation :
-    forall (Γ : Prin -> nat -> ExprTyp) (Δ : nat -> Prin * ExprTyp) (C : Chor) (τ : ExprTyp) (p : Prin),
-      Γ;; Δ ⊢c C ::: τ @ p -> forall (R : Redex) (B : list Prin) (C': Chor),
+    forall (Γ : L.t -> nat -> ExprTyp) (Δ : nat -> L.t * ExprTyp) (C : Chor) (τ : ExprTyp) (p : L.t),
+      Γ;; Δ ⊢c C ::: τ @ p -> forall (R : Redex) (B : list L.t) (C': Chor),
         RChorStep R B C C' -> Γ;; Δ ⊢c C' ::: τ @ p.
     Proof.
       apply RelativePreservation. intros Γ e τ H e' H0.
@@ -18,7 +18,7 @@ Module SoundlyTypedChoreography (E : Expression) (TE : TypedExpression E) (STE :
     Qed.
 
     Theorem Progress :
-    forall (C : Chor) (Γ : Prin -> nat -> ExprTyp) (Δ : nat -> Prin * ExprTyp) (τ : ExprTyp) (p : Prin),
+    forall (C : Chor) (Γ : L.t -> nat -> ExprTyp) (Δ : nat -> L.t * ExprTyp) (τ : ExprTyp) (p : L.t),
       ChorClosed C -> Γ;; Δ ⊢c C ::: τ @ p ->
       ChorVal C \/ exists R C', RChorStep R nil C C'.
     Proof.
