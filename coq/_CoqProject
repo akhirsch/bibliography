@@ -3,6 +3,8 @@ Expression.v
 TypedExpression.v
 SoundlyTypedExpression.v
 Locations.v
+LocationMap.v
+TreeLocationMap.v
 Choreography.v
 TypedChoreography.v
 SoundlyTypedChoreography.v
@@ -10,3 +12,4 @@ LambdaCalc.v
 STLC.v
 STLCSound.v
 PiCalc.v
+AnnotatedChoreography.v
