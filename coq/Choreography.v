@@ -1,6 +1,5 @@
 Require Export Expression.
 Require Export Locations.
-(* Require Import PiCalc. *)
 
 Require Import Coq.Arith.Arith.
 Require Import Coq.Program.Wf.
@@ -10,152 +9,231 @@ Require Import Coq.Lists.List.
 Require Import Sorted Orders Coq.Sorting.Mergesort Permutation.
 Require Import Program.Tactics.
 Require Import Coq.Structures.Orders.
+Require Import Coq.Bool.Bool.
+Require Import Psatz.
+Require Import Coq.Program.Equality.
+
+From Equations Require Import Equations.
 
 Module Choreography (Import E : Expression) (L : Locations).
 
+  Definition Loc : Set := L.t.
+  Include (LocationNotations L).
+  Module LF := (LocationFacts L).
+  Import ListNotations.
+
+  Inductive LRChoice : Set := LChoice | RChoice.
+  Instance ChoiceEqDec : EqDec LRChoice.
+  Proof using.
+    unfold EqDec; decide equality.
+  Defined.
+  
   Inductive Chor : Set :=
-    CDone : L.t -> Expr -> Chor
-  | CVar : nat -> Chor
-  | CSend : L.t -> Expr -> L.t -> Chor -> Chor
-  | CIf : L.t -> Expr -> Chor -> Chor -> Chor
-  | CDef : Chor -> Chor -> Chor.
+    Done : Loc -> Expr -> Chor
+  | Var : nat -> Chor
+  | Send : Loc -> Expr -> Loc -> Chor -> Chor
+  | If : Loc -> Expr -> Chor -> Chor -> Chor
+  | Sync : Loc -> LRChoice -> Loc -> Chor -> Chor
+  | DefLocal : Loc -> Chor -> Chor -> Chor
+  | DefGlobal : Chor -> Chor -> Chor.
   Hint Constructors Chor : Chor.
-  Ltac ChorInduction C := let p := fresh "p" in
+  Notation "'Ret' p ⟪ e ⟫" := (Done p e) (at level 25).
+  Notation "p ⟪ e ⟫ → q 'fby' C" := (Send p e q C) (at level 25).
+  Notation "'Cond' p ⦃ e ⦄ 'Then' C1 'Else' C2" := (If p e C1 C2) (at level 25).
+  Notation "p ⟨ d ⟩ → q 'fby' C" := (Sync p d q C) (at level 25).
+  Notation "'LetLocal' p '⟪new⟫' ← C1 'fby' C2" := (DefLocal p C1 C2) (at level 25).
+  Notation "'LetGlobal' '⟪new⟫' ← C1 'fby' C2" := (DefGlobal C1 C2) (at level 25).
+
+  Ltac ChorInduction C := let p := fresh "l" in
                           let e := fresh "e" in
                           let x := fresh "x" in
-                          let q := fresh "q" in
-                          let C1 := fresh "C" in
-                          let C2 := fresh "C" in
+                          let q := fresh "l'" in
+                          let C1 := fresh "C1" in
+                          let C2 := fresh "C2" in
                           let IHC := fresh "IH" C in
                           let IHC1 := fresh "IH" C1 in
                           let IHC2 := fresh "IH" C2 in
-                          induction C as [p e| x | p e q C IHC | p e C1 IHC1 C2 IHC2 |C1 IHC1 C2 IHC2].
+                          let n := fresh "n" in
+                          let d := fresh "d" in
+                          induction C as [p e | n | p e q C IHC | p e C1 IHC1 C2 IHC2 | p d q C IHC |p C1 IHC1 C2 IHC2 | C1 IHC1 C2 IHC2].
   Ltac ChorDestruct C := let p := fresh "p" in
-                          let e := fresh "e" in
-                          let x := fresh "x" in
-                          let q := fresh "q" in
-                          let C1 := fresh "C" in
-                          let C2 := fresh "C" in
-                          destruct C as [p e| x | p e q C | p e C1 C2 |C1 C2].
+                         let n := fresh "n" in
+                         let e := fresh "e" in
+                         let x := fresh "x" in
+                         let q := fresh "q" in
+                         let d := fresh "d" in
+                         let C1 := fresh "C1" in
+                         let C2 := fresh "C2" in
+                         destruct C as [p e | n | p e q C | p e C1 C2 |p d q C | p C1 C2 | C1 C2].
+  Instance ChorEqDec : EqDec Chor.
+  Proof using.
+    unfold EqDec; decide equality.
+    all: try (apply ExprEqDec).
+    all: try (apply L.eq_dec).
+    apply Nat.eq_dec.
+    apply ChoiceEqDec.
+  Defined.
 
   Inductive ChorVal : Chor -> Prop :=
-    VDone : forall (p : L.t) (v : Expr), ExprVal v -> ChorVal (CDone p v).
+  | ReturnVal : forall (l : Loc) (v : Expr),
+      ExprVal v -> ChorVal (Done l v).
 
-  Definition ChorUpRename : (nat -> nat) -> nat -> nat :=
-    fun ξ n => match n with
-            | 0 => 0
-            | S n => S (ξ n)
-            end.
-  Definition ChorUpExprRename : (L.t -> nat -> nat) -> L.t -> L.t -> nat -> nat :=
+  Fixpoint NumberOfIfs (C : Chor) : nat :=
+    match C with
+    | Done p e => 0
+    | Var n => 0
+    | Send p e q C' => NumberOfIfs C'
+    | If p e C1 C2 => S (NumberOfIfs C1 + NumberOfIfs C2)
+    | Sync p d q C' => NumberOfIfs C'
+    | DefLocal p C1 C2 => NumberOfIfs C1 + NumberOfIfs C2
+    | DefGlobal C1 C2 => NumberOfIfs C1 + NumberOfIfs C2
+    end.
+
+  Fixpoint ChorSize (C : Chor) : nat :=
+    match C with
+    | Done p e => 1
+    | Var n => 1
+    | Send p e q C' => S (ChorSize C')
+    | If p e C1 C2 => S(Nat.max (ChorSize C1) (ChorSize C2))
+    | Sync p d q C' => S (ChorSize C')
+    | DefLocal p C1 C2 => S (ChorSize C1 + ChorSize C2)
+    | DefGlobal C1 C2 => S (ChorSize C1 + ChorSize C2)
+    end.
+
+  Definition ChorUpExprRename : (Loc -> nat -> nat) -> Loc -> Loc -> nat -> nat :=
     fun ξ p q => if L.eq_dec p q
               then ExprUpRename (ξ q)
               else ξ q.
-  
-  Fixpoint ChorRename (C : Chor) (ξₖ : nat -> nat) (ξₑ : L.t -> nat -> nat) : Chor :=
+
+  Fixpoint ChorExprRename (C : Chor) (ξ : Loc -> nat -> nat) : Chor :=
     match C with
-    | CDone p e => CDone p (e ⟨e| (ξₑ p)⟩)
-    | CVar n => CVar (ξₖ n)
-    | CSend p e q C => CSend p (e ⟨e| (ξₑ p)⟩) q (ChorRename C ξₖ (ChorUpExprRename ξₑ q))
-    | CIf p e C1 C2 => CIf p (e ⟨e| (ξₑ p)⟩) (ChorRename C1 ξₖ ξₑ) (ChorRename C2 ξₖ ξₑ)
-    | CDef C1 C2 => CDef (ChorRename C1 (ChorUpRename ξₖ) ξₑ) (ChorRename C2 (ChorUpRename ξₖ) ξₑ)
+    | Done p e => Done p (e ⟨e| (ξ p)⟩)
+    | Var n => Var n
+    | Send p e q C => Send p (e ⟨e| (ξ p)⟩) q (ChorExprRename C (ChorUpExprRename ξ q))
+    | If p e C1 C2 => If p (e ⟨e| (ξ p)⟩) (ChorExprRename C1 ξ) (ChorExprRename C2 ξ)
+    | Sync p d q C1 => Sync p d q (ChorExprRename C1 ξ)
+    | DefLocal p C1 C2 => DefLocal p (ChorExprRename C1 ξ) (ChorExprRename C2 (ChorUpExprRename ξ p))
+    | DefGlobal C1 C2 => DefGlobal (ChorExprRename C1 ξ) (ChorExprRename C2 ξ)
     end.
-  Notation "C ⟨c| x1 ; x2 ⟩" := (ChorRename C x1 x2) (at level 20).
+  Notation "C ⟨ce| x ⟩" := (ChorExprRename C x) (at level 20).
 
-  Definition ChorIdRename : nat -> nat := fun n => n.
-  Definition ChorIdExprRename : L.t -> nat -> nat := fun _ n => n.
+  Definition ChorIdExprRename : Loc -> nat -> nat := fun _ n => n.
   
-  Lemma ChorUpIdRename : forall n, ChorUpRename ChorIdRename n = ChorIdRename n.
-  Proof.
-    intros n; destruct n; unfold ChorUpRename; unfold ChorIdRename; reflexivity.
-  Qed.
-
-  Lemma ChorUpIdExprRename : forall p q n, ChorUpExprRename ChorIdExprRename p q n
-                                    = ChorIdExprRename p n.
-  Proof.
+  Lemma ChorUpIdExprRename : forall p q n, ChorUpExprRename ChorIdExprRename p q n = ChorIdExprRename p n.
+  Proof using.
     intros p q n; destruct n; unfold ChorUpExprRename; unfold ChorIdExprRename.
     all: destruct (L.eq_dec p q) as [_|neq]; simpl; reflexivity.
   Qed.
 
-  Lemma ChorUpRenameExt : forall (ξ1 ξ2 : nat -> nat),
-      (forall n : nat, ξ1 n = ξ2 n) ->
-      forall n : nat, ChorUpRename ξ1 n = ChorUpRename ξ2 n.
-  Proof.
-    intros ξ1 ξ2 eq n; unfold ChorUpRename; destruct n; auto.
-  Qed.
-
-  Lemma ChorUpExprRenameExt : forall (ξ1 ξ2 : L.t -> nat -> nat),
-      (forall (p : L.t) (n : nat), ξ1 p n = ξ2 p n) ->
-      forall (p q : L.t) (n : nat), ChorUpExprRename ξ1 p q n = ChorUpExprRename ξ2 p q n.
-  Proof.
+  Lemma ChorUpExprRenameExt : forall (ξ1 ξ2 : Loc -> nat -> nat),
+      (forall (p : Loc) (n : nat), ξ1 p n = ξ2 p n) ->
+      forall (p q : Loc) (n : nat), ChorUpExprRename ξ1 p q n = ChorUpExprRename ξ2 p q n.
+  Proof using.
     intros ξ1 ξ2 eq p q n. unfold ChorUpExprRename. unfold ExprUpRename.
     destruct (L.eq_dec p q); auto.
     destruct n; auto.
   Qed.
 
-  Lemma ChorRenameExtensional : forall (ξₖ₁ ξₖ₂ : nat -> nat) (ξₑ₁ ξₑ₂ : L.t -> nat -> nat),
-      (forall n : nat, ξₖ₁ n = ξₖ₂ n) -> (forall (p : L.t) (n : nat), ξₑ₁ p n = ξₑ₂ p n) ->
-      forall (C : Chor), C ⟨c| ξₖ₁; ξₑ₁ ⟩ = C ⟨c| ξₖ₂; ξₑ₂⟩.
-  Proof.
-    intros ξₖ₁ ξₖ₂ ξₑ₁ ξₑ₂ eq1 eq2 C; revert ξₖ₁ ξₖ₂ ξₑ₁ ξₑ₂ eq1 eq2; ChorInduction C;
-      intros ξₖ₁ ξₖ₂ ξₑ₁ ξₑ₂ eq1 eq2; simpl.
-    - rewrite ExprRenameExt with (ξ2 := ξₑ₂ p); auto.
-    - rewrite eq1; auto.
-    - rewrite IHC with (ξₖ₂ := ξₖ₂) (ξₑ₂ := ChorUpExprRename ξₑ₂ q); auto.
-      rewrite ExprRenameExt with (ξ2 := ξₑ₂ p); auto.
+  Lemma ChorExprRenameExtensional : forall (ξ1 ξ2 : Loc -> nat -> nat),
+      (forall (p : Loc) (n : nat), ξ1 p n = ξ2 p n) ->
+      forall (C : Chor), C ⟨ce| ξ1 ⟩ = C ⟨ce| ξ2⟩.
+  Proof using.
+    intros ξ1 ξ2 eqv C; revert ξ1 ξ2 eqv; ChorInduction C; intros ξ1 ξ2 eqv; cbn; auto.
+    - rewrite ExprRenameExt with (ξ2 := ξ2 l); auto.
+    - rewrite ExprRenameExt with (ξ2 := ξ2 l); auto. rewrite IHC with (ξ2 := ChorUpExprRename ξ2 l'); auto.
       apply ChorUpExprRenameExt; auto.
-    - rewrite ExprRenameExt with (ξ2 := ξₑ₂ p); auto.
-      rewrite IHC0 with (ξₖ₂ := ξₖ₂) (ξₑ₂ := ξₑ₂); auto.
-      rewrite IHC1 with (ξₖ₂ := ξₖ₂) (ξₑ₂ := ξₑ₂); auto.
-    - rewrite IHC0 with (ξₖ₂ := ChorUpRename ξₖ₂) (ξₑ₂ := ξₑ₂); auto.
-      rewrite IHC1 with (ξₖ₂ := ChorUpRename ξₖ₂) (ξₑ₂ := ξₑ₂); auto.
-      all: apply ChorUpRenameExt; auto.
+    - rewrite ExprRenameExt with (ξ2 := ξ2 l); auto. rewrite IHC1 with (ξ2 := ξ2); auto; rewrite IHC2 with (ξ2 := ξ2); auto.
+    - rewrite IHC with (ξ2 := ξ2); auto.
+    - rewrite IHC1 with (ξ2 := ξ2); [rewrite IHC2 with (ξ2 := ChorUpExprRename ξ2 l)|]; auto; apply ChorUpExprRenameExt; auto.
+    - rewrite IHC1 with (ξ2 := ξ2); [rewrite IHC2 with (ξ2 := ξ2)|]; auto.
+  Qed.
+  
+  Lemma ChorExprRenameFusion : forall (C : Chor) (ξ1 ξ2 : Loc -> nat -> nat), (C ⟨ce| ξ1⟩)⟨ce| ξ2⟩ = C ⟨ce| fun p n => ξ2 p (ξ1 p n)⟩.
+  Proof using.
+    intros C; ChorInduction C; intros ξ1 ξ2; cbn; auto.
+    all: try (rewrite ExprRenameFusion; auto).
+    - rewrite IHC; auto; erewrite ChorExprRenameExtensional; eauto.
+      intros p n; unfold ChorUpExprRename; destruct (L.eq_dec l' p); unfold ExprUpRename; destruct n; auto.
+    - rewrite IHC1; auto; rewrite IHC2; auto; erewrite ChorExprRenameExtensional; eauto.
+    - rewrite IHC; auto.
+    - rewrite IHC1; auto; rewrite IHC2; auto. 
+      rewrite ChorExprRenameExtensional with (ξ1 := fun p n => ChorUpExprRename ξ2 l p (ChorUpExprRename ξ1 l p n)) (ξ2 := ChorUpExprRename (fun p n => ξ2 p (ξ1 p n)) l); auto.
+      unfold ChorUpExprRename; unfold ExprUpRename; intros p n; destruct (L.eq_dec l p); destruct n; auto.
+    - rewrite IHC1; rewrite IHC2; reflexivity.
+  Qed.
+  Lemma ChorIdExprRenameSpec : forall C, C ⟨ce| ChorIdExprRename⟩ = C.
+  Proof using.
+    intros C; ChorInduction C; cbn; auto.
+    all: try (rewrite IHC; auto).
+    all: try (rewrite ExprIdRenamingSpec; auto).
+    all: try (rewrite IHC1; rewrite IHC2; auto; fail).
+    - rewrite ChorExprRenameExtensional with (ξ2 := ChorIdExprRename); [rewrite IHC; auto|].
+      apply ChorUpIdExprRename.
+    - rewrite IHC1. rewrite ChorExprRenameExtensional with (ξ2 := ChorIdExprRename); [rewrite IHC2| apply ChorUpIdExprRename]; auto.
   Qed.
 
-  Lemma ChorRenameFusion : forall (C : Chor) (ξc1 ξc2 : nat -> nat) (ξe1 ξe2 : L.t -> nat -> nat),
-      (C ⟨c| ξc1; ξe1⟩)⟨c| ξc2; ξe2⟩ = C ⟨c| fun n => ξc2 (ξc1 n); fun p n => ξe2 p (ξe1 p n)⟩.
-  Proof.
-    intro C; ChorInduction C; intros ξc1 ξc2 ξe1 ξe2; simpl.
-    - rewrite ExprRenameFusion; reflexivity.
-    - reflexivity.
-    - rewrite IHC. unfold ChorUpExprRename. unfold ExprUpRename.
-      rewrite ExprRenameFusion.
-      erewrite ChorRenameExtensional;[reflexivity | simpl; reflexivity |].
-      intros p1 n.
-      simpl. destruct (L.eq_dec q p1); auto.
-      destruct n; auto.
-    - rewrite IHC0; rewrite IHC1; rewrite ExprRenameFusion; auto.
-    - rewrite IHC0. rewrite IHC1. unfold ChorUpRename.
-      rewrite ChorRenameExtensional with (ξₖ₂ := fun n => match n with
-                                                      | 0 => 0
-                                                      | S n0 => S (ξc2 (ξc1 n0))
-                                                      end)
-                                         (ξₑ₂ := fun p n => ξe2 p (ξe1 p n)).
-      rewrite ChorRenameExtensional with (ξₖ₂ := fun n => match n with
-                                                      | 0 => 0
-                                                      | S n0 => S (ξc2 (ξc1 n0))
-                                                      end)
-                                         (ξₑ₂ := fun p n => ξe2 p (ξe1 p n))
-                                         (ξₖ₁ := fun n => match match n with
-                                                            | 0 => 0
-                                                            | S n0 => S (ξc1 n0)
-                                                            end with
-                                                      | 0 => 0
-                                                      | S n0 => S (ξc2 n0)
-                                                      end); [reflexivity | |].
-      -- intro n; destruct n; reflexivity.
-      -- reflexivity.
-      -- intro n; destruct n; reflexivity.
-      -- reflexivity.
+  Definition ChorUpRename : (nat -> nat) -> nat -> nat :=
+    fun f n => match n with
+            | 0 => 0
+            | S n => S (f n)
+            end.
+  Fixpoint ChorRename (C : Chor) (ξ : nat -> nat) :=
+    match C with
+    | Done l e => Done l e
+    | Var n => Var (ξ n)
+    | Send l1 e l2 C => Send l1 e l2 (ChorRename C ξ)
+    | If l e C1 C2 => If l e (ChorRename C1 ξ) (ChorRename C2 ξ)
+    | Sync l1 d l2 C => Sync l1 d l2 (ChorRename C ξ)
+    | DefLocal l C1 C2 => DefLocal l (ChorRename C1 ξ) (ChorRename C2 ξ)
+    | DefGlobal C1 C2 => DefGlobal (ChorRename C1 (ChorUpRename ξ)) (ChorRename C2 (ChorUpRename ξ))
+    end.
+  Notation "C ⟨c| x ⟩" := (ChorRename C x) (at level 20).
+
+  Definition ChorIdRename := fun n : nat => n.
+
+  Lemma ChorUpIdRename : forall n, ChorUpRename ChorIdRename n = ChorIdRename n.
+  Proof using.
+    intro n; destruct n; cbn; unfold ChorIdRename; auto.
+  Qed.
+  Lemma ChorUpRenameExt : forall ξ1 ξ2, (forall n, ξ1 n = ξ2 n) -> forall n, ChorUpRename ξ1 n = ChorUpRename ξ2 n.
+  Proof using.
+    intros ξ1 ξ2 eqv n; destruct n; cbn; auto.
+  Qed.
+
+  Lemma ChorRenameExt : forall C ξ1 ξ2, (forall n, ξ1 n = ξ2 n) -> C ⟨c| ξ1⟩ = C ⟨c| ξ2⟩.
+  Proof using.
+    intros C; ChorInduction C; intros ξ1 ξ2 eqv; cbn; auto.
+    all: try (rewrite IHC with (ξ2 := ξ2); auto).
+    all: try (rewrite IHC1 with (ξ2 := ξ2); [rewrite IHC2 with (ξ2 := ξ2)|]; auto; fail).
+    rewrite IHC1 with (ξ2 := ChorUpRename ξ2); [rewrite IHC2 with (ξ2 := ChorUpRename ξ2)|];
+      [| apply ChorUpRenameExt | apply ChorUpRenameExt]; auto.
+  Qed.    
+
+  
+  Lemma ChorIdRenameSpec : forall C, C ⟨c| ChorIdRename ⟩ = C.
+  Proof using.
+    intro C; ChorInduction C; cbn; auto.
+    all: try (rewrite IHC) ;auto.
+    all: try (rewrite IHC1; rewrite IHC2; auto; fail).
+    rewrite ChorRenameExt with (ξ2 := ChorIdRename); [rewrite IHC1|].
+    rewrite ChorRenameExt with (ξ2 := ChorIdRename); [rewrite IHC2; reflexivity|].
+    all: intro n; destruct n; cbn; auto.
+  Qed.
+
+  Definition ChorRenameFusion : forall C ξ1 ξ2, (C ⟨c| ξ1⟩) ⟨c|ξ2⟩ = C ⟨c| fun n => ξ2 (ξ1 n)⟩.
+  Proof using.
+    intro C; ChorInduction C; intros ξ1 ξ2; cbn; auto.
+    all: try (rewrite IHC; auto).
+    all: try (rewrite IHC1; rewrite IHC2; auto; fail).
+    rewrite IHC1; rewrite IHC2.
+    rewrite ChorRenameExt with (ξ2 := ChorUpRename (fun n => ξ2 (ξ1 n))).
+    rewrite ChorRenameExt with (ξ1 := fun n => ChorUpRename ξ2 (ChorUpRename ξ1 n))
+                               (ξ2 := ChorUpRename (fun n => ξ2 (ξ1 n))).
+    reflexivity.
+    all: intro n; unfold ChorUpRename; destruct n; auto.
   Qed.
       
-  Definition ChorUpSubst : (nat -> Chor) -> nat -> Chor :=
-    fun σ n =>
-      match n with
-      | 0 => CVar 0
-      | S n => (σ n) ⟨c| S ; fun _ => ExprIdRenaming⟩
-      end.
-
-  Definition ChorUpExprSubst : (L.t -> nat -> Expr) -> L.t -> L.t -> nat -> Expr :=
+  Definition ChorUpExprSubst : (Loc -> nat -> Expr) -> Loc -> Loc -> nat -> Expr :=
     fun σ p q n =>
       if L.eq_dec p q then
         match n with
@@ -163,414 +241,398 @@ Module Choreography (Import E : Expression) (L : Locations).
         | S n => (σ q n) ⟨e| S ⟩
         end
       else σ q n.
-  Definition SendUpChorSubst (σk : nat -> Chor) (p : L.t) : nat -> Chor :=
-    fun n => (σk n)⟨c| ChorIdRename; fun q m => if L.eq_dec p q
-                                          then S m
-                                          else m⟩.
+  Definition SendUpChorExprSubst (σk : nat -> Chor) (p : Loc) : nat -> Chor :=
+    fun n => (σk n)⟨ce| fun q m => if L.eq_dec p q then S m else m⟩.
 
-  Fixpoint ChorSubst (C : Chor) (σₖ : nat -> Chor) (σₑ : L.t -> nat -> Expr) : Chor :=
+  Fixpoint ChorExprSubst (C : Chor) (σ : Loc -> nat -> Expr) : Chor :=
     match C with
-    | CDone p e => CDone p (e [e| (σₑ p)])
-    | CVar n => σₖ n
-    | CSend p e q C => CSend p (e [e| (σₑ p)]) q (ChorSubst C (SendUpChorSubst σₖ q) (ChorUpExprSubst σₑ q))
-    | CIf p e C1 C2 => CIf p (e [e| (σₑ p)]) (ChorSubst C1 σₖ σₑ) (ChorSubst C2 σₖ σₑ)
-    | CDef C1 C2 => CDef (ChorSubst C1 (ChorUpSubst σₖ) σₑ) (ChorSubst C2 (ChorUpSubst σₖ) σₑ)
+    | Done p e => Done p (e [e| (σ p)])
+    | Var n => Var n
+    | Send p e q C => Send p (e [e| (σ p)]) q (ChorExprSubst C (ChorUpExprSubst σ q))
+    | If p e C1 C2 => If p (e [e| (σ p)]) (ChorExprSubst C1 σ) (ChorExprSubst C2 σ)
+    | Sync p d q C => Sync p d q (ChorExprSubst C σ)
+    | DefLocal p C1 C2 => DefLocal p (ChorExprSubst C1 σ) (ChorExprSubst C2 (ChorUpExprSubst σ p))
+    | DefGlobal C1 C2 => DefGlobal (ChorExprSubst C1 σ) (ChorExprSubst C2 σ)
     end.
-  Notation "C [c| s1 ; s2 ]" := (ChorSubst C s1 s2) (at level 20).
+  Notation "C [ce| s ]" := (ChorExprSubst C s) (at level 20).
 
-  Lemma ChorUpSubstExt : forall (σ1 σ2 : nat -> Chor),
-      (forall n : nat, σ1 n = σ2 n) ->
-      forall n : nat, ChorUpSubst σ1 n = ChorUpSubst σ2 n.
-  Proof.
-    intros σ1 σ2 eq n; unfold ChorUpSubst.
-    destruct n; auto; rewrite eq; reflexivity.
+  Lemma ChorUpExprSubstExt : forall (σ1 σ2 : Loc -> nat -> Expr),
+      (forall (p : Loc) (n : nat), σ1 p n = σ2 p n) ->
+      forall (p q : Loc) (n : nat), ChorUpExprSubst σ1 p q n = ChorUpExprSubst σ2 p q n.
+  Proof using.
+    intros σ1 σ2 eq p q n; unfold ChorUpExprSubst; destruct n; auto; repeat (rewrite eq); reflexivity.
   Qed.
 
-  Lemma ChorUpExprSubstExt : forall (σ1 σ2 : L.t -> nat -> Expr),
-      (forall (p : L.t) (n : nat), σ1 p n = σ2 p n) ->
-      forall (p q : L.t) (n : nat), ChorUpExprSubst σ1 p q n = ChorUpExprSubst σ2 p q n.
-  Proof.
-    intros σ1 σ2 eq p q n; unfold ChorUpExprSubst; destruct n; auto; repeat (rewrite eq);
-      reflexivity.
-  Qed.
-
-  Lemma ChorSubstExt : forall (σk1 σk2 : nat -> Chor) (σe1 σe2 : L.t -> nat -> Expr),
-      (forall n : nat, σk1 n = σk2 n) ->
-      (forall (p : L.t) (n : nat), σe1 p n = σe2 p n) ->
-      forall C, C [c| σk1; σe1] = C [c| σk2; σe2].
-  Proof.
-    intros σk1 σk2 σe1 σe2 eqk eqe C; revert σk1 σk2 σe1 σe2 eqk eqe;
-      ChorInduction C; intros σk1 σk2 σe1 σe2 eqk eqe; simpl; auto.
-    - rewrite ExprSubstExt with (σ2 := σe2 p); auto.
-    - rewrite ExprSubstExt with (σ2 := σe2 p); auto.
-      rewrite IHC with (σk2 := SendUpChorSubst σk2 q) (σe2 := ChorUpExprSubst σe2 q); auto.
-      intro n; unfold SendUpChorSubst; rewrite eqk; reflexivity.
-      apply ChorUpExprSubstExt; auto.
-    - rewrite ExprSubstExt with (σ2 := σe2 p); auto.
-      rewrite IHC0 with (σk2 := σk2) (σe2 := σe2); auto.
-      rewrite IHC1 with (σk2 := σk2) (σe2 := σe2); auto.
-    - rewrite IHC0 with (σk2 := ChorUpSubst σk2) (σe2 := σe2); auto.
-      rewrite IHC1 with (σk2 := ChorUpSubst σk2) (σe2 := σe2); auto.
-      all: apply ChorUpSubstExt; auto.
+  Lemma ChorExprSubstExt : forall (σ1 σ2 : Loc -> nat -> Expr),
+      (forall (p : Loc) (n : nat), σ1 p n = σ2 p n) ->
+      forall C, C [ce| σ1] = C [ce| σ2].
+  Proof using.
+    intros σ1 σ2 eqv C; revert σ1 σ2 eqv; ChorInduction C; intros σ1 σ2 eqv; cbn.
+    all: try (rewrite ExprSubstExt with (σ2 := σ2 l)); auto.
+    all: try (rewrite IHC with (σ2 := σ2); auto; fail).
+    - rewrite IHC with (σ2 := ChorUpExprSubst σ2 l'); auto; apply ChorUpExprSubstExt; auto.
+    - rewrite IHC1 with (σ2 := σ2); [rewrite IHC2 with (σ2 := σ2)|]; auto.
+    - rewrite IHC1 with (σ2 := σ2); [rewrite IHC2 with (σ2 := ChorUpExprSubst σ2 l)|]; auto; apply ChorUpExprSubstExt; auto.
+    - erewrite IHC1; [erewrite IHC2|]; eauto.
   Qed.
   
-  Definition ChorIdSubst : nat -> Chor := fun n => CVar n.
-  Definition ExprChorIdSubst : L.t -> nat -> Expr := fun _ n => ExprVar n.
+  Definition ChorIdExprSubst : Loc -> nat -> Expr := fun _ n => ExprVar n.
   
-  Lemma ExprChorIdSubstFibre : forall (p : L.t),
-      ExprChorIdSubst p = ExprIdSubst.
-  Proof.
-    intros p. unfold ExprChorIdSubst. unfold ExprIdSubst. reflexivity.
+  Lemma ChorIdExprSubstFibre : forall (p : Loc),
+      ChorIdExprSubst p = ExprIdSubst.
+  Proof using.
+    intros p. unfold ChorIdExprSubst. unfold ExprIdSubst. reflexivity.
   Qed.
 
-  Lemma ChorUpIdExprSubst : forall p q n, ExprChorIdSubst p n
-                                   = ChorUpExprSubst ExprChorIdSubst q p n.
-  Proof.
-    intros p q n; unfold ChorUpExprSubst; unfold ExprChorIdSubst;
+  Lemma ChorUpIdExprSubst : forall p q n, ChorIdExprSubst p n
+                                 = ChorUpExprSubst ChorIdExprSubst q p n.
+  Proof using.
+    intros p q n; unfold ChorUpExprSubst; unfold ChorIdExprSubst;
       destruct (L.eq_dec q p); destruct n; auto; rewrite ExprRenameVar; reflexivity.
   Qed.
   
-  Lemma ChorUpIdSubst : forall n,  ChorIdSubst n = ChorUpSubst ChorIdSubst n.
-  Proof.
-    unfold ChorUpSubst; unfold ChorIdSubst; destruct n;
-      [|unfold ExprIdRenaming; simpl]; reflexivity.
-  Qed.
-
-  Lemma SendUpChorIdSubst : forall p n, SendUpChorSubst ChorIdSubst p n = ChorIdSubst n.
-  Proof.
-    intros p n. unfold ChorIdSubst; unfold SendUpChorSubst.
-    simpl. unfold ChorIdRename. auto.
-  Qed.
-
-  Lemma ChorSubstIdSpec : forall (C : Chor), C [c| ChorIdSubst; ExprChorIdSubst] = C.
-  Proof.
-    intro C; ChorInduction C; unfold ChorIdSubst; simpl.
-    all: try (rewrite ExprChorIdSubstFibre).
+  Lemma ChorExprSubstIdSpec : forall (C : Chor), C [ce| ChorIdExprSubst] = C.
+  Proof using.
+    intro C; ChorInduction C; unfold ChorIdExprSubst; cbn; auto.
+    all: try (rewrite ChorIdExprSubstFibre).
     all: try (rewrite ExprIdentitySubstSpec).
-    all: try auto.
-    - rewrite ChorSubstExt with (σk2 := ChorIdSubst) (σe2 := ExprChorIdSubst); auto.
-      -- rewrite IHC; auto.
-      -- symmetry; apply ChorUpIdExprSubst. 
-    - rewrite ChorSubstExt with (σk2 := ChorIdSubst) (σe2 := ExprChorIdSubst); auto;
-        rewrite IHC0.
-      rewrite ChorSubstExt with (σk2 := ChorIdSubst) (σe2 := ExprChorIdSubst); auto;
-        rewrite IHC1.
-      reflexivity.
-    - rewrite ChorSubstExt with (σk2 := ChorIdSubst) (σe2 := ExprChorIdSubst); auto.
-      rewrite IHC0.
-      rewrite ChorSubstExt with (σk2 := ChorIdSubst) (σe2 := ExprChorIdSubst); auto.
-      rewrite IHC1; reflexivity.
-      all: symmetry; apply ChorUpIdSubst.
+    - reflexivity.
+    - rewrite ChorExprSubstExt with (σ2 := ChorIdExprSubst); [rewrite IHC|]; auto.
+      intros p n; unfold ChorUpExprSubst; unfold ChorIdExprSubst; cbn.
+      destruct (L.eq_dec l' p); cbn; destruct n; auto; rewrite ExprRenameVar; reflexivity.
+    - fold ChorIdExprSubst; rewrite IHC1; rewrite IHC2; reflexivity.
+    - fold ChorIdExprSubst; rewrite IHC; reflexivity.
+    - fold ChorIdExprSubst; rewrite IHC1.
+      rewrite ChorExprSubstExt with (σ2 := ChorIdExprSubst); [rewrite IHC2; reflexivity|].
+      fold ChorIdExprSubst; intros p n; symmetry; apply ChorUpIdExprSubst.
+    - fold ChorIdExprSubst; rewrite IHC1; rewrite IHC2; reflexivity.
   Qed.
       
-  Theorem ChorRenameSpec : forall (C : Chor) (ξₖ : nat -> nat) (ξₑ : L.t -> nat -> nat),
-      C ⟨c| ξₖ; ξₑ ⟩ = C[c| (fun n => CVar (ξₖ n)); (fun p n => ExprVar (ξₑ p n))].
-  Proof.
-    intro C; ChorInduction C; intros ξₖ ξₑ; simpl; try reflexivity.
+  Theorem ChorExprRenameSpec : forall (C : Chor) (ξ : Loc -> nat -> nat),
+      C ⟨ce| ξ ⟩ = C[ce| (fun p n => ExprVar (ξ p n))].
+  Proof using.
+    intro C; ChorInduction C; intros ξ; cbn.
     all: repeat (rewrite ExprRenameSpec).
     all: try (repeat (rewrite IHC)).
-    all: try (rewrite IHC0; rewrite IHC1).
+    all: try (rewrite IHC1; rewrite IHC2).
     all: try reflexivity.
-    - unfold ChorUpExprSubst.
-      symmetry.
-      rewrite ChorSubstExt with (σk2 := fun n : nat => CVar (ξₖ n)) (σe2 := fun r n => ExprVar (ChorUpExprRename ξₑ q r n)); auto.
-      unfold ChorUpExprRename; unfold ExprUpRename.
-      intros r n; destruct n; auto; destruct (L.eq_dec q r); auto.
-      rewrite ExprRenameVar. reflexivity.
-    - rewrite ChorSubstExt with (σk2 := ChorUpSubst (fun n : nat => CVar (ξₖ n)))
-                                (σe2 := fun p n => ExprVar (ξₑ p n)) (C := C0); auto.
-      rewrite ChorSubstExt with (σk2 := ChorUpSubst (fun n : nat => CVar (ξₖ n)))
-                                (σe2 := fun p n => ExprVar (ξₑ p n)) (C := C1); auto.
-      all: unfold ChorUpSubst; unfold ChorUpRename;  destruct n; simpl; reflexivity.
+    - rewrite ChorExprSubstExt with (σ2 := ChorUpExprSubst (fun p n => ExprVar (ξ p n)) l'); [reflexivity|].
+      intros p n; unfold ChorUpExprSubst; unfold ChorUpExprRename; destruct (L.eq_dec l' p); destruct n; auto.
+      unfold ExprUpRename. rewrite ExprRenameVar. reflexivity.
+    - rewrite ChorExprSubstExt with (σ1 := fun p n => ExprVar (ChorUpExprRename ξ l p n )) (σ2 := ChorUpExprSubst (fun p n => ExprVar (ξ p n)) l); [reflexivity|].
+      intros p n; unfold ChorUpExprSubst; unfold ChorUpExprRename; destruct (L.eq_dec l p); destruct n; auto.
+      unfold ExprUpRename; rewrite ExprRenameVar; reflexivity.
   Qed.
 
-  Reserved Notation " C1 ≡' C2" (at level 30).
-  Inductive chorEquiv' : Chor -> Chor -> Prop :=
-    DoneRefl : forall p e, CDone p e ≡' CDone p e
-  | VarRefl : forall n, CVar n ≡' CVar n
-  | SendContext' : forall p e q C1 C2,
-      C1 ≡' C2 ->
-      CSend p e q C1 ≡' CSend p e q C2
-  | IfContext' : forall p e C11 C12 C21 C22,
-      C11 ≡' C12 -> C21 ≡' C22 -> CIf p e C11 C21 ≡' CIf p e C12 C22
-  | DefContext' : forall C11 C12 C21 C22,
-      C11 ≡' C12 ->
-      C21 ≡' C22 ->
-      CDef C11 C21 ≡' CDef C12 C22
-  | SwapSendSend' : forall (p q r s : L.t) (C1 C2 : Chor) (e1 e2 : Expr),
-      (* if the two sends share any principals, swapping them would change things from
-         one principal's point-of-view *)          
-      p <> r -> q <> r -> p <> s -> q <> s ->
-      C1 ≡' C2 ->
-      CSend p e1 q (CSend r e2 s C1) ≡' CSend r e2 s (CSend p e1 q C2)
-  | SwapSendIf' : forall p e1 q e2 r C1 C1' C2 C2',
-      p <> q -> p <> r ->
-      C1 ≡' C1' -> C2 ≡' C2' ->
-      CIf p e1 (CSend q e2 r C1) (CSend q e2 r C2) ≡' CSend q e2 r (CIf p e1 C1' C2')
-  | SwapIfSend' : forall p e1 q e2 r C1 C1' C2 C2',
-      p <> q -> p <> r ->
-      C1 ≡' C1' -> C2 ≡' C2' ->
-       CSend q e2 r (CIf p e1 C1 C2) ≡' CIf p e1 (CSend q e2 r C1') (CSend q e2 r C2')
-  | SwapIfIf' : forall p e1 q e2 C11 C11' C12 C12' C21 C21' C22 C22',
-      p <> q ->
-      C11 ≡' C11' -> C12 ≡' C12' -> C21 ≡' C21' -> C22 ≡' C22' ->
-      CIf p e1 (CIf q e2 C11 C12) (CIf q e2 C21 C22) ≡'
-          CIf q e2 (CIf p e1 C11' C21') (CIf p e1 C12' C22')
-  where "C1 ≡' C2" := (chorEquiv' C1 C2).
-  Hint Constructors chorEquiv' : Chor.
+  Definition ChorUpSubst : (nat -> Chor) -> nat -> Chor :=
+    fun f  n => match n with
+             | 0 => Var 0
+             | S n => (f n) ⟨c| S⟩
+             end.
 
-  Fixpoint Equiv'Refl (C : Chor) : C ≡' C :=
+  Definition ChorUpSubstForExpr : (nat -> Chor) -> Loc -> nat -> Chor :=
+    fun f l n => (f n) ⟨ce|fun l' m => if L.eq_dec l l' then S m else m⟩.
+
+  Fixpoint ChorSubst (C : Chor) (σ : nat -> Chor) :=
     match C with
-    | CDone p e =>
-      DoneRefl p e
-    | CVar n =>
-      VarRefl n
-    | CSend p e q C =>
-      SendContext' p e q C C (Equiv'Refl C)
-    | CIf p e C1 C2 =>
-      IfContext' p e C1 C1 C2 C2 (Equiv'Refl C1) (Equiv'Refl C2)
-    | CDef C1 C2 =>
-      DefContext' C1 C1 C2 C2 (Equiv'Refl C1) (Equiv'Refl C2)
+    | Done l e => Done l e
+    | Var n => σ n
+    | Send l1 e l2 C => Send l1 e l2 (ChorSubst C (ChorUpSubstForExpr σ l2))
+    | If l e C1 C2 => If l e (ChorSubst C1 σ) (ChorSubst C2 σ)
+    | Sync l1 d l2 C => Sync l1 d l2 (ChorSubst C σ)
+    | DefLocal l C1 C2 => DefLocal l (ChorSubst C1 σ) (ChorSubst C2 (ChorUpSubstForExpr σ l))
+    | DefGlobal C1 C2 => DefGlobal (ChorSubst C1 (ChorUpSubst σ)) (ChorSubst C2 (ChorUpSubst σ))
     end.
-  Hint Resolve Equiv'Refl : Chor.
-  Instance chorEquiv'Refl : Reflexive chorEquiv' := Equiv'Refl.
+  Notation "C [c| s ]" := (ChorSubst C s) (at level 20).
+  Definition ChorIdSubst := fun n => Var n.
+
+  Lemma ChorUpSubstExt : forall σ1 σ2 : nat -> Chor,
+      (forall n, σ1 n = σ2 n) -> forall n, ChorUpSubst σ1 n = ChorUpSubst σ2 n.
+  Proof using.
+    intros σ1 σ2 H n; unfold ChorUpSubst; destruct n; cbn; auto. rewrite H; reflexivity.
+  Qed.
+
+  Lemma ChorUpSubstForExprExt : forall σ1 σ2,
+      (forall n, σ1 n = σ2 n) ->
+      forall l n, ChorUpSubstForExpr σ1 l n = ChorUpSubstForExpr σ2 l n.
+  Proof using.
+    intros σ1 σ2 eqv l n; unfold ChorUpSubstForExpr; rewrite eqv; reflexivity.
+  Qed.
+
+  Lemma ChorSubstExt : forall (C : Chor) (σ1 σ2 : nat -> Chor), (forall n, σ1 n = σ2 n) -> C[c|σ1] = C[c|σ2].
+  Proof using.
+    intro C; ChorInduction C; intros σ1 σ2 eqv; cbn; auto.
+    all: try (erewrite IHC; eauto).
+    all: try (erewrite IHC1; [erewrite IHC2|]; eauto; fail).
+    apply ChorUpSubstForExprExt; auto.
+    all: erewrite IHC1; [erewrite IHC2; [reflexivity|]|]; auto.
+    apply ChorUpSubstForExprExt; auto.
+    all: apply ChorUpSubstExt; auto.
+  Qed.
+  Lemma ChorSubstUpId : forall n, ChorUpSubst ChorIdSubst n = ChorIdSubst n.
+  Proof using.
+    intro n; unfold ChorUpSubst; unfold ChorIdSubst; destruct n; auto.
+  Qed.
+
+  Lemma ChorUpSubstForExprId : forall l n, ChorUpSubstForExpr ChorIdSubst l n = ChorIdSubst n.
+  Proof using.
+    intro n; unfold ChorUpSubstForExpr; unfold ChorIdSubst; cbn; reflexivity.
+  Qed.
+    
+  Lemma ChorSubstIdSpec : forall C, C[c|ChorIdSubst] = C.
+  Proof using.
+    intro C; ChorInduction C; cbn; auto.
+    all: try (rewrite IHC; auto).
+    all: try (rewrite IHC1; rewrite IHC2; auto).
+    erewrite ChorSubstExt; [|apply ChorUpSubstForExprId]; rewrite IHC; reflexivity.
+    erewrite ChorSubstExt with (C := C2); [|apply ChorUpSubstForExprId]; rewrite IHC1; rewrite IHC2; reflexivity.
+    erewrite ChorSubstExt; [|apply ChorSubstUpId]; rewrite IHC1.
+    erewrite ChorSubstExt; [|apply ChorSubstUpId]; rewrite IHC2.
+    reflexivity.
+  Qed.      
+
+  Lemma ChorRenameSpec : forall C ξ, C ⟨c| ξ⟩ = C [c| fun n => Var (ξ n)].
+  Proof using.
+    intros C; ChorInduction C; intros ξ; cbn; auto.
+    all: try (rewrite IHC; auto).
+    all: try (rewrite IHC1; rewrite IHC2; auto; fail).
+    rewrite ChorSubstExt with (σ2 := fun n => Var (ChorUpRename ξ n)).
+    rewrite ChorSubstExt with (σ1 := ChorUpSubst (fun n => Var (ξ n))) (σ2 := fun n => Var (ChorUpRename ξ n)).
+    rewrite IHC1; rewrite IHC2; auto.
+    all: intro n; unfold ChorUpSubst; unfold ChorUpRename; destruct n; auto.
+  Qed.
+    
+  (* You might wonder why we don't have the ability to move over a def. It's because it's unsound! If you have l1 ⟪e⟫ → l2 ⟪x⟫ fby (let l3 ⟪y⟫ := C1 fby C2) (in the named form) then, you don't know if l2 uses x in C1 or not! *)
   
-  Theorem Equiv'Sym : forall (C1 C2 : Chor), C1 ≡' C2 -> C2 ≡' C1.
-  Proof.
+  Reserved Notation "C1 ≡ C2" (at level 30).
+  Inductive equiv : Chor -> Chor -> Prop :=
+  | equivTrans : forall C1 C2 C3, C1 ≡ C2 -> C2 ≡ C3 -> C1 ≡ C3
+  | DoneRefl : forall l e, Done l e ≡ Done l e
+  | VarRefl : forall n, Var n ≡ Var n
+  | SendContext : forall l1 e l2 C1 C2,
+      C1 ≡ C2 ->
+      l1 ⟪e⟫ → l2 fby C1 ≡ l1 ⟪e⟫ → l2 fby C2
+  | SyncContext : forall l1 d l2 C1 C2,
+      C1 ≡ C2 ->
+      l1 ⟨d⟩ → l2 fby C1 ≡ l1 ⟨d⟩ → l2 fby C2                  
+  | IfContext : forall l e C11 C12 C21 C22,
+      C11 ≡ C21 -> C12 ≡ C22 ->
+      Cond l ⦃ e ⦄ Then C11 Else C12 ≡ Cond l⦃e⦄ Then C21 Else C22
+  | DefLocalContext : forall l C11 C12 C21 C22,
+      C11 ≡ C21 -> C12 ≡ C22 ->
+      LetLocal l ⟪new⟫ ← C11 fby C12 ≡ LetLocal l ⟪new⟫ ← C21 fby C22
+  | DefGlobalContext : forall C11 C12 C21 C22,
+      C11 ≡ C21 -> C12 ≡ C22 ->
+      LetGlobal ⟪new⟫ ← C11 fby C12 ≡ LetGlobal ⟪new⟫ ← C21 fby C22
+  | SwapSendSend : forall l1 e l2 l3 e' l4 C,
+      l1 <> l3 -> l1 <> l4 -> l2 <> l3 -> l2 <> l4 ->
+      l1 ⟪e⟫ → l2 fby (l3 ⟪e'⟫ → l4 fby C) ≡ l3 ⟪e'⟫ → l4 fby (l1 ⟪e⟫ → l2 fby C)
+  | SwapSendSync : forall l1 e l2 l3 d l4 C,
+      l1 <> l3 -> l1 <> l4 -> l2 <> l3 -> l2 <> l4 ->
+      l1 ⟪e⟫ → l2 fby (l3 ⟨d⟩ → l4 fby C) ≡ l3 ⟨d⟩ → l4 fby (l1 ⟪e⟫ → l2 fby C)
+  | SwapSyncSend : forall l1 d l2 l3 e l4 C,
+      l1 <> l3 -> l1 <> l4 -> l2 <> l3 -> l2 <> l4 ->
+      l1 ⟨d⟩ → l2 fby (l3 ⟪e⟫ → l4 fby C) ≡ l3 ⟪e⟫ → l4 fby (l1 ⟨d⟩ → l2 fby C)
+  | SwapSendIf : forall l1 e l2 l3 e' C1 C2,
+      l1 <> l3 -> l2 <> l3 ->
+      l1 ⟪e⟫ → l2 fby (Cond l3 ⦃e'⦄ Then C1 Else C2) ≡ Cond l3 ⦃e'⦄ Then (l1 ⟪e⟫ → l2 fby C1) Else (l1 ⟪e⟫ → l2 fby C2)
+  | SwapIfSend : forall l1 e l2 e' l3 C1 C2,
+      l1 <> l2 -> l1 <> l3 ->
+      Cond l1 ⦃e⦄ Then (l2 ⟪e'⟫ → l3 fby C1) Else (l2 ⟪e'⟫ → l3 fby C2) ≡ l2 ⟪e'⟫ → l3 fby (Cond l1 ⦃e⦄ Then C1 Else C2)
+  | SwapSyncSync : forall l1 d l2 l3 d' l4 C,
+      l1 <> l3 -> l1 <> l4 -> l2 <> l3 -> l2 <> l4 ->
+      l1 ⟨d⟩ → l2 fby (l3 ⟨d'⟩ → l4 fby C) ≡ l3 ⟨d'⟩ → l4 fby (l1 ⟨d⟩ → l2 fby C)
+  | SwapSyncIf : forall l1 d l2 l3 e C1 C2,
+      l1 <> l3 -> l2 <> l3 ->
+      l1 ⟨d⟩ → l2 fby (Cond l3 ⦃e⦄ Then C1 Else C2) ≡ Cond l3 ⦃e⦄ Then (l1 ⟨d⟩ → l2 fby C1) Else (l1 ⟨d⟩ → l2 fby C2)
+  | SwapIfSync : forall l1 e l2 d l3 C1 C2,
+      l1 <> l2 -> l1 <> l3 ->
+      Cond l1 ⦃e⦄ Then (l2 ⟨d⟩ → l3 fby C1) Else (l2 ⟨d⟩ → l3 fby C2) ≡ l2 ⟨d⟩ → l3 fby (Cond l1 ⦃e⦄ Then C1 Else C2)
+  | SwapIfIf : forall l1 e l2 e' C1 C2 C3 C4,
+      l1 <> l2 ->
+      Cond l1 ⦃e⦄ Then (Cond l2 ⦃e'⦄ Then C1 Else C2) Else (Cond l2 ⦃e'⦄ Then C3 Else C4) ≡ Cond l2 ⦃e'⦄ Then (Cond l1 ⦃e⦄ Then C1 Else C3) Else (Cond l1 ⦃e⦄ Then C2 Else C4)
+  where "C1 ≡ C2" := (equiv C1 C2).
+  Hint Constructors equiv : Chor.
+
+  Fixpoint equivRefl (C : Chor) : C ≡ C :=
+    match C with
+    | Done l e => DoneRefl l e
+    | Var n => VarRefl n
+    | Send l1 e l2 C => SendContext l1 e l2 C C (equivRefl C)
+    | If l e C1 C2 => IfContext l e C1 C2 C1 C2 (equivRefl C1) (equivRefl C2)
+    | Sync l1 d l2 C => SyncContext l1 d l2 C C (equivRefl C)
+    | DefLocal l C1 C2 => DefLocalContext l C1 C2 C1 C2 (equivRefl C1) (equivRefl C2)
+    | DefGlobal C1 C2 => DefGlobalContext C1 C2 C1 C2 (equivRefl C1) (equivRefl C2)
+    end.
+  Hint Resolve equivRefl : Chor.
+  Instance : Reflexive equiv := equivRefl.
+
+  Theorem equivSym : forall C1 C2 : Chor, C1 ≡ C2 -> C2 ≡ C1.
+  Proof using.
     intros C1 C2 equiv; induction equiv; eauto with Chor.
   Qed.
-  Hint Resolve Equiv'Sym : Chor.
+  Hint Resolve equivSym : Chor.
+  Instance : Symmetric equiv := equivSym.
 
-  Instance chorEquiv'Sym : Symmetric chorEquiv' := Equiv'Sym.
-
-  Reserved Infix "≡" (at level 30).
-  Inductive chorEquiv : Chor -> Chor -> Prop :=
-    Equiv' : forall C1 C2, C1 ≡' C2 -> C1 ≡ C2
-  | TransEquiv : forall C1 C2 C3, C1 ≡' C2 -> C2 ≡ C3 -> C1 ≡ C3
-  where "C1 ≡ C2" := (chorEquiv C1 C2).
-  Hint Constructors chorEquiv : Chor.
-
-  Instance chorEquivRefl : Reflexive chorEquiv.
-  Proof.
-    unfold Reflexive; intro C; apply Equiv'; reflexivity.
-  Defined.
-  Hint Resolve chorEquivRefl : Chor.
-
-  Lemma chorEquivTransitive : forall C1 C2 C3 : Chor, C1 ≡ C2 -> C2 ≡ C3 -> C1 ≡ C3.
-  Proof.
-    intros C1 C2 C3 equiv; revert C3; induction equiv; intros C3' equiv'.
-    - eapply TransEquiv; eauto.
-    - specialize (IHequiv C3' equiv'). eapply TransEquiv; eauto.
-  Qed.
-  Instance chorEquivTrans : Transitive chorEquiv := chorEquivTransitive.
-
-  Instance chorEquivSym : Symmetric chorEquiv.
-  Proof.
-    unfold Symmetric; intros C1 C2 equiv; induction equiv; auto with Chor.
-    - transitivity C2; auto with Chor.
-  Qed.
-  Hint Resolve chorEquivSym : Chor.
-
+  Instance : Transitive equiv := equivTrans.
+  
   (* Smart constructors for ≡ *)
-  Lemma SendContext : forall (p q : L.t) (e : Expr) (C C' : Chor),
-      C ≡ C' ->
-      CSend p e q C ≡ CSend p e q C'.
-  Proof.
-    intros p q e C C' equiv; revert p q e; induction equiv; intros p q e; eauto with Chor.
-  Qed.
-  Lemma IfContext : forall (p : L.t) (e : Expr) (C1 C1' C2 C2' : Chor),
-      C1 ≡ C1' -> C2 ≡ C2' ->
-      CIf p e C1 C2 ≡ CIf p e C1' C2'.
-  Proof.
-    intros p e C1 C1' C2 C2' equiv; revert p e C2 C2'; induction equiv;
-      intros p e C2' C2'' equiv'; revert p e; induction equiv'; intros p e;
-        eauto with Chor.
-  Qed.
-  Lemma DefContext : forall (C1 C1' C2 C2' : Chor),
-      C1 ≡ C1' -> C2 ≡ C2' ->
-      CDef C1 C2 ≡ CDef C1' C2'.
-  Proof.
-    intros C1 C1' C2 C2' equiv; revert C2 C2'; induction equiv;
-      intros C4 C4' equiv'; induction equiv'; eauto with Chor.
-  Qed.
-
-  Lemma SwapSendSend : forall (p q r s : L.t) (C1 C2 : Chor) (e1 e2 : Expr),
+  Lemma SmartSwapSendSend : forall (p q r s : Loc) (C1 C2 : Chor) (e1 e2 : Expr),
       p <> r -> q <> r -> p <> s -> q <> s ->
       C1 ≡ C2 ->
-      CSend p e1 q (CSend r e2 s C1) ≡ CSend r e2 s (CSend p e1 q C2).
-  Proof.
-    intros p q r s C1 C2 e1 e2 neq1 neq2 neq3 neq4 equiv;
-      revert p q r s e1 e2 neq1 neq2 neq3 neq4;
-      induction equiv;
-      intros p q r s e1 e2 neq1 neq2 neq3 neq4;
-      auto with Chor.
-    transitivity (CSend p e1 q (CSend r e2 s C2)); auto with Chor.
+      Send p e1 q (Send r e2 s C1) ≡ Send r e2 s (Send p e1 q C2).
+  Proof using.
+    intros p q r s C1 C2 e1 e2 neq_p_r neq_q_r neq_p_s neq_q_s eqv; etransitivity; [apply SwapSendSend|]; auto with Chor.
   Qed.
-
-  Lemma SwapIfSend : forall p e1 q e2 r C1 C1' C2 C2',
+  Lemma SmartSwapSendIf : forall p e1 q e2 r C1 C1' C2 C2',
       p <> q -> p <> r ->
       C1 ≡ C1' -> C2 ≡ C2' ->
-      CSend q e2 r (CIf p e1 C1 C2) ≡ CIf p e1 (CSend q e2 r C1') (CSend q e2 r C2').
-  Proof.
-    intros p e1 q e2 r C1 C1' C2 C2' neq1 neq2 equiv1;
-      revert p e1 q e2 r C2 C2' neq1 neq2;
-      induction equiv1;
-      intros p e1 q e2 r C0 C0' neq1 neq2 equiv2;
-      revert p e1 q e2 r neq1 neq2;
-      induction equiv2;
-      intros p e1 q e2 r neq1 neq2;
-      eauto with Chor.
+      Send q e2 r (If p e1 C1 C2) ≡ If p e1 (Send q e2 r C1') (Send q e2 r C2').
+  Proof using.
+    intros n p e1 q e2 r C1 C1' C2 C2' neq1 neq2 equiv1; etransitivity; [apply SwapSendIf |]; eauto with Chor.
   Qed.
-
-  Lemma SwapSendIf : forall p e1 q e2 r C1 C1' C2 C2',
+  Lemma SmartSwapIfSend : forall p e1 q e2 r C1 C1' C2 C2',
       p <> q -> p <> r ->
       C1 ≡ C1' -> C2 ≡ C2' ->
-      CIf p e1 (CSend q e2 r C1) (CSend q e2 r C2) ≡ CSend q e2 r (CIf p e1 C1' C2').
-  Proof.
-    intros p e1 q e2 r C1 C1' C2 C2' neq1 neq2 equiv1;
-      revert p e1 q e2 r C2 C2' neq1 neq2;
-      induction equiv1;
-      intros p e1 q e2 r C0 C0' neq1 neq2 equiv2;
-      revert p e1 q e2 r neq1 neq2;
-      induction equiv2;
-      intros p e1 q e2 r neq1 neq2;
-      eauto with Chor.
-    transitivity (CIf p e1 (CSend q e2 r C2) (CSend q e2 r C4));
-      eauto with Chor.
+      If p e1 (Send q e2 r C1) (Send q e2 r C2) ≡ Send q e2 r (If p e1 C1' C2').
+  Proof using.
+    intros n p e1 q e2 r C1 C1' C2 C2' neq1 neq2 equiv1; etransitivity; [apply SwapIfSend|]; eauto with Chor.
   Qed.
-
-  Lemma SwapIfIf : forall p e1 q e2 C11 C11' C12 C12' C21 C21' C22 C22',
+  Lemma SmartSwapSendSync : forall (p q r s : Loc) (e : Expr) (d : LRChoice) (C C' : Chor),
+      p <> r -> p <> s -> q <> r -> q <> s -> C ≡ C' ->
+      Send p e q (Sync r d s C) ≡ Sync r d s (Send p e q C').
+  Proof using.
+    intros p q r s e d C C' neq1 neq2 neq3 neq4 equiv; etransitivity; [apply SwapSendSync|]; eauto with Chor.
+  Qed.
+  Lemma SmartSwapSyncSend : forall (p q r s : Loc) (e : Expr) (d : LRChoice) (C C' : Chor),
+      p <> r -> p <> s -> q <> r -> q <> s -> C ≡ C' ->
+      Sync p d q (Send r e s C) ≡ Send r e s (Sync p d q C').
+  Proof using.
+    intros p q r s e d C C' neq1 neq2 neq3 neq4 equiv; etransitivity; [apply SwapSyncSend|]; eauto with Chor.
+  Qed.
+  Lemma SmartSwapIfIf : forall p e1 q e2 C11 C11' C12 C12' C21 C21' C22 C22',
       p <> q ->
       C11 ≡ C11' -> C12 ≡ C12' -> C21 ≡ C21' -> C22 ≡ C22' ->
-      CIf p e1 (CIf q e2 C11 C12) (CIf q e2 C21 C22) ≡
-          CIf q e2 (CIf p e1 C11' C21') (CIf p e1 C12' C22').
-  Proof.
-    intros p e1 q e2 C11 C11' C12 C12' C21 C21' C22 C22' neq equiv1;
-      revert p e1 q e2 C12 C12' C21 C21' C22 C22' neq;
-      induction equiv1; eauto with Chor.
-      intros p e1 q e2 C12 C12' C21 C21' C22 C22' neq equiv2;
-      revert p e1 q e2 C21 C21' C22 C22' neq;
-      induction equiv2; eauto with Chor.
-      intros p e1 q e2 C21 C21' C22 C22' neq equiv3;
-      revert p e1 q e2 C22 C22' neq;
-      induction equiv3; eauto with Chor.
-      intros p e1 q e2 C22 C22' neq equiv4;
-      revert p e1 q e2 neq; 
-      induction equiv4;
-      intros p e1 q e2 neq;
-      eauto with Chor.
+      If p e1 (If q e2 C11 C12) (If q e2 C21 C22) ≡ If q e2 (If p e1 C11' C21') (If p e1 C12' C22').
+  Proof using.
+    intros n p e1 m q e2 C11 C11' C12 C12' C21 C21' C22 C22' neq equiv1; etransitivity; [apply SwapIfIf|]; eauto with Chor.
   Qed.
-  Hint Resolve SendContext IfContext DefContext SwapSendSend SwapSendIf SwapIfSend SwapIfIf : Chor.
+  Lemma SmartSwapIfSync : forall (p q r : Loc) (e : Expr) (d : LRChoice) (C1 C1' C2 C2' : Chor),
+      p <> q -> p <> r -> C1 ≡ C1' -> C2 ≡ C2' ->
+      If p e (Sync q d r C1) (Sync q d r C2) ≡ Sync q d r (If p e C1' C2').
+  Proof using.
+    intros m p q r e d C1 C1' C2 C2' neq1 neq2 equiv1; etransitivity; [apply SwapIfSync|]; eauto with Chor.
+  Qed.
+  Lemma SmartSwapSyncIf : forall (p q r : Loc) (e : Expr) (d : LRChoice) (C1 C1' C2 C2' : Chor),
+      p <> r -> q <> r -> C1 ≡ C1' -> C2 ≡ C2' ->
+      Sync p d q (If r e C1 C2) ≡ If r e (Sync p d q C1') (Sync p d q C2').
+  Proof using.
+    intros m p q r e d C1 C1' C2 C2' neq1 neq2 equiv1; etransitivity; [apply SwapSyncIf|]; eauto with Chor.
+  Qed.
+  Lemma SmartSwapSyncSync : forall (p q r s : Loc) (d d' : LRChoice) (C C' : Chor),
+      p <> r -> p <> s -> q <> r -> q <> s -> C ≡ C' ->
+      Sync p d q (Sync r d' s C) ≡ Sync r d' s (Sync p d q C').
+  Proof using.
+    intros p q r s d d' C1 C1' neq1 neq2 neq3 neq4 equiv; etransitivity; [apply SwapSyncSync|]; auto with Chor.
+  Qed.
+  Hint Resolve SmartSwapSendSend SmartSwapSendIf SmartSwapIfSend SmartSwapIfIf SmartSwapSendSync SmartSwapSyncSend SmartSwapIfSync SmartSwapSyncSync : Chor.
 
-
-  Lemma Equiv'StableRename : forall (ξc : nat -> nat) (ξe : L.t -> nat -> nat) (C1 C2 : Chor),
-      C1 ≡' C2 -> C1 ⟨c| ξc; ξe ⟩ ≡' C2 ⟨c| ξc; ξe⟩.
-  Proof.
-    intros ξc ξe C1 C2 equiv; revert ξc ξe; induction equiv; intros ξc ξe;
-      simpl; eauto with Chor.
-    - unfold ChorUpExprRename at 1.
-      destruct (L.eq_dec q r) as [e | _]; [exfalso; apply H0; exact e |].
-      unfold ChorUpExprRename at 3.
-      destruct (L.eq_dec s p) as [e | _]; [exfalso; apply H1; symmetry; exact e |].
-      apply SwapSendSend'; auto.
-      rewrite ChorRenameExtensional with (ξₖ₂ := ξc)
-                                         (ξₑ₂ := ChorUpExprRename (ChorUpExprRename ξe s) q);
-        auto.
-      intros t n; unfold ChorUpExprRename.
-      destruct (L.eq_dec s t) as [es | ns].
-      destruct (L.eq_dec q t) as [eq | nq];
-        [exfalso; apply H2; transitivity t; auto|].
-      unfold ExprUpRename; destruct n; reflexivity.
-      destruct (L.eq_dec q t); auto.
-    - unfold ChorUpExprRename at 3.
-      destruct (L.eq_dec r p) as [e | _]; [exfalso; apply H0; symmetry; exact e|].
-      apply SwapSendIf'; auto.
-    - unfold ChorUpExprRename at 1.
-      destruct (L.eq_dec r p) as [e | _]; [exfalso; apply H0; symmetry; exact e|].
-      apply SwapIfSend'; auto.
+  Lemma EquivStableExprRename : forall (ξ : Loc -> nat -> nat) (C1 C2 : Chor),
+      C1 ≡ C2 -> C1 ⟨ce| ξ ⟩ ≡ C2 ⟨ce| ξ⟩.
+  Proof using.
+    intros ξ C1 C2 eqv; revert ξ; induction eqv; intros ξ; cbn; auto; try reflexivity.
+    etransitivity; eauto.
+    all: eauto with Chor.
+    - unfold ChorUpExprRename at 1 4. destruct (L.eq_dec l2 l3) as [eq|_]; [destruct (H1 eq)|].
+      destruct (L.eq_dec l4 l1) as [eq|_]; [destruct (H0 (eq_sym eq))|]. apply SmartSwapSendSend; auto.
+      erewrite ChorExprRenameExtensional; [reflexivity|]. intros p n; unfold ChorUpExprRename.
+      destruct (L.eq_dec l4 p); destruct (L.eq_dec l2 p); subst; try match goal with | [H : ?a <> ?a |- _ ] => destruct (H eq_refl) end; auto.
+    - etransitivity; [apply SwapSendIf|]; auto.
+      unfold ChorUpExprRename at 1; destruct (L.eq_dec l2 l3) as [eq|_]; [destruct (H0 eq)|]; reflexivity.
+    - etransitivity; [apply SwapIfSend|]; auto.
+      unfold ChorUpExprRename at 3. destruct (L.eq_dec l3 l1) as [eq|_]; [destruct (H0 (eq_sym eq))|]; reflexivity.
   Qed.
 
-  Lemma EquivStableRename : forall (ξc : nat -> nat) (ξe : L.t -> nat -> nat) (C1 C2 : Chor),
-      C1 ≡ C2 -> C1 ⟨c| ξc; ξe ⟩ ≡ C2 ⟨c| ξc; ξe⟩.
-  Proof.
-    intros ξc ξe C1 C2 equiv; induction equiv.
-    - apply Equiv'; apply Equiv'StableRename; auto.
-    - transitivity (C2 ⟨c| ξc; ξe⟩); auto.
-      apply Equiv'; apply Equiv'StableRename; auto.
+  Lemma EquivStableExprSubst : forall(σ : Loc -> nat -> Expr) (C1 C2 : Chor), C1 ≡ C2 -> C1 [ce| σ] ≡ C2 [ce| σ].
+  Proof using.
+    intros σ C1 C2 eqv; revert σ; induction eqv; intros σ; cbn; auto; try reflexivity.
+    etransitivity; eauto.
+    all: eauto with Chor.
+    - unfold ChorUpExprSubst at 1 4; destruct (L.eq_dec l2 l3); destruct (L.eq_dec l4 l1); subst; try match goal with [H : ?a <> ?a |- _ ] => destruct (H eq_refl) end; auto.
+      etransitivity; [apply SwapSendSend|]; auto; erewrite ChorExprSubstExt; [reflexivity|].
+      intros p n1; unfold ChorUpExprSubst. destruct (L.eq_dec l4 p); destruct (L.eq_dec l2 p); subst; try match goal with [H : ?a <> ?a |- _] => destruct (H eq_refl) end; auto.
+    - etransitivity; [apply SwapSendIf|]; auto.
+      unfold ChorUpExprSubst at 1; destruct (L.eq_dec l2 l3) as [eq|_]; [destruct (H0 eq)|]; reflexivity.
+    - etransitivity; [apply SwapIfSend|]; auto.
+      unfold ChorUpExprSubst at 3; destruct (L.eq_dec l3 l1) as [eq|_]; [destruct (H0 (eq_sym eq))|]; reflexivity.
   Qed.
 
-  Lemma Equiv'StableSubst : forall (σc1 σc2 : nat -> Chor) (σe : L.t -> nat -> Expr) (C1 C2 : Chor),
-      (forall n : nat, σc1 n ≡ σc2 n) ->
-      C1 ≡' C2 ->
-      C1 [c| σc1; σe] ≡ C2 [c| σc2; σe].
-  Proof.
-    intros σc1 σc2 σe C1 C2 equivσ equiv; revert σc1 σc2 σe equivσ; induction equiv;
-      intros σc1 σc2 σe equivσ; simpl; try (auto with Chor; fail).
-    - assert (forall n, SendUpChorSubst σc1 q n ≡ SendUpChorSubst σc2 q n) as equivSendUpσ
-        by (unfold SendUpChorSubst; intro n; apply EquivStableRename; auto).
-      specialize (IHequiv (SendUpChorSubst σc1 q) (SendUpChorSubst σc2 q)
-                          (ChorUpExprSubst σe q) equivSendUpσ).
-      inversion IHequiv; auto with Chor.
-    - apply DefContext.
-      apply IHequiv1; intro n; unfold ChorUpSubst; destruct n; 
-        [reflexivity | apply EquivStableRename; auto].
-      apply IHequiv2; intro n; unfold ChorUpSubst; destruct n;
-        [reflexivity | apply EquivStableRename; auto].
-    - unfold ChorUpExprSubst at 1;
-        destruct (L.eq_dec q r) as [e | _]; [exfalso; apply H0; exact e|].
-      unfold ChorUpExprSubst at 3;
-        destruct (L.eq_dec s p) as [e | _]; [exfalso; apply H1; symmetry; exact e|].
-      apply SwapSendSend; auto.
-      rewrite ChorSubstExt with (σk2 := SendUpChorSubst (SendUpChorSubst σc1 s) q)
-                                (σe2 := ChorUpExprSubst (ChorUpExprSubst σe s) q).
-      -- apply IHequiv; intro n;
-         unfold SendUpChorSubst; apply EquivStableRename;
-           apply EquivStableRename; auto.
-      -- intro n; unfold SendUpChorSubst.
-         repeat (rewrite ChorRenameFusion). apply ChorRenameExtensional.
-         reflexivity.
-         intros t m. destruct (L.eq_dec s t).
-         destruct (L.eq_dec q t) as [e' | _];
-           [exfalso; apply H2; transitivity t; auto| reflexivity].
-         reflexivity.
-      --intros t n. unfold ChorUpExprSubst.
-        destruct (L.eq_dec s t); [| reflexivity].
-        destruct (L.eq_dec q t) as [e' | _];
-          [exfalso; apply H2; transitivity t; auto | reflexivity].
-    - unfold ChorUpExprSubst at 3.
-      destruct (L.eq_dec r p) as [e | _];
-        [exfalso; apply H0; symmetry; exact e |].
-      apply SwapSendIf; auto with Chor; [apply IHequiv1 | apply IHequiv2].
-      all: unfold SendUpChorSubst; intro n; apply EquivStableRename; auto.
-    - unfold ChorUpExprSubst at 1.
-      destruct (L.eq_dec r p) as [e |_]; [exfalso; apply H0; symmetry; exact e |].
-      apply SwapIfSend; auto; [apply IHequiv1 | apply IHequiv2]; intro n.
-      all: unfold SendUpChorSubst; apply EquivStableRename; auto.
+  Lemma EquivStableRename : forall (ξ : nat -> nat) (C1 C2 : Chor), C1 ≡ C2 -> C1 ⟨c| ξ⟩ ≡ C2 ⟨c| ξ ⟩.
+  Proof using.
+    intros ξ C1 C2 eqv; revert ξ; induction eqv; intro ξ; cbn; auto with Chor.
+    transitivity (C2 ⟨c| ξ⟩); auto.
   Qed.
-  Hint Resolve Equiv'StableSubst : Chor.
-  Lemma EquivStableSubst : forall (σc1 σc2 : nat -> Chor) (σe : L.t -> nat -> Expr) (C1 C2 : Chor),
-      (forall n : nat, σc1 n ≡ σc2 n) ->
-      C1 ≡ C2 ->
-      C1 [c| σc1; σe] ≡ C2 [c| σc2; σe].
-  Proof.
-    intros σc1 σc2 σe C1 C2 equivσ equiv. induction equiv.
-    - apply Equiv'StableSubst; auto. 
-    - transitivity (C2 [c| σc1; σe]); auto with Chor.
+
+  Lemma EquivStableSubst : forall (σ : nat -> Chor) (C1 C2 : Chor), C1 ≡ C2 -> C1 [c| σ ] ≡ C2 [c| σ].
+  Proof using.
+    intros σ C1 C2 eqv; revert σ; induction eqv; intro σ; cbn; auto with Chor.
+    transitivity (C2 [c| σ]); auto.
+    apply SmartSwapSendSend; auto. erewrite ChorSubstExt; [reflexivity|].
+    intro n; unfold ChorUpSubstForExpr.
+    repeat rewrite ChorExprRenameFusion. apply ChorExprRenameExtensional.
+    intros l' m; destruct (L.eq_dec l2 l'); destruct (L.eq_dec l4 l'); subst;
+      try match goal with
+          | [ H : ?a <> ?a |- _ ] => destruct (H eq_refl)
+          end; reflexivity.
   Qed.
-  Hint Resolve EquivStableSubst : Chor.
+
+  Lemma WeakSubstUpExt : forall (σ1 σ2 : nat -> Chor), (forall n, σ1 n ≡ σ2 n) -> forall n, ChorUpSubst σ1 n ≡ ChorUpSubst σ2 n.
+  Proof using.
+    intros σ1 σ2 H n; destruct n; unfold ChorUpSubst; cbn; auto with Chor. apply EquivStableRename; auto.
+  Qed.
+  Hint Resolve EquivStableExprRename EquivStableExprSubst EquivStableRename EquivStableSubst WeakSubstUpExt : Chor.
+
+  Lemma WeakSubstUpForExprExt : forall (σ1 σ2 : nat -> Chor),
+      (forall n, σ1 n ≡ σ2 n) -> forall l n, ChorUpSubstForExpr σ1 l n ≡ ChorUpSubstForExpr σ2 l n.
+  Proof using.
+    intros σ1 σ2 eqv l n.
+    unfold ChorUpSubstForExpr. apply EquivStableExprRename; auto.
+  Qed.
+  Hint Resolve WeakSubstUpForExprExt : Chor.
+
+  Lemma WeakSubstExt' : forall (σ1 σ2 : nat -> Chor) (C :Chor), (forall n, σ1 n ≡ σ2 n) -> C [c| σ1] ≡ C[c|σ2].
+  Proof using.
+    intros σ1 σ2 C; revert σ1 σ2; ChorInduction C; intros σ1 σ2 eqv; cbn; auto with Chor.
+  Qed.
+  Hint Resolve WeakSubstExt' : Chor.
+  Lemma WeakSubstExt : forall (σ1 σ2 : nat -> Chor) (C1 C2 : Chor), C1 ≡ C2 -> (forall n, σ1 n ≡ σ2 n) -> C1 [c| σ1] ≡ C2 [c| σ2].
+  Proof using.
+    intros σ1 σ2 C1 C2 eqv; revert σ1 σ2; induction eqv; intros σ1 σ2 eqvσ; cbn; auto with Chor.
+    transitivity (C2 [c|σ2]); auto with Chor.
+    apply SmartSwapSendSend; auto. apply WeakSubstExt'.
+    intro n. unfold ChorUpSubstForExpr. repeat rewrite ChorExprRenameFusion.
+    transitivity (σ2 n ⟨ce| fun p n0 => if L.eq_dec l4 p
+                                     then S (if L.eq_dec l2 p then S n0 else n0)
+                                     else if L.eq_dec l2 p then S n0 else n0⟩).
+    apply EquivStableExprRename; auto.
+    erewrite ChorExprRenameExtensional; [reflexivity|].
+    intros p n0; cbn. destruct (L.eq_dec l4 p); destruct (L.eq_dec l2 p); auto.
+  Qed.
+  Hint Resolve WeakSubstExt : Chor.
 
   Inductive Redex : Set :=
-  | RDone : L.t -> Expr -> Expr -> Redex
-  | RIfE : L.t -> Expr -> Expr -> Redex
-  | RIfTT : L.t -> Redex
-  | RIfFF : L.t -> Redex
-  | RSendE : L.t -> Expr -> Expr -> L.t -> Redex
-  | RSendV : L.t -> Expr -> L.t -> Redex
-  | RDef.
+  | RDone : Loc -> Expr -> Expr -> Redex
+  | RIfE : Loc -> Expr -> Expr -> Redex
+  | RIfTT : Loc -> Redex
+  | RIfFF : Loc -> Redex
+  | RSendE : Loc -> Expr -> Expr -> Loc -> Redex
+  | RSendV : Loc -> Expr -> Loc -> Redex
+  | RSync : Loc -> LRChoice -> Loc -> Redex
+  | RDefLocal : Loc -> Expr -> Redex
+  | RDefGlobal : Redex.
   Hint Constructors Redex : Chor.
   
-
-  Definition SendSubst (p : L.t) (v : Expr) : L.t -> nat -> Expr :=
+  Definition SendExprSubst (p : Loc) (v : Expr) : Loc -> nat -> Expr :=
     fun q n =>
       if L.eq_dec p q
       then match n with
@@ -578,106 +640,135 @@ Module Choreography (Import E : Expression) (L : Locations).
            | S m => ExprVar m
            end
       else ExprVar n.
-
-  Lemma UpSendSubst : forall (p q : L.t) (v : Expr),
-      p <> q ->
-      forall r n, ChorUpExprSubst (SendSubst p v) q r n = SendSubst p v r n.
-  Proof.
-    intros p q v H r n.
-    unfold ChorUpExprSubst; unfold SendSubst.
-    destruct (L.eq_dec q r);
-      destruct (L.eq_dec p r); auto.
-    exfalso; apply H; transitivity r; auto.
-    destruct n; auto. rewrite ExprRenameVar; auto.
-  Qed.
-  
-  Definition DefSubst (C1 : Chor) : nat -> Chor :=
+  Definition DefSubst (C : Chor) : nat -> Chor :=
     fun n => match n with
-          | 0 => CDef C1 C1
-          | S m => CVar m
+          | 0 => C [c| fun n => match n with
+                            | 0 => DefGlobal C C
+                            | S n => Var n
+                            end]
+          | S m => Var m
           end.
 
-  Inductive RChorStep : Redex -> list L.t -> Chor -> Chor -> Prop :=
-  | DoneEStep : forall (p : L.t) (e1 e2 : Expr),
-      ExprStep e1 e2 -> RChorStep (RDone p e1 e2) nil (CDone p e1) (CDone p e2)
-  | SendEStep : forall (p q : L.t) (B : list L.t),
-      ~ In p B -> ~ In q B -> p <> q ->
+  Lemma UpSendExprSubst : forall (p q : Loc) (v : Expr),
+      p <> q ->
+      forall r n, ChorUpExprSubst (SendExprSubst p v) q r n = SendExprSubst p v r n.
+  Proof using.
+    intros l1 l2 v H l3 n.
+    unfold ChorUpExprSubst; unfold SendExprSubst.
+    destruct (L.eq_dec l2 l3);
+      destruct (L.eq_dec l1 l3); auto.
+    exfalso; apply H; transitivity l3; auto.
+    destruct n; auto. rewrite ExprRenameVar; auto.
+  Qed.
+
+  Lemma DefSubstEquiv : forall C1 C2 : Chor, C1 ≡ C2 -> forall n, DefSubst C1 n ≡ DefSubst C2 n.
+  Proof using.
+    intros C1 C2 H n; destruct n; cbn; auto with Chor.
+    apply WeakSubstExt; auto.
+    intro n; destruct n; cbn; auto with Chor.
+  Qed.
+  Hint Resolve DefSubstEquiv : Chor.
+
+  Inductive RChorStep : Redex -> list Loc -> Chor -> Chor -> Prop :=
+  | DoneEStep : forall (l : Loc) (e1 e2 : Expr),
+      ExprStep e1 e2 -> RChorStep (RDone l e1 e2) nil (Done l e1) (Done l e2)
+  | SendEStep : forall (l1 l2 : Loc) (B : list Loc),
+      ~ In l1 B -> ~ In l2 B -> l1 <> l2 ->
       forall (e1 e2 : Expr) (C : Chor),
-        ExprStep e1 e2 -> RChorStep (RSendE p e1 e2 q) B (CSend p e1 q C) (CSend p e2 q C)
-  | SendIStep : forall (p q : L.t) (e : Expr) (C1 C2 : Chor) (B : list L.t) (R : Redex),
-      RChorStep R (p :: q :: B) C1 C2 ->
-      RChorStep R B (CSend p e q C1) (CSend p e q C2)
-  | SendVStep : forall (p q : L.t) (v : Expr) (C : Chor) (B : list L.t),
-      ~ In p B -> ~ In q B -> p <> q ->
+        ExprStep e1 e2 -> RChorStep (RSendE l1 e1 e2 l2) B (Send l1 e1 l2 C) (Send l1 e2 l2 C)
+  | SendIStep : forall (l1 l2 : Loc) (e : Expr) (C1 C2 : Chor) (B : list Loc) (R : Redex),
+      RChorStep R (l1 :: l2 :: B) C1 C2 ->
+      RChorStep R B (Send l1 e l2 C1) (Send l1 e l2 C2)
+  | SendVStep : forall (l1 l2 : Loc) (v : Expr) (C : Chor) (B : list Loc),
+      ~ In l1 B -> ~ In l2 B -> l1 <> l2 ->
       ExprVal v ->
-      RChorStep (RSendV p v q) B (CSend p v q C) (C [c| ChorIdSubst; SendSubst q v])
-  | IfEStep : forall (p : L.t) (e1 e2 : Expr) (C1 C2 : Chor) (B : list L.t),
-      ~ In p B ->
+      RChorStep (RSendV l1 v l2) B (Send l1 v l2 C) (C [ce| SendExprSubst l2 v])
+  | IfEStep : forall (l1 : Loc) (e1 e2 : Expr) (C1 C2 : Chor) (B : list Loc),
+      ~ In l1 B ->
       ExprStep e1 e2 ->
-      RChorStep (RIfE p e1 e2) B (CIf p e1 C1 C2) (CIf p e2 C1 C2)
-  | IfIStep : forall (p : L.t) (e : Expr) (C1 C2 C3 C4 : Chor) (B : list L.t) (R : Redex),
-      RChorStep R (p :: B) C1 C3 ->
-      RChorStep R (p :: B) C2 C4 ->
-      RChorStep R B (CIf p e C1 C2) (CIf p e C3 C4)
-  | IfTrueStep : forall (p : L.t) (C1 C2 : Chor) (B : list L.t),
-      ~ In p B ->
-      RChorStep (RIfTT p) B (CIf p tt C1 C2) C1
-  | IfFalseStep : forall (p : L.t) (C1 C2 : Chor) (B : list L.t),
-      ~ In p B ->
-      RChorStep (RIfFF p) B (CIf p ff C1 C2) C2
-  | DefStep : forall (C1 C2 : Chor),
-      RChorStep RDef nil (CDef C1 C2) (C2 [c| DefSubst C1; ExprChorIdSubst]).
+      RChorStep (RIfE l1 e1 e2) B (If l1 e1 C1 C2) (If l1 e2 C1 C2)
+  | IfIStep : forall (l1 : Loc) (e : Expr) (C1 C2 C3 C4 : Chor) (B : list Loc) (R : Redex),
+      RChorStep R (l1 :: B) C1 C3 ->
+      RChorStep R (l1 :: B) C2 C4 ->
+      RChorStep R B (If l1 e C1 C2) (If l1 e C3 C4)
+  | IfTrueStep : forall (l1 : Loc) (C1 C2 : Chor) (B : list Loc),
+      ~ In l1 B ->
+      RChorStep (RIfTT l1) B (If l1 tt C1 C2) C1
+  | IfFalseStep : forall (l1 : Loc) (C1 C2 : Chor) (B : list Loc),
+      ~ In l1 B ->
+      RChorStep (RIfFF l1) B (If l1 ff C1 C2) C2
+  | DefLocalIStep : forall R l C1 C1' C2,
+      RChorStep R [] C1 C1' -> (* I think this should be nil, but I'm not 100%. *)
+      RChorStep R [] (DefLocal l C1 C2) (DefLocal l C1' C2)
+  | DefLocalStep : forall (l : Loc) (v : Expr) (C2 : Chor),
+      ExprVal v ->
+      RChorStep (RDefLocal l v) nil (DefLocal l (Done l v) C2) (C2 [ce| SendExprSubst l v])
+  | DefGlobalStep : forall C1 C2 : Chor,
+      RChorStep RDefGlobal nil (DefGlobal C1 C2) (C2 [c| DefSubst C1])
+  | SyncStep : forall (l1 l2 : Loc) (d : LRChoice) (C : Chor) (B : list Loc),
+      ~ In l1 B -> ~ In l2 B ->
+      RChorStep (RSync l1 d l2) B (Sync l1 d l2 C) C
+  | SyncIStep : forall (l1 l2 : Loc) (d : LRChoice) (C1 C2 : Chor) (B : list Loc) (R : Redex),
+      RChorStep R (l1 :: l2 :: B) C1 C2 ->
+      RChorStep R B (Sync l1 d l2 C1) (Sync l1 d l2 C2).
   Hint Constructors RChorStep : Chor.
 
-  Ltac RStepRearrangeHelper :=
-      match goal with
-      | [i : ~ In ?p ?B1, ext : forall q, In q ?B1 <-> In q ?B2 |- ~ In ?p ?B2 ] =>
-        let H := fresh in intro H; rewrite <- ext in H; apply i; exact H
-      end.
+  Ltac NotInList :=
+    repeat match goal with
+           | [ |- ~ In ?a nil ] => let H := fresh in intro H; inversion H
+           | [ nin : ~ In ?a ?l |- ~ In ?a ?l ] => exact nin
+           | [ H : ~ In ?a (?b :: ?l) |- _ ] =>
+             match goal with
+             | [ _ : a <> b, _ : ~ In a l |- _ ] => fail 1
+             | _ => assert (a <> b) by (let eq := fresh in intro eq; apply H; left; auto);
+                   assert(~ In a l) by (let i := fresh in intro i; apply H; right; auto)
+             end
+           | [ neq : ?a <> ?b |- ~ In ?a (?b :: ?l) ] =>
+             let H := fresh in
+             intro H; destruct H as [eq | i]; [exfalso; apply neq; auto | revert i; fold (not (In a l))]
+           | [i : ~ In ?p ?B1, ext : forall q, In q ?B1 <-> In q ?B2 |- ~ In ?p ?B2 ] =>
+             let H := fresh in intro H; rewrite <- ext in H; apply i; exact H
+           end.
 
   Lemma RStepRearrange : forall R B1 C1 C2,
       RChorStep R B1 C1 C2 -> forall B2, (forall q, In q B1 <-> In q B2) -> RChorStep R B2 C1 C2.
-  Proof.
+  Proof using.
     intros R B1 C1 C2 step; induction step; intros B2 ext.
-    all: try (constructor; try RStepRearrangeHelper; auto with Chor; fail).
-    - assert (B2 = nil) by
-        (destruct B2 as [| p0 B2]; auto;
-          assert (In p0 nil) as H0
-              by (apply ext; left; reflexivity);
-          inversion H0).
-      subst.
-      clear ext; auto with Chor.
-    - apply SendIStep. apply IHstep.
-      intros r; split.
-      all:intro i; destruct i as [eq | i];
-        [ left; exact eq
-        | destruct i as [eq | i];
-          [ right; left; exact eq
-          | right; right; apply ext; auto]].
-    - apply IfIStep; [apply IHstep1 | apply IHstep2].
-      all: intros q; split.
-      all: intro i; destruct i as [eq | i]; [left; exact eq | right; apply ext; auto].
-    - assert (B2 = nil)
-        by (destruct B2 as [|p B2]; auto;
-            assert (In p nil) as H0
-                by (apply ext; left; reflexivity);
-            inversion H0).
-      rewrite H. apply DefStep.
+    all: try match goal with
+         | [H : forall q, In q [] <-> In q ?B |- _ ] =>
+           let H' := fresh in
+           assert (B = []) as H' by (let x := fresh in destruct B as [| x B]; [reflexivity | pose proof ((proj2 (H x)) ltac:(left; reflexivity)) as H'; inversion H']);
+             subst; clear H
+         | [H : forall q, In q ?B <-> In q [] |- _ ] =>
+           let H' := fresh in
+           assert (B = []) as H' by (let x := fresh in destruct B as [| x B]; [reflexivity | pose proof ((proj1 (H x)) ltac:(left; reflexivity)) as H'; inversion H']);
+             subst; clear H
+         end.
+    all: try (constructor; try NotInList; auto; fail).
+    - apply SendIStep; auto; apply IHstep; intro q; split; intro i; repeat (destruct i as [eq | i]; [left; exact eq | right]; auto); apply ext; auto.
+    - apply IfIStep; [apply IHstep1 | apply IHstep2]; intro q; split; intro i; repeat (destruct i as [eq | i]; [left | right]; auto); apply ext; auto.
+    - apply SyncIStep; auto; apply IHstep; intro q; split; intro i; repeat (destruct i as [eq | i]; [left; exact eq | right]; auto); apply ext; auto.
   Qed.
 
-  Inductive RedexOf : L.t -> Redex -> Prop :=
+  Inductive RedexOf : Loc -> Redex -> Prop :=
   | RODone : forall p e1 e2, RedexOf p (RDone p e1 e2)
   | ROIfE : forall p e1 e2, RedexOf p (RIfE p e1 e2)
   | ROIfTT : forall p, RedexOf p (RIfTT p)
   | ROIfFF : forall p, RedexOf p (RIfFF p)
-  | ROSendE : forall p e1 e2 q, RedexOf p (RSendE p e1 e2 q)
-  | ROSendV : forall p v q, RedexOf p (RSendV p v q).
+  | ROSendE1 : forall p e1 e2 q, RedexOf p (RSendE p e1 e2 q)
+  | ROSendE2 : forall p e1 e2 q, RedexOf q (RSendE p e1 e2 q)
+  | ROSendV1 : forall p v q, RedexOf p (RSendV p v q)
+  | ROSendV2 : forall p v q, RedexOf q (RSendV p v q)
+  | ROSync1 : forall p d q, RedexOf p (RSync p d q)
+  | ROSync2 : forall p d q, RedexOf q (RSync p d q)
+  | ROLDef : forall l e, RedexOf l (RDefLocal l e).
+  Hint Constructors RedexOf: Chor.
 
   Lemma NoIStepInList : forall p B R,
       In p B ->
       RedexOf p R ->
       forall C1 C2, ~RChorStep R B C1 C2.
-  Proof.
+  Proof using.
     intros p B R H H0 C1 C2 step; induction step; inversion H0;
     match goal with
     | [ i : In ?p ?B, n : ~ In ?p' ?B, e : ?p = ?p' |- False ] =>
@@ -688,494 +779,431 @@ Module Choreography (Import E : Expression) (L : Locations).
     end.
     all: try (apply IHstep; auto; right; right; auto; fail).
     all: try (apply IHstep1; auto; right; auto; fail).
-    inversion H.
+    all: inversion H.
   Qed.
 
   Corollary NoDoneIStepInList : forall p B,
       In p B ->
       forall e1 e2 C1 C2, ~RChorStep (RDone p e1 e2) B C1 C2.
-  Proof.
+  Proof using.
     intros p B H e1 e2 C1 C2; apply NoIStepInList with (p := p); auto; apply RODone.
   Qed.
-  Corollary NoSendEIStepInList : forall p B,
+  Corollary NoSendEIStepInList1 : forall p B,
       In p B ->
       forall e1 e2 C1 C2 q, ~RChorStep (RSendE p e1 e2 q) B C1 C2.
-  Proof.
-    intros p B H q e1 e2 C1 C2; apply NoIStepInList with (p := p); auto; apply ROSendE.
+  Proof using.
+    intros p B H q e1 e2 C1 C2; apply NoIStepInList with (p := p); auto; apply ROSendE1.
   Qed.
-  Corollary NoSendVIStepInList : forall p B,
+  Corollary NoSendEIStepInList2 : forall B q,
+      In q B ->
+      forall p e1 e2 C1 C2, ~RChorStep (RSendE p e1 e2 q) B C1 C2.
+  Proof using.
+    intros B q H p e1 e2 C1 C2; apply NoIStepInList with (p := q); auto; apply ROSendE2.
+  Qed.
+  Corollary NoSendVIStepInList1 : forall p B,
       In p B ->
       forall v q C1 C2, ~RChorStep (RSendV p v q) B C1 C2.
-  Proof.
-    intros p B H v q C1 C2; apply NoIStepInList with (p := p); auto; apply ROSendV.
+  Proof using.
+    intros p B H v q C1 C2; apply NoIStepInList with (p := p); auto; apply ROSendV1.
+  Qed.
+  Corollary NoSendVIStepInList2 : forall B q,
+      In q B ->
+      forall p v C1 C2, ~RChorStep (RSendV p v q) B C1 C2.
+  Proof using.
+    intros B q H p v C1 C2; apply NoIStepInList with (p := q); auto; apply ROSendV2.
   Qed.
   Corollary NoIfEIStepInList : forall p B,
       In p B ->
       forall e1 e2 C1 C2, ~RChorStep (RIfE p e1 e2) B C1 C2.
-  Proof.
+  Proof using.
    intros p B H e1 e2 C1 C2; apply NoIStepInList with (p := p); auto; apply ROIfE.
   Qed.
   Corollary NoIfTTStepInList : forall p B,
       In p B ->
       forall C1 C2, ~RChorStep (RIfTT p) B C1 C2.
-  Proof.
+  Proof using.
    intros p B H C1 C2; apply NoIStepInList with (p := p); auto; apply ROIfTT.
   Qed.
   Corollary NoIfFFStepInList : forall p B,
       In p B ->
       forall C1 C2, ~RChorStep (RIfFF p) B C1 C2.
-  Proof.
+  Proof using.
    intros p B H C1 C2; apply NoIStepInList with (p := p); auto; apply ROIfFF.
-  Qed.    
-  
-  Hint Resolve RStepRearrange NoDoneIStepInList : Chor.
-  Hint Resolve NoSendEIStepInList NoSendVIStepInList : Chor.
-  Hint Resolve NoIfEIStepInList NoIfTTStepInList NoIfFFStepInList: Chor.
-
-  Inductive ChorStepMany : list L.t -> Chor -> Chor -> Prop :=
-  | ChorManyZero : forall B C, ChorStepMany B C C
-  | ChorManyPlus : forall R B C1 C2 C3, RChorStep R B C1 C2 -> ChorStepMany B C2 C3 -> ChorStepMany B C1 C3.
-  Hint Constructors ChorStepMany : Chor.
-
-  Theorem ChorManyOne : forall (R : Redex) (B : list L.t) (C1 C2 : Chor),
-      RChorStep R B C1 C2 -> ChorStepMany B C1 C2.
-  Proof.
-    intros R B C1 C2 step.
-    eapply ChorManyPlus; [exact step | apply ChorManyZero].
   Qed.
-  Hint Resolve ChorManyOne : Chor.
+  Corollary NoSyncStepInList1 : forall p B,
+      In p B ->
+      forall d q C1 C2, ~RChorStep (RSync p d q) B C1 C2.
+  Proof using.
+   intros p B H q C1 C2; apply NoIStepInList with (p := p); auto; constructor.
+  Qed. 
+  Corollary NoSyncStepInList2 : forall B q,
+      In q B ->
+      forall p d C1 C2, ~RChorStep (RSync p d q) B C1 C2.
+  Proof using.
+   intros B q H p C1 C2; apply NoIStepInList with (p := q); auto; constructor.
+  Qed.
+  Corollary NoLDefStepInList : forall B p,
+      In p B ->
+      forall e C1 C2, ~RChorStep (RDefLocal p e) B C1 C2.
+  Proof using.
+   intros B p H e C1 C2; apply NoIStepInList with (p := p); auto; constructor.
+  Qed.
 
-  Program Fixpoint ChorStepManyTrans (B : list L.t) (C1 C2 C3 : Chor)
-           (r1 : ChorStepMany B C1 C2)
-           (r2 : ChorStepMany B C2 C3) {struct r1} : ChorStepMany B C1 C3 :=
+  Hint Resolve RStepRearrange NoDoneIStepInList : Chor.
+  Hint Resolve NoSendEIStepInList1 NoSendVIStepInList1 NoSendEIStepInList2 NoSendVIStepInList2 : Chor.
+  Hint Resolve NoIfEIStepInList NoIfTTStepInList NoIfFFStepInList: Chor.
+  Hint Resolve NoSyncStepInList1 NoSyncStepInList2 NoLDefStepInList : Chor.
+
+  Inductive RStepMany : list Redex -> list Loc -> Chor -> Chor -> Prop :=
+  | RStepManyZero : forall B C, RStepMany nil B C C
+  | RStepManyPlus : forall R Rs B C1 C2 C3, RChorStep R B C1 C2 -> RStepMany Rs B C2 C3 -> RStepMany (R :: Rs) B C1 C3.
+  Hint Constructors RStepMany : Chor.
+
+  Theorem RStepManyOne : forall (R : Redex) (B : list Loc) (C1 C2 : Chor),
+      RChorStep R B C1 C2 -> RStepMany [R] B C1 C2.
+  Proof using.
+    intros R B C1 C2 step.
+    eapply RStepManyPlus; [exact step | apply RStepManyZero].
+  Qed.
+  Hint Resolve RStepManyOne : Chor.
+
+  Program Fixpoint RStepManyTrans (Rs1 Rs2 : list Redex) (B : list Loc) (C1 C2 C3 : Chor)
+           (r1 : RStepMany Rs1 B C1 C2)
+           (r2 : RStepMany Rs2 B C2 C3) {struct r1} : RStepMany (Rs1 ++ Rs2) B C1 C3 :=
    match r1 with
-   | ChorManyZero B C => r2
-   | ChorManyPlus R B C1' C2' _ s1 r3 =>
-     ChorManyPlus _ _ _ _ _ s1  (ChorStepManyTrans _ _ _ _ r3 r2)
+   | RStepManyZero B C => r2
+   | RStepManyPlus R Rs B C1' C2' _ s1 r3 =>
+     RStepManyPlus _ _ _ _ _ _ s1  (RStepManyTrans _ _ _ _ _ _ r3 r2)
    end.
-  Hint Resolve ChorStepManyTrans : Chor.
+  (* Hint Resolve RStepManyTrans : AChor. *)
+
+  Lemma SendIStepMany : forall Rs B p e q C1 C2, RStepMany Rs (p :: q :: B) C1 C2 -> RStepMany Rs B (Send p e q C1) (Send p e q C2).
+  Proof using.
+    intros Rs B p e q C1 C2 step; revert e; dependent induction step; intros e; auto with Chor.
+    apply RStepManyPlus with (R := R) (C2 := Send p e q C2). apply SendIStep; auto.
+    apply IHstep; auto.
+  Qed.
+
+  Lemma IfIStepMany : forall Rs B p e C11 C12 C21 C22, RStepMany Rs (p :: B) C11 C12 -> RStepMany Rs (p :: B) C21 C22 -> RStepMany Rs B (If p e C11 C21) (If p e C12 C22).
+  Proof using.
+    intros Rs; induction Rs; intros B p e C11 C12 C21 C22 step1 step2; inversion step1; inversion step2; subst; auto with Chor.
+    apply RStepManyPlus with (C2 := If p e C2 C4); [apply IfIStep; auto|]. apply IHRs; auto.
+  Qed.
+    
+  Lemma SyncIStepMany : forall Rs B d p q C1 C2, RStepMany Rs (p :: q :: B) C1 C2 -> RStepMany Rs B (Sync p d q C1) (Sync p d q C2).
+  Proof using.
+    intros Rs; induction Rs; intros B d p q C1 C2 step; inversion step; subst; auto with Chor.
+    apply RStepManyPlus with (C2 := Sync p d q C3); auto with Chor.
+  Qed.
+ 
+  Hint Resolve SendIStepMany IfIStepMany SyncIStepMany : Chor.
 
   Lemma ConsNotIn : forall {A : Type} (a b : A) (l : list A),
       a <> b -> ~ In a l -> ~ In a (b :: l).
-  Proof.
+  Proof using.
     intros A a b l H H0 H1.
     destruct H1; auto.
   Qed.
   Lemma NotInCons : forall {A : Type} (a b : A) (l : list A),
       ~ In a (b :: l) -> a <> b /\ ~ In a l.
-  Proof.
+  Proof using.
     intros A a b l H; split; intro H0; apply H; [left | right]; auto.
   Qed.    
   Hint Resolve ConsNotIn NotInCons : Chor.
 
-  Ltac ListHelper :=
-    match goal with
-    | [H : ~ In ?p (?p :: _) |- _ ] =>
-      exfalso; apply H; left; reflexivity
-    | [H : ~ In ?p (_ :: ?p :: _) |- _ ] =>
-      exfalso; apply H; right; left; reflexivity
-    | [H : ~ In ?r (?p :: ?q :: ?B) |- ~ In ?r ?B] =>
-      let H' := fresh in intro H'; apply H; right; right; exact H'
-    | [H : ~ In ?r (?p :: ?B) |- ~ In ?r ?B ] =>
-      let H' := fresh in intro H'; apply H; right; exact H'
-    | [H : ~ In ?r (?p :: _) |- ?r <> ?p ] =>
-      let H' := fresh H in intro H'; apply H; left; auto
-    | [H : ~ In ?r (?p :: _) |- ?p <> ?r ] =>
-      let H' := fresh H in intro H'; apply H; left; auto
-    | [H : ~ In ?r (_ :: ?p :: _) |- ?p <> ?r ] =>
-      let H' := fresh H in intro H'; apply H; right; left; auto                                                      
-    | [H : ~ In ?r (_ :: ?p :: _) |- ?r <> ?p ] =>
-      let H' := fresh H in intro H'; apply H; right; left; auto                                                      
-    end.
+  (* Ltac ListHelper := *)
+  (*   match goal with *)
+  (*   | [H : ~ In ?p (?p :: _) |- _ ] => *)
+  (*     exfalso; apply H; left; reflexivity *)
+  (*   | [H : ~ In ?p (_ :: ?p :: _) |- _ ] => *)
+  (*     exfalso; apply H; right; left; reflexivity *)
+  (*   | [H : ~ In ?r (?p :: ?q :: ?B) |- ~ In ?r ?B] => *)
+  (*     let H' := fresh in intro H'; apply H; right; right; exact H' *)
+  (*   | [H : ~ In ?r (?p :: ?B) |- ~ In ?r ?B ] => *)
+  (*     let H' := fresh in intro H'; apply H; right; exact H' *)
+  (*   | [H : ~ In ?r (?p :: _) |- ?r <> ?p ] => *)
+  (*     let H' := fresh H in intro H'; apply H; left; auto *)
+  (*   | [H : ~ In ?r (?p :: _) |- ?p <> ?r ] => *)
+  (*     let H' := fresh H in intro H'; apply H; left; auto *)
+  (*   | [H : ~ In ?r (_ :: ?p :: _) |- ?p <> ?r ] => *)
+  (*     let H' := fresh H in intro H'; apply H; right; left; auto                                                       *)
+  (*   | [H : ~ In ?r (_ :: ?p :: _) |- ?r <> ?p ] => *)
+  (*     let H' := fresh H in intro H'; apply H; right; left; auto                                                       *)
+  (*   end. *)
+  Ltac InList := repeat match goal with
+                        | [ H : ?P |- ?P ] => exact H
+                        | [ H : ?a <> ?a |- _ ] => destruct (H eq_refl)
+                        | [ |- In ?a (?a :: _) ] => left; reflexivity
+                        | [ i : In ?a (_ :: _) |- _ ] => destruct i; subst
+                        | [ |- In ?a (_ :: _) ] => right
+                        end.
 
-
-  Theorem Equiv'Simulation : forall C1 C2, C1 ≡' C2 -> forall R B C1',
-        RChorStep R B C1 C1' -> exists C2', RChorStep R B C2 C2' /\ C1' ≡ C2'.
-  Proof.
-    intros C1 C2 equiv; induction equiv; intros R B Cstep step;
-      eauto with Chor; inversion step; eauto with Chor; subst.
-    - exists (CSend p e2 q C2); split; auto with Chor.
-    - destruct (IHequiv _ _ _ H6) as [C3' HC3'].
-      destruct (HC3') as [step' equivC3].
-      exists (CSend p e q C3'); split; auto with Chor.
-    - exists (CIf p e2 C12 C22); split; auto with Chor.
-    - destruct (IHequiv1 _ _ _ H6) as [C12' HC12'];
-        destruct HC12' as [stepC12' equivC12'].
-      destruct (IHequiv2 _ _ _ H7) as [C22' HC22'];
-        destruct HC22' as [stepC22' equivC22'].
-      exists (CIf p e C12' C22'); split; auto with Chor.
-    - exists C12; split; auto with Chor.
-    - exists C22; split; auto with Chor.
-    - exists (C22 [c| DefSubst C12; ExprChorIdSubst]); split; auto with Chor.
-      apply EquivStableSubst; auto with Chor.
-      intro n; unfold DefSubst; destruct n; auto with Chor.
-    - exists (CSend r e2 s (CSend p e3 q C2)); split; auto with Chor.
-    - inversion H10; subst.
-      -- exists (CSend r e3 s (CSend p e1 q C2)); split; eauto with Chor.
-         apply SendEStep; auto; ListHelper.
-      -- destruct (IHequiv _ _ _ H11) as [C4' HC4'];
-           destruct HC4' as [stepC4' equivC4'].
-         exists (CSend r e2 s (CSend p e1 q C4')); split; auto with Chor.
-         apply SendIStep. apply SendIStep.
-         eapply RStepRearrange;
-           [exact stepC4'|].
-         intros q1; split; intros H13.
-         all: destruct H13;
-           [ right; right; left
-           | destruct H3; [right; right; right; left
-                           | destruct H3; [left
-                                           | destruct H3; [right; left
-                                                           | right; right; right; right]]]];
-           auto.
-      -- exists (CSend p e1 q (C2 [c| ChorIdSubst; SendSubst s e2]));
-           split; auto with Chor.
-         assert ((CSend p e1 q (C2 [c| ChorIdSubst; SendSubst s e2]))
-                 = (CSend p e1 q C2) [c| ChorIdSubst; SendSubst s e2]).
-         simpl; unfold SendSubst at 2; destruct (L.eq_dec s p) as [eq | _];
-           [exfalso; apply H1; symmetry; exact eq |].
-         fold ExprIdSubst. rewrite ExprIdentitySubstSpec.
-         assert (C2 [c|ChorIdSubst; SendSubst s e2] =
-                 C2 [c| SendUpChorSubst ChorIdSubst q; ChorUpExprSubst (SendSubst s e2) q])
-           by (apply ChorSubstExt;
-               [ intro n; symmetry; apply SendUpChorIdSubst
-               | symmetry; apply UpSendSubst; auto]).
-         rewrite H3; reflexivity.
-         rewrite H3. apply SendVStep; auto; ListHelper.
-    - exists (CSend r e2 s C2 [c| ChorIdSubst; SendSubst q e1]).
-        split; auto with Chor.
-        simpl.
-        unfold SendSubst at 1; destruct (L.eq_dec q r) as [eq | _];
-          [exfalso; apply H0; exact eq|]; fold ExprIdSubst; rewrite ExprIdentitySubstSpec.
-        apply SendIStep.
-        assert (C2 [c| SendUpChorSubst ChorIdSubst s; ChorUpExprSubst (SendSubst q e1) s]
-                = C2 [c| ChorIdSubst; SendSubst q e1])
-          by (apply ChorSubstExt; [intro n; apply SendUpChorIdSubst
-                                  | apply UpSendSubst; auto]).
-        rewrite H3.
-        apply SendVStep; auto with Chor.
-    - exists (CSend q e2 r (CIf p e3 C1' C2')); split; auto with Chor.
-    - inversion H8; subst.
-      -- inversion H9; subst.
-         exists (CSend q e3 r (CIf p e1 C1' C2')); split; auto with Chor.
-         apply SendEStep; auto; try ListHelper.
-         exfalso. apply NoSendEIStepInList in H14; auto. left; reflexivity.
-      -- inversion H9; subst.
-         1: apply NoSendEIStepInList in H10; [destruct H10 | left; reflexivity].
-         2: apply NoSendVIStepInList in H10; [destruct H10 | left; reflexivity].
-         destruct (IHequiv1 _ _ _ H10) as [C3' HC3']; destruct HC3' as [stepC3' equivC3'].
-         destruct (IHequiv2 _ _ _ H11) as [C4' HC4']; destruct HC4' as [stepC4' equivC4'].
-         exists (CSend q e2 r (CIf p e1 C3' C4')); split; auto with Chor.
-         apply SendIStep. apply IfIStep.
-         all: apply RStepRearrange with (B1 := q :: r :: p :: B); auto.
-         all: intros q0; split; intros i.
-         2,4: destruct i as [eq | i];
-           [right; right; left
-           | destruct i as [eq | i];
-             [left
-             | destruct i as [eq | i];
-               [right; left
-               | right; right; right]]]; auto.
-         all: destruct i as [eq | i];
-           [right; left; exact eq
-           | destruct i as [eq | i];
-             [ right; right; left; exact eq
-             | destruct i as [eq | i];
-               [ left; exact eq
-               | right; right; right; exact i]]].
-      -- inversion H9; subst;
-           [apply NoSendVIStepInList in H14; [destruct H14 | left; reflexivity] |].
-         exists (CIf p e1 C1' C2' [c| ChorIdSubst; SendSubst r e2]); split; auto with Chor.
-         apply SendVStep; auto; try ListHelper.
-         simpl. unfold SendSubst at 3.
-         destruct (L.eq_dec r p) as [eq | _]; [exfalso; apply H0; symmetry; exact eq|].
-         fold ExprIdSubst. rewrite ExprIdentitySubstSpec.
-         apply IfContext; apply EquivStableSubst; auto with Chor.
-    - exists (CSend q e2 r C1'); split; auto with Chor.
-    - exists (CSend q e2 r C2'); split; auto with Chor.
-    - exists (CIf p e1 (CSend q e3 r C1') (CSend q e3 r C2')); split; auto with Chor.
-    - inversion H8; subst.
-      -- exists (CIf p e3 (CSend q e2 r C1') (CSend q e2 r C2')); split; auto with Chor.
-         apply IfEStep; auto; ListHelper.
-      -- destruct (IHequiv1 _ _ _ H9) as [C5' H5']; destruct H5' as [stepC5' equivC5'].
-         destruct (IHequiv2 _ _ _ H10) as [C6' H6']; destruct H6' as [stepC6' equivC6'].
-         exists (CIf p e1 (CSend q e2 r C5') (CSend q e2 r C6')); split; auto with Chor.
-         apply IfIStep; auto; apply SendIStep;
-           apply RStepRearrange with (B1 := p :: q :: r ::B); auto.
-         all: intros t; split; intros i.
-         2,4: destruct i as [eq | i];
-           [right; left; exact eq (* t = q *)
-           | destruct i as [eq | i];
-             [right; right; left; exact eq (* t = r *)
-             |destruct i as [eq | i];
-              [left; apply eq (* t = p *)
-              | right; right; right; exact i]]].
-         all: destruct i as [eq | i];
-           [right; right; left; exact eq
-           | destruct i as [eq | i];
-             [left; exact eq
-             | right; destruct i as [eq | i];
-               [left; exact eq
-               | right; right; exact i]]].
-      -- exists (CSend q e2 r C1'); split; auto with Chor.
-         apply IfTrueStep; ListHelper.
-      -- exists (CSend q e2 r C2'); split; auto with Chor.
-         apply IfFalseStep; ListHelper.
-    - exists (CIf p e1 (C1'[c| ChorIdSubst; SendSubst r e2])
-             (C2'[c|ChorIdSubst; SendSubst r e2])); split; auto with Chor.
-      simpl; unfold SendSubst at 1.
-      destruct (L.eq_dec r p) as [eq | _];
-        [exfalso; apply H0; symmetry; exact eq|].
-      fold ExprIdSubst; rewrite ExprIdentitySubstSpec; auto with Chor.
-    - exists (CIf q e2 (CIf p e3 C11' C21') (CIf p e3 C12' C22')); split; auto with Chor.
-    - inversion H7; subst.
-      -- inversion H8; subst.
-         2: { apply NoIfEIStepInList in H12; [destruct H12| left; reflexivity]. }
-         exists (CIf q e3 (CIf p e1 C11' C21') (CIf p e1 C12' C22')); split; auto with Chor.
-         apply IfEStep; auto. ListHelper.
-      -- inversion H8; subst.
-         apply NoIfEIStepInList in H9; [destruct H9| left; reflexivity].
-         2: apply NoIfTTStepInList in H10; [destruct H10 | left; reflexivity].
-         2: apply NoIfFFStepInList in H10; [destruct H10 | left; reflexivity].
-         destruct (IHequiv1 _ _ _ H9) as [C0' HC0'];
-           destruct HC0' as [stepC0' equivC0'].
-         destruct (IHequiv2 _ _ _ H10) as [C5' HC5'];
-           destruct HC5' as [stepC5' equivC5'].
-         destruct (IHequiv3 _ _ _ H11) as [C3' HC3'];
-           destruct HC3' as [stepC3' equivC3'].
-         destruct (IHequiv4 _ _ _ H12) as [C6' HC6'];
-           destruct HC6' as [stepC6' equivC6'].
-         exists (CIf q e2 (CIf p e1 C0' C3') (CIf p e1 C5' C6')); split; auto with Chor.
-         apply IfIStep; apply IfIStep; eauto with Chor.
-         all: apply RStepRearrange with (B1 := q :: p :: B); auto.
-         all: intros t; split; intros i.
-         all: destruct i as [eq | i];
-           [(* t = p *) right; left; exact eq
-                      | destruct i as [eq | i];
-                        [ (* t = q *) left; exact eq
-                                    | right; right; exact i]].
-      -- inversion H8; subst;
-           [apply NoIfTTStepInList in H10; [destruct H10 | left; reflexivity] |].
-         exists (CIf p e1 C11' C21'); split; auto with Chor.
-         apply IfTrueStep; ListHelper.
-      -- inversion H8; subst;
-           [apply NoIfFFStepInList in H10; [destruct H10 | left; reflexivity] |].
-         exists (CIf p e1 C12' C22'); split; auto with Chor.
-         apply IfFalseStep; ListHelper.
-    - exists (CIf q e2 C11' C12'); split; auto with Chor.
-    - exists (CIf q e2 C21' C22'); split; auto with Chor.
+  Lemma RetEquivInversion : forall l e C, Done l e ≡ C -> C = Done l e.
+  Proof using.
+    intros l e C eqv; dependent induction eqv; auto.
   Qed.
-
-  Theorem EquivSimulation : forall C1 C2, C1 ≡ C2 -> forall C1' R B, RChorStep R B C1 C1' -> exists C2',
-          RChorStep R B C2 C2' /\ C1' ≡ C2'.
-  Proof.
-    intros C1 C2 H.
-    induction H; intros C1' R B step.
-    apply Equiv'Simulation with (C1 := C1); auto.
-    destruct (Equiv'Simulation _ _ H _ _ _ step) as [C2' HC2'].
-    destruct HC2' as [stepC2' equivC2'].
-    destruct (IHchorEquiv _ _ _ stepC2') as [C3' HC3']; destruct HC3' as [stepC3' equivC3'].
-    exists C3'; split; auto. transitivity C2'; auto.
+                                         
+  Theorem EquivSimulation : forall C1 C2, C1 ≡ C2 -> forall R B C1',
+        RChorStep R B C1 C1' -> exists C2', RChorStep R B C2 C2' /\ C1' ≡ C2'.
+  Proof using.
+    intros C1 C2 equiv; induction equiv; intros R B Cstep step;
+      eauto with Chor; repeat match goal with
+                              | [ H : RChorStep ?R ?B ?C1 ?C1' |- _ ] =>
+                                tryif (let x := fresh "fail_" C1 in idtac)
+                                then fail
+                                else inversion H; subst; eauto with Chor; clear H
+                              end.
+    all: try (eexists; split; eauto with Chor; fail).
+    all: repeat match goal with
+                | [IH : forall R B C', RChorStep R B ?C C' -> exists C2', RChorStep R B ?C2 C2' /\ C' ≡ C2', H : RChorStep ?R ?B ?C ?C' |- _ ] =>
+                  lazymatch goal with
+                  | [ _ : RChorStep R B C2 ?C2', _ : C' ≡ ?C2' |- _] => fail
+                  | _ => let H' := fresh in
+                        let C2 := fresh "C" in
+                        let step := fresh "step" in
+                        let eqv := fresh "eqv" in
+                        pose proof (IH R B C' H) as H'; destruct H' as [C2 [step eqv]]
+                  end
+                end; eauto with Chor.
+    apply RetEquivInversion in equiv1; subst; eexists; split; eauto with Chor.
+    all: try (exfalso; eapply NoIStepInList; eauto; eauto with Chor; InList; fail).
+    all: try (eexists; split; [repeat econstructor |]; eauto with Chor; try NotInList; auto; try (eapply RStepRearrange; eauto with Chor; intros q; split; unfold In; intro i; tauto); fail).
+    - exists (l1 ⟪e⟫ → l2 fby C [ce|SendExprSubst l4 e']); split; eauto with Chor.
+      pose proof (SendVStep l3 l4 e' (l1 ⟪e⟫ → l2 fby C) B ltac:(NotInList) ltac:(NotInList) H13 H14) as H3; cbn in H3.
+      unfold SendExprSubst in H3 at 1; destruct (L.eq_dec l4 l1) as [eq|_]; [destruct (H0 (eq_sym eq))|].
+      fold ExprIdSubst in H3; rewrite ExprIdentitySubstSpec in H3.
+      rewrite ChorExprSubstExt with (σ2 := SendExprSubst l4 e') in H3; auto.
+      intros p n; unfold ChorUpExprSubst. unfold SendExprSubst.
+      destruct (L.eq_dec l2 p) as [eq1 | neq1]; destruct(L.eq_dec l4 p) as [eq2 |neq2];
+        subst; try match goal with
+                   | [H : ?a <> ?a |- _ ] => destruct (H eq_refl)
+                   end.
+      destruct n; cbn; auto; apply ExprRenameVar.
+      all: reflexivity.
+    - exists (l3 ⟪e'⟫ → l4 fby (C [ce|SendExprSubst l2 e])); split; auto with Chor.
+      cbn; unfold SendExprSubst at 1;
+        destruct (L.eq_dec l2 l3) as [eq |_]; [destruct (H1 eq)|].
+      fold ExprIdSubst; rewrite ExprIdentitySubstSpec.
+      rewrite ChorExprSubstExt with (σ2 := SendExprSubst l2 e); auto with Chor.
+      intros p n; unfold ChorUpExprSubst; unfold SendExprSubst.
+      destruct (L.eq_dec l4 p); destruct (L.eq_dec l2 p); subst;
+        try (match goal with | [ H : ?a <> ?a |- _ ] => destruct (H eq_refl) end).
+      1,2: destruct n; cbn; auto. rewrite ExprRenameVar; reflexivity. reflexivity.
+    - exists (Cond l3 ⦃ e' ⦄ Then C1 [ce|SendExprSubst l2 e] Else C2 [ce|SendExprSubst l2 e]);
+        split; auto with Chor.
+      cbn; unfold SendExprSubst at 1;
+        destruct (L.eq_dec l2 l3) as [eq|_]; [destruct (H0 eq)|].
+      fold ExprIdSubst; rewrite ExprIdentitySubstSpec; reflexivity.
+    - exists ((Cond l1 ⦃ e ⦄ Then C1 Else C2) [ce|SendExprSubst l3 e']); split; auto with Chor.
+      apply SendVStep; try NotInList; auto.
+      cbn; unfold SendExprSubst at 3; destruct (L.eq_dec l3 l1) as [eq | _];
+        [destruct (H0 (eq_sym eq))|].
+      fold ExprIdSubst; rewrite ExprIdentitySubstSpec; reflexivity.
   Qed.
 
   Inductive StdChorStep : Chor -> Chor -> Prop :=
-  | StdDoneEStep : forall (p : L.t) (e1 e2 : Expr),
+  | StdDoneEStep : forall (l : Loc) (e1 e2 : Expr),
       ExprStep e1 e2
-      -> StdChorStep (CDone p e1) (CDone p e2)
-  | StdSendEStep : forall (p q : L.t) (e1 e2 : Expr) (C : Chor),
+      -> StdChorStep (Done l e1) (Done l e2)
+  | StdSendEStep : forall (l1 l2 : Loc) (e1 e2 : Expr) (C : Chor),
       ExprStep e1 e2
-      -> p <> q
-      -> StdChorStep (CSend p e1 q C) (CSend p e2 q C)
-  | StdSendVStep : forall (p q : L.t) (v : Expr) (C : Chor),
+      -> l1 <> l2
+      -> StdChorStep (Send l1 e1 l2 C) (Send l1 e2 l2 C)
+  | StdSendVStep : forall (l1 l2 : Loc) (v : Expr) (C : Chor),
       ExprVal v
-      -> p <> q
-      -> StdChorStep (CSend p v q C) (C [c| ChorIdSubst; SendSubst q v])
-  | StdIfEStep : forall (p : L.t) (e1 e2 : Expr) (C1 C2 : Chor),
+      -> l1 <> l2
+      -> StdChorStep (Send l1 v l2 C) (C [ce| SendExprSubst l2 v])
+  | StdIfEStep : forall (l : Loc) (e1 e2 : Expr) (C1 C2 : Chor),
       ExprStep e1 e2
-      -> StdChorStep (CIf p e1 C1 C2) (CIf p e2 C1 C2)
-  | StdIfTrueStep : forall (p : L.t) (C1 C2 : Chor),
-      StdChorStep (CIf p tt C1 C2) C1
-  | StdIfFalseStep : forall (p : L.t) (C1 C2 : Chor),
-      StdChorStep (CIf p ff C1 C2) C2
-  | StdCDefStep : forall (C1 C2 : Chor),
-      StdChorStep (CDef C1 C2) (C2 [c| DefSubst C1; ExprChorIdSubst])
+      -> StdChorStep (If l e1 C1 C2) (If l e2 C1 C2)
+  | StdIfTrueStep : forall (l : Loc) (C1 C2 : Chor),
+      StdChorStep (If l tt C1 C2) C1
+  | StdIfFalseStep : forall (l : Loc) (C1 C2 : Chor),
+      StdChorStep (If l ff C1 C2) C2
+  | StdSyncStep : forall (l1 l2 : Loc) (d : LRChoice) (C : Chor),
+      StdChorStep (Sync l1 d l2 C) C
+  | StdDefLocalIStep : forall (l : Loc) (C1 C1' C2 : Chor),
+      StdChorStep C1 C1' -> StdChorStep (DefLocal l C1 C2) (DefLocal l C1' C2)
+  | StdDefLocalStep : forall (l : Loc) (v : Expr) (C : Chor),
+      ExprVal v ->
+      StdChorStep (DefLocal l (Done l v) C) (C [ce|SendExprSubst l v])
+  | StdDefStep : forall (C1 C2 : Chor),
+      StdChorStep (DefGlobal C1 C2) (C2 [c| DefSubst C1])
   | StdEquivStep : forall (C1 C1' C2 C2' : Chor),
       C1 ≡ C1'
       -> StdChorStep C1' C2'
       -> C2 ≡ C2'
       -> StdChorStep C1 C2.
-  Hint Constructors StdChorStep : StdChor.
+  Hint Constructors StdChorStep : Chor.
 
   Theorem StdToRStep : forall (C1 C2 : Chor),
       StdChorStep C1 C2
       -> exists R C2', C2 ≡ C2' /\ RChorStep R nil C1 C2'.
-  Proof.
+  Proof using.
     intros C1 C2 stdstep; induction stdstep.
-    all:try ( eexists; eexists; split; [reflexivity | constructor; auto]).
-    rename H into equiv1; rename H0 into equiv2;
-      destruct IHstdstep as [R H]; destruct H as [C2'' H]; destruct H as [equiv2' step].
-    destruct (EquivSimulation _ C1 (chorEquivSym _ _ equiv1) _ _ _ step) as [C2''' H];
-      destruct H as [step' equiv2''].
-    exists R; exists C2'''; split; auto.
-    transitivity C2'; auto. transitivity C2''; auto.
+    all:try ( eexists; eexists; split; [reflexivity | constructor; auto]; fail).
+    - destruct IHstdstep as [R [C2' [equiv step]]].
+      exists R; exists (LetLocal l ⟪new⟫ ← C2' fby C2); split; auto with Chor.
+    - destruct IHstdstep as [R [C2'' [equiv step]]].
+      destruct (EquivSimulation C1' C1 ltac:(auto with Chor) R [] C2'' step) as [C2''' [step' equiv']].
+      exists R; exists C2'''; split; auto with Chor. transitivity C2'; auto; transitivity C2''; auto.
   Qed.
 
   Inductive RedexOnTop : Redex -> Chor -> Prop :=
-  | DoneOnTop : forall p e1 e2, RedexOnTop (RDone p e1 e2) (CDone p e1)
-  | SendEOnTop : forall p e1 e2 q C, RedexOnTop (RSendE p e1 e2 q) (CSend p e1 q C)
-  | SendVOnTop : forall p v q C, RedexOnTop (RSendV p v q) (CSend p v q C)
-  | IfEOnTop : forall p e1 e2 C1 C2, RedexOnTop (RIfE p e1 e2) (CIf p e1 C1 C2)
-  | IfTTOnTop : forall p C1 C2, RedexOnTop (RIfTT p) (CIf p tt C1 C2)
-  | IfFFOnTop : forall p C1 C2, RedexOnTop (RIfFF p) (CIf p ff C1 C2)
-  | DefOnTop : forall C1 C2, RedexOnTop RDef (CDef C1 C2).
-  Hint Constructors RedexOnTop : StdChor.
+  | DoneOnTop : forall p e1 e2, RedexOnTop (RDone p e1 e2) (Done p e1)
+  | SendEOnTop : forall p e1 e2 q C, RedexOnTop (RSendE p e1 e2 q) (Send p e1 q C)
+  | SendVOnTop : forall p v q C, RedexOnTop (RSendV p v q) (Send p v q C)
+  | IfEOnTop : forall p e1 e2 C1 C2, RedexOnTop (RIfE p e1 e2) (If p e1 C1 C2)
+  | IfTTOnTop : forall p C1 C2, RedexOnTop (RIfTT p) (If p tt C1 C2)
+  | IfFFOnTop : forall p C1 C2, RedexOnTop (RIfFF p) (If p ff C1 C2)
+  | SyncOnTop : forall p d q C, RedexOnTop (RSync p d q) (Sync p d q C)
+  | IDefLocalOntop : forall l C1 C2 R, RedexOnTop R C1 -> RedexOnTop R (DefLocal l C1 C2)
+  | DefLocalOnTop : forall l e C, RedexOnTop (RDefLocal l e) (DefLocal l (Done l e) C)
+  | DefGlobalOnTop : forall C1 C2, RedexOnTop RDefGlobal (DefGlobal C1 C2).
+  Hint Constructors RedexOnTop : Chor.
 
-  Lemma RStepOnTop : forall (R : Redex) (B : list L.t) (C1 C2 : Chor),
+  Lemma RStepOnTop : forall (R : Redex) (B : list Loc) (C1 C2 : Chor),
       RChorStep R B C1 C2 ->
       exists C1' C2', C1 ≡ C1' /\ C2 ≡ C2' /\ RChorStep R B C1' C2' /\ RedexOnTop R C1'.
-  Proof.
+  Proof using.
     intros R B C1 C2 step; induction step.
-    all: try(eexists; eexists; split; [|split; [|split]]; eauto with Chor StdChor; fail).
-    - destruct IHstep as [C1' H]; destruct H as [C2' H]; destruct H as [equiv1 H];
-        destruct H as [equiv2 H]; destruct H as [step' ontop].
+    all: try(eexists; eexists; split; [|split; [|split]]; eauto with Chor; fail).
+    - destruct IHstep as [C1' [C2' [equiv1 [equiv2 [step' ontop]]]]].
       destruct R; inversion ontop; subst.
-      all: inversion step'; subst; try (rename t into r); try (rename t0 into s).
-      all: try (match goal with
-                | [H : RChorStep (?RC ?q ?e1 ?e2 ?r) (?q :: ?B') ?C1' ?C2' |- _] =>
-                  apply NoIStepInList with (p := q) in H;
-                  [destruct H | left; reflexivity | constructor]
-                | [H : RChorStep (?RC ?q ?e1 ?r) (?q :: ?B') ?C1' ?C2' |- _] =>
-                  apply NoIStepInList with (p := q) in H;
-                  [destruct H | left; reflexivity | constructor]
-                | [H : RChorStep (?RC ?q ?e) (?q :: ?B') ?C1' ?C2' |- _] =>
-                  apply NoIStepInList with (p := q) in H;
-                  [destruct H | left; reflexivity | constructor]
-                | [H : RChorStep (?RC ?q) (?q :: ?B') ?C1' ?C2' |- _] =>
-                  apply NoIStepInList with (p := q) in H;
-                  [destruct H | left; reflexivity | constructor]
-                end).
-      -- exists (CIf r e0 (CSend p e q C0) (CSend p e q C3)).
-         exists (CIf r e1 (CSend p e q C0) (CSend p e q C3)).
-         split; [|split;[|split]]; auto with Chor StdChor.
-         --- transitivity (CSend p e q (CIf r e0 C0 C3)); auto with Chor.
-             apply SwapIfSend; auto with Chor; ListHelper. 
-         --- transitivity (CSend p e q (CIf r e1 C0 C3)); auto with Chor.
-             apply SwapIfSend; auto with Chor; ListHelper.
-         --- constructor; auto; ListHelper.
-      -- exists (CIf r tt (CSend p e q C2') (CSend p e q C3));
-           exists (CSend p e q C2');
-           split; [| split; [| split]]; auto with Chor StdChor.
-         --- transitivity (CSend p e q (CIf r tt C2' C3)); auto with Chor. apply SwapIfSend; auto with Chor; ListHelper. 
-         --- apply IfTrueStep; ListHelper. 
-      -- exists (CIf r ff (CSend p e q C0) (CSend p e q C2'));
-           exists (CSend p e q C2');
-           split; [| split; [| split]]; auto with Chor StdChor.
-         --- transitivity (CSend p e q (CIf r ff C0 C2')); auto with Chor.
-             apply SwapIfSend; auto with Chor; ListHelper. 
-         --- apply IfFalseStep; ListHelper. 
-      -- exists (CSend r e0 s (CSend p e q C));
-           exists (CSend r e1 s (CSend p e q C));
-           split; [| split; [| split]]; auto with Chor StdChor.
-         --- transitivity (CSend p e q (CSend r e0 s C)); auto with Chor.
-             apply SwapSendSend; auto with Chor; ListHelper.
-         --- transitivity (CSend p e q (CSend r e1 s C)); auto with Chor.
-              apply SwapSendSend; auto with Chor; ListHelper.
-         --- apply SendEStep; auto; ListHelper.
-      -- exists (CSend r e0 s (CSend p e q C));
-           exists (CSend p e q C [c| ChorIdSubst; SendSubst s e0]);
-           split; [| split; [| split]]; auto with Chor StdChor.
-         --- transitivity (CSend p e q (CSend r e0 s C)); auto with Chor.
-             apply SwapSendSend; auto with Chor; ListHelper.
-         ---  simpl. unfold SendSubst at 1.
-             destruct (L.eq_dec s p) as [eq | _]; [subst; ListHelper|].
-             fold ExprIdSubst. rewrite ExprIdentitySubstSpec.
-             assert (C [c|ChorIdSubst; SendSubst s e0]
-                     = C [c|SendUpChorSubst ChorIdSubst q;
-                            ChorUpExprSubst (SendSubst s e0) q]) as H
-             by (apply ChorSubstExt;
-                 [intro n; symmetry; apply SendUpChorIdSubst
-                 |intros p5 n; symmetry; apply UpSendSubst; ListHelper]).
-             rewrite <- H; auto with Chor.
-         --- apply SendVStep; auto with Chor; ListHelper.
-    - destruct IHstep1 as [C1' H]; destruct H as [C3' H]; destruct H as [equiv1 H];
-        destruct H as [equiv3 H]; destruct H as [step13 ontop1].
-      destruct IHstep2 as [C2' H]; destruct H as [C4' H]; destruct H as [equiv2 H];
-        destruct H as [equiv4 H]; destruct H as [step24 ontop2].
-      destruct R; inversion ontop1; inversion ontop2; subst; inversion step13; subst; inversion step24; subst.
-      all: try (match goal with
-                | [H : RChorStep (?RC ?q ?e1 ?e2 ?r) (?q :: ?B') ?C1' ?C2' |- _] =>
-                  apply NoIStepInList with (p := q) in H;
-                  [destruct H | left; reflexivity | constructor]
-                | [H : RChorStep (?RC ?q ?e ?r) (?q :: ?B') ?C1' ?C2' |- _] =>
-                  apply NoIStepInList with (p := q) in H;
-                  [destruct H | left; reflexivity | constructor]
-                | [H : RChorStep (?RC ?q ?e) (?q :: ?B') ?C1' ?C2' |- _] =>
-                  apply NoIStepInList with (p := q) in H;
-                  [destruct H | left; reflexivity | constructor]
-                | [H : RChorStep (?RC ?q) (?q :: ?B') ?C1' ?C2' |- _] =>
-                  apply NoIStepInList with (p := q) in H;
-                  [destruct H | left; reflexivity | constructor]
-                end).
-      all: try (rename t into r); try (rename t0 into s).
-      -- exists (CIf r e0 (CIf p e C0 C6) (CIf p e C5 C7));
-           exists (CIf r e1 (CIf p e C0 C6) (CIf p e C5 C7));
-           split; [| split; [| split]]; auto with Chor StdChor.
-         --- transitivity (CIf p e (CIf r e0 C0 C5) (CIf r e0 C6 C7)); auto with Chor.
-             apply SwapIfIf; auto with Chor; ListHelper.
-         --- transitivity (CIf p e (CIf r e1 C0 C5) (CIf r e1 C6 C7)); auto with Chor.
-             apply SwapIfIf; auto with Chor; ListHelper.
-         --- apply IfEStep; auto with Chor; ListHelper.
-      -- exists (CIf r tt (CIf p e C3' C4') (CIf p e C5 C7));
-           exists (CIf p e C3' C4');
-           split; [| split; [| split]]; auto with Chor StdChor.
-         --- transitivity (CIf p e (CIf r tt C3' C5) (CIf r tt C4' C7)); auto with Chor; apply SwapIfIf; auto with Chor; ListHelper.
-         --- apply IfTrueStep; ListHelper. 
-      -- exists (CIf r ff (CIf p e C0 C6) (CIf p e C3' C4'));
-           exists (CIf p e C3' C4');
-           split; [| split; [| split]]; auto with Chor StdChor.
-         --- transitivity (CIf p e (CIf r ff C0 C3') (CIf r ff C6 C4')); auto with Chor; apply SwapIfIf; auto with Chor; ListHelper.
-         --- apply IfFalseStep; ListHelper. 
-      -- exists (CSend r e0 s (CIf p e C C0));
-           exists (CSend r e1 s (CIf p e C C0));
-           split; [| split; [| split]]; auto with Chor StdChor.
-         --- transitivity (CIf p e (CSend r e0 s C) (CSend r e0 s C0)); auto with Chor.
-             apply SwapSendIf; auto with Chor; ListHelper.
-         --- transitivity (CIf p e (CSend r e1 s C) (CSend r e1 s C0)); auto with Chor.
-             apply SwapSendIf; auto with Chor; ListHelper.
-         --- apply SendEStep; auto; ListHelper.
-      -- exists (CSend r e0 s (CIf p e C C0));
-           exists (CIf p e C C0 [c|ChorIdSubst; SendSubst s e0]);
-           split; [| split; [| split]]; auto with Chor StdChor.
-         --- transitivity (CIf p e (CSend r e0 s C) (CSend r e0 s C0)); auto with Chor.
-             apply SwapSendIf; auto with Chor; ListHelper.
-         --- transitivity (CIf p e (C [c|ChorIdSubst; SendSubst s e0]) (C0 [c|ChorIdSubst; SendSubst s e0])); auto with Chor.
-             simpl. unfold SendSubst at 3.
-             destruct (L.eq_dec s p) as [eq | _]; 
-               [subst; ListHelper |].
-             fold ExprIdSubst. rewrite ExprIdentitySubstSpec. reflexivity.
-         --- apply SendVStep; auto; ListHelper.
+      all: inversion step'; subst.
+      all: try (exfalso; eapply NoIStepInList; eauto; eauto with Chor; InList; fail).
+      -- exists (If l e0 (Send l1 e l2 C0) (Send l1 e l2 C3)).
+         exists (If l e1 (Send l1 e l2 C0) (Send l1 e l2 C3)).
+         split; [|split;[|split]]; auto with Chor.
+         --- transitivity (Send l1 e l2 (If l e0 C0 C3)); auto with Chor.
+             apply SwapSendIf; auto with Chor; NotInList; auto.
+         --- transitivity (Send l1 e l2 (If l e1 C0 C3)); auto with Chor.
+             apply SwapSendIf; auto with Chor; NotInList; auto.
+         --- constructor; auto; NotInList.
+      -- exists (If l tt (Send l1 e l2 C2') (Send l1 e l2 C3));
+           exists (Send l1 e l2 C2');
+           split; [| split; [| split]]; auto with Chor.
+         --- transitivity (Send l1 e l2 (If l tt C2' C3)); auto with Chor.
+             apply SwapSendIf; auto with Chor; NotInList; auto.
+         --- apply IfTrueStep; NotInList; auto.
+      -- exists (If l ff (Send l1 e l2 C0) (Send l1 e l2 C2'));
+           exists (Send l1 e l2 C2');
+           split; [| split; [| split]]; auto with Chor.
+         --- transitivity (Send l1 e l2 (If l ff C0 C2')); auto with Chor.
+             apply SwapSendIf; auto with Chor; NotInList; auto.
+         --- apply IfFalseStep; NotInList; auto.
+      -- exists (Send l e0 l0 (Send l1 e l2 C));
+           exists (Send l e1 l0 (Send l1 e l2 C));
+           split; [| split; [| split]]; auto with Chor.
+         --- transitivity (Send l1 e l2 (Send l e0 l0 C)); auto with Chor.
+             apply SwapSendSend; auto with Chor; NotInList; auto.
+         --- transitivity (Send l1 e l2 (Send l e1 l0 C)); auto with Chor.
+              apply SwapSendSend; auto with Chor; NotInList; auto.
+         --- apply SendEStep; auto; NotInList; auto.
+      -- exists (Send l e0 l0 (Send l1 e l2 C));
+           exists (Send l1 e l2  C [ce| SendExprSubst l0 e0]);
+           split; [| split; [| split]]; auto with Chor.
+         --- transitivity (Send l1 e l2 (Send l e0 l0 C)); auto with Chor.
+             apply SwapSendSend; auto with Chor; NotInList; auto.
+         ---  simpl. unfold SendExprSubst at 1.
+              destruct (L.eq_dec l0 l1) as [eq | _];
+                [subst; NotInList; match goal with
+                                     [H : ?a <> ?a |- _ ] => destruct (H eq_refl)
+                                   end|].
+              fold ExprIdSubst; rewrite ExprIdentitySubstSpec.
+              assert (C [ce|SendExprSubst l0 e0]
+                      = C [ce|ChorUpExprSubst (SendExprSubst l0 e0) l2]) as H
+                  by (apply ChorExprSubstExt;
+                      intros p5 n; symmetry; apply UpSendExprSubst; NotInList; auto).
+              rewrite <- H; auto with Chor.
+         --- apply SendVStep; auto with Chor; NotInList; auto.
+      -- rename l0 into d; rename l3 into l0; exists (Sync l d l0 (Send l1 e l2 C2')); exists (Send l1 e l2 C2'); split; [|split; [|split]]; eauto with Chor.
+         --- transitivity (Send l1 e l2 (Sync l d l0 C2')); eauto with Chor. apply SwapSendSync; auto with Chor; NotInList; auto.
+         --- apply SyncStep; intro i; [apply H5 | apply H6]; right; right; auto.
+    - destruct IHstep1 as [C1' [C3' [equiv1 [equiv3 [step13 ontop1]]]]].
+      destruct IHstep2 as [C2' [C4' [equiv2 [equiv4 [step24 ontop2]]]]].
+      destruct R; inversion ontop1; subst; inversion ontop2; subst; inversion step13; subst; inversion step24; subst.
+      all: try (exfalso; eapply NoIStepInList; eauto; eauto with Chor; InList; fail).
+      -- exists (If l e0 (If l1 e C0 C6) (If l1 e C5 C7));
+           exists (If l e1 (If l1 e C0 C6) (If l1 e C5 C7));
+           split; [| split; [| split]]; auto with Chor.
+         --- transitivity (If l1 e (If l e0 C0 C5) (If l e0 C6 C7)); auto with Chor.
+             apply SwapIfIf; auto with Chor; NotInList; auto.
+         --- transitivity (If l1 e (If l e1 C0 C5) (If l e1 C6 C7)); auto with Chor.
+             apply SwapIfIf; auto with Chor; NotInList; auto.
+         --- apply IfEStep; auto with Chor; NotInList; auto.
+      -- exists (If l tt (If l1 e C3' C4') (If l1 e C5 C7));
+           exists (If l1 e C3' C4');
+           split; [| split; [| split]]; auto with Chor.
+         --- transitivity (If l1 e (If l tt C3' C5) (If l tt C4' C7)); auto with Chor; apply SwapIfIf; auto with Chor; NotInList; auto.
+         --- apply IfTrueStep; NotInList; auto.
+      -- exists (If l ff (If l1 e C0 C6) (If l1 e C3' C4'));
+           exists (If l1 e C3' C4');
+           split; [| split; [| split]]; auto with Chor.
+         --- transitivity (If l1 e (If l ff C0 C3') (If l ff C6 C4')); auto with Chor; apply SwapIfIf; auto with Chor; NotInList; auto.
+         --- apply IfFalseStep; NotInList; auto.
+      -- exists (Send l e0 l0 (If l1 e C C0));
+           exists (Send l e1 l0 (If l1 e C C0));
+           split; [| split; [| split]]; auto with Chor.
+         --- transitivity (If l1 e (Send l e0 l0 C) (Send l e0 l0 C0)); auto with Chor.
+             apply SwapIfSend; auto with Chor; NotInList; auto.
+         --- transitivity (If l1 e (Send l e1 l0 C) (Send l e1 l0 C0)); auto with Chor.
+             apply SwapIfSend; auto with Chor; NotInList; auto.
+         --- apply SendEStep; auto; NotInList; auto.
+      -- exists (Send l e0 l0 (If l1 e C C0));
+           exists (If l1 e C C0 [ce|SendExprSubst l0 e0]);
+           split; [| split; [| split]]; auto with Chor.
+         --- transitivity (If l1 e (Send l e0 l0 C) (Send l e0 l0 C0)); auto with Chor.
+             apply SwapIfSend; auto with Chor; NotInList; auto.
+         --- transitivity (If l1 e (C [ce|SendExprSubst l0 e0]) (C0 [ce|SendExprSubst l0 e0])); auto with Chor.
+             simpl. unfold SendExprSubst at 3.
+             destruct (L.eq_dec l0 l1) as [eq | _]; 
+               [subst; NotInList; match goal with [ H : ?a <> ?a |- _] => destruct (H eq_refl) end |].
+             fold ExprIdSubst; rewrite ExprIdentitySubstSpec; reflexivity.
+         --- apply SendVStep; auto; NotInList; auto.
+      -- rename l0 into d; rename l2 into l0; exists (Sync l d l0 (If l1 e C3' C4')); exists (If l1 e C3' C4'); split; [|split; [|split]]; auto with Chor.
+         assert (l1 <> l) by (intro eq; apply H5; left; auto).
+         assert (l1 <> l0) by (intro eq; apply H6; left; auto).
+         transitivity (If l1 e (Sync l d l0 C3') (Sync l d l0 C4')); auto with Chor.
+         apply SyncStep; intro i; [apply H5 | apply H6]; right; auto.
+    - destruct IHstep as [C1'' [C2' [equiv1 [equiv2 [step12 ontop1]]]]].
+      exists (LetLocal l ⟪new⟫ ← C1'' fby C2);
+        exists (LetLocal l ⟪new⟫ ← C2' fby C2);
+        split; [|split; [|split]]; auto with Chor.
+    - destruct IHstep as [C1' [C2' [equiv1 [equiv2 [step12 ontop1]]]]].
+      destruct R; inversion ontop1; subst; inversion ontop1; subst; inversion step12; subst.
+      all: try (exfalso; eapply NoIStepInList; eauto; eauto with Chor; InList; fail).
+      all: NotInList.
+      -- exists (If l e (Sync l1 d l2 C0) (Sync l1 d l2 C3));
+           exists (If l e0 (Sync l1 d l2 C0) (Sync l1 d l2 C3)); split; [|split; [|split]];
+             eauto with Chor.
+      -- exists (If l tt (Sync l1 d l2 C2') (Sync l1 d l2 C3)); exists (Sync l1 d l2 C2'); split; [|split; [|split]]; eauto with Chor.
+      -- exists (If l ff (Sync l1 d l2 C0) (Sync l1 d l2 C2')); exists (Sync l1 d l2 C2'); split; [|split; [|split]]; eauto with Chor.
+      -- exists (Send l e l0 (Sync l1 d l2 C)); exists (Send l e0 l0 (Sync l1 d l2 C));
+           split; [|split; [|split]]; eauto with Chor.
+      -- exists (Send l e l0 (Sync l1 d l2 C)); exists (Sync l1 d l2 C [ce| SendExprSubst l0 e]);
+           split; [|split; [|split]]; eauto with Chor.
+      -- rename l0 into d'. rename l3 into l0. exists (Sync l d' l0 (Sync l1 d l2 C2')); exists (Sync l1 d l2 C2'); split; [|split; [|split]]; eauto with Chor.
   Qed.
 
-  Lemma RStepOnTopToStd : forall (C1 C2 : Chor) (R : Redex) (B : list L.t),
+  Lemma RStepOnTopToStd : forall (C1 C2 : Chor) (R : Redex) (B : list Loc),
       RedexOnTop R C1 ->
       RChorStep R B C1 C2 ->
       StdChorStep C1 C2.
-  Proof.
-    intros C1 C2 R B ontop rstep; induction rstep; inversion ontop;
-      auto with Chor StdChor.
-    - rewrite <- H in ontop. inversion ontop. rewrite <- H in rstep; rewrite H1 in rstep.
-      apply NoSendEIStepInList in rstep; [destruct rstep| left; reflexivity].
-    - rewrite <- H in ontop; inversion ontop. rewrite <- H in rstep; rewrite H1 in rstep.
-      apply NoSendVIStepInList in rstep; [destruct rstep | left; reflexivity].
-    - rewrite <- H in ontop; inversion ontop. rewrite <- H in rstep1; rewrite H1 in rstep1.
-      apply NoIfEIStepInList in rstep1; [destruct rstep1 | left; reflexivity].
-    - rewrite <- H in ontop; inversion ontop. rewrite <- H in rstep1; rewrite H1 in rstep1.
-      apply NoIfTTStepInList in rstep1; [destruct rstep1 | left; reflexivity].
-    - rewrite <- H in ontop; inversion ontop. rewrite <- H in rstep1; rewrite H1 in rstep1.
-      apply NoIfFFStepInList in rstep1; [destruct rstep1 | left; reflexivity].
+  Proof using.
+    intros C1 C2 R B ontop rstep; induction rstep; inversion ontop; subst;
+      eauto with Chor.
+    - apply NoSendEIStepInList1 in rstep; [destruct rstep| left; reflexivity].
+    - apply NoSendVIStepInList1 in rstep; [destruct rstep | left; reflexivity].
+    - apply NoIfEIStepInList in rstep1; [destruct rstep1 | left; reflexivity].
+    - apply NoIfTTStepInList in rstep1; [destruct rstep1 | left; reflexivity].
+    - apply NoIfFFStepInList in rstep1; [destruct rstep1 | left; reflexivity].
+    - inversion rstep.
+    - apply NoSyncStepInList1 in rstep; [destruct rstep | left; reflexivity].
   Qed.
-  Theorem RStepToStd : forall (C1 C2 : Chor) (R : Redex) (B : list L.t),
+  Theorem RStepToStd : forall (C1 C2 : Chor) (R : Redex) (B : list Loc),
       RChorStep R B C1 C2 -> StdChorStep C1 C2.
-  Proof.
+  Proof using.
     intros C1 C2 R B rstep.
     apply RStepOnTop in rstep;
       destruct rstep as [C1' H]; destruct H as [C2' H];
@@ -1184,33 +1212,41 @@ Module Choreography (Import E : Expression) (L : Locations).
     apply RStepOnTopToStd with (R := R) (B := B); auto.
   Qed.
   
-  Fixpoint ThreadNames (C : Chor) : list L.t :=
+  Fixpoint ThreadNames (C : Chor) : list Loc :=
     match C with
-    | CDone p _ => p :: nil
-    | CVar _ => nil
-    | CSend p _ q C' => p :: q :: (ThreadNames C')
-    | CIf p _ C1 C2 => p :: (ThreadNames C1) ++ (ThreadNames C2)
-    | CDef C1 C2 => (ThreadNames C1) ++ (ThreadNames C2)
+    | Done p _ => p :: nil
+    | Var _ => nil
+    | Send p _ q C' => p :: q :: (ThreadNames C')
+    | If p _ C1 C2 => p :: (ThreadNames C1) ++ (ThreadNames C2)
+    | Sync p d q C => p :: q :: ThreadNames C
+    | DefLocal l C1 C2 => l :: (ThreadNames C1) ++ (ThreadNames C2)
+    | DefGlobal C1 C2 => (ThreadNames C1) ++ (ThreadNames C2)
     end.
 
   Reserved Infix "∈TN" (at level 20).
-  Inductive InThreadNames : L.t -> Chor -> Prop :=
-  | InDone : forall p e, p ∈TN (CDone p e)
-  | InSend1 : forall p e q C', p ∈TN (CSend p e q C')
-  | InSend2 : forall p e q C', q ∈TN (CSend p e q C')
-  | InSend3 : forall r p e q C', r ∈TN C' -> r ∈TN (CSend p e q C')
-  | InIf1 : forall p e C1 C2, p ∈TN (CIf p e C1 C2)
-  | InIf2 : forall q p e C1 C2, q ∈TN C1 -> q ∈TN (CIf p e C1 C2)
-  | InIf3 : forall q p e C1 C2, q ∈TN C2 -> q ∈TN (CIf p e C1 C2)
-  | InDef1 : forall p C1 C2, p ∈TN C1 -> p ∈TN (CDef C1 C2)
-  | InDef2 : forall p C1 C2, p ∈TN C2 -> p ∈TN (CDef C1 C2)
+  Inductive InThreadNames : Loc -> Chor -> Prop :=
+  | InDone : forall p e, p ∈TN (Done p e)
+  | InSend1 : forall p e q C', p ∈TN (Send p e q C')
+  | InSend2 : forall p e q C', q ∈TN (Send p e q C')
+  | InSend3 : forall r p e q C', r ∈TN C' -> r ∈TN (Send p e q C')
+  | InIf1 : forall p e C1 C2, p ∈TN (If p e C1 C2)
+  | InIf2 : forall q p e C1 C2, q ∈TN C1 -> q ∈TN (If p e C1 C2)
+  | InIf3 : forall q p e C1 C2, q ∈TN C2 -> q ∈TN (If p e C1 C2)
+  | InSync1 : forall p d q C, p ∈TN (Sync p d q C)
+  | InSync2 : forall p d q C, q ∈TN (Sync p d q C)
+  | InSync3 : forall p d q r C, r ∈TN C -> r ∈TN (Sync p d q C)
+  | InDefL1 : forall p C1 C2, p ∈TN (DefLocal p C1 C2)
+  | InDefL2 : forall p q C1 C2, p ∈TN C1 -> p ∈TN (DefLocal q C1 C2)
+  | InDefL3 : forall p q C1 C2, p ∈TN C2 -> p ∈TN (DefLocal q C1 C2)
+  | InDefG1 : forall p C1 C2, p ∈TN C1 -> p ∈TN (DefGlobal C1 C2)
+  | InDefG2 : forall p C1 C2, p ∈TN C2 -> p ∈TN (DefGlobal C1 C2)
   where "p ∈TN C" := (InThreadNames p C).
 
   Lemma InThreadNamesSpec : forall p C, p ∈TN C <-> In p (ThreadNames C).
-  Proof.
+  Proof using.
     intros p C; revert p; ChorInduction C; intro r; split; intro i; simpl in *.
     all: try (match goal with
-              | [H : ?r ∈TN ?C |- _] => inversion H
+              | [H : ?r ∈TN ?C |- _] => inversion H; subst
               end); auto.
     all: repeat (match goal with
                  | [H : In ?a (?b :: ?l) |- _] => simpl in H
@@ -1218,53 +1254,38 @@ Module Choreography (Import E : Expression) (L : Locations).
                  | [H : ?P \/ ?Q |- _] => destruct H
                  | [H : ?P /\ ?Q |- _] => destruct H
                  | [H : False |- _ ] => destruct H
-                 end).
-    2,6,7: right.
+                 | [ |- ?p = ?q \/ _ ] =>
+                   match p with
+                   | q => left; reflexivity
+                   | _ => right
+                   end
+                 end; subst).
     all: try (rewrite H; constructor; auto; fail).
     all: try (constructor; rewrite IHC; auto; fail).
-    all: try (constructor; rewrite IHC0; auto; fail).
     all: try (constructor; rewrite IHC1; auto; fail).
-    - right; rewrite <- IHC; auto.
-    - apply in_or_app; left; rewrite <- IHC0; exact H1.
-    - apply in_or_app; right; rewrite <- IHC1; exact H1.
-    - apply in_or_app; left; rewrite <- IHC0; exact H1.
-    - apply in_or_app; right; rewrite <- IHC1; exact H1.
+    all: try (constructor; rewrite IHC2; auto; fail).
+    all: try (rewrite <- IHC; auto).
+    all: try (apply in_or_app; left; rewrite <- IHC1; auto; fail).
+    all: apply in_or_app; right; rewrite <- IHC2; auto.
   Qed.             
 
-  Lemma ThreadNamesInvariant' : forall C1 C2 : Chor,
-      C1 ≡' C2 -> forall p : L.t, p ∈TN C1 <-> p ∈TN C2.
-  Proof.
+  Lemma ThreadNamesInvariant : forall C1 C2 : Chor,
+      C1 ≡ C2 -> forall p : Loc, p ∈TN C1 <-> p ∈TN C2.
+  Proof using.
     intros C1 C2 equiv; induction equiv; intros t; split; intros i; auto;
       repeat match goal with
-             | [i : ?p ∈TN (_ _) |- _] => inversion i; clear i
+             | [i : ?p ∈TN (_ _) |- _] => inversion i; subst; clear i
              end.
     all: try (constructor; auto; fail).
+    all: try (constructor; constructor; auto; fail).
     all: try (constructor; apply IHequiv; auto; fail).
-    all: try (constructor; rewrite <- IHequiv; auto; fail).
     all: try (constructor; rewrite IHequiv1; auto; fail).
     all: try (constructor; rewrite <- IHequiv1; auto; fail).
     all: try (constructor; rewrite IHequiv2; auto; fail).
     all: try (constructor; rewrite <- IHequiv2; auto; fail).
-    all: try (constructor; constructor; auto; fail).
-    all: try (constructor; constructor; rewrite IHequiv; auto; fail).
-    all: try (constructor; constructor; rewrite <- IHequiv; auto; fail).
-    all: try (constructor; constructor; rewrite IHequiv1; auto; fail).
-    all: try (constructor; constructor; rewrite <- IHequiv1; auto; fail).
-    all: try (constructor; constructor; rewrite <- IHequiv2; auto; fail).
-    all: try (constructor; constructor; rewrite IHequiv2; auto; fail).
-    - apply InIf2; apply InIf3; apply IHequiv3; exact H8.
-    - apply InIf3; apply InIf3; apply IHequiv4; exact H8.
-    - apply InIf3; apply InIf2; apply IHequiv3; exact H8.
-    - apply InIf3; apply InIf3; apply IHequiv4; exact H8.
+    - apply IHequiv1 in i; apply IHequiv2 in i; exact i.
+    - apply (proj2 (IHequiv1 t)); apply (proj2 (IHequiv2 t)); exact i.
   Qed.
-    
-  Lemma ThreadNamesInvariant : forall C1 C2 : Chor,
-      C1 ≡ C2 -> forall p : L.t, p ∈TN C1 <-> p ∈TN C2.
-  Proof.
-    intros C1 C2 equiv; induction equiv.
-    - intro p; apply ThreadNamesInvariant'; auto.
-    - intro p. apply ThreadNamesInvariant' with (p := p) in H. rewrite H.
-      apply IHequiv.
-  Qed.
-      
+
 End Choreography.
+ 
