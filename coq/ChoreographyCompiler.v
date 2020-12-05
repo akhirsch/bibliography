@@ -933,5 +933,7 @@ Module ChoreographyCompiler (Import E : Expression) (L : Locations) (LM : Locati
   Proof using.
     intros C1 C2 l K eqv; apply EquivToAltEquiv in eqv; apply AEquivProjectToEqual; auto.
   Qed.
+
+  Definition ProjectChorToProc C l K := OptionSequence IProcToProc (ProjectChor C l K).
   
 End ChoreographyCompiler.
