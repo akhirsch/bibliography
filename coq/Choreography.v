@@ -172,6 +172,11 @@ Module Choreography (Import E : Expression) (L : Locations).
     - rewrite IHC1. rewrite ChorExprRenameExtensional with (ξ2 := ChorIdExprRename); [rewrite IHC2| apply ChorUpIdExprRename]; auto.
   Qed.
 
+  Lemma ChorExprRenameSize : forall (C : Chor) (ξ : Loc -> nat -> nat), ChorSize (C ⟨ce| ξ ⟩) = ChorSize C.
+  Proof using.
+    intro C; ChorInduction C; intros ξ; cbn; auto.
+  Qed.
+  
   Definition ChorUpRename : (nat -> nat) -> nat -> nat :=
     fun f n => match n with
             | 0 => 0
@@ -232,7 +237,7 @@ Module Choreography (Import E : Expression) (L : Locations).
     reflexivity.
     all: intro n; unfold ChorUpRename; destruct n; auto.
   Qed.
-      
+
   Definition ChorUpExprSubst : (Loc -> nat -> Expr) -> Loc -> Loc -> nat -> Expr :=
     fun σ p q n =>
       if L.eq_dec p q then
@@ -322,6 +327,12 @@ Module Choreography (Import E : Expression) (L : Locations).
     - rewrite ChorExprSubstExt with (σ1 := fun p n => ExprVar (ChorUpExprRename ξ l p n )) (σ2 := ChorUpExprSubst (fun p n => ExprVar (ξ p n)) l); [reflexivity|].
       intros p n; unfold ChorUpExprSubst; unfold ChorUpExprRename; destruct (L.eq_dec l p); destruct n; auto.
       unfold ExprUpRename; rewrite ExprRenameVar; reflexivity.
+  Qed.
+
+  Theorem ChorExprSubstSize : forall (C : Chor) (σ : Loc -> nat -> Expr),
+      ChorSize (C [ce| σ]) = ChorSize C.
+  Proof using.
+    intro C; ChorInduction C; intro σ; cbn; auto.
   Qed.
 
   Definition ChorUpSubst : (nat -> Chor) -> nat -> Chor :=

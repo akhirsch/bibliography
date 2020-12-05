@@ -1,10 +1,8 @@
 Require Export Expression.
 Require Export Locations.
-Require Export AnnotatedChoreography.
+Require Export Choreography.
 Require Export PiCalc.
 Require Import LocationMap.
-Require Import LocationSets.
-
 
 Require Import Coq.Arith.Arith.
 Require Import Coq.Program.Wf.
@@ -18,18 +16,16 @@ Require Import Psatz.
 
 From Equations Require Import Equations.
 
-
-Module AChoreographyCompiler (Import E : Expression) (L : Locations) (LM : LocationMap L) (LSorter : LocationSorter L).
+Module ChoreographyCompiler (Import E : Expression) (L : Locations) (LM : LocationMap L).
   Include (LocationNotations L).
   Include ListNotations.
 
-  Module LS := LocationSets L LSorter.
   Module LF := (LocationFacts L).
+  Module C := (Choreography E L).
   Module P := (PiCalc E L).
-  Module A := (AnnotatedChoreography E L).
   Module LMF := (LocationMapFacts L LM).
-    
-  Definition Loc := L.t.
+
+  Import C.
 
 
   Inductive IProc : Set := (* Intermediate language for process calculus. Can contain partial IChoices *)
@@ -331,105 +327,6 @@ Module AChoreographyCompiler (Import E : Expression) (L : Locations) (LM : Locat
       | _ => None
       end
     end.
-  (* Equations MergeIProcs (P Q : IProc) : option IProc := *)
-  (*   { *)
-  (*     MergeIProcs EndProc EndProc := Some EndProc; *)
-  (*     MergeIProcs (VarProc x) (VarProc y) with Nat.eq_dec x y := *)
-  (*       { *)
-  (*       MergeIProcs (VarProc x) (VarProc y) (left eq1) := Some (VarProc x); *)
-  (*       MergeIProcs (VarProc x) (VarProc y) (right neq1) := None *)
-  (*       }; *)
-  (*     MergeIProcs (SendProc p e P) (SendProc q e' Q) with L.eq_dec p q, ExprEqDec e e', MergeIProcs P Q := *)
-  (*       { *)
-  (*       MergeIProcs (SendProc p e P) (SendProc q e' Q) (left eq1) (left eq2) (Some P') := Some (SendProc p e P'); *)
-  (*       MergeIProcs (SendProc p e P) (SendProc q e' Q) (left eq1) (left eq2) None := None; *)
-  (*       MergeIProcs (SendProc p e P) (SendProc q e' Q) (left eq1) (right neq2) _ := None; *)
-  (*       MergeIProcs (SendProc p e P) (SendProc q e' Q) (right neq1) (left neq2) _ := None; *)
-  (*       MergeIProcs (SendProc p e P) (SendProc q e' Q) (right neq1) (right neq2) _ := None *)
-  (*       }; *)
-  (*     MergeIProcs (RecvProc p P) (RecvProc q Q) with L.eq_dec p q, MergeIProcs P Q := *)
-  (*       { *)
-  (*       MergeIProcs (RecvProc p P) (RecvProc q Q) (left eq1) (Some P') := Some (RecvProc p P'); *)
-  (*       MergeIProcs (RecvProc p P) (RecvProc q Q) (left eq1) None := None; *)
-  (*       MergeIProcs (RecvProc p P) (RecvProc q Q) (right neq1) _ := None *)
-  (*       }; *)
-  (*     MergeIProcs (EChoiceL p P) (EChoiceL q Q) with L.eq_dec p q, MergeIProcs P Q := *)
-  (*       { *)
-  (*       MergeIProcs (EChoiceL p P) (EChoiceL q Q) (left eq1) (Some P') := Some (EChoiceL p P'); *)
-  (*       MergeIProcs (EChoiceL p P) (EChoiceL q Q) (left eq1) None := None; *)
-  (*       MergeIProcs (EChoiceL p P) (EChoiceL q Q) (right neq2) _ := None *)
-  (*       }; *)
-  (*     MergeIProcs (EChoiceR p P) (EChoiceR q Q) with L.eq_dec p q, MergeIProcs P Q := *)
-  (*       { *)
-  (*       MergeIProcs (EChoiceR p P) (EChoiceR q Q) (left eq1) (Some P') := Some (EChoiceR p P'); *)
-  (*       MergeIProcs (EChoiceR p P) (EChoiceR q Q) (left eq1) None := None; *)
-  (*       MergeIProcs (EChoiceR p P) (EChoiceR q Q) (right neq1) _ := None *)
-  (*       }; *)
-  (*     MergeIProcs (IChoiceL p P) (IChoiceL q Q) with L.eq_dec p q, MergeIProcs P Q := *)
-  (*       { *)
-  (*       MergeIProcs (IChoiceL p P) (IChoiceL q Q) (left eq1) (Some P') := Some (IChoiceL p P'); *)
-  (*       MergeIProcs (IChoiceL p P) (IChoiceL q Q) (left eq1) None := None; *)
-  (*       MergeIProcs (IChoiceL p P) (IChoiceL q Q) (right neq1) _ := None *)
-  (*       }; *)
-  (*     MergeIProcs (IChoiceR p P) (IChoiceR q Q) with L.eq_dec p q, MergeIProcs P Q := *)
-  (*       { *)
-  (*       MergeIProcs (IChoiceR p P) (IChoiceR q Q) (left eq1) (Some P') := Some (IChoiceR p P'); *)
-  (*       MergeIProcs (IChoiceR p P) (IChoiceR q Q) (left eq1) None := None; *)
-  (*       MergeIProcs (IChoiceR p P) (IChoiceR q Q) (right neq1) _ := None *)
-  (*       }; *)
-  (*     MergeIProcs (IChoiceL p P) (IChoiceR q Q) with L.eq_dec p q := *)
-  (*       { *)
-  (*       MergeIProcs (IChoiceL p P) (IChoiceR q Q) (left eq1) := Some (IChoiceLR p P Q); *)
-  (*       MergeIProcs (IChoiceL p P) (IChoiceR q Q) (right neq1) := None *)
-  (*       }; *)
-  (*     MergeIProcs (IChoiceR p P) (IChoiceL q Q) with L.eq_dec p q := *)
-  (*       { *)
-  (*       MergeIProcs (IChoiceR p P) (IChoiceL q Q) (left eq1) := Some (IChoiceLR p Q P); *)
-  (*       MergeIProcs (IChoiceR p P) (IChoiceL q Q) (right neq1) := None *)
-  (*       }; *)
-  (*     MergeIProcs (IChoiceL p P) (IChoiceLR q P' Q') with L.eq_dec p q, MergeIProcs P P' := *)
-  (*       { *)
-  (*       MergeIProcs (IChoiceL p P) (IChoiceLR q P' Q') (left eq1) (Some P'') := Some (IChoiceLR p P'' Q'); *)
-  (*       MergeIProcs (IChoiceL p P) (IChoiceLR q P' Q') (left eq1) None := None; *)
-  (*       MergeIProcs (IChoiceL p P) (IChoiceLR q P' Q') (right neq1) _ := None *)
-  (*       }; *)
-  (*     MergeIProcs (IChoiceLR p P Q) (IChoiceL q P') with L.eq_dec p q, MergeIProcs P P' := *)
-  (*       { *)
-  (*       MergeIProcs (IChoiceLR p P Q) (IChoiceL q P') (left eq1) (Some P'') := Some (IChoiceLR p P'' Q); *)
-  (*       MergeIProcs (IChoiceLR p P Q) (IChoiceL q P') (left eq1) None := None; *)
-  (*       MergeIProcs (IChoiceLR p P Q) (IChoiceL q P') (right neq1) _ := None *)
-  (*       }; *)
-  (*     MergeIProcs (IChoiceR p Q) (IChoiceLR q P' Q') with L.eq_dec p q, MergeIProcs Q Q' := *)
-  (*       { *)
-  (*       MergeIProcs (IChoiceR p Q) (IChoiceLR q P' Q') (left eq1) (Some Q'') := Some (IChoiceLR p P' Q''); *)
-  (*       MergeIProcs (IChoiceR p Q) (IChoiceLR q P' Q') (left eq1) None := None; *)
-  (*       MergeIProcs (IChoiceR p Q) (IChoiceLR q P' Q') (right neq1) _ := None *)
-  (*       }; *)
-  (*     MergeIProcs (IChoiceLR p P Q) (IChoiceR q Q') with L.eq_dec p q, MergeIProcs Q Q' := *)
-  (*       { *)
-  (*       MergeIProcs (IChoiceLR p P Q) (IChoiceR q Q') (left eq1) (Some Q'') := Some (IChoiceLR p P Q''); *)
-  (*       MergeIProcs (IChoiceLR p P Q) (IChoiceR q Q') (left eq1) None := None; *)
-  (*       MergeIProcs (IChoiceLR p P Q) (IChoiceR q Q') (right neq1) _ := None *)
-  (*       }; *)
-  (*     MergeIProcs (IChoiceLR p P Q) (IChoiceLR q P' Q') with L.eq_dec p q, MergeIProcs P P', MergeIProcs Q Q' := *)
-  (*       { *)
-  (*       MergeIProcs (IChoiceLR p P Q) (IChoiceLR q P' Q') (left eq1) (Some P'') (Some Q'') := Some (IChoiceLR p P'' Q''); *)
-  (*       MergeIProcs (IChoiceLR p P Q) (IChoiceLR q P' Q') (left eq1) _ _ := None; *)
-  (*       MergeIProcs (IChoiceLR p P Q) (IChoiceLR q P' Q') (right neq1) _ _ := None *)
-  (*       }; *)
-  (*     MergeIProcs (IfThenElse e P Q) (IfThenElse e' P' Q') with ExprEqDec e e', MergeIProcs P P', MergeIProcs Q Q' := *)
-  (*       { *)
-  (*       MergeIProcs (IfThenElse e P Q) (IfThenElse e' P' Q') (left eq1) (Some P'') (Some Q'') := Some (IfThenElse e P'' Q''); *)
-  (*       MergeIProcs (IfThenElse e P Q) (IfThenElse e' P' Q') (left eq1) _ _ := None; *)
-  (*       MergeIProcs (IfThenElse e P Q) (IfThenElse e' P' Q') (right neq1) _ _ := None *)
-  (*       }; *)
-  (*     MergeIProcs (DefProc P1 Q1) (DefProc P2 Q2) with MergeIProcs P1 P2, MergeIProcs Q1 Q2 := *)
-  (*       { *)
-  (*       MergeIProcs (DefProc P1 Q1) (DefProc P2 Q2) (Some P) (Some Q) := Some (DefProc P Q); *)
-  (*       MergeIProcs (DefProc P1 Q1) (DefProc P2 Q2) _ _ := None *)
-  (*       }; *)
-  (*     MergeIProcs _ _ := None *)
-  (*   }. *)
 
   Lemma MergeIProcsComm : forall P Q, MergeIProcs P Q = MergeIProcs Q P.
   Proof using.
@@ -632,95 +529,534 @@ Module AChoreographyCompiler (Import E : Expression) (L : Locations) (LM : Locat
     cbn; repeat constructor; auto; fail.
   Qed.
 
-  Equations ProjectAChor (C: A.Chor) (l : Loc) (Env : Loc) : option IProc :=
+  Inductive Cont : Set :=
+  | SecondaryC : IProc -> Cont
+  | PrimaryC : (Expr -> option IProc) -> Cont.
+
+  Equations ProjectChor (C : Chor) (l : Loc) (K : Cont)  : option IProc by wf (ChorSize C) lt :=
     {
-      ProjectAChor (A.Done p e) l Env with L.eq_dec p l :=
+      ProjectChor (Done l' e) l K with (L.eq_dec l l') :=
         {
-        ProjectAChor (A.Done p e) l Env (left eq1) := Some (SendProc Env e EndProc);
-        ProjectAChor (A.Done p e) l Env (right neq) := Some EndProc
+        ProjectChor (Done ?(l) e) l (PrimaryC f) (left eq_refl) := f e;
+        ProjectChor (Done ?(l) e) l (SecondaryC _) (left eq_refl) := None;
+        ProjectChor (Done l' e) l (PrimaryC _) (right neq) := None;
+        ProjectChor (Done l' e) l (SecondaryC C) (right neq) := Some C
         };
-      ProjectAChor (A.Var x) _ _ := Some (VarProc x);
-      ProjectAChor (A.Send p e q C) l Env with L.eq_dec p l, L.eq_dec q l, ProjectAChor C l Env :=
+      ProjectChor (Var x) l K := Some (VarProc x);
+      ProjectChor (Send p e q C) l K with L.eq_dec l p, L.eq_dec l q :=
         {
-        ProjectAChor (A.Send p e q C) l Env (left eq1) (right neq) (Some P) := Some (SendProc q e P);
-        ProjectAChor (A.Send p e q C) l Env (right neq) (left eq1) (Some P) := Some (RecvProc p P);
-        ProjectAChor (A.Send p e q C) l Env _ _ _ := None
+        ProjectChor (Send ?(l) e ?(l) C) l K (left eq_refl) (left eq_refl) :=
+          ProjectChor (ChorExprSubst
+                         C
+                         (fun p n =>
+                            if L.eq_dec p l
+                            then match n with
+                                 | 0 => e
+                                 | S n => ExprVar n
+                                 end
+                            else ExprVar n)) l K;
+        ProjectChor (Send ?(l) e q C) l K (left eq_refl) (right neq) with ProjectChor C l K :=
+          {
+          ProjectChor (Send ?(l) e q C) l K (left eq_refl) (right neq) (Some C') :=
+            Some (SendProc q e C');
+          ProjectChor (Send ?(l) e q C) l K (left eq_refl) (right neq) None := None
+          };
+        ProjectChor (Send p e ?(l) C) l K (right neq) (left eq_refl) with ProjectChor C l K :=
+          {
+          ProjectChor (Send p e ?(l) C) l K (right neq) (left eq_refl) (Some C') :=
+            Some (RecvProc p C');
+          ProjectChor (Send p e ?(l) C) l K (right neq) (left eq_refl) None := None
+          };
+        ProjectChor (Send p e q C) l K (right neq1) (right neq2) := ProjectChor C l K
         };
-      ProjectAChor (A.If n p e C1 C2) l Env with L.eq_dec p l, ProjectAChor C1 l Env, ProjectAChor C2 l Env :=
+      ProjectChor (If p e C1 C2) l K with L.eq_dec l p, ProjectChor C1 l K, ProjectChor C2 l K :=
         {
-        ProjectAChor (A.If n p e C1 C2) l Env (left eq1) (Some P) (Some Q) := Some (IfThenElse e P Q);
-        ProjectAChor (A.If n p e C1 C2) l Env (right neq) (Some P) (Some Q) := MergeIProcs P Q;
-        ProjectAChor (A.If n p e C1 C2) l Env _ _ _ := None
+        ProjectChor (If ?(l) e C1 C2) l K (left eq_refl) (Some C1') (Some C2') :=
+          Some (IfThenElse e C1' C2');
+        ProjectChor (If ?(l) e C1 C2) l K (left eq_refl) _ _ :=
+          None;
+        ProjectChor (If p e C1 C2) l K (right neq) (Some C1') (Some C2') :=
+          MergeIProcs C1' C2';
+        ProjectChor (If p e C1 C2) l K (right neq) _ _ := None
         };
-      ProjectAChor (A.Sync p d q C) l Env with L.eq_dec p l, L.eq_dec q l, ProjectAChor C l Env :=
+      ProjectChor (Sync p d q C) l K with L.eq_dec l p, L.eq_dec l q, ProjectChor C l K :=
         {
-        ProjectAChor (A.Sync p d q C) l Env (left eq1) (right neq) (Some P) := 
+        ProjectChor (Sync ?(l) d ?(l) C) l K (left eq_refl) (left eq_refl) (Some C') :=
+          Some C';
+        ProjectChor (Sync ?(l) d ?(l) C) l K (left eq_refl) (left eq_refl) None := None;
+        ProjectChor (Sync ?(l) d q C) l K (left eq_refl) (right neq) (Some C') :=
           match d with
-          | A.LChoice => Some (EChoiceL q P)
-          | A.RChoice => Some (EChoiceR q P)
+          | LChoice => Some (EChoiceL q C')
+          | RChoice => Some (EChoiceR q C')
           end;
-        ProjectAChor (A.Sync p d q C) l Env (right neq) (left eq2) (Some P) :=
+        ProjectChor (Sync ?(l) d q C) l K (left eq_refl) (right neq) None := None;
+        ProjectChor (Sync p d ?(l) C) l K (right neq) (left eq_refl) (Some C') :=
           match d with
-          | A.LChoice => Some (IChoiceL q P)
-          | A.RChoice => Some (IChoiceR q P)
+          | LChoice => Some (IChoiceL p C')
+          | RChoice => Some (IChoiceR p C')
           end;
-        ProjectAChor (A.Sync p d q C) l Env (right neq) (right neq) (Some P) := Some P;
-        ProjectAChor (A.Sync p d q C) l Env _ _ _ := None
+        ProjectChor (Sync p d ?(l) C) l K (right neq) (left eq_refl) None := None;
+        ProjectChor (Sync p d q C) l K (right neq1) (right neq2) (Some C') :=
+          Some C';
+        ProjectChor (Sync p d q C) l K (right neq1) (right neq2) None := None
         };
-      ProjectAChor (A.Def C1 C2) l Env with ProjectAChor C1 l Env, ProjectAChor C2 l Env :=
+      ProjectChor (DefLocal p C1 C2) l K with L.eq_dec l p :=
         {
-        ProjectAChor (A.Def C1 C2) l Env (Some P) (Some Q) := Some (DefProc P Q);
-        ProjectAChor (A.Def C1 C2) l Env _ _ := None
+        ProjectChor (DefLocal ?(l) C1 C2) l K (left eq_refl) :=
+          ProjectChor C1 l (PrimaryC (fun e => ProjectChor
+                                              (ChorExprSubst
+                                                 C2 (fun p n =>
+                                                       if L.eq_dec p l
+                                                       then match n with
+                                                            | 0 => e
+                                                            | S n => ExprVar n
+                                                            end
+                                                       else ExprVar n)) l K));
+        ProjectChor (DefLocal p C1 C2) l K (right neq) :=
+          match ProjectChor C2 l K with
+          | Some C2' => ProjectChor C1 l (SecondaryC C2')
+          | None => None
+          end
+        };
+      ProjectChor (DefGlobal C1 C2) l K with ProjectChor C1 l K, ProjectChor C2 l K :=
+        {
+        ProjectChor (DefGlobal C1 C2) l K (Some C1') (Some C2') := Some (DefProc C1' C2');
+        ProjectChor (DefGlobal C1 C2) l K _ _ := None
         }
     }.
-  Inductive MarkedProjection : A.Chor -> Loc -> Loc -> Prop := MarkProj : forall C l Env, MarkedProjection C l Env.
-  Theorem ProjectAChorEquiv' : forall (C C' : A.Chor) (l : Loc) (Env : Loc), A.chorEquiv' C C' -> ProjectAChor C l Env = ProjectAChor C' l Env.
+  Next Obligation.
+    rewrite ChorExprSubstSize; lia.
+  Defined.
+  Next Obligation.
+    lia.
+  Defined.
+  Next Obligation.
+    lia.
+  Defined.
+  Next Obligation.
+    rewrite ChorExprSubstSize; lia.
+  Defined.
+  Next Obligation.
+    lia.
+  Defined.
+  Next Obligation.
+    lia.
+  Defined.
+  Next Obligation.
+    lia.
+  Defined.
+  Next Obligation.
+    lia.
+  Defined.
+  Next Obligation.
+    lia.
+  Defined.
+
+  Reserved Notation "C1 ≡NT C2" (at level 30).
+  Inductive NTEquiv : Chor -> Chor -> Prop :=
+  | NTDoneRefl : forall l e, Done l e ≡NT Done l e
+  | NTVarRefl : forall n, Var n ≡NT Var n
+  | NTSendContext : forall l1 e l2 C1 C2,
+      C1 ≡NT C2 ->
+      l1 ⟪e⟫ → l2 fby C1 ≡NT l1 ⟪e⟫ → l2 fby C2
+  | NTSyncContext : forall l1 d l2 C1 C2,
+      C1 ≡NT C2 ->
+      l1 ⟨d⟩ → l2 fby C1 ≡NT l1 ⟨d⟩ → l2 fby C2                  
+  | NTIfContext : forall l e C11 C12 C21 C22,
+      C11 ≡NT C21 -> C12 ≡NT C22 ->
+      Cond l ⦃ e ⦄ Then C11 Else C12 ≡NT Cond l⦃e⦄ Then C21 Else C22
+  | NTDefLocalContext : forall l C11 C12 C21 C22,
+      C11 ≡NT C21 -> C12 ≡NT C22 ->
+      LetLocal l ⟪new⟫ ← C11 fby C12 ≡NT LetLocal l ⟪new⟫ ← C21 fby C22
+  | NTDefGlobalContext : forall C11 C12 C21 C22,
+      C11 ≡NT C21 -> C12 ≡NT C22 ->
+      LetGlobal ⟪new⟫ ← C11 fby C12 ≡NT LetGlobal ⟪new⟫ ← C21 fby C22
+  | NTSwapSendSend : forall l1 e l2 l3 e' l4 C,
+      l1 <> l3 -> l1 <> l4 -> l2 <> l3 -> l2 <> l4 ->
+      l1 ⟪e⟫ → l2 fby (l3 ⟪e'⟫ → l4 fby C) ≡NT l3 ⟪e'⟫ → l4 fby (l1 ⟪e⟫ → l2 fby C)
+  | NTSwapSendSync : forall l1 e l2 l3 d l4 C,
+      l1 <> l3 -> l1 <> l4 -> l2 <> l3 -> l2 <> l4 ->
+      l1 ⟪e⟫ → l2 fby (l3 ⟨d⟩ → l4 fby C) ≡NT l3 ⟨d⟩ → l4 fby (l1 ⟪e⟫ → l2 fby C)
+  | NTSwapSyncSend : forall l1 d l2 l3 e l4 C,
+      l1 <> l3 -> l1 <> l4 -> l2 <> l3 -> l2 <> l4 ->
+      l1 ⟨d⟩ → l2 fby (l3 ⟪e⟫ → l4 fby C) ≡NT l3 ⟪e⟫ → l4 fby (l1 ⟨d⟩ → l2 fby C)
+  | NTSwapSendIf : forall l1 e l2 l3 e' C1 C2,
+      l1 <> l3 -> l2 <> l3 ->
+      l1 ⟪e⟫ → l2 fby (Cond l3 ⦃e'⦄ Then C1 Else C2) ≡NT Cond l3 ⦃e'⦄ Then (l1 ⟪e⟫ → l2 fby C1) Else (l1 ⟪e⟫ → l2 fby C2)
+  | NTSwapIfSend : forall l1 e l2 e' l3 C1 C2,
+      l1 <> l2 -> l1 <> l3 ->
+      Cond l1 ⦃e⦄ Then (l2 ⟪e'⟫ → l3 fby C1) Else (l2 ⟪e'⟫ → l3 fby C2) ≡NT l2 ⟪e'⟫ → l3 fby (Cond l1 ⦃e⦄ Then C1 Else C2)
+  | NTSwapSyncSync : forall l1 d l2 l3 d' l4 C,
+      l1 <> l3 -> l1 <> l4 -> l2 <> l3 -> l2 <> l4 ->
+      l1 ⟨d⟩ → l2 fby (l3 ⟨d'⟩ → l4 fby C) ≡NT l3 ⟨d'⟩ → l4 fby (l1 ⟨d⟩ → l2 fby C)
+  | NTSwapSyncIf : forall l1 d l2 l3 e C1 C2,
+      l1 <> l3 -> l2 <> l3 ->
+      l1 ⟨d⟩ → l2 fby (Cond l3 ⦃e⦄ Then C1 Else C2) ≡NT Cond l3 ⦃e⦄ Then (l1 ⟨d⟩ → l2 fby C1) Else (l1 ⟨d⟩ → l2 fby C2)
+  | NTSwapIfSync : forall l1 e l2 d l3 C1 C2,
+      l1 <> l2 -> l1 <> l3 ->
+      Cond l1 ⦃e⦄ Then (l2 ⟨d⟩ → l3 fby C1) Else (l2 ⟨d⟩ → l3 fby C2) ≡NT l2 ⟨d⟩ → l3 fby (Cond l1 ⦃e⦄ Then C1 Else C2)
+  | NTSwapIfIf : forall l1 e l2 e' C1 C2 C3 C4,
+      l1 <> l2 ->
+      Cond l1 ⦃e⦄ Then (Cond l2 ⦃e'⦄ Then C1 Else C2) Else (Cond l2 ⦃e'⦄ Then C3 Else C4) ≡NT Cond l2 ⦃e'⦄ Then (Cond l1 ⦃e⦄ Then C1 Else C3) Else (Cond l1 ⦃e⦄ Then C2 Else C4)
+  where "C1 ≡NT C2" := (NTEquiv C1 C2).
+  Hint Constructors NTEquiv : Chor.
+
+  Instance : Reflexive NTEquiv.
+  unfold Reflexive. intro x; ChorInduction x; auto with Chor.
+  Defined.
+
+  Instance : Symmetric NTEquiv.
+  unfold Symmetric. intros x y eqv; induction eqv; auto with Chor.
+  Defined.
+
+  Reserved Notation "C1 ≡A C2" (at level 30).
+  Inductive AltEquiv : Chor -> Chor -> Prop :=
+  | FromNT : forall C1 C2, C1 ≡NT C2 -> C1 ≡A C2
+  | AltTrans : forall C1 C2 C3, C1 ≡A C2 -> C2 ≡A C3 -> C1 ≡A C3
+  where "C1 ≡A C2" := (AltEquiv C1 C2).
+  Hint Constructors AltEquiv : Chor.
+
+  Instance : Reflexive AltEquiv.
+  unfold Reflexive; intro x; apply FromNT; reflexivity.
+  Defined.
+
+  Instance : Symmetric AltEquiv.
+  unfold Symmetric; intros x y eqv; induction eqv; auto with Chor. apply FromNT; symmetry; auto.
+  apply AltTrans with (C2 := C2); auto.
+  Defined.
+  Instance : Transitive AltEquiv := AltTrans.
+
+  Lemma AltSendContext : forall l e l' C1 C2, C1 ≡A C2 -> l ⟪e⟫ → l' fby C1 ≡A l ⟪e⟫ → l' fby C2.
   Proof using.
-    intros C C' l Env equiv; revert l Env; induction equiv; intros l' Env; simp ProjectAChor;
-      repeat (match goal with
-              | [ H : ?a <> ?a |- _ ] => destruct (H eq_refl)
-              | [ |- ?a = ?a ] => reflexivity
-              | [ H : ?a = Some _, H2 : ?a = None |- _ ] => rewrite H in H2; inversion H2
-              | [ H1 : ?a = Some ?b, H2 : ?a = Some ?c |- _ ] =>
-                (unify b c) + (rewrite H1 in H2; inversion H2; subst; clear H2)
-              | [ |-context[ExprEqDec ?a ?b]]=> destruct (ExprEqDec a b); subst; cbn; auto
-              | [ |-context[L.eq_dec ?a ?b]]=> destruct (L.eq_dec a b); LF.LocationOrder; subst; cbn; auto
-              | [ |-context[Nat.eq_dec ?a ?b]] => destruct (Nat.eq_dec a b); subst; cbn; auto
-              | [ |-context[MergeIProcs ?a ?b]] =>
-                lazymatch goal with
-                | [ H : MergeIProcs a b = _ |- _ ] => rewrite H
-                | _ => let eq := fresh "merge_" a "_" b in destruct (MergeIProcs a b) eqn:eq; auto; cbn
-                end
-              | [ |-context[ProjectAChor ?a ?b]] => let eq := fresh "eq_project_" a "_" b in destruct (ProjectAChor a b) eqn:eq; auto; cbn
-              | [ d : A.LRChoice |- _] =>
-                match goal with
-                | [ |- context[d]] => destruct d; cbn
-                end
-              | [ IH : forall l E, ProjectAChor ?C1 l E = ProjectAChor ?C2 l E, H : ProjectAChor ?C1 ?l ?E = _ , H2 : ProjectAChor ?C2 ?l ?E = _ |- _ ] =>
-                lazymatch goal with
-                | [ _ : MarkedProjection C1 l E |- _ ] => fail
-                | _ => pose proof (MarkProj C1 l E); let eq := fresh "eq_" IH in pose proof (IH l E) as eq; rewrite H in eq; rewrite H2 in eq; inversion eq; subst
-                end
-              end; simp ProjectAChor).
-    all: repeat match goal with
-           | [ H : ?a = ?a |- _ ] => clear H
-           | [ H : MarkedProjection _ _ _ |- _ ] => clear H
-           end.
-    - pose proof (MergeIProcsTwist i10 i7 i9 i6). rewrite merge_i10_i9 in H0. rewrite merge_i3_i2 in H0. rewrite merge_i7_i6 in H0. rewrite merge_i0_i in H0. cbn in H0.
-      rewrite merge_i11_i8 in H0; rewrite merge_i4_i1 in H0; auto.
-    - pose proof (MergeIProcsTwist i10 i7 i9 i6). rewrite merge_i10_i9 in H0. rewrite merge_i3_i2 in H0. rewrite merge_i7_i6 in H0. rewrite merge_i0_i in H0. cbn in H0.
-      rewrite merge_i11_i8 in H0; rewrite merge_i4_i1 in H0; auto.
-    - pose proof (MergeIProcsTwist i10 i7 i9 i6). rewrite merge_i10_i9 in H0. rewrite merge_i3_i2 in H0. rewrite merge_i7_i6 in H0. rewrite merge_i0_i in H0. cbn in H0.
-      rewrite merge_i4_i1 in H0; auto.
-    - pose proof (MergeIProcsTwist i0 i6 i3 i7). rewrite merge_i0_i in H0. rewrite merge_i3_i2 in H0. rewrite MergeIProcsComm with (P := i6) (Q := i7) in H0. rewrite merge_i7_i6 in H0.
-      cbn in H0. rewrite MergeIProcsComm with (P := i1) (Q := i4) in H0. rewrite merge_i4_i1 in H0. destruct (MergeIProcs i0 i3); cbn in H0; inversion H0.
-    - pose proof (MergeIProcsTwist i8 i5 i9 i6). rewrite merge_i0_i in H0. rewrite merge_i3_i2 in H0. rewrite (MergeIProcsComm i8 i9) in H0. rewrite merge_i9_i8 in H0.
-      rewrite (MergeIProcsComm i5 i6) in H0; rewrite merge_i6_i5 in H0. cbn in H0. rewrite merge_i10_i7 in H0. rewrite (MergeIProcsComm i1 i4) in H0; rewrite merge_i4_i1 in H0.
-      inversion H0.
-    - pose proof (MergeIProcsTwist i4 i7 i5 i8). rewrite (MergeIProcsComm i4 i7) in H0; rewrite merge_i0_i in H0. rewrite (MergeIProcsComm i5 i8) in H0; rewrite merge_i3_i2 in H0.
-      rewrite (MergeIProcsComm i4 i5) in H0; rewrite merge_i5_i4 in H0. rewrite (MergeIProcsComm i7 i8) in H0; rewrite merge_i8_i7 in H0. cbn in H0.
-      rewrite (MergeIProcsComm i6 i9) in H0; rewrite merge_i9_i6 in H0. inversion H0.
-    - pose proof (MergeIProcsTwist i2 i1 i5 i4). rewrite (MergeIProcsComm i1 i4) in H0; rewrite merge_i0_i in H0. rewrite merge_i2_i1 in H0; rewrite merge_i5_i4 in H0. cbn in H0.
-      rewrite (MergeIProcsComm i3 i6) in H0; rewrite merge_i6_i3 in H0. destruct (MergeIProcs i2 i5); cbn in H0; inversion H0.
+    intros l e l' C1 C2 eqv; induction eqv; eauto with Chor.
   Qed.
-End AChoreographyCompiler.
+  Lemma AltSyncContext : forall l d l' C1 C2, C1 ≡A C2 -> l ⟨d⟩ → l' fby C1 ≡A l ⟨d⟩ → l' fby C2.
+  Proof using.
+    intros l d l' C1 C2 eqv; induction eqv; eauto with Chor.
+  Qed.
+  Lemma AltIfContext : forall l e C11 C12 C21 C22, C11 ≡A C21 -> C12 ≡A C22 -> If l e C11 C12 ≡A If l e C21 C22.
+  Proof using.
+    intros l e C11 C12 C21 C22 eqv1; revert C12 C22; induction eqv1.
+    2: intros C12 C22 eqv2; rewrite <- (IHeqv1_2 C12); auto; rewrite <- (IHeqv1_1 C12); reflexivity. 
+    intros C12 C22 eqv2; revert C1 C2 H; induction eqv2; auto with Chor.
+    intros C11 C21 eqv1. rewrite (IHeqv2_1 C11 C21); auto.
+    rewrite (IHeqv2_2 C21 C21); reflexivity.
+  Qed.
+  Lemma AltDefLocalContext : forall l C11 C12 C21 C22, C11 ≡A C21 -> C12 ≡A C22 -> DefLocal l C11 C12 ≡A DefLocal l C21 C22.
+  Proof using.
+    intros l C11 C12 C21 C22 eqv1; revert C12 C22; induction eqv1.
+    2: intros C12 C22 eqv2; rewrite (IHeqv1_1 C12 C22); auto; rewrite (IHeqv1_2 C22 C22); reflexivity.
+    intros C12 C22 eqv2; revert C1 C2 H; induction eqv2; auto with Chor.
+    intros C11 C21 eqv1. rewrite (IHeqv2_1 C11 C21); auto.
+    rewrite (IHeqv2_2 C21 C21); reflexivity.
+  Qed.
+  Lemma AltDefGlobalContext : forall C11 C12 C21 C22, C11 ≡A C21 -> C12 ≡A C22 -> DefGlobal C11 C12 ≡A DefGlobal C21 C22.
+  Proof using.
+    intros C11 C12 C21 C22 eqv1; revert C12 C22; induction eqv1.
+    2: intros C12 C22 eqv2; rewrite (IHeqv1_1 C12 C22); auto; rewrite (IHeqv1_2 C22 C22); reflexivity.
+    intros C12 C22 eqv2; revert C1 C2 H; induction eqv2; auto with Chor.
+    intros C11 C21 eqv1. rewrite (IHeqv2_1 C11 C21); auto.
+    rewrite (IHeqv2_2 C21 C21); reflexivity.
+  Qed.
+  Hint Resolve AltSendContext AltSyncContext AltIfContext AltDefLocalContext AltDefGlobalContext : Chor.
+
+  Lemma NTEquivToEquiv : forall C1 C2, C1 ≡NT C2 -> C1 ≡ C2.
+  Proof using.
+    intros C1 C2 eqv; induction eqv; auto with Chor.
+  Qed.
+
+  Lemma AltEquivToEquiv : forall C1 C2, C1 ≡A C2 -> C1 ≡ C2.
+  Proof using.
+    intros C1 C2 eqv; induction eqv; eauto with Chor. apply NTEquivToEquiv; auto.
+  Qed.
+
+  Lemma EquivToAltEquiv : forall C1 C2, C1 ≡ C2 -> C1 ≡A C2.
+  Proof using.
+    intros C1 C2 eqv; induction eqv; eauto with Chor.
+  Qed.
+
+  Lemma NTEquivExprSubst : forall C1 C2 σ, C1 ≡NT C2 -> C1 [ce|σ] ≡NT C2 [ce|σ].
+  Proof using.
+    intros C1 C2 σ eqv; revert σ; induction eqv; intro σ; cbn; eauto with Chor.
+    - unfold ChorUpExprSubst at 1. destruct (L.eq_dec l2 l3) as [eq|_]; [destruct (H1 eq)|].
+      unfold ChorUpExprSubst at 3. destruct (L.eq_dec l4 l1) as [eq|_]; [destruct (H0 (eq_sym eq))|].
+      erewrite ChorExprSubstExt; [apply NTSwapSendSend; auto|].
+      intros p n; unfold ChorUpExprSubst.
+      destruct (L.eq_dec l4 p); destruct (L.eq_dec l2 p); subst;
+        try match goal with
+            | [ H : ?a <> ?a |- _ ] => destruct (H eq_refl)
+            end; auto; destruct n; auto.
+    - unfold ChorUpExprSubst at 1. destruct (L.eq_dec l2 l3) as [eq|_]; [destruct (H0 eq)|].
+      apply NTSwapSendIf; auto.
+    - unfold ChorUpExprSubst at 3. destruct (L.eq_dec l3 l1) as [eq|_]; [destruct (H0 (eq_sym eq))|].
+      apply NTSwapIfSend; auto.
+  Qed.
+
+  Reserved Infix "≡K" (at level 30).
+  Inductive ContEquiv : Cont -> Cont -> Prop :=
+  | PrimaryEquiv : forall (f g : Expr -> option IProc),
+      (forall e : Expr, f e = g e) -> PrimaryC f ≡K PrimaryC g
+  | SecondaryEquiv : forall P : IProc, SecondaryC P ≡K SecondaryC P
+  where "K1 ≡K K2" := (ContEquiv K1 K2).
+  Hint Constructors ContEquiv : Chor.
+
+  Instance : Reflexive ContEquiv.
+  unfold Reflexive; intro K; induction K; auto with Chor.
+  Qed.
+  Instance : Symmetric ContEquiv.
+  unfold Symmetric; intros K1 K2 eqv; induction eqv; auto with Chor.
+  Qed.
+  
+
+  Lemma KEquivProjectToEqual : forall (C : Chor) (l : Loc) (K1 K2 : Cont),
+      K1 ≡K K2 -> ProjectChor C l K1 = ProjectChor C l K2.
+  Proof using.
+    intros C l K1; funelim (ProjectChor C l K1);
+      intros K2 eqv; simp ProjectChor; auto with Chor.
+    all: repeat match goal with
+                | [ |- ?a = ?a ] => reflexivity
+                | [H : ?a <> ?a |- _ ] => destruct (H eq_refl)
+                | [ H : Some _ = None |- _ ] => inversion H
+                | [ H : None = Some _ |- _ ] => inversion H
+                | [ H : Some ?a = Some ?b |- _ ] =>
+                  inversion H; subst; clear H
+                | [ |- context[L.eq_dec ?a ?b]]=>
+                  lazymatch goal with
+                  | [ H : L.eq_dec a b = _ |- _ ] => rewrite H; cbn; simp ProjectChor
+                  | _ =>
+                    let eq := fresh "eq" in
+                    let neq := fresh "neq" in
+                    destruct (L.eq_dec a b) as [eq|neq]; [subst|]; cbn; simp ProjectChor
+                  end
+                | [ |- context[ExprEqDec ?a ?b]] =>
+                  lazymatch goal with
+                  | [ H : ExprEqDec a b = _ |- _ ] => rewrite H; cbn; simp ProjectChor
+                  | _ => let eq := fresh "eq" in
+                        let neq := fresh "neq" in
+                        destruct (ExprEqDec a b) as [eq|neq];[subst|]; cbn; simp ProjectChor
+                  end
+                | [ H : forall K2, ?K1 ≡K K2 -> ProjectChor ?C ?l ?K1 = ProjectChor ?C ?l K2,
+                      H' : ?K1 ≡K ?K2 |- _ ] =>
+                  lazymatch goal with
+                  | [ _ : ProjectChor C l K1 = ProjectChor C l K2 |- _ ] => fail
+                  | _ => pose proof (H K2 H')
+                  end
+                | [ |- context[ProjectChor ?C ?l ?K]] =>
+                  lazymatch goal with
+                  | [ H : ProjectChor C l K = _ |-  _ ] => rewrite H
+                  | _ =>
+                    let eq := fresh "eq_" C in destruct (ProjectChor C l K) eqn:eq; cbn
+                  end
+                | [ |- context[MergeIProcs ?a ?b]] =>
+                  lazymatch goal with
+                  | [ H : MergeIProcs a b = _ |- _ ] => rewrite H
+                  | _ => let eq := fresh "eq_merge" in destruct (MergeIProcs a b) eqn:eq; cbn
+                  end
+                | [ d : LRChoice |- _ ] =>
+                  lazymatch goal with
+                  | [|- context[d]] =>
+                    lazymatch goal with
+                    | [H : d = _ |- _ ] => rewrite H; cbn; simp ProjectChor
+                    | _ => let eq := fresh "eq" in destruct d eqn:eq; cbn; simp ProjectChor
+                    end
+                  end
+                end.
+    1-4: inversion eqv; cbn; auto.
+    simp ProjectChor. rewrite Heq; cbn. erewrite H0; [apply eq_c3|].
+    constructor. intro e. apply H; auto.
+    simp ProjectChor. rewrite Heq; cbn. erewrite H0; [apply eq_c3|].
+    constructor. intro e. apply H; auto.
+  Qed.
+  
+  Lemma NTEquivProjectToEqual : forall (C1 C2 : Chor) (l : Loc) (K (* K2 *) : Cont),
+      C1 ≡NT C2 (* -> K1 ≡K K2 *) -> ProjectChor C1 l K = ProjectChor C2 l K.
+  Proof using.
+    intros C1 C2 l K; revert C2; funelim(ProjectChor C1 l K);
+      intros C2 eqv; inversion eqv; subst; simp ProjectChor; auto with Chor.
+    all: repeat match goal with
+                | [ |- ?a = ?a ] => reflexivity
+                | [H : ?a <> ?a |- _ ] => destruct (H eq_refl)
+                | [ H : Some _ = None |- _ ] => inversion H
+                | [ H : None = Some _ |- _ ] => inversion H
+                | [ H : Some ?a = Some ?b |- _ ] =>
+                  inversion H; subst; clear H
+                | [ |- context[L.eq_dec ?a ?b]]=>
+                  lazymatch goal with
+                  | [ H : L.eq_dec a b = _ |- _ ] => rewrite H; cbn; simp ProjectChor
+                  | _ =>
+                    let eq := fresh "eq" in
+                    let neq := fresh "neq" in
+                    destruct (L.eq_dec a b) as [eq|neq]; [subst|]; cbn; simp ProjectChor
+                  end
+                | [ |- context[ExprEqDec ?a ?b]] =>
+                  lazymatch goal with
+                  | [ H : ExprEqDec a b = _ |- _ ] => rewrite H; cbn; simp ProjectChor
+                  | _ => let eq := fresh "eq" in
+                        let neq := fresh "neq" in
+                        destruct (ExprEqDec a b) as [eq|neq];[subst|]; cbn; simp ProjectChor
+                  end
+                | [ H : ?C1 ≡NT ?C2, H' : context[?C1 [ce| ?σ]] |- _ ] =>
+                  lazymatch goal with
+                  | [ _ : C1 [ce| σ] ≡NT C2 [ce| σ] |- _ ] => fail
+                  | _ => pose proof (NTEquivExprSubst C1 C2 σ H)
+                  end
+                | [ H : forall C2 : Chor, ?C1 ≡NT C2 -> ProjectChor ?C1 ?l ?K = ProjectChor C2 ?l ?K,
+                      H2 : ?C1 ≡NT ?C2 |- _ ] =>
+                  lazymatch goal with
+                  | [ _ : ProjectChor C1 l K = ProjectChor C2 l K |- _] => fail
+                  | _ => pose proof (H C2 H2)
+                  end
+                | [ |- context[ProjectChor ?C ?l ?K]] =>
+                  lazymatch goal with
+                  | [ H : ProjectChor C l K = _ |-  _ ] => rewrite H
+                  | _ =>
+                    let eq := fresh "eq_" C in destruct (ProjectChor C l K) eqn:eq; cbn
+                  end
+                | [ |- context[MergeIProcs ?a ?b]] =>
+                  lazymatch goal with
+                  | [ H : MergeIProcs a b = _ |- _ ] => rewrite H
+                  | _ => let eq := fresh "eq_merge" in destruct (MergeIProcs a b) eqn:eq; cbn
+                  end
+                | [ d : LRChoice |- _ ] =>
+                  lazymatch goal with
+                  | [|- context[d]] =>
+                    lazymatch goal with
+                    | [H : d = _ |- _ ] => rewrite H; cbn; simp ProjectChor
+                    | _ => let eq := fresh "eq" in destruct d eqn:eq; cbn; simp ProjectChor
+                    end
+                  end
+                | [ H1 : MergeIProcs ?i1 ?i2 = _, H2 : MergeIProcs ?i3 ?i4 = _,
+                    H3 : MergeIProcs ?i1 ?i3 = _, H4 : MergeIProcs ?i2 ?i4 = _ |- _] =>
+                  lazymatch goal with
+                  | [ _ : MarkedSequence i1 i2 i3 i4 |- _ ] => fail
+                  | _ =>
+                    pose proof (Mark i1 i2 i3 i4); 
+                      let H := fresh in
+                      pose proof (MergeIProcsTwist i1 i2 i3 i4);
+                        rewrite H1 in H; rewrite H2 in H; rewrite H3 in H; rewrite H4 in H; cbn in H;
+                          match type of H with
+                          | Some _ = None => inversion H
+                          | None = Some _ => inversion H
+                          | None = None => idtac
+                          | MergeIProcs ?i5 ?i6 = MergeIProcs ?i7 ?i8 =>
+                            repeat match goal with
+                                   | [ H' : MergeIProcs i5 i6 = Some _ |- _ ] =>
+                                     rewrite H' in H; clear H'
+                                   | [ H' : MergeIProcs i5 i6 = None |- _ ] =>
+                                     rewrite H' in H; clear H'
+                                   | [ H' : MergeIProcs i7 i8 = Some _ |- _ ] =>
+                                     rewrite H' in H; clear H'
+                                   | [ H' : MergeIProcs i7 i8 = None |- _ ] =>
+                                     rewrite H' in H; clear H'
+                                   end;
+                              match type of H with
+                              | Some _ = None => inversion H
+                              | None = Some _ => inversion H
+                              | Some _ = Some _ => inversion H; subst; clear H
+                              | _ => idtac
+                              end
+                          | MergeIProcs ?i5 ?i6 = None =>
+                            repeat match goal with
+                                   | [ H' : MergeIProcs i5 i6 = Some _ |- _ ] =>
+                                     rewrite H' in H; clear H'
+                                   | [ H' : MergeIProcs i5 i6 = None |- _ ] =>
+                                     rewrite H' in H; clear H'
+                                   end;
+                              match type of H with
+                              | Some _ = None => inversion H
+                              | None = Some _ => inversion H
+                              | Some _ = Some _ => inversion H; subst; clear H
+                              | _ => idtac
+                              end
+                          | None = MergeIProcs ?i7 ?i8 =>
+                            repeat match goal with
+                                   | [ H' : MergeIProcs i7 i8 = Some _ |- _ ] =>
+                                     rewrite H' in H; clear H'
+                                   | [ H' : MergeIProcs i7 i8 = None |- _ ] =>
+                                     rewrite H' in H; clear H'
+                                   end;
+                              match type of H with
+                              | Some _ = None => inversion H
+                              | None = Some _ => inversion H
+                              | Some _ = Some _ => inversion H; subst; clear H
+                              | _ => idtac
+                              end
+                          end
+                  end
+                | [ H1 : MergeIProcs ?i1 ?i2 = _, H2 : MergeIProcs ?i3 ?i4 = _,
+                    H3 : MergeIProcs ?i1 ?i3 = None |- _] =>
+                  lazymatch goal with
+                  | [ _ : MarkedSequence i1 i2 i3 i4 |- _ ] => fail
+                  | _ =>
+                    pose proof (Mark i1 i2 i3 i4); 
+                      let H := fresh in
+                      pose proof (MergeIProcsTwist i1 i2 i3 i4);
+                        rewrite H1 in H; rewrite H2 in H; rewrite H3 in H; cbn in H;
+                          match type of H with
+                          | Some _ = None => inversion H
+                          | None = Some _ => inversion H
+                          | None = None => idtac
+                          | MergeIProcs ?i5 ?i6 = MergeIProcs ?i7 ?i8 =>
+                            repeat match goal with
+                                   | [ H' : MergeIProcs i5 i6 = Some _ |- _ ] =>
+                                     rewrite H' in H; clear H'
+                                   | [ H' : MergeIProcs i5 i6 = None |- _ ] =>
+                                     rewrite H' in H; clear H'
+                                   | [ H' : MergeIProcs i7 i8 = Some _ |- _ ] =>
+                                     rewrite H' in H; clear H'
+                                   | [ H' : MergeIProcs i7 i8 = None |- _ ] =>
+                                     rewrite H' in H; clear H'
+                                   end;
+                              match type of H with
+                              | Some _ = None => inversion H
+                              | None = Some _ => inversion H
+                              | Some _ = Some _ => inversion H; subst; clear H
+                              | _ => idtac
+                              end
+                          | MergeIProcs ?i5 ?i6 = None =>
+                            repeat match goal with
+                                   | [ H' : MergeIProcs i5 i6 = Some _ |- _ ] =>
+                                     rewrite H' in H; clear H'
+                                   | [ H' : MergeIProcs i5 i6 = None |- _ ] =>
+                                     rewrite H' in H; clear H'
+                                   end;
+                              match type of H with
+                              | Some _ = None => inversion H
+                              | None = Some _ => inversion H
+                              | Some _ = Some _ => inversion H; subst; clear H
+                              | _ => idtac
+                              end
+                          | None = MergeIProcs ?i7 ?i8 =>
+                            repeat match goal with
+                                   | [ H' : MergeIProcs i7 i8 = Some _ |- _ ] =>
+                                     rewrite H' in H; clear H'
+                                   | [ H' : MergeIProcs i7 i8 = None |- _ ] =>
+                                     rewrite H' in H; clear H'
+                                   end;
+                              match type of H with
+                              | Some _ = None => inversion H
+                              | None = Some _ => inversion H
+                              | Some _ = Some _ => inversion H; subst; clear H
+                              | _ => idtac
+                              end
+                          end
+                  end
+
+                end.
+
+    3-5: erewrite KEquivProjectToEqual in eq_C0; [rewrite eq_C0 in H2|];
+      rewrite H1 in H2; auto;
+        constructor; intro e; symmetry; apply H; apply NTEquivExprSubst; auto.
+    3-5:  pose proof (H0 i c3 l (SecondaryC i) eq_refl eq_refl);
+      rewrite (H3 C21 H5) in eq_c3; rewrite eq_C21 in eq_c3; auto.
+    - erewrite ChorExprSubstExt; [reflexivity|]; intros p n; unfold ChorUpExprSubst;
+        destruct (L.eq_dec l4 p); destruct (L.eq_dec p l); subst;
+          try match goal with | [ H : ?a <> ?a |- _ ] => destruct (H eq_refl) end;
+          auto; destruct n; cbn; auto; apply ExprRenameVar.
+    - erewrite ChorExprSubstExt; [reflexivity|]; intros p m; unfold ChorUpExprSubst;
+        destruct (L.eq_dec p l4); destruct (L.eq_dec l2 p); subst;
+          try match goal with | [ H : ?a <> ?a |- _ ] => destruct (H eq_refl) end;
+          auto; destruct m; cbn; auto; symmetry; apply ExprRenameVar.
+  Qed.      
+
+End ChoreographyCompiler.
