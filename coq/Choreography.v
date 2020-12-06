@@ -1297,6 +1297,145 @@ Module Choreography (Import E : Expression) (L : Locations).
     - apply IHequiv1 in i; apply IHequiv2 in i; exact i.
     - apply (proj2 (IHequiv1 t)); apply (proj2 (IHequiv2 t)); exact i.
   Qed.
+  Reserved Notation "C1 ≡NT C2" (at level 30).
+  Inductive NTEquiv : Chor -> Chor -> Prop :=
+  | NTDoneRefl : forall l e, Done l e ≡NT Done l e
+  | NTVarRefl : forall n, Var n ≡NT Var n
+  | NTSendContext : forall l1 e l2 C1 C2,
+      C1 ≡NT C2 ->
+      l1 ⟪e⟫ → l2 fby C1 ≡NT l1 ⟪e⟫ → l2 fby C2
+  | NTSyncContext : forall l1 d l2 C1 C2,
+      C1 ≡NT C2 ->
+      l1 ⟨d⟩ → l2 fby C1 ≡NT l1 ⟨d⟩ → l2 fby C2                  
+  | NTIfContext : forall l e C11 C12 C21 C22,
+      C11 ≡NT C21 -> C12 ≡NT C22 ->
+      Cond l ⦃ e ⦄ Then C11 Else C12 ≡NT Cond l⦃e⦄ Then C21 Else C22
+  | NTDefLocalContext : forall l C11 C12 C21 C22,
+      C11 ≡NT C21 -> C12 ≡NT C22 ->
+      LetLocal l ⟪new⟫ ← C11 fby C12 ≡NT LetLocal l ⟪new⟫ ← C21 fby C22
+  | NTDefGlobalContext : forall C11 C12 C21 C22,
+      C11 ≡NT C21 -> C12 ≡NT C22 ->
+      LetGlobal ⟪new⟫ ← C11 fby C12 ≡NT LetGlobal ⟪new⟫ ← C21 fby C22
+  | NTSwapSendSend : forall l1 e l2 l3 e' l4 C,
+      l1 <> l3 -> l1 <> l4 -> l2 <> l3 -> l2 <> l4 ->
+      l1 ⟪e⟫ → l2 fby (l3 ⟪e'⟫ → l4 fby C) ≡NT l3 ⟪e'⟫ → l4 fby (l1 ⟪e⟫ → l2 fby C)
+  | NTSwapSendSync : forall l1 e l2 l3 d l4 C,
+      l1 <> l3 -> l1 <> l4 -> l2 <> l3 -> l2 <> l4 ->
+      l1 ⟪e⟫ → l2 fby (l3 ⟨d⟩ → l4 fby C) ≡NT l3 ⟨d⟩ → l4 fby (l1 ⟪e⟫ → l2 fby C)
+  | NTSwapSyncSend : forall l1 d l2 l3 e l4 C,
+      l1 <> l3 -> l1 <> l4 -> l2 <> l3 -> l2 <> l4 ->
+      l1 ⟨d⟩ → l2 fby (l3 ⟪e⟫ → l4 fby C) ≡NT l3 ⟪e⟫ → l4 fby (l1 ⟨d⟩ → l2 fby C)
+  | NTSwapSendIf : forall l1 e l2 l3 e' C1 C2,
+      l1 <> l3 -> l2 <> l3 ->
+      l1 ⟪e⟫ → l2 fby (Cond l3 ⦃e'⦄ Then C1 Else C2) ≡NT Cond l3 ⦃e'⦄ Then (l1 ⟪e⟫ → l2 fby C1) Else (l1 ⟪e⟫ → l2 fby C2)
+  | NTSwapIfSend : forall l1 e l2 e' l3 C1 C2,
+      l1 <> l2 -> l1 <> l3 ->
+      Cond l1 ⦃e⦄ Then (l2 ⟪e'⟫ → l3 fby C1) Else (l2 ⟪e'⟫ → l3 fby C2) ≡NT l2 ⟪e'⟫ → l3 fby (Cond l1 ⦃e⦄ Then C1 Else C2)
+  | NTSwapSyncSync : forall l1 d l2 l3 d' l4 C,
+      l1 <> l3 -> l1 <> l4 -> l2 <> l3 -> l2 <> l4 ->
+      l1 ⟨d⟩ → l2 fby (l3 ⟨d'⟩ → l4 fby C) ≡NT l3 ⟨d'⟩ → l4 fby (l1 ⟨d⟩ → l2 fby C)
+  | NTSwapSyncIf : forall l1 d l2 l3 e C1 C2,
+      l1 <> l3 -> l2 <> l3 ->
+      l1 ⟨d⟩ → l2 fby (Cond l3 ⦃e⦄ Then C1 Else C2) ≡NT Cond l3 ⦃e⦄ Then (l1 ⟨d⟩ → l2 fby C1) Else (l1 ⟨d⟩ → l2 fby C2)
+  | NTSwapIfSync : forall l1 e l2 d l3 C1 C2,
+      l1 <> l2 -> l1 <> l3 ->
+      Cond l1 ⦃e⦄ Then (l2 ⟨d⟩ → l3 fby C1) Else (l2 ⟨d⟩ → l3 fby C2) ≡NT l2 ⟨d⟩ → l3 fby (Cond l1 ⦃e⦄ Then C1 Else C2)
+  | NTSwapIfIf : forall l1 e l2 e' C1 C2 C3 C4,
+      l1 <> l2 ->
+      Cond l1 ⦃e⦄ Then (Cond l2 ⦃e'⦄ Then C1 Else C2) Else (Cond l2 ⦃e'⦄ Then C3 Else C4) ≡NT Cond l2 ⦃e'⦄ Then (Cond l1 ⦃e⦄ Then C1 Else C3) Else (Cond l1 ⦃e⦄ Then C2 Else C4)
+  where "C1 ≡NT C2" := (NTEquiv C1 C2).
+  Hint Constructors NTEquiv : Chor.
+
+  Instance : Reflexive NTEquiv.
+  unfold Reflexive. intro x; ChorInduction x; auto with Chor.
+  Defined.
+
+  Instance : Symmetric NTEquiv.
+  unfold Symmetric. intros x y eqv; induction eqv; auto with Chor.
+  Defined.
+
+  Reserved Notation "C1 ≡A C2" (at level 30).
+  Inductive AltEquiv : Chor -> Chor -> Prop :=
+  | FromNT : forall C1 C2, C1 ≡NT C2 -> C1 ≡A C2
+  | AltTrans : forall C1 C2 C3, C1 ≡A C2 -> C2 ≡A C3 -> C1 ≡A C3
+  where "C1 ≡A C2" := (AltEquiv C1 C2).
+  Hint Constructors AltEquiv : Chor.
+
+  Instance : Reflexive AltEquiv.
+  unfold Reflexive; intro x; apply FromNT; reflexivity.
+  Defined.
+
+  Instance : Symmetric AltEquiv.
+  unfold Symmetric; intros x y eqv; induction eqv; auto with Chor. apply FromNT; symmetry; auto.
+  apply AltTrans with (C2 := C2); auto.
+  Defined.
+  Instance : Transitive AltEquiv := AltTrans.
+
+  Lemma AltSendContext : forall l e l' C1 C2, C1 ≡A C2 -> l ⟪e⟫ → l' fby C1 ≡A l ⟪e⟫ → l' fby C2.
+  Proof using.
+    intros l e l' C1 C2 eqv; induction eqv; eauto with Chor.
+  Qed.
+  Lemma AltSyncContext : forall l d l' C1 C2, C1 ≡A C2 -> l ⟨d⟩ → l' fby C1 ≡A l ⟨d⟩ → l' fby C2.
+  Proof using.
+    intros l d l' C1 C2 eqv; induction eqv; eauto with Chor.
+  Qed.
+  Lemma AltIfContext : forall l e C11 C12 C21 C22, C11 ≡A C21 -> C12 ≡A C22 -> If l e C11 C12 ≡A If l e C21 C22.
+  Proof using.
+    intros l e C11 C12 C21 C22 eqv1; revert C12 C22; induction eqv1.
+    2: intros C12 C22 eqv2; rewrite <- (IHeqv1_2 C12); auto; rewrite <- (IHeqv1_1 C12); reflexivity. 
+    intros C12 C22 eqv2; revert C1 C2 H; induction eqv2; auto with Chor.
+    intros C11 C21 eqv1. rewrite (IHeqv2_1 C11 C21); auto.
+    rewrite (IHeqv2_2 C21 C21); reflexivity.
+  Qed.
+  Lemma AltDefLocalContext : forall l C11 C12 C21 C22, C11 ≡A C21 -> C12 ≡A C22 -> DefLocal l C11 C12 ≡A DefLocal l C21 C22.
+  Proof using.
+    intros l C11 C12 C21 C22 eqv1; revert C12 C22; induction eqv1.
+    2: intros C12 C22 eqv2; rewrite (IHeqv1_1 C12 C22); auto; rewrite (IHeqv1_2 C22 C22); reflexivity.
+    intros C12 C22 eqv2; revert C1 C2 H; induction eqv2; auto with Chor.
+    intros C11 C21 eqv1. rewrite (IHeqv2_1 C11 C21); auto.
+    rewrite (IHeqv2_2 C21 C21); reflexivity.
+  Qed.
+  Lemma AltDefGlobalContext : forall C11 C12 C21 C22, C11 ≡A C21 -> C12 ≡A C22 -> DefGlobal C11 C12 ≡A DefGlobal C21 C22.
+  Proof using.
+    intros C11 C12 C21 C22 eqv1; revert C12 C22; induction eqv1.
+    2: intros C12 C22 eqv2; rewrite (IHeqv1_1 C12 C22); auto; rewrite (IHeqv1_2 C22 C22); reflexivity.
+    intros C12 C22 eqv2; revert C1 C2 H; induction eqv2; auto with Chor.
+    intros C11 C21 eqv1. rewrite (IHeqv2_1 C11 C21); auto.
+    rewrite (IHeqv2_2 C21 C21); reflexivity.
+  Qed.
+  Hint Resolve AltSendContext AltSyncContext AltIfContext AltDefLocalContext AltDefGlobalContext : Chor.
+
+  Lemma NTEquivToEquiv : forall C1 C2, C1 ≡NT C2 -> C1 ≡ C2.
+  Proof using.
+    intros C1 C2 eqv; induction eqv; auto with Chor.
+  Qed.
+
+  Lemma AltEquivToEquiv : forall C1 C2, C1 ≡A C2 -> C1 ≡ C2.
+  Proof using.
+    intros C1 C2 eqv; induction eqv; eauto with Chor. apply NTEquivToEquiv; auto.
+  Qed.
+
+  Lemma EquivToAltEquiv : forall C1 C2, C1 ≡ C2 -> C1 ≡A C2.
+  Proof using.
+    intros C1 C2 eqv; induction eqv; eauto with Chor.
+  Qed.
+
+  Lemma NTEquivExprSubst : forall C1 C2 σ, C1 ≡NT C2 -> C1 [ce|σ] ≡NT C2 [ce|σ].
+  Proof using.
+    intros C1 C2 σ eqv; revert σ; induction eqv; intro σ; cbn; eauto with Chor.
+    - unfold ChorUpExprSubst at 1. destruct (L.eq_dec l2 l3) as [eq|_]; [destruct (H1 eq)|].
+      unfold ChorUpExprSubst at 3. destruct (L.eq_dec l4 l1) as [eq|_]; [destruct (H0 (eq_sym eq))|].
+      erewrite ChorExprSubstExt; [apply NTSwapSendSend; auto|].
+      intros p n; unfold ChorUpExprSubst.
+      destruct (L.eq_dec l4 p); destruct (L.eq_dec l2 p); subst;
+        try match goal with
+            | [ H : ?a <> ?a |- _ ] => destruct (H eq_refl)
+            end; auto; destruct n; auto.
+    - unfold ChorUpExprSubst at 1. destruct (L.eq_dec l2 l3) as [eq|_]; [destruct (H0 eq)|].
+      apply NTSwapSendIf; auto.
+    - unfold ChorUpExprSubst at 3. destruct (L.eq_dec l3 l1) as [eq|_]; [destruct (H0 (eq_sym eq))|].
+      apply NTSwapIfSend; auto.
+  Qed.
 
 End Choreography.
  
