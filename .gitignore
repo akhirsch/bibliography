@@ -9,4 +9,4 @@ auto/*
 *.pdf
 *.fdb_latexmk
 *.fls
-
+\#*\#
