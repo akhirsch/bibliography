@@ -529,4 +529,291 @@ Module InternalProcesses (Import E : Expression) (L : Locations) (LM : LocationM
     cbn; repeat constructor; auto; fail.
   Qed.
 
+  Definition ProcRenamingUp : (nat -> nat) -> nat -> nat :=
+    fun ξ n => match n with
+            | 0 => 0
+            | S n' => S (ξ n')
+            end.
+
+  Lemma ProcRenamingUpExt : forall (ξ1 ξ2 : nat -> nat),
+      (forall n, ξ1 n = ξ2 n)
+      -> forall n, ProcRenamingUp ξ1 n = ProcRenamingUp ξ2 n.
+  Proof.
+    intros ξ1 ξ2 eq_ext n; unfold ProcRenamingUp; destruct n; auto.
+  Qed.
+  Hint Resolve ProcRenamingUp : PiC.
+
+  Reserved Notation "P ⟨iπ| ξ ⟩" (at level 15).
+  Fixpoint ProcRenaming (P : IProc) (ξ : nat -> nat) : IProc :=
+    match P with
+    | EndProc => EndProc
+    | Skip => Skip
+    | VarProc n => VarProc (ξ n)
+    | DefProc P Q => DefProc (P ⟨iπ| ProcRenamingUp ξ⟩) (Q ⟨iπ| ProcRenamingUp ξ⟩)
+    | SendProc p e P => SendProc p e (P ⟨iπ| ξ⟩)
+    | RecvProc p P => RecvProc p (P ⟨iπ| ξ⟩)
+    | EChoiceL p P => EChoiceL p (P ⟨iπ| ξ⟩)
+    | EChoiceR p P => EChoiceR p (P ⟨iπ| ξ⟩)
+    | IChoiceL p P => IChoiceL p (P ⟨iπ| ξ⟩)
+    | IChoiceR p Q => IChoiceR p (Q ⟨iπ| ξ⟩)
+    | IChoiceLR p P Q => IChoiceLR p (P ⟨iπ| ξ⟩) (Q ⟨iπ| ξ⟩)
+    | IfThenElse e P Q => IfThenElse e (P ⟨iπ| ξ⟩) (Q ⟨iπ| ξ⟩)
+    end
+  where "P ⟨iπ| ξ ⟩" := (ProcRenaming P ξ).
+
+    Lemma ProcRenamingExt : forall (P : IProc) (ξ1 ξ2 : nat -> nat),
+      (forall n, ξ1 n = ξ2 n)
+      -> P ⟨iπ| ξ1⟩ = P ⟨iπ| ξ2⟩.
+  Proof.
+    intro P; induction P; intros ξ1 ξ2 ext_eq; simpl; auto.
+    2-7: rewrite IHP with (ξ2 := ξ2); auto.
+    2,3: rewrite IHP1 with (ξ2 := ξ2); [|auto]; rewrite IHP2 with (ξ2 := ξ2); auto.
+    rewrite IHP1 with (ξ2 := ProcRenamingUp ξ2); [| apply ProcRenamingUpExt; auto];
+      rewrite IHP2 with (ξ2 := ProcRenamingUp ξ2); [| apply ProcRenamingUpExt; auto];
+        reflexivity.
+  Qed.
+  Hint Resolve ProcRenamingExt : PiC.
+  Hint Rewrite ProcRenamingExt : PiC.
+
+  Definition ProcRenamingId : nat -> nat := fun n => n.
+
+  Lemma ProcRenamingIdUp : forall n, ProcRenamingUp ProcRenamingId n = ProcRenamingId n.
+  Proof.
+    intro n; unfold ProcRenamingUp; unfold ProcRenamingId; simpl; destruct n; reflexivity.
+  Qed.
+  Hint Resolve ProcRenamingIdUp : PiC.
+  Hint Rewrite ProcRenamingIdUp : PiC.
+
+  Lemma ProcRenamingIdSpec : forall (P : IProc),
+      P ⟨iπ| ProcRenamingId⟩ = P.
+  Proof.
+    intro P; induction P; simpl; try reflexivity.
+    2-7: rewrite IHP; auto.
+    repeat (
+        rewrite ProcRenamingExt
+          with (ξ1 := ProcRenamingUp ProcRenamingId) (ξ2 := ProcRenamingId);
+        [| exact ProcRenamingIdUp]).
+    all: rewrite IHP1; rewrite IHP2; reflexivity.
+  Qed.    
+
+  Reserved Notation "P ⟨iπe| ξ ⟩" (at level 15).
+  Fixpoint ProcExprRenaming (P : IProc) (ξ : nat -> nat) : IProc :=
+    match P with
+    | EndProc => EndProc
+    | Skip => Skip
+    | VarProc n => VarProc n
+    | DefProc P Q => DefProc (P ⟨iπe| ξ⟩) (Q ⟨iπe| ξ⟩)
+    | SendProc p e P => SendProc p (e ⟨e| ξ⟩) (P ⟨iπe| ξ⟩)
+    | RecvProc p P => RecvProc p (P ⟨iπe| ExprUpRename ξ⟩)
+    | EChoiceL p P => EChoiceL p (P ⟨iπe| ξ⟩)
+    | EChoiceR p P => EChoiceR p (P ⟨iπe| ξ⟩)
+    | IChoiceL p P => IChoiceL p (P ⟨iπe| ξ⟩)
+    | IChoiceR p Q => IChoiceR p (Q ⟨iπe| ξ⟩)
+    | IChoiceLR p P Q => IChoiceLR p (P ⟨iπe| ξ⟩) (Q ⟨iπe| ξ⟩)
+    | IfThenElse e P Q => IfThenElse (e ⟨e| ξ⟩) (P ⟨iπe| ξ⟩) (Q ⟨iπe| ξ⟩)
+    end
+  where "P ⟨iπe| ξ ⟩" := (ProcExprRenaming P ξ).
+
+  Lemma ProcExprRenamingExt : forall (P : IProc) (ξ1 ξ2 : nat -> nat),
+      (forall n, ξ1 n = ξ2 n)
+      -> P ⟨iπe| ξ1⟩ = P ⟨iπe| ξ2⟩.
+  Proof.
+    intro P; induction P; intros ξ1 ξ2 ext_eq; simpl; try reflexivity.
+    2,4,5,6,7: rewrite IHP with (ξ2 := ξ2); auto.
+    1,4,5: rewrite IHP1 with (ξ2 := ξ2); [|exact ext_eq]; rewrite IHP2 with (ξ2 := ξ2); auto.
+    1,2: rewrite ExprRenameExt with (ξ2 := ξ2); auto.
+    rewrite IHP with (ξ2 := ExprUpRename ξ2); auto.
+    intro n; unfold ExprUpRename; destruct n; auto.
+  Qed.
+
+  Lemma ProcExprRenamingId : forall (P : IProc),
+      P ⟨iπe| ExprIdRenaming⟩ = P.
+  Proof.
+    intro P; induction P; simpl; auto.
+    1,8,9: rewrite IHP1; rewrite IHP2; auto.
+    3: rewrite ProcExprRenamingExt with (ξ2 := ExprIdRenaming);
+      [|intro n; symmetry; apply ExprUpRenamingId].
+    2-7: rewrite IHP; auto.
+    all: rewrite ExprIdRenamingSpec; reflexivity.
+  Qed.
+
+    Definition ProcSubstUp : (nat -> IProc) -> nat -> IProc :=
+    fun σ n => match n with
+            | 0 => VarProc 0
+            | S n' => σ n' ⟨iπ| S⟩
+            end.
+
+  Lemma ProcSubstUpExt : forall (σ1 σ2 : nat -> IProc),
+      (forall n, σ1 n = σ2 n)
+      -> forall n, ProcSubstUp σ1 n = ProcSubstUp σ2 n.
+  Proof.
+    intros σ1 σ2 ext_eq n; unfold ProcSubstUp; destruct n; [|rewrite ext_eq]; reflexivity.
+  Qed.
+
+  Reserved Notation "P [iπ| σ ]" (at level 15).
+  Fixpoint ProcSubst (P : IProc) (σ : nat -> IProc) :=
+    match P with
+    | EndProc => EndProc
+    | Skip => Skip
+    | VarProc n => σ n
+    | DefProc P Q => DefProc (P [iπ| ProcSubstUp σ]) (Q [iπ| ProcSubstUp σ])
+    | SendProc p e P => SendProc p e (P [iπ| σ])
+    | RecvProc p P => RecvProc p (P [iπ| σ])
+    | EChoiceL p P => EChoiceL p (P [iπ| σ])
+    | EChoiceR p P => EChoiceR p (P [iπ| σ])
+    | IChoiceL p P => IChoiceL p (P [iπ| σ])
+    | IChoiceR p Q => IChoiceR p (Q [iπ| σ])
+    | IChoiceLR p P Q => IChoiceLR p (P [iπ| σ]) (Q [iπ| σ])
+    | IfThenElse e P Q => IfThenElse e (P [iπ| σ]) (Q[iπ| σ])
+    end
+  where "P [iπ| σ ]" := (ProcSubst P σ).
+
+  Lemma ProcSubstExt : forall (P : IProc) (σ1 σ2 : nat -> IProc),
+      (forall n, σ1 n = σ2 n)
+      -> P [iπ| σ1] = P [iπ| σ2].
+  Proof.
+    intro P; induction P; intros σ1 σ2 ext_eq; simpl; auto.
+    2-7: rewrite IHP with (σ2 := σ2); auto.
+    2,3: rewrite IHP1 with (σ2 := σ2); auto;
+      rewrite IHP2 with (σ2 := σ2); auto.
+    rewrite IHP1 with (σ2 := ProcSubstUp σ2); auto.
+    rewrite IHP2 with (σ2 := ProcSubstUp σ2); auto.
+    all: apply ProcSubstUpExt; auto.
+  Qed.
+
+  Definition ProcIdSubst : nat -> IProc := VarProc.
+  Lemma ProcIdSubstUp : forall n, ProcSubstUp ProcIdSubst n = ProcIdSubst n.
+  Proof.
+    intro n; unfold ProcSubstUp; unfold ProcIdSubst; destruct n; simpl; reflexivity.
+  Qed.
+
+  Lemma ProcSubstId : forall (P : IProc), P [iπ| ProcIdSubst] = P.
+  Proof.
+    intro P; induction P; simpl; auto.
+    2-7: rewrite IHP; reflexivity.
+    repeat (rewrite ProcSubstExt with (σ1 := ProcSubstUp ProcIdSubst) (σ2 := ProcIdSubst);
+            [| exact ProcIdSubstUp]).
+    all: rewrite IHP1; rewrite IHP2; reflexivity.
+  Qed.
+
+  Reserved Notation "P [iπe| σ ]" (at level 15).
+  Fixpoint ProcExprSubst (P : IProc) (σ : nat -> Expr) : IProc :=
+    match P with
+    | EndProc => EndProc
+    | Skip => Skip
+    | VarProc n => VarProc n
+    | DefProc P Q => DefProc (P [iπe| σ]) (Q [iπe| σ])
+    | SendProc p e P => SendProc p (e [e| σ]) (P [iπe| σ])
+    | RecvProc p P => RecvProc p (P [iπe| ExprUpSubst σ])
+    | EChoiceL p P => EChoiceL p (P [iπe| σ])
+    | EChoiceR p P => EChoiceR p (P [iπe| σ])
+    | IChoiceL p P => IChoiceL p (P [iπe| σ])
+    | IChoiceR p Q => IChoiceR p (Q [iπe| σ])
+    | IChoiceLR p P Q => IChoiceLR p (P [iπe| σ]) (Q [iπe| σ])
+    | IfThenElse e P Q => IfThenElse (e [e| σ]) (P[iπe|σ]) (Q[iπe|σ])
+    end
+  where "P [iπe| σ ]" := (ProcExprSubst P σ).
+
+  Lemma ProcExprSubstExt : forall (P : IProc) (σ1 σ2 : nat -> Expr),
+      (forall n, σ1 n = σ2 n)
+      -> P [iπe| σ1] = P [iπe| σ2].
+  Proof.
+    intro P; induction P; intros σ1 σ2 ext_eq; simpl; auto.
+    1,8,9: rewrite IHP1 with (σ2 := σ2); auto; rewrite IHP2 with (σ2 := σ2); auto.
+    2,4-7: rewrite IHP with (σ2 := σ2); auto.
+    1,2: rewrite ExprSubstExt with (σ2 := σ2); auto.
+    rewrite IHP with (σ2 := ExprUpSubst σ2); auto.
+    intro n; unfold ExprUpSubst; destruct n; auto; rewrite ext_eq; reflexivity.
+  Qed.
+
+  Lemma ProcExprSubstId : forall (P : IProc),
+      P [iπe| ExprIdSubst] = P.
+  Proof.
+    intro P; induction P; simpl; auto.
+    1,8,9: rewrite IHP1; rewrite IHP2; auto.
+    2,4-7: rewrite IHP; auto.
+    1,2: rewrite ExprIdentitySubstSpec; reflexivity.
+    rewrite ProcExprSubstExt with (σ2 := ExprIdSubst); [rewrite IHP; reflexivity|].
+    intro n; unfold ExprUpSubst; unfold ExprIdSubst; destruct n; auto.
+    rewrite ExprRenameVar; reflexivity.
+  Qed.
+
+  Definition CommSubst : Expr -> nat -> Expr :=
+    fun e n => match n with
+            | 0 => e
+            | S n' => ExprVar n'
+            end.
+
+  Definition PiDefSubst : IProc -> nat -> IProc :=
+    fun P n => match n with
+            | 0 => P [iπ| (fun m => match m with | 0 => DefProc P P | S m' => VarProc m' end)]
+            | S n' => VarProc n'
+            end.
+
+  Inductive PiCalcStep : LM.t IProc -> LM.t IProc -> Prop :=
+    CommEStep : forall (p q : Loc) (e e' : Expr) (P : IProc) (Π Π' : LM.t IProc),
+      ExprStep e e'
+      -> LM.MapsTo p (SendProc q e P) Π
+      -> (forall r, r <> p -> forall Q, LM.MapsTo r Q Π <-> LM.MapsTo r Q Π') (* Perhaps we could get away with only one direction? *)
+      -> LM.MapsTo p (SendProc q e' P) Π'
+      -> PiCalcStep Π Π'
+  | CommVStep : forall (p q : Loc) (v : Expr) (P Q : IProc) (Π Π' : LM.t IProc),
+      ExprVal v
+      -> LM.MapsTo p (SendProc q v P) Π
+      -> LM.MapsTo q (RecvProc p Q) Π
+      -> (forall r, r <> p -> r <> q -> forall Q, LM.MapsTo r Q Π <-> LM.MapsTo r Q Π')
+      -> LM.MapsTo p P Π'
+      -> LM.MapsTo q (Q [iπe| CommSubst v]) Π'
+      -> PiCalcStep Π Π'
+  | IfEStep : forall (p : Loc) (e e' : Expr) (P Q : IProc) (Π Π' : LM.t IProc),
+      ExprStep e e'
+      -> LM.MapsTo p (IfThenElse e P Q) Π
+      -> (forall r, r <> p -> forall R : IProc, LM.MapsTo r R Π <-> LM.MapsTo r R Π')
+      -> LM.MapsTo p (IfThenElse e' P Q) Π'
+      -> PiCalcStep Π Π'
+  | IfTrueStep : forall (p : Loc) (P Q : IProc) (Π Π' : LM.t IProc),
+      LM.MapsTo p (IfThenElse tt P Q) Π
+      -> (forall r, r <> p -> forall R : IProc, LM.MapsTo r R Π <-> LM.MapsTo r R Π')
+      -> LM.MapsTo p P Π'
+      -> PiCalcStep Π Π'
+  | IfFalseStep : forall (p : Loc) (P Q : IProc) (Π Π' : LM.t IProc),
+      LM.MapsTo p (IfThenElse ff P Q) Π
+      -> (forall r, r <> p -> forall R : IProc, LM.MapsTo r R Π <-> LM.MapsTo r R Π')
+      -> LM.MapsTo p Q Π'
+      -> PiCalcStep Π Π'
+  | DefStep : forall (p : Loc) (P Q : IProc) (Π Π' : LM.t IProc),
+      LM.MapsTo p (DefProc P Q) Π
+      -> (forall r, r <> p -> forall R : IProc, LM.MapsTo p R Π <-> LM.MapsTo p R Π')
+      -> LM.MapsTo p (Q [iπ| PiDefSubst P]) Π'
+      -> PiCalcStep Π Π'
+  | ChooseLLStep : forall (p q : Loc) (P Q : IProc) (Π Π' : LM.t IProc),
+      LM.MapsTo p (EChoiceL q P) Π
+      -> LM.MapsTo q (IChoiceL p Q) Π
+      -> (forall r, p <> r -> q <> r -> forall R, LM.MapsTo r R Π <-> LM.MapsTo r R Π')
+      -> LM.MapsTo p P Π'
+      -> LM.MapsTo q Q Π'
+      -> PiCalcStep Π Π'
+  | ChooseLLRStep : forall (p q : Loc) (P Q1 Q2 : IProc) (Π Π' : LM.t IProc),
+      LM.MapsTo p (EChoiceL q P) Π
+      -> LM.MapsTo q (IChoiceLR p Q1 Q2) Π
+      -> (forall r, p <> r -> q <> r -> forall R, LM.MapsTo r R Π <-> LM.MapsTo r R Π')
+      -> LM.MapsTo p P Π'
+      -> LM.MapsTo q Q1 Π'
+      -> PiCalcStep Π Π'
+  | ChooseRRStep : forall (p q : Loc) (P Q : IProc) (Π Π' : LM.t IProc),
+      LM.MapsTo p (EChoiceR q P) Π
+      -> LM.MapsTo q (IChoiceR p Q) Π
+      -> (forall r, p <> r -> q <> r -> forall R, LM.MapsTo r R Π <-> LM.MapsTo r R Π')
+      -> LM.MapsTo p P Π'
+      -> LM.MapsTo p Q Π'
+      -> PiCalcStep Π Π'
+  | ChooseRLRStep : forall (p q : Loc) (P Q1 Q2 : IProc) (Π Π' : LM.t IProc),
+      LM.MapsTo p (EChoiceR q P) Π
+      -> LM.MapsTo q (IChoiceLR p Q1 Q2) Π
+      -> (forall r, p <> r -> q <> r -> forall R, LM.MapsTo r R Π <-> LM.MapsTo r R Π')
+      -> LM.MapsTo p P Π'
+      -> LM.MapsTo p Q2 Π'
+      -> PiCalcStep Π Π'.
+
+  
 End InternalProcesses.
