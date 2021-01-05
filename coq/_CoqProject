@@ -12,4 +12,5 @@ Choreography.v
 TypedChoreography.v
 SoundlyTypedChoreography.v
 PiCalc.v
+InternalProcesses.v
 ChoreographyCompiler.v
