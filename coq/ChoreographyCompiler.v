@@ -22,7 +22,7 @@ Module ChoreographyCompiler (Import E : Expression) (L : Locations) (LM : Locati
 
   Module LF := (LocationFacts L).
   Module C := (Choreography E L).
-  Module P := (PiCalc E L).
+  Module P := (PiCalc E L LM).
   Module LMF := (LocationMapFacts L LM).
 
   Import C.
@@ -935,5 +935,7 @@ Module ChoreographyCompiler (Import E : Expression) (L : Locations) (LM : Locati
   Qed.
 
   Definition ProjectChorToProc C l K := OptionSequence IProcToProc (ProjectChor C l K).
+
+  
   
 End ChoreographyCompiler.
