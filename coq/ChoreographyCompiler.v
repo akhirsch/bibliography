@@ -30,10 +30,10 @@ Module ChoreographyCompiler (Import E : Expression) (L : Locations) (LM : Locati
   Import C. Import IP.
 
   Inductive Cont : Set :=
-  | SecondaryC : IProc -> Cont
-  | PrimaryC : (Expr -> option IProc) -> Cont.
+  | SecondaryC : Proc -> Cont
+  | PrimaryC : (Expr -> option Proc) -> Cont.
 
-  Equations ProjectChor (C : Chor) (l : Loc) (K : Cont)  : option IProc by wf (ChorSize C) lt :=
+  Equations ProjectChor (C : Chor) (l : Loc) (K : Cont)  : option Proc by wf (ChorSize C) lt :=
     {
       ProjectChor (Done l' e) l K with (L.eq_dec l l') :=
         {
@@ -76,7 +76,7 @@ Module ChoreographyCompiler (Import E : Expression) (L : Locations) (LM : Locati
         ProjectChor (If ?(l) e C1 C2) l K (left eq_refl) _ _ :=
           None;
         ProjectChor (If p e C1 C2) l K (right neq) (Some C1') (Some C2') :=
-          MergeIProcs C1' C2';
+          MergeProcs C1' C2';
         ProjectChor (If p e C1 C2) l K (right neq) _ _ := None
         };
       ProjectChor (Sync p d q C) l K with L.eq_dec l p, L.eq_dec l q, ProjectChor C l K :=
@@ -155,9 +155,9 @@ Module ChoreographyCompiler (Import E : Expression) (L : Locations) (LM : Locati
 
   Reserved Infix "≡K" (at level 30).
   Inductive ContEquiv : Cont -> Cont -> Prop :=
-  | PrimaryEquiv : forall (f g : Expr -> option IProc),
+  | PrimaryEquiv : forall (f g : Expr -> option Proc),
       (forall e : Expr, f e = g e) -> PrimaryC f ≡K PrimaryC g
-  | SecondaryEquiv : forall P : IProc, SecondaryC P ≡K SecondaryC P
+  | SecondaryEquiv : forall P : Proc, SecondaryC P ≡K SecondaryC P
   where "K1 ≡K K2" := (ContEquiv K1 K2).
   Hint Constructors ContEquiv : Chor.
 
@@ -208,10 +208,10 @@ Module ChoreographyCompiler (Import E : Expression) (L : Locations) (LM : Locati
                   | _ =>
                     let eq := fresh "eq_" C in destruct (ProjectChor C l K) eqn:eq; cbn
                   end
-                | [ |- context[MergeIProcs ?a ?b]] =>
+                | [ |- context[MergeProcs ?a ?b]] =>
                   lazymatch goal with
-                  | [ H : MergeIProcs a b = _ |- _ ] => rewrite H
-                  | _ => let eq := fresh "eq_merge" in destruct (MergeIProcs a b) eqn:eq; cbn
+                  | [ H : MergeProcs a b = _ |- _ ] => rewrite H
+                  | _ => let eq := fresh "eq_merge" in destruct (MergeProcs a b) eqn:eq; cbn
                   end
                 | [ d : LRChoice |- _ ] =>
                   lazymatch goal with
@@ -273,10 +273,10 @@ Module ChoreographyCompiler (Import E : Expression) (L : Locations) (LM : Locati
                   | _ =>
                     let eq := fresh "eq_" C in destruct (ProjectChor C l K) eqn:eq; cbn
                   end
-                | [ |- context[MergeIProcs ?a ?b]] =>
+                | [ |- context[MergeProcs ?a ?b]] =>
                   lazymatch goal with
-                  | [ H : MergeIProcs a b = _ |- _ ] => rewrite H
-                  | _ => let eq := fresh "eq_merge" in destruct (MergeIProcs a b) eqn:eq; cbn
+                  | [ H : MergeProcs a b = _ |- _ ] => rewrite H
+                  | _ => let eq := fresh "eq_merge" in destruct (MergeProcs a b) eqn:eq; cbn
                   end
                 | [ d : LRChoice |- _ ] =>
                   lazymatch goal with
@@ -286,28 +286,28 @@ Module ChoreographyCompiler (Import E : Expression) (L : Locations) (LM : Locati
                     | _ => let eq := fresh "eq" in destruct d eqn:eq; cbn; simp ProjectChor
                     end
                   end
-                | [ H1 : MergeIProcs ?i1 ?i2 = _, H2 : MergeIProcs ?i3 ?i4 = _,
-                    H3 : MergeIProcs ?i1 ?i3 = _, H4 : MergeIProcs ?i2 ?i4 = _ |- _] =>
+                | [ H1 : MergeProcs ?i1 ?i2 = _, H2 : MergeProcs ?i3 ?i4 = _,
+                    H3 : MergeProcs ?i1 ?i3 = _, H4 : MergeProcs ?i2 ?i4 = _ |- _] =>
                   lazymatch goal with
                   | [ _ : MarkedSequence i1 i2 i3 i4 |- _ ] => fail
                   | _ =>
                     pose proof (Mark i1 i2 i3 i4); 
                       let H := fresh in
-                      pose proof (MergeIProcsTwist i1 i2 i3 i4);
+                      pose proof (MergeProcsTwist i1 i2 i3 i4);
                         rewrite H1 in H; rewrite H2 in H; rewrite H3 in H; rewrite H4 in H; cbn in H;
                           match type of H with
                           | Some _ = None => inversion H
                           | None = Some _ => inversion H
                           | None = None => idtac
-                          | MergeIProcs ?i5 ?i6 = MergeIProcs ?i7 ?i8 =>
+                          | MergeProcs ?i5 ?i6 = MergeProcs ?i7 ?i8 =>
                             repeat match goal with
-                                   | [ H' : MergeIProcs i5 i6 = Some _ |- _ ] =>
+                                   | [ H' : MergeProcs i5 i6 = Some _ |- _ ] =>
                                      rewrite H' in H; clear H'
-                                   | [ H' : MergeIProcs i5 i6 = None |- _ ] =>
+                                   | [ H' : MergeProcs i5 i6 = None |- _ ] =>
                                      rewrite H' in H; clear H'
-                                   | [ H' : MergeIProcs i7 i8 = Some _ |- _ ] =>
+                                   | [ H' : MergeProcs i7 i8 = Some _ |- _ ] =>
                                      rewrite H' in H; clear H'
-                                   | [ H' : MergeIProcs i7 i8 = None |- _ ] =>
+                                   | [ H' : MergeProcs i7 i8 = None |- _ ] =>
                                      rewrite H' in H; clear H'
                                    end;
                               match type of H with
@@ -316,11 +316,11 @@ Module ChoreographyCompiler (Import E : Expression) (L : Locations) (LM : Locati
                               | Some _ = Some _ => inversion H; subst; clear H
                               | _ => idtac
                               end
-                          | MergeIProcs ?i5 ?i6 = None =>
+                          | MergeProcs ?i5 ?i6 = None =>
                             repeat match goal with
-                                   | [ H' : MergeIProcs i5 i6 = Some _ |- _ ] =>
+                                   | [ H' : MergeProcs i5 i6 = Some _ |- _ ] =>
                                      rewrite H' in H; clear H'
-                                   | [ H' : MergeIProcs i5 i6 = None |- _ ] =>
+                                   | [ H' : MergeProcs i5 i6 = None |- _ ] =>
                                      rewrite H' in H; clear H'
                                    end;
                               match type of H with
@@ -329,11 +329,11 @@ Module ChoreographyCompiler (Import E : Expression) (L : Locations) (LM : Locati
                               | Some _ = Some _ => inversion H; subst; clear H
                               | _ => idtac
                               end
-                          | None = MergeIProcs ?i7 ?i8 =>
+                          | None = MergeProcs ?i7 ?i8 =>
                             repeat match goal with
-                                   | [ H' : MergeIProcs i7 i8 = Some _ |- _ ] =>
+                                   | [ H' : MergeProcs i7 i8 = Some _ |- _ ] =>
                                      rewrite H' in H; clear H'
-                                   | [ H' : MergeIProcs i7 i8 = None |- _ ] =>
+                                   | [ H' : MergeProcs i7 i8 = None |- _ ] =>
                                      rewrite H' in H; clear H'
                                    end;
                               match type of H with
@@ -344,28 +344,28 @@ Module ChoreographyCompiler (Import E : Expression) (L : Locations) (LM : Locati
                               end
                           end
                   end
-                | [ H1 : MergeIProcs ?i1 ?i2 = _, H2 : MergeIProcs ?i3 ?i4 = _,
-                    H3 : MergeIProcs ?i1 ?i3 = None |- _] =>
+                | [ H1 : MergeProcs ?i1 ?i2 = _, H2 : MergeProcs ?i3 ?i4 = _,
+                    H3 : MergeProcs ?i1 ?i3 = None |- _] =>
                   lazymatch goal with
                   | [ _ : MarkedSequence i1 i2 i3 i4 |- _ ] => fail
                   | _ =>
                     pose proof (Mark i1 i2 i3 i4); 
                       let H := fresh in
-                      pose proof (MergeIProcsTwist i1 i2 i3 i4);
+                      pose proof (MergeProcsTwist i1 i2 i3 i4);
                         rewrite H1 in H; rewrite H2 in H; rewrite H3 in H; cbn in H;
                           match type of H with
                           | Some _ = None => inversion H
                           | None = Some _ => inversion H
                           | None = None => idtac
-                          | MergeIProcs ?i5 ?i6 = MergeIProcs ?i7 ?i8 =>
+                          | MergeProcs ?i5 ?i6 = MergeProcs ?i7 ?i8 =>
                             repeat match goal with
-                                   | [ H' : MergeIProcs i5 i6 = Some _ |- _ ] =>
+                                   | [ H' : MergeProcs i5 i6 = Some _ |- _ ] =>
                                      rewrite H' in H; clear H'
-                                   | [ H' : MergeIProcs i5 i6 = None |- _ ] =>
+                                   | [ H' : MergeProcs i5 i6 = None |- _ ] =>
                                      rewrite H' in H; clear H'
-                                   | [ H' : MergeIProcs i7 i8 = Some _ |- _ ] =>
+                                   | [ H' : MergeProcs i7 i8 = Some _ |- _ ] =>
                                      rewrite H' in H; clear H'
-                                   | [ H' : MergeIProcs i7 i8 = None |- _ ] =>
+                                   | [ H' : MergeProcs i7 i8 = None |- _ ] =>
                                      rewrite H' in H; clear H'
                                    end;
                               match type of H with
@@ -374,11 +374,11 @@ Module ChoreographyCompiler (Import E : Expression) (L : Locations) (LM : Locati
                               | Some _ = Some _ => inversion H; subst; clear H
                               | _ => idtac
                               end
-                          | MergeIProcs ?i5 ?i6 = None =>
+                          | MergeProcs ?i5 ?i6 = None =>
                             repeat match goal with
-                                   | [ H' : MergeIProcs i5 i6 = Some _ |- _ ] =>
+                                   | [ H' : MergeProcs i5 i6 = Some _ |- _ ] =>
                                      rewrite H' in H; clear H'
-                                   | [ H' : MergeIProcs i5 i6 = None |- _ ] =>
+                                   | [ H' : MergeProcs i5 i6 = None |- _ ] =>
                                      rewrite H' in H; clear H'
                                    end;
                               match type of H with
@@ -387,11 +387,11 @@ Module ChoreographyCompiler (Import E : Expression) (L : Locations) (LM : Locati
                               | Some _ = Some _ => inversion H; subst; clear H
                               | _ => idtac
                               end
-                          | None = MergeIProcs ?i7 ?i8 =>
+                          | None = MergeProcs ?i7 ?i8 =>
                             repeat match goal with
-                                   | [ H' : MergeIProcs i7 i8 = Some _ |- _ ] =>
+                                   | [ H' : MergeProcs i7 i8 = Some _ |- _ ] =>
                                      rewrite H' in H; clear H'
-                                   | [ H' : MergeIProcs i7 i8 = None |- _ ] =>
+                                   | [ H' : MergeProcs i7 i8 = None |- _ ] =>
                                      rewrite H' in H; clear H'
                                    end;
                               match type of H with
@@ -408,7 +408,7 @@ Module ChoreographyCompiler (Import E : Expression) (L : Locations) (LM : Locati
     3-5: erewrite KEquivProjectToEqual in eq_C0; [rewrite eq_C0 in H2|];
       rewrite H1 in H2; auto;
         constructor; intro e; symmetry; apply H; apply NTEquivExprSubst; auto.
-    3-5:  pose proof (H0 i c3 l (SecondaryC i) eq_refl eq_refl);
+    3-5:  pose proof (H0 p c3 l (SecondaryC p) eq_refl eq_refl);
       rewrite (H3 C21 H5) in eq_c3; rewrite eq_C21 in eq_c3; auto.
     - erewrite ChorExprSubstExt; [reflexivity|]; intros p n; unfold ChorUpExprSubst;
         destruct (L.eq_dec l4 p); destruct (L.eq_dec p l); subst;
@@ -434,6 +434,6 @@ Module ChoreographyCompiler (Import E : Expression) (L : Locations) (LM : Locati
     intros C1 C2 l K eqv; apply EquivToAltEquiv in eqv; apply AEquivProjectToEqual; auto.
   Qed.
 
-  Definition ProjectChorToProc C l K := OptionSequence IProcToProc (ProjectChor C l K).
+  Definition ProjectChorToProc C l K := OptionSequence ProcToProc (ProjectChor C l K).
 
 End ChoreographyCompiler.

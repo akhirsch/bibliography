@@ -27,32 +27,32 @@ Module InternalProcesses (Import E : Expression) (L : Locations) (LM : LocationM
 
   Import C.
   (* Intermediate language for process calculus. Can contain partial IChoices *)
-  (* Skip just exists so that <IProc, MergeIProcs> forms a monoid. This allows me to develop the unbiased version, which is easier to reason about for twist. *)
-  Inductive IProc : Set := 
-    Skip : IProc 
-  | EndProc : IProc
-  | VarProc : nat -> IProc
-  | DefProc : IProc -> IProc -> IProc
-  | SendProc : Loc -> Expr -> IProc -> IProc
-  | RecvProc : Loc -> IProc -> IProc
-  | EChoiceL : Loc -> IProc -> IProc
-  | EChoiceR : Loc -> IProc -> IProc
-  | IChoiceL : Loc -> IProc -> IProc
-  | IChoiceR : Loc -> IProc -> IProc
-  | IChoiceLR : Loc -> IProc -> IProc -> IProc
-  | IfThenElse : Expr -> IProc -> IProc -> IProc.
-  Hint Constructors IProc : acc.
+  (* Skip just exists so that <Proc, MergeProcs> forms a monoid. This allows me to develop the unbiased version, which is easier to reason about for twist. *)
+  Inductive Proc : Set := 
+    Skip : Proc 
+  | EndProc : Proc
+  | VarProc : nat -> Proc
+  | DefProc : Proc -> Proc -> Proc
+  | SendProc : Loc -> Expr -> Proc -> Proc
+  | RecvProc : Loc -> Proc -> Proc
+  | EChoiceL : Loc -> Proc -> Proc
+  | EChoiceR : Loc -> Proc -> Proc
+  | IChoiceL : Loc -> Proc -> Proc
+  | IChoiceR : Loc -> Proc -> Proc
+  | IChoiceLR : Loc -> Proc -> Proc -> Proc
+  | IfThenElse : Expr -> Proc -> Proc -> Proc.
+  Hint Constructors Proc : acc.
   Instance : EqDec Loc := L.eq_dec.
   Instance : EqDec Expr := ExprEqDec.
-  Definition IProcEqDec : forall P Q : IProc, {P = Q} + {P <> Q}.
+  Definition ProcEqDec : forall P Q : Proc, {P = Q} + {P <> Q}.
     decide equality.
     all: try (apply L.eq_dec).
     apply Nat.eq_dec.
     all: apply ExprEqDec.
   Defined.
-  Instance : EqDec IProc := IProcEqDec.
+  Instance : EqDec Proc := ProcEqDec.
 
-  Ltac IProcInduction x :=
+  Ltac ProcInduction x :=
     let P := fresh "P" in
     let Q := fresh "Q" in
     let p := fresh "p" in
@@ -61,7 +61,7 @@ Module InternalProcesses (Import E : Expression) (L : Locations) (LM : LocationM
     let IHQ := fresh "IH" Q in
     let n := fresh "n" in
     induction x as [| | n | P IHP Q IHQ | p e P IHP | p P IHP | p P IHP | p P IHP | p P IHP | p P IHP | p P IHP Q IHQ | e P IHP Q IHQ].
-  Ltac IProcDestruct x :=
+  Ltac ProcDestruct x :=
     let P := fresh "P" in
     let Q := fresh "Q" in
     let p := fresh "p" in
@@ -69,7 +69,7 @@ Module InternalProcesses (Import E : Expression) (L : Locations) (LM : LocationM
     let n := fresh "n" in
     induction x as [| | n | P Q | p e P | p P | p P | p P | p P | p P | p P Q | e P Q].
   
-  Fixpoint NoPartialIChoices (P : IProc) : Prop :=
+  Fixpoint NoPartialIChoices (P : Proc) : Prop :=
     match P with
     | Skip => False
     | EndProc => True
@@ -85,53 +85,53 @@ Module InternalProcesses (Import E : Expression) (L : Locations) (LM : LocationM
     | IfThenElse e P Q => NoPartialIChoices P /\ NoPartialIChoices Q
     end.
 
-  Fixpoint IProcToProc (P : IProc) : option P.Proc :=
+  Fixpoint ProcToProc (P : Proc) : option P.Proc :=
     match P with
     | Skip => None
     | EndProc => Some P.EndProc
     | VarProc X => Some (P.VarProc X)
     | DefProc P Q =>
-      match (IProcToProc P) with
+      match (ProcToProc P) with
       | Some P' =>
-        match (IProcToProc Q) with
+        match (ProcToProc Q) with
         | Some Q' => Some (P.DefProc P' Q')
         | None => None
         end
       | None => None
       end
     | SendProc p e P =>
-      match IProcToProc P with
+      match ProcToProc P with
       | Some P' => Some (P.SendProc p e P')
       | None => None
       end
     | RecvProc p P =>
-      match IProcToProc P with
+      match ProcToProc P with
       | Some P' => Some (P.RecvProc p P')
       | None => None
       end
     | EChoiceL p P =>
-      match IProcToProc P with
+      match ProcToProc P with
       | Some P' => Some (P.EChoiceL p P')
       | None => None
       end
     | EChoiceR p P =>
-      match IProcToProc P with
+      match ProcToProc P with
       | Some P' => Some (P.EChoiceR p P')
       | None => None
       end
     | IChoiceL p P => None
     | IChoiceR p P => None
     | IChoiceLR p P Q =>
-      match IProcToProc P with
-      | Some P' => match IProcToProc Q with
+      match ProcToProc P with
+      | Some P' => match ProcToProc Q with
                   | Some Q' => Some (P.IChoice p P' Q')
                   | None => None
                   end
       | None => None
       end
     | IfThenElse e P Q =>
-      match IProcToProc P with
-      | Some P' => match IProcToProc Q with
+      match ProcToProc P with
+      | Some P' => match ProcToProc Q with
                   | Some Q' => Some (P.IfThenElse e P' Q')
                   | None => None
                   end
@@ -139,26 +139,26 @@ Module InternalProcesses (Import E : Expression) (L : Locations) (LM : LocationM
       end
     end.
 
-  Theorem TotalIProcToProc : forall (P : IProc), NoPartialIChoices P -> IProcToProc P <> None.
+  Theorem TotalProcToProc : forall (P : Proc), NoPartialIChoices P -> ProcToProc P <> None.
   Proof using.
-    intro x; IProcInduction x; intro npic; cbn in *; try discriminate.
+    intro x; ProcInduction x; intro npic; cbn in *; try discriminate.
     all: repeat match goal with
                 | [H : False |- _] => destruct H
                 | [H : ?P, H' : ?P -> ?a <> ?a |- _ ] => exfalso; apply (H' H); auto
                 | [H : ?a <> ?a |- _] => exfalso; apply H; auto
                 | [|- Some _ <> None] => discriminate
                 | [H : ?P /\ ?Q |- _ ] => destruct H
-                | [|- context[IProcToProc ?P]] =>
+                | [|- context[ProcToProc ?P]] =>
                   let iptp := fresh "iptp_" P in
-                  destruct (IProcToProc P) eqn:iptp
+                  destruct (ProcToProc P) eqn:iptp
                 end.
   Qed.
-  Corollary TotalIProcToProc_Exists : forall (P : IProc), NoPartialIChoices P -> exists Q : P.Proc, IProcToProc P = Some Q.
+  Corollary TotalProcToProc_Exists : forall (P : Proc), NoPartialIChoices P -> exists Q : P.Proc, ProcToProc P = Some Q.
   Proof using.
-    intros P npic; destruct (IProcToProc P) as [Q|] eqn:iptp_P; [exists Q; reflexivity | apply TotalIProcToProc in iptp_P; auto; destruct iptp_P].
+    intros P npic; destruct (ProcToProc P) as [Q|] eqn:iptp_P; [exists Q; reflexivity | apply TotalProcToProc in iptp_P; auto; destruct iptp_P].
   Qed.
 
-  Fixpoint MergeIProcs (P Q : IProc) : option IProc :=
+  Fixpoint MergeProcs (P Q : Proc) : option Proc :=
     match P with
     | Skip => Some Q
     | EndProc =>
@@ -177,8 +177,8 @@ Module InternalProcesses (Import E : Expression) (L : Locations) (LM : LocationM
       match Q with
       | Skip => Some P
       | DefProc P2 Q2 =>
-        match MergeIProcs P1 P2 with
-        | Some P => match MergeIProcs Q1 Q2 with
+        match MergeProcs P1 P2 with
+        | Some P => match MergeProcs Q1 Q2 with
                    | Some Q => Some (DefProc P Q)
                    | None => None
                    end
@@ -192,7 +192,7 @@ Module InternalProcesses (Import E : Expression) (L : Locations) (LM : LocationM
       | SendProc q e' Q' =>
         if L.eq_dec p q
         then if ExprEqDec e e'
-             then match MergeIProcs P' Q' with
+             then match MergeProcs P' Q' with
                   | Some R => Some (SendProc p e R)
                   | None => None
                   end
@@ -205,7 +205,7 @@ Module InternalProcesses (Import E : Expression) (L : Locations) (LM : LocationM
       | Skip => Some P
       | RecvProc q Q' =>
         if L.eq_dec p q
-        then match MergeIProcs P' Q' with
+        then match MergeProcs P' Q' with
              | Some R => Some (RecvProc p R)
              | _ => None
              end
@@ -217,7 +217,7 @@ Module InternalProcesses (Import E : Expression) (L : Locations) (LM : LocationM
       | Skip => Some P
       | EChoiceL q Q' =>
         if L.eq_dec p q
-        then match MergeIProcs P' Q' with
+        then match MergeProcs P' Q' with
              | Some R => Some (EChoiceL p R)
              | None => None
              end
@@ -229,7 +229,7 @@ Module InternalProcesses (Import E : Expression) (L : Locations) (LM : LocationM
       | Skip => Some P
       | EChoiceR q Q' =>
         if L.eq_dec p q
-        then match MergeIProcs P' Q' with
+        then match MergeProcs P' Q' with
              | Some R => Some (EChoiceR p R)
              | None => None
              end
@@ -241,7 +241,7 @@ Module InternalProcesses (Import E : Expression) (L : Locations) (LM : LocationM
       | Skip => Some P
       | IChoiceL q P2 =>
         if L.eq_dec p q
-        then match MergeIProcs P1 P2 with
+        then match MergeProcs P1 P2 with
              | Some R => Some (IChoiceL p R)
              | None => None
              end
@@ -252,7 +252,7 @@ Module InternalProcesses (Import E : Expression) (L : Locations) (LM : LocationM
         else None
       | IChoiceLR q P2 Q1 =>
         if L.eq_dec p q
-        then match MergeIProcs P1 P2 with
+        then match MergeProcs P1 P2 with
              | Some R => Some (IChoiceLR p R Q1)
              | None => None
              end
@@ -268,14 +268,14 @@ Module InternalProcesses (Import E : Expression) (L : Locations) (LM : LocationM
         else None
       | IChoiceR q Q2 =>
         if L.eq_dec p q
-        then match MergeIProcs Q1 Q2 with
+        then match MergeProcs Q1 Q2 with
              | Some R => Some (IChoiceR p R)
              | None => None
              end
         else None
       | IChoiceLR q P1 Q2 =>
         if L.eq_dec p q
-        then match MergeIProcs Q1 Q2 with
+        then match MergeProcs Q1 Q2 with
              | Some R => Some (IChoiceLR p P1 R)
              | None => None
              end
@@ -287,22 +287,22 @@ Module InternalProcesses (Import E : Expression) (L : Locations) (LM : LocationM
       | Skip => Some P
       | IChoiceL q P2 =>
         if L.eq_dec p q
-        then match MergeIProcs P1 P2 with
+        then match MergeProcs P1 P2 with
              | Some R => Some (IChoiceLR p R Q1)
              | None => None
              end
         else None
       | IChoiceR q Q2 =>
         if L.eq_dec p q
-        then match MergeIProcs Q1 Q2 with
+        then match MergeProcs Q1 Q2 with
              | Some R => Some (IChoiceLR p P1 R)
              | None => None
              end
         else None
       | IChoiceLR q P2 Q2 =>
         if L.eq_dec p q
-        then match MergeIProcs P1 P2 with
-             | Some P => match MergeIProcs Q1 Q2 with
+        then match MergeProcs P1 P2 with
+             | Some P => match MergeProcs Q1 Q2 with
                         | Some Q => Some (IChoiceLR p P Q)
                         | None => None
                         end
@@ -316,8 +316,8 @@ Module InternalProcesses (Import E : Expression) (L : Locations) (LM : LocationM
       | Skip => Some P
       | IfThenElse e' P2 Q2 =>
         if ExprEqDec e e'
-        then match MergeIProcs P1 P2 with
-             | Some P => match MergeIProcs Q1 Q2 with
+        then match MergeProcs P1 P2 with
+             | Some P => match MergeProcs Q1 Q2 with
                         | Some Q => Some (IfThenElse e P Q)
                         | None => None
                         end
@@ -328,7 +328,7 @@ Module InternalProcesses (Import E : Expression) (L : Locations) (LM : LocationM
       end
     end.
 
-  Lemma MergeIProcsComm : forall P Q, MergeIProcs P Q = MergeIProcs Q P.
+  Lemma MergeProcsComm : forall P Q, MergeProcs P Q = MergeProcs Q P.
   Proof using.
     intros P; induction P; destruct Q; cbn; auto.
     all: repeat match goal with
@@ -337,13 +337,13 @@ Module InternalProcesses (Import E : Expression) (L : Locations) (LM : LocationM
                 | [|- context[Nat.eq_dec ?a ?b]] => destruct (Nat.eq_dec a b); subst; auto
                 | [|- context[L.eq_dec ?a ?b]] => destruct (L.eq_dec a b); LF.LocationOrder; subst; auto
                 | [|- context[ExprEqDec ?a ?b]] => destruct (ExprEqDec a b); LF.LocationOrder; subst; auto
-                | [|- context[MergeIProcs ?a ?b]] => try (let eq := fresh "merge_" a "_" b in destruct (MergeIProcs a b) eqn:eq); simp MergeIProc; cbn; auto
-                | [ IH : forall Q, MergeIProcs ?P Q = MergeIProcs Q ?P, H1 : MergeIProcs ?P ?Q = ?a, H2 : MergeIProcs ?Q ?P = ?b |- _ ] =>
+                | [|- context[MergeProcs ?a ?b]] => try (let eq := fresh "merge_" a "_" b in destruct (MergeProcs a b) eqn:eq); simp MergeProc; cbn; auto
+                | [ IH : forall Q, MergeProcs ?P Q = MergeProcs Q ?P, H1 : MergeProcs ?P ?Q = ?a, H2 : MergeProcs ?Q ?P = ?b |- _ ] =>
                   rewrite IH in H1; rewrite H2 in H1; inversion H1; subst; clear H1
                 end.
   Qed.
 
-  Lemma MergeIProcsInvolutive : forall P, MergeIProcs P P = Some P.
+  Lemma MergeProcsInvolutive : forall P, MergeProcs P P = Some P.
   Proof using.
     intro P; induction P; cbn; auto.
     all: repeat match goal with
@@ -352,14 +352,14 @@ Module InternalProcesses (Import E : Expression) (L : Locations) (LM : LocationM
                 | [|- context[Nat.eq_dec ?a ?b]] => destruct (Nat.eq_dec a b); subst; auto
                 | [|- context[L.eq_dec ?a ?b]] => destruct (L.eq_dec a b); LF.LocationOrder; subst; auto
                 | [|- context[ExprEqDec ?a ?b]] => destruct (ExprEqDec a b); LF.LocationOrder; subst; auto
-                | [ H : MergeIProcs ?a ?a = Some ?a |- context[MergeIProcs ?a ?a]] => rewrite H; auto
+                | [ H : MergeProcs ?a ?a = Some ?a |- context[MergeProcs ?a ?a]] => rewrite H; auto
                 end.
   Qed.
-  Lemma MergeIProcsIdentityL : forall P, MergeIProcs Skip P = Some P.
+  Lemma MergeProcsIdentityL : forall P, MergeProcs Skip P = Some P.
   Proof using.
     intro P; cbn; auto.
   Qed.
-  Lemma MergeIProcsIdentityR : forall P, MergeIProcs P Skip = Some P.
+  Lemma MergeProcsIdentityR : forall P, MergeProcs P Skip = Some P.
   Proof using.
     destruct P; cbn; auto.
   Qed.
@@ -378,8 +378,8 @@ Module InternalProcesses (Import E : Expression) (L : Locations) (LM : LocationM
                       | None => None
                       end.
 
-  Inductive MarkedSequence : IProc -> IProc -> IProc -> IProc -> Prop := Mark : forall P Q R S, MarkedSequence P Q R S.
-  Lemma MergeIProcsAssoc : forall P Q R, OptionSequence (MergeIProcs P) (MergeIProcs Q R) = OptionSequence (fun P => MergeIProcs P R) (MergeIProcs P Q).
+  Inductive MarkedSequence : Proc -> Proc -> Proc -> Proc -> Prop := Mark : forall P Q R S, MarkedSequence P Q R S.
+  Lemma MergeProcsAssoc : forall P Q R, OptionSequence (MergeProcs P) (MergeProcs Q R) = OptionSequence (fun P => MergeProcs P R) (MergeProcs P Q).
   Proof using.
     intro P; induction P; intros Q R; destruct Q; destruct R; cbn;
       repeat match goal with
@@ -399,62 +399,62 @@ Module InternalProcesses (Import E : Expression) (L : Locations) (LM : LocationM
              | [ |- context[Nat.eq_dec ?a ?b]] => destruct (Nat.eq_dec a b); subst; cbn
              | [ |- context[L.eq_dec ?a ?b]] => destruct (L.eq_dec a b); subst; cbn
              | [ |- context[ExprEqDec ?a ?b]] => destruct (ExprEqDec a b); subst; cbn
-             | [ |- context[MergeIProcs ?a ?b]] => let eq := fresh "eq" in destruct (MergeIProcs a b) eqn:eq; cbn
-             (* | [ IH : forall Q R, OptionSequence (MergeIProcs ?P) (MergeIProcs Q R) = OptionSequence (fun S => MergeIProcs S R) (MergeIProcs ?P Q), H : MergeIProcs ?P ?Q = Some ?S, H' : MergeIProcs ?Q ?R = Some ?T, eq1 : MergeIProcs ?S ?R = _, eq2 : MergeIProcs ?P ?T = _ |- _ ] => *)
+             | [ |- context[MergeProcs ?a ?b]] => let eq := fresh "eq" in destruct (MergeProcs a b) eqn:eq; cbn
+             (* | [ IH : forall Q R, OptionSequence (MergeProcs ?P) (MergeProcs Q R) = OptionSequence (fun S => MergeProcs S R) (MergeProcs ?P Q), H : MergeProcs ?P ?Q = Some ?S, H' : MergeProcs ?Q ?R = Some ?T, eq1 : MergeProcs ?S ?R = _, eq2 : MergeProcs ?P ?T = _ |- _ ] => *)
              (*   lazymatch goal with *)
              (*   | [_ : MarkedSequence P Q R S |- _ ] => fail *)
              (*   | _ => pose proof (Mark P Q R S); let eq := fresh "eq" in pose proof (IH Q R) as eq; rewrite H' in eq; rewrite H in eq; cbn in eq; rewrite eq1 in eq; rewrite eq2 in eq; cbn in eq *)
              (*   end *)
-             | [ IH : forall Q R, OptionSequence (MergeIProcs ?P) (MergeIProcs Q R) = OptionSequence (fun S => MergeIProcs S R) (MergeIProcs ?P Q), H : MergeIProcs ?P ?Q = _, H' : MergeIProcs ?Q ?R = _ |- _ ] =>
+             | [ IH : forall Q R, OptionSequence (MergeProcs ?P) (MergeProcs Q R) = OptionSequence (fun S => MergeProcs S R) (MergeProcs ?P Q), H : MergeProcs ?P ?Q = _, H' : MergeProcs ?Q ?R = _ |- _ ] =>
                lazymatch goal with
                | [_ : MarkedSequence P Q P Q |- _ ] => fail
                | _ => pose proof (Mark P Q P Q); let eq := fresh "eq" in pose proof (IH Q R) as eq; rewrite H' in eq; rewrite H in eq; cbn in eq
                end
-             | [ H : MergeIProcs ?a ?b = MergeIProcs ?c ?d, H' : MergeIProcs ?a ?b = Some _, H'' : MergeIProcs ?c ?d = _ |- _ ] =>
+             | [ H : MergeProcs ?a ?b = MergeProcs ?c ?d, H' : MergeProcs ?a ?b = Some _, H'' : MergeProcs ?c ?d = _ |- _ ] =>
                rewrite H' in H; rewrite H'' in H; inversion H; subst; clear H
-             | [ H : MergeIProcs ?a ?b = MergeIProcs ?c ?d, H' : MergeIProcs ?a ?b = None, H'' : MergeIProcs ?c ?d = _ |- _ ] =>
+             | [ H : MergeProcs ?a ?b = MergeProcs ?c ?d, H' : MergeProcs ?a ?b = None, H'' : MergeProcs ?c ?d = _ |- _ ] =>
                rewrite H' in H; rewrite H'' in H; inversion H; subst; clear H
              end.
   Qed.
-  Corollary MergeIProcsAssoc' : forall P Q R S T, MergeIProcs P Q = Some S -> MergeIProcs Q R = Some T -> MergeIProcs S R = MergeIProcs P T.
+  Corollary MergeProcsAssoc' : forall P Q R S T, MergeProcs P Q = Some S -> MergeProcs Q R = Some T -> MergeProcs S R = MergeProcs P T.
   Proof using.
-    intros P Q R S T H H0; pose proof (MergeIProcsAssoc P Q R) as eq; rewrite H in eq; rewrite H0 in eq; cbn in eq; auto.
+    intros P Q R S T H H0; pose proof (MergeProcsAssoc P Q R) as eq; rewrite H in eq; rewrite H0 in eq; cbn in eq; auto.
   Qed.
 
-  Fixpoint MergeIProcsList (l : list IProc) : option IProc :=
+  Fixpoint MergeProcsList (l : list Proc) : option Proc :=
     match l with
     | [] => Some Skip
     | [P] => Some P
-    | P :: l => OptionSequence (MergeIProcs P) (MergeIProcsList l)
+    | P :: l => OptionSequence (MergeProcs P) (MergeProcsList l)
     end.
 
-  Lemma MergeIProcsList2 : forall P Q, MergeIProcs P Q = MergeIProcsList [P; Q].
+  Lemma MergeProcsList2 : forall P Q, MergeProcs P Q = MergeProcsList [P; Q].
   Proof using.
     intros P Q; cbn; auto.
   Qed.
 
-  Fixpoint Deduplicate_ProcList (l : list IProc) : list IProc :=
+  Fixpoint Deduplicate_ProcList (l : list Proc) : list Proc :=
     match l with
     | [] => []
-    | P :: l => if in_dec IProcEqDec P l then Deduplicate_ProcList l else P :: (Deduplicate_ProcList l)
+    | P :: l => if in_dec ProcEqDec P l then Deduplicate_ProcList l else P :: (Deduplicate_ProcList l)
     end.
 
   Lemma Deduplicate_In : forall P l, In P l -> In P (Deduplicate_ProcList l).
   Proof using.
     intros P l; induction l; cbn; auto; intro i.
-    destruct i as [eq | i]; subst; auto. destruct (in_dec IProcEqDec P l); auto; left; auto.
-    destruct (in_dec IProcEqDec a l); auto; right; auto.
+    destruct i as [eq | i]; subst; auto. destruct (in_dec ProcEqDec P l); auto; left; auto.
+    destruct (in_dec ProcEqDec a l); auto; right; auto.
   Qed.
     
   Lemma Deduplicate_In2In : forall P l, In P (Deduplicate_ProcList l) -> In P l.
   Proof using.
     intros P l; induction l; cbn; auto; intro i.
-    destruct (in_dec IProcEqDec a l). right; auto. destruct i; auto.
+    destruct (in_dec ProcEqDec a l). right; auto. destruct i; auto.
   Qed.
   Lemma NoDup_Deduplicate : forall l, NoDup (Deduplicate_ProcList l).
   Proof using.
     intro l; induction l; cbn; try (constructor; auto; fail).
-    destruct (in_dec IProcEqDec a l); auto. constructor; auto. intro i; apply n; apply Deduplicate_In2In; auto.
+    destruct (in_dec ProcEqDec a l); auto. constructor; auto. intro i; apply n; apply Deduplicate_In2In; auto.
   Qed.
 
   Lemma EquivToPerm : forall l l', (forall P, In P l <-> In P l') -> Permutation (Deduplicate_ProcList l) (Deduplicate_ProcList l').
@@ -463,69 +463,69 @@ Module InternalProcesses (Import E : Expression) (L : Locations) (LM : LocationM
     intro P; split; intro i; apply Deduplicate_In2In in i; apply eqv in i; apply Deduplicate_In in i; auto.
   Qed.
 
-  Lemma MergeIProcsListPerm : forall l l', Permutation l l' -> MergeIProcsList l = MergeIProcsList l'.
+  Lemma MergeProcsListPerm : forall l l', Permutation l l' -> MergeProcsList l = MergeProcsList l'.
   Proof using.
     intros l l' perm; induction perm; auto; cbn.
     - destruct l. apply Permutation_nil in perm; subst; auto. destruct l'. apply Permutation_sym in perm; apply Permutation_nil_cons in perm; destruct perm.
       rewrite IHperm; auto.
-    - destruct l; cbn. apply MergeIProcsComm.
+    - destruct l; cbn. apply MergeProcsComm.
       destruct (match l with
-                | [] => Some i
-                | _ :: _ => OptionSequence (MergeIProcs i) (MergeIProcsList l)
+                | [] => Some p
+                | _ :: _ => OptionSequence (MergeProcs p) (MergeProcsList l)
                 end); cbn; auto.
-      pose proof (MergeIProcsAssoc x y i0).
-      pose proof (MergeIProcsAssoc y x i0).
-      rewrite MergeIProcsComm with (P := y) (Q := x) in H0. rewrite <- H0 in H. rewrite H. reflexivity.
-    - transitivity (MergeIProcsList l'); auto.
+      pose proof (MergeProcsAssoc x y p0).
+      pose proof (MergeProcsAssoc y x p0).
+      rewrite MergeProcsComm with (P := y) (Q := x) in H0. rewrite <- H0 in H. rewrite H. reflexivity.
+    - transitivity (MergeProcsList l'); auto.
   Qed.
 
-  Lemma MergeIProcsIn : forall P l, In P l -> MergeIProcsList (P :: l) = MergeIProcsList l.
+  Lemma MergeProcsIn : forall P l, In P l -> MergeProcsList (P :: l) = MergeProcsList l.
   Proof using.
     intros P l; revert P; induction l as [| Q l]; intros P i; cbn; [inversion i|].
-    destruct l; [cbn; destruct i as [eq|i]; [|inversion i]; subst; apply MergeIProcsInvolutive|].
+    destruct l; [cbn; destruct i as [eq|i]; [|inversion i]; subst; apply MergeProcsInvolutive|].
     destruct i as [eq|i]; subst; cbn; destruct (match l with
-                                                | [] => Some i0
-                                                | _ :: _ => OptionSequence (MergeIProcs i0) (MergeIProcsList l)
+                                                | [] => Some p
+                                                | _ :: _ => OptionSequence (MergeProcs p) (MergeProcsList l)
                                                 end) eqn:eq; cbn; auto.
-    rewrite (MergeIProcsAssoc P P i); rewrite MergeIProcsInvolutive; cbn; auto.
+    rewrite (MergeProcsAssoc P P p0); rewrite MergeProcsInvolutive; cbn; auto.
     pose proof (IHl P i) as H; cbn in H. rewrite eq in H.
-    rewrite MergeIProcsComm with (P := Q) (Q := i1).
-    rewrite (MergeIProcsAssoc P i1 Q). cbn in H. rewrite H. cbn. reflexivity.
+    rewrite MergeProcsComm with (P := Q) (Q := p0).
+    rewrite (MergeProcsAssoc P p0 Q). cbn in H. rewrite H. cbn. reflexivity.
   Qed.
     
 
-  Lemma MergeIProcsDeduplicate : forall l, MergeIProcsList l = MergeIProcsList (Deduplicate_ProcList l).
+  Lemma MergeProcsDeduplicate : forall l, MergeProcsList l = MergeProcsList (Deduplicate_ProcList l).
   Proof using.
     intro l; induction l; cbn; auto.
-    destruct (in_dec IProcEqDec a l); cbn.
-    destruct l; [inversion i |rewrite <- IHl; apply MergeIProcsIn in i; rewrite <- i at 2; auto].
+    destruct (in_dec ProcEqDec a l); cbn.
+    destruct l; [inversion i |rewrite <- IHl; apply MergeProcsIn in i; rewrite <- i at 2; auto].
     rewrite <- IHl.
     destruct l. cbn; auto.
-    destruct (Deduplicate_ProcList (i :: l)) eqn:eq. assert (In i []) as H by (rewrite <- eq; apply Deduplicate_In; left; auto); inversion H.
+    destruct (Deduplicate_ProcList (p :: l)) eqn:eq. assert (In p []) as H by (rewrite <- eq; apply Deduplicate_In; left; auto); inversion H.
     reflexivity.
   Qed.
 
-  Corollary MergeIProcsEquiv : forall l l', (forall P, In P l <-> In P l') -> MergeIProcsList l = MergeIProcsList l'.
+  Corollary MergeProcsEquiv : forall l l', (forall P, In P l <-> In P l') -> MergeProcsList l = MergeProcsList l'.
   Proof using.
-    intros l l' H; rewrite MergeIProcsDeduplicate; rewrite (MergeIProcsDeduplicate l'); apply MergeIProcsListPerm; apply EquivToPerm; auto.
+    intros l l' H; rewrite MergeProcsDeduplicate; rewrite (MergeProcsDeduplicate l'); apply MergeProcsListPerm; apply EquivToPerm; auto.
   Qed.
 
-  Lemma MergeIProcsApp : forall l l', (OptionSequence2 MergeIProcs) (MergeIProcsList l) (MergeIProcsList l') = MergeIProcsList (l ++ l').
+  Lemma MergeProcsApp : forall l l', (OptionSequence2 MergeProcs) (MergeProcsList l) (MergeProcsList l') = MergeProcsList (l ++ l').
   Proof using.
     intro l; induction l as [|P l]; cbn; intro l'.
-    destruct (MergeIProcsList l'); auto.
+    destruct (MergeProcsList l'); auto.
     rewrite <- IHl.
-    destruct (l ++ l') eqn:eq. apply app_eq_nil in eq; destruct eq; subst; cbn; rewrite MergeIProcsIdentityR; reflexivity.
-    destruct l; cbn in eq; subst. rewrite IHl. rewrite app_nil_l. destruct (MergeIProcsList (i :: l0)); cbn; auto.
-    inversion eq; subst; clear eq. cbn. destruct (match l with | [] => Some i | _ :: _ => OptionSequence (MergeIProcs i) (MergeIProcsList l) end); cbn; auto.
-    destruct (MergeIProcsList l'); cbn.
-    rewrite (MergeIProcsAssoc P i0 i1). destruct (MergeIProcs P i0); cbn; reflexivity.
-    destruct (MergeIProcs P i0); cbn; reflexivity.
+    destruct (l ++ l') eqn:eq. apply app_eq_nil in eq; destruct eq; subst; cbn; rewrite MergeProcsIdentityR; reflexivity.
+    destruct l; cbn in eq; subst. rewrite IHl. rewrite app_nil_l. destruct (MergeProcsList (p :: l0)); cbn; auto.
+    inversion eq; subst; clear eq. cbn. destruct (match l with | [] => Some p | _ :: _ => OptionSequence (MergeProcs p) (MergeProcsList l) end); cbn; auto.
+    destruct (MergeProcsList l'); cbn.
+    rewrite (MergeProcsAssoc P p0 p1). destruct (MergeProcs P p0); cbn; reflexivity.
+    destruct (MergeProcs P p0); cbn; reflexivity.
   Qed.
        
-  Lemma MergeIProcsTwist : forall P1 P2 Q1 Q2, (OptionSequence2 MergeIProcs) (MergeIProcs P1 Q1) (MergeIProcs P2 Q2) = (OptionSequence2 MergeIProcs) (MergeIProcs P1 P2) (MergeIProcs Q1 Q2).
+  Lemma MergeProcsTwist : forall P1 P2 Q1 Q2, (OptionSequence2 MergeProcs) (MergeProcs P1 Q1) (MergeProcs P2 Q2) = (OptionSequence2 MergeProcs) (MergeProcs P1 P2) (MergeProcs Q1 Q2).
   Proof using.
-    intros P1 P2 Q1 Q2. repeat rewrite MergeIProcsList2. repeat rewrite MergeIProcsApp. apply MergeIProcsListPerm.
+    intros P1 P2 Q1 Q2. repeat rewrite MergeProcsList2. repeat rewrite MergeProcsApp. apply MergeProcsListPerm.
     cbn; repeat constructor; auto; fail.
   Qed.
 
@@ -544,7 +544,7 @@ Module InternalProcesses (Import E : Expression) (L : Locations) (LM : LocationM
   Hint Resolve ProcRenamingUp : PiC.
 
   Reserved Notation "P ⟨iπ| ξ ⟩" (at level 15).
-  Fixpoint ProcRenaming (P : IProc) (ξ : nat -> nat) : IProc :=
+  Fixpoint ProcRenaming (P : Proc) (ξ : nat -> nat) : Proc :=
     match P with
     | EndProc => EndProc
     | Skip => Skip
@@ -561,7 +561,7 @@ Module InternalProcesses (Import E : Expression) (L : Locations) (LM : LocationM
     end
   where "P ⟨iπ| ξ ⟩" := (ProcRenaming P ξ).
 
-    Lemma ProcRenamingExt : forall (P : IProc) (ξ1 ξ2 : nat -> nat),
+    Lemma ProcRenamingExt : forall (P : Proc) (ξ1 ξ2 : nat -> nat),
       (forall n, ξ1 n = ξ2 n)
       -> P ⟨iπ| ξ1⟩ = P ⟨iπ| ξ2⟩.
   Proof.
@@ -584,7 +584,7 @@ Module InternalProcesses (Import E : Expression) (L : Locations) (LM : LocationM
   Hint Resolve ProcRenamingIdUp : PiC.
   Hint Rewrite ProcRenamingIdUp : PiC.
 
-  Lemma ProcRenamingIdSpec : forall (P : IProc),
+  Lemma ProcRenamingIdSpec : forall (P : Proc),
       P ⟨iπ| ProcRenamingId⟩ = P.
   Proof.
     intro P; induction P; simpl; try reflexivity.
@@ -597,7 +597,7 @@ Module InternalProcesses (Import E : Expression) (L : Locations) (LM : LocationM
   Qed.    
 
   Reserved Notation "P ⟨iπe| ξ ⟩" (at level 15).
-  Fixpoint ProcExprRenaming (P : IProc) (ξ : nat -> nat) : IProc :=
+  Fixpoint ProcExprRenaming (P : Proc) (ξ : nat -> nat) : Proc :=
     match P with
     | EndProc => EndProc
     | Skip => Skip
@@ -614,7 +614,7 @@ Module InternalProcesses (Import E : Expression) (L : Locations) (LM : LocationM
     end
   where "P ⟨iπe| ξ ⟩" := (ProcExprRenaming P ξ).
 
-  Lemma ProcExprRenamingExt : forall (P : IProc) (ξ1 ξ2 : nat -> nat),
+  Lemma ProcExprRenamingExt : forall (P : Proc) (ξ1 ξ2 : nat -> nat),
       (forall n, ξ1 n = ξ2 n)
       -> P ⟨iπe| ξ1⟩ = P ⟨iπe| ξ2⟩.
   Proof.
@@ -626,7 +626,7 @@ Module InternalProcesses (Import E : Expression) (L : Locations) (LM : LocationM
     intro n; unfold ExprUpRename; destruct n; auto.
   Qed.
 
-  Lemma ProcExprRenamingId : forall (P : IProc),
+  Lemma ProcExprRenamingId : forall (P : Proc),
       P ⟨iπe| ExprIdRenaming⟩ = P.
   Proof.
     intro P; induction P; simpl; auto.
@@ -637,13 +637,13 @@ Module InternalProcesses (Import E : Expression) (L : Locations) (LM : LocationM
     all: rewrite ExprIdRenamingSpec; reflexivity.
   Qed.
 
-    Definition ProcSubstUp : (nat -> IProc) -> nat -> IProc :=
+    Definition ProcSubstUp : (nat -> Proc) -> nat -> Proc :=
     fun σ n => match n with
             | 0 => VarProc 0
             | S n' => σ n' ⟨iπ| S⟩
             end.
 
-  Lemma ProcSubstUpExt : forall (σ1 σ2 : nat -> IProc),
+  Lemma ProcSubstUpExt : forall (σ1 σ2 : nat -> Proc),
       (forall n, σ1 n = σ2 n)
       -> forall n, ProcSubstUp σ1 n = ProcSubstUp σ2 n.
   Proof.
@@ -651,7 +651,7 @@ Module InternalProcesses (Import E : Expression) (L : Locations) (LM : LocationM
   Qed.
 
   Reserved Notation "P [iπ| σ ]" (at level 15).
-  Fixpoint ProcSubst (P : IProc) (σ : nat -> IProc) :=
+  Fixpoint ProcSubst (P : Proc) (σ : nat -> Proc) :=
     match P with
     | EndProc => EndProc
     | Skip => Skip
@@ -668,7 +668,7 @@ Module InternalProcesses (Import E : Expression) (L : Locations) (LM : LocationM
     end
   where "P [iπ| σ ]" := (ProcSubst P σ).
 
-  Lemma ProcSubstExt : forall (P : IProc) (σ1 σ2 : nat -> IProc),
+  Lemma ProcSubstExt : forall (P : Proc) (σ1 σ2 : nat -> Proc),
       (forall n, σ1 n = σ2 n)
       -> P [iπ| σ1] = P [iπ| σ2].
   Proof.
@@ -681,13 +681,13 @@ Module InternalProcesses (Import E : Expression) (L : Locations) (LM : LocationM
     all: apply ProcSubstUpExt; auto.
   Qed.
 
-  Definition ProcIdSubst : nat -> IProc := VarProc.
+  Definition ProcIdSubst : nat -> Proc := VarProc.
   Lemma ProcIdSubstUp : forall n, ProcSubstUp ProcIdSubst n = ProcIdSubst n.
   Proof.
     intro n; unfold ProcSubstUp; unfold ProcIdSubst; destruct n; simpl; reflexivity.
   Qed.
 
-  Lemma ProcSubstId : forall (P : IProc), P [iπ| ProcIdSubst] = P.
+  Lemma ProcSubstId : forall (P : Proc), P [iπ| ProcIdSubst] = P.
   Proof.
     intro P; induction P; simpl; auto.
     2-7: rewrite IHP; reflexivity.
@@ -697,7 +697,7 @@ Module InternalProcesses (Import E : Expression) (L : Locations) (LM : LocationM
   Qed.
 
   Reserved Notation "P [iπe| σ ]" (at level 15).
-  Fixpoint ProcExprSubst (P : IProc) (σ : nat -> Expr) : IProc :=
+  Fixpoint ProcExprSubst (P : Proc) (σ : nat -> Expr) : Proc :=
     match P with
     | EndProc => EndProc
     | Skip => Skip
@@ -714,7 +714,7 @@ Module InternalProcesses (Import E : Expression) (L : Locations) (LM : LocationM
     end
   where "P [iπe| σ ]" := (ProcExprSubst P σ).
 
-  Lemma ProcExprSubstExt : forall (P : IProc) (σ1 σ2 : nat -> Expr),
+  Lemma ProcExprSubstExt : forall (P : Proc) (σ1 σ2 : nat -> Expr),
       (forall n, σ1 n = σ2 n)
       -> P [iπe| σ1] = P [iπe| σ2].
   Proof.
@@ -726,7 +726,7 @@ Module InternalProcesses (Import E : Expression) (L : Locations) (LM : LocationM
     intro n; unfold ExprUpSubst; destruct n; auto; rewrite ext_eq; reflexivity.
   Qed.
 
-  Lemma ProcExprSubstId : forall (P : IProc),
+  Lemma ProcExprSubstId : forall (P : Proc),
       P [iπe| ExprIdSubst] = P.
   Proof.
     intro P; induction P; simpl; auto.
@@ -744,20 +744,20 @@ Module InternalProcesses (Import E : Expression) (L : Locations) (LM : LocationM
             | S n' => ExprVar n'
             end.
 
-  Definition PiDefSubst : IProc -> nat -> IProc :=
+  Definition PiDefSubst : Proc -> nat -> Proc :=
     fun P n => match n with
             | 0 => P [iπ| (fun m => match m with | 0 => DefProc P P | S m' => VarProc m' end)]
             | S n' => VarProc n'
             end.
 
-  Inductive PiCalcStep : LM.t IProc -> LM.t IProc -> Prop :=
-    CommEStep : forall (p q : Loc) (e e' : Expr) (P : IProc) (Π Π' : LM.t IProc),
+  Inductive PiCalcStep : LM.t Proc -> LM.t Proc -> Prop :=
+    CommEStep : forall (p q : Loc) (e e' : Expr) (P : Proc) (Π Π' : LM.t Proc),
       ExprStep e e'
       -> LM.MapsTo p (SendProc q e P) Π
       -> (forall r, r <> p -> forall Q, LM.MapsTo r Q Π <-> LM.MapsTo r Q Π') (* Perhaps we could get away with only one direction? *)
       -> LM.MapsTo p (SendProc q e' P) Π'
       -> PiCalcStep Π Π'
-  | CommVStep : forall (p q : Loc) (v : Expr) (P Q : IProc) (Π Π' : LM.t IProc),
+  | CommVStep : forall (p q : Loc) (v : Expr) (P Q : Proc) (Π Π' : LM.t Proc),
       ExprVal v
       -> LM.MapsTo p (SendProc q v P) Π
       -> LM.MapsTo q (RecvProc p Q) Π
@@ -765,49 +765,49 @@ Module InternalProcesses (Import E : Expression) (L : Locations) (LM : LocationM
       -> LM.MapsTo p P Π'
       -> LM.MapsTo q (Q [iπe| CommSubst v]) Π'
       -> PiCalcStep Π Π'
-  | IfEStep : forall (p : Loc) (e e' : Expr) (P Q : IProc) (Π Π' : LM.t IProc),
+  | IfEStep : forall (p : Loc) (e e' : Expr) (P Q : Proc) (Π Π' : LM.t Proc),
       ExprStep e e'
       -> LM.MapsTo p (IfThenElse e P Q) Π
-      -> (forall r, r <> p -> forall R : IProc, LM.MapsTo r R Π <-> LM.MapsTo r R Π')
+      -> (forall r, r <> p -> forall R : Proc, LM.MapsTo r R Π <-> LM.MapsTo r R Π')
       -> LM.MapsTo p (IfThenElse e' P Q) Π'
       -> PiCalcStep Π Π'
-  | IfTrueStep : forall (p : Loc) (P Q : IProc) (Π Π' : LM.t IProc),
+  | IfTrueStep : forall (p : Loc) (P Q : Proc) (Π Π' : LM.t Proc),
       LM.MapsTo p (IfThenElse tt P Q) Π
-      -> (forall r, r <> p -> forall R : IProc, LM.MapsTo r R Π <-> LM.MapsTo r R Π')
+      -> (forall r, r <> p -> forall R : Proc, LM.MapsTo r R Π <-> LM.MapsTo r R Π')
       -> LM.MapsTo p P Π'
       -> PiCalcStep Π Π'
-  | IfFalseStep : forall (p : Loc) (P Q : IProc) (Π Π' : LM.t IProc),
+  | IfFalseStep : forall (p : Loc) (P Q : Proc) (Π Π' : LM.t Proc),
       LM.MapsTo p (IfThenElse ff P Q) Π
-      -> (forall r, r <> p -> forall R : IProc, LM.MapsTo r R Π <-> LM.MapsTo r R Π')
+      -> (forall r, r <> p -> forall R : Proc, LM.MapsTo r R Π <-> LM.MapsTo r R Π')
       -> LM.MapsTo p Q Π'
       -> PiCalcStep Π Π'
-  | DefStep : forall (p : Loc) (P Q : IProc) (Π Π' : LM.t IProc),
+  | DefStep : forall (p : Loc) (P Q : Proc) (Π Π' : LM.t Proc),
       LM.MapsTo p (DefProc P Q) Π
-      -> (forall r, r <> p -> forall R : IProc, LM.MapsTo p R Π <-> LM.MapsTo p R Π')
+      -> (forall r, r <> p -> forall R : Proc, LM.MapsTo p R Π <-> LM.MapsTo p R Π')
       -> LM.MapsTo p (Q [iπ| PiDefSubst P]) Π'
       -> PiCalcStep Π Π'
-  | ChooseLLStep : forall (p q : Loc) (P Q : IProc) (Π Π' : LM.t IProc),
+  | ChooseLLStep : forall (p q : Loc) (P Q : Proc) (Π Π' : LM.t Proc),
       LM.MapsTo p (EChoiceL q P) Π
       -> LM.MapsTo q (IChoiceL p Q) Π
       -> (forall r, p <> r -> q <> r -> forall R, LM.MapsTo r R Π <-> LM.MapsTo r R Π')
       -> LM.MapsTo p P Π'
       -> LM.MapsTo q Q Π'
       -> PiCalcStep Π Π'
-  | ChooseLLRStep : forall (p q : Loc) (P Q1 Q2 : IProc) (Π Π' : LM.t IProc),
+  | ChooseLLRStep : forall (p q : Loc) (P Q1 Q2 : Proc) (Π Π' : LM.t Proc),
       LM.MapsTo p (EChoiceL q P) Π
       -> LM.MapsTo q (IChoiceLR p Q1 Q2) Π
       -> (forall r, p <> r -> q <> r -> forall R, LM.MapsTo r R Π <-> LM.MapsTo r R Π')
       -> LM.MapsTo p P Π'
       -> LM.MapsTo q Q1 Π'
       -> PiCalcStep Π Π'
-  | ChooseRRStep : forall (p q : Loc) (P Q : IProc) (Π Π' : LM.t IProc),
+  | ChooseRRStep : forall (p q : Loc) (P Q : Proc) (Π Π' : LM.t Proc),
       LM.MapsTo p (EChoiceR q P) Π
       -> LM.MapsTo q (IChoiceR p Q) Π
       -> (forall r, p <> r -> q <> r -> forall R, LM.MapsTo r R Π <-> LM.MapsTo r R Π')
       -> LM.MapsTo p P Π'
       -> LM.MapsTo p Q Π'
       -> PiCalcStep Π Π'
-  | ChooseRLRStep : forall (p q : Loc) (P Q1 Q2 : IProc) (Π Π' : LM.t IProc),
+  | ChooseRLRStep : forall (p q : Loc) (P Q1 Q2 : Proc) (Π Π' : LM.t Proc),
       LM.MapsTo p (EChoiceR q P) Π
       -> LM.MapsTo q (IChoiceLR p Q1 Q2) Π
       -> (forall r, p <> r -> q <> r -> forall R, LM.MapsTo r R Π <-> LM.MapsTo r R Π')
@@ -815,5 +815,4 @@ Module InternalProcesses (Import E : Expression) (L : Locations) (LM : LocationM
       -> LM.MapsTo p Q2 Π'
       -> PiCalcStep Π Π'.
 
-  
 End InternalProcesses.
