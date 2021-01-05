@@ -11,6 +11,6 @@ TreeLocationMap.v
 Choreography.v
 TypedChoreography.v
 SoundlyTypedChoreography.v
-PiCalc.v
+ProcessCalculus.v
 InternalProcesses.v
 ChoreographyCompiler.v

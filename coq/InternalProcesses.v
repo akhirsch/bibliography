@@ -1,7 +1,7 @@
 Require Export Expression.
 Require Export Locations.
 Require Export Choreography.
-Require Export PiCalc.
+Require Export ProcessCalculus.
 Require Import LocationMap.
 
 Require Import Coq.Arith.Arith.
@@ -22,7 +22,7 @@ Module InternalProcesses (Import E : Expression) (L : Locations) (LM : LocationM
 
   Module LF := (LocationFacts L).
   Module C := (Choreography E L).
-  Module P := (PiCalc E L LM).
+  Module P := (ProcessCalculus E L LM).
   Module LMF := (LocationMapFacts L LM).
 
   Import C.

@@ -11,7 +11,7 @@ Require Import Coq.Sorting.Sorted.
 
 From Equations Require Import Equations.
 
-Module PiCalc (E : Expression) (L : Locations) (LM : LocationMap L).
+Module ProcessCalculus (E : Expression) (L : Locations) (LM : LocationMap L).
         
   Import E.
   Module LN := (LocationNotations L).
@@ -390,6 +390,6 @@ Module PiCalc (E : Expression) (L : Locations) (LM : LocationMap L).
             | mkLive _ _ _ _ _ _ x => x
             end.
 
-End PiCalc.
+End ProcessCalculus.
 
 
