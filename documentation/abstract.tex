@@ -1,5 +1,23 @@
+Choreographies are a programming paradigm for writing concurrent and distributed programs with message passing.
+Unlike process calculi, which are usually used to study concurrent programs, they allow a programmer to write a single program for the entire system.
+This not only is a more convenient programming syntax, it also guarantees that programs are deadlock-free by construction.
+However, previous studies of choreographic programming use imperative languages and only allow sending of atomic messages.
+In this paper we study choreographic programming from a functional point of view.
+
+We design a choreographic language in which messages are programs in some simply-typed language.
+We can think of this as lifting a single-process functional language to a multi-process or distributed language, where each thread or node is programmed in the original language.
+This lifted choreographic language is typed using the types of the message language augmented with \emph{modalities}.
+This gives a syntactic, but informal, connection between multi-modal logics and message-passing concurrency.
+
+Moreover, the theory in this document is formalized in Coq.
+This gives us much more confidence in the theory presented here.
+This also answers the call to action by \citet{Cruz-FilipeMP19}.
+They note that there have been several high-profile cases of theorems about $\pi$-calcluli being disproven after publication, and suggest encoding choreographies in Coq to ensure that the same does not happen there.
+
+This document in particular is designed for internal use: it records what we have done and communicates results with collaborators.
+The writing will be rough, and the explanations sparse.
 
 %%% Local Variables:
 %%% mode: latex
-%%% TeX-master: "PACMAnon"
+%%% TeX-master: "PACMTRCameraReady"
 %%% End:
