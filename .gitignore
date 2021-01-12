@@ -30,3 +30,4 @@ coq/src/.coqdeps.d
 *.fls
 \#*\#
 paper/auto/*
+documentation/auto/*
