@@ -3,10 +3,12 @@ PAPER_FILES := PACMAnon.tex PACMCameraReady.tex main.tex includes.tex macros.tex
 
 export TEXINPUTS = .::$TEXMF/tex/::../styles::../latex-pl-syntax
 
-all: PACMAnon PACMCR
+all: PACMAnon PACMCR PACMTRAnon PACMTRCR
 
 PACMAnon: PACMAnon.pdf
 PACMCR: PACMCameraReady.pdf
+PACMTRAnon: PACMTRAnon.pdf
+PACMTRCR: PACMTRCameraReady.pdf
 
 %.pdf: %.tex $(PAPER_FILES) $(BIB)
 	latexmk -pdf -bibtex -synctex=1 $<

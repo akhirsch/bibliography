@@ -26,5 +26,7 @@ coq/src/Makefile.conf
 coq/src/.coqdeps.d
 *.vok
 *.vos
+*.fdb_latexmk
+*.fls
 \#*\#
-
+paper/auto/*

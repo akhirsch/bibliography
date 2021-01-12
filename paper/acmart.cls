@@ -992,7 +992,8 @@
   TSC,%
   TSLP,%
   TWEB,%
-  FACMP%
+  FACMP,%
+  MPITR%
 }{%
 \ifcase\@journalCode@nr
 \relax % CIE
@@ -1237,10 +1238,14 @@
   \def\@journalName{ACM Transactions on the Web}%
   \def\@journalNameShort{ACM Trans. Web}%
   \def\@permissionCodeOne{1559-1131}%
-\else % FACMP, a dummy journal
+\or % FACMP, a dummy journal
   \def\@journalName{Forthcoming ACM Publication}%
   \def\@journalNameShort{ACM Forthcoming}%
   \def\@permissionCodeOne{XXXX-XXXX}%
+\or % MPITR
+  \def\@journalName{Max Planck Institute for Software Systems Technical Report}%
+  \def\@journalNameShort{MPI-SWS Tech. Report}%
+  \def\@permissionCodeOne{}
 \fi
 \ClassInfo{\@classname}{Using journal code \@journalCode}%
 }{%
@@ -1555,7 +1560,7 @@
     acmcopyright,acmlicensed,rightsretained,%
     usgov,usgovmixed,cagov,cagovmixed,licensedusgovmixed,%
     licensedcagov,licensedcagovmixed,othergov,licensedothergov,%
-    iw3c2w3,iw3c2w3g}{%
+    iw3c2w3,iw3c2w3g,ccby}{%
   \@printpermissiontrue
   \@printcopyrighttrue
   \@acmownedtrue
@@ -1602,6 +1607,10 @@
   \ifnum\acm@copyrightmode=14\relax % iw3c2w3g
    \@acmownedfalse
    \AtBeginDocument{\acmPrice{}}%
+  \fi
+  \ifnum\acm@copyrightmode=15\relax % ccby
+    \@acmownedfalse%
+    \AtBeginDocument{\acmPrice{}}%
   \fi}
 \def\setcopyright#1{\setkeys{ACM@}{acmcopyrightmode=#1}}
 \setcopyright{acmcopyright}
@@ -1641,6 +1650,8 @@
   \or % ic2w3wwwgoogle
   IW3C2 (International World Wide Web Conference Committee), published
   under Creative Commons CC-BY-NC-ND~4.0 License.
+  \or % ccby
+  Copyright held by owner/author(s).
   \fi}
 \def\@formatdoi#1{\url{https://doi.org/#1}}
 \def\@copyrightpermission{%
@@ -1765,6 +1776,15 @@
    (CC-BY-NC-ND~4.0) license. Authors reserve their rights to
    disseminate the work on their personal and corporate Web sites with
    the appropriate attribution.
+ \or % ccby
+   \href{http://creativecommons.org/licenses/by/4.0/}{%
+     \color{black}
+     \parbox[c]{57pt}{\includegraphics[height=20pt]{by.png}}%
+     \hspace{0.75em}%
+     \parbox[c]{0.75\textwidth}{%
+       This paper is licensed under the Creative Commons Attribution~4.0 International (CC-BY) license.
+     }
+   }
  \fi}
 \def\copyrightyear#1{\def\@copyrightyear{#1}}
 \copyrightyear{\@acmYear}
@@ -1820,7 +1840,29 @@
        \fi
      \fi
   \fi
-  \if@ACM@nonacm\else\footnotetextcopyrightpermission{%
+  \if@ACM@nonacm\footnotetextcopyrightpermission{%
+    \parindent\z@\parskip0.1\baselineskip
+    \if@printpermission\@copyrightpermission\fi
+    \if@printcopyright
+      \copyright\ \copyrightyear\ \@copyrightowner
+    \else
+      \@copyrightyear
+    \fi
+    \if@ACM@authorversion
+      This is the authors' version of the work.
+      The definitive Version of Record was published in
+        \if@ACM@journal
+          \emph{\@journalName}%
+        \else
+          \emph{\@acmBooktitle}%
+        \fi
+        \ifx\@acmDOI\@empty
+        .
+        \else
+          , \@formatdoi{\@acmDOI}.
+        \fi\\
+    \fi
+  }\else\footnotetextcopyrightpermission{%
     \if@ACM@authordraft
         \raisebox{-2ex}[\z@][\z@]{\makebox[0pt][l]{\large\bfseries
             Unpublished working draft. Not for distribution.}}%
