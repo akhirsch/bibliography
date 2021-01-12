@@ -1,7 +1,7 @@
 BIB := ../bibliography/main.bib
 PAPER_FILES := PACMAnon.tex PACMCameraReady.tex main.tex includes.tex macros.tex sections.tex appendices.tex abstract.tex acmart.cls
 
-export TEXINPUTS = .::$TEXMF/tex/::../styles::../latex-pl-syntax
+export TEXINPUTS = .::./sections::./appendices::$TEXMF/tex/::../styles::../latex-pl-syntax
 
 main: PACMTRCR
 all: PACMAnon PACMCR PACMTRAnon PACMTRCR
