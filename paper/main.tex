@@ -1,0 +1,123 @@
+\newif\iftr\trfalse
+\newif\ifPACM\PACMfalse
+
+\ifcase\paperformat\relax
+% TR
+  \trtrue
+  \documentclass[onecolumn,11pt]{article}
+  \usepackage[a4paper,margin=2.5cm]{geometry}
+  \usepackage[authoryear,sort,square]{natbib}
+  \bibliographystyle{plainnat}
+\or % PACM
+  \PACMtrue
+\or % PACM TR
+  \trtrue
+  \PACMtrue
+\fi
+  
+\ifPACM
+  \ifanon
+    \documentclass[acmsmall,review,anonymous]{acmart}
+  \else
+    \documentclass[acmsmall]{acmart}
+  \fi
+
+  \settopmatter{printfolios=true,printccs=false,printacmref=false}
+
+  \acmJournal{PACMPL}
+  \acmVolume{1}
+  \acmNumber{POPL}
+  \acmArticle{1}
+  \acmYear{2021}
+  \acmMonth{1}
+  \acmDOI{}
+  \startPage{1}
+
+  \setcopyright{none}
+
+  \bibliographystyle{ACM-Reference-Format}
+  \citestyle{acmauthoryear}
+\fi
+
+\input{includes}
+\input{macros}
+
+\ifPACM
+  \title{Modal Types for Functional Choreographies}
+
+  \author{Andrew K. Hirsch}
+  \orcid{0000-0003-2518-614X}
+  \affiliation{
+    \institution{MPI-SWS}
+    \city{Saarbr\"ucken}
+    \country{Germany}
+  }
+  \email{akhirsch@mpi-sws.org}
+
+  \author{Deepak Garg}
+  \affiliation{
+    \institution{MPI-SWS}
+    \city{Saarbr\"ucken}
+    \country{Germany}
+  }
+  \email{dg@mpi-sws.org}
+
+\else
+  \title{Modal Types for Functional Choreographies}
+  \ifanon
+    \author{}
+  \else
+    \newcommand{\email}[1]{\href{mailto:#1}{\upshape{\detokenize{#1}}}}
+    \author{
+      Andrew K. Hirsch\\[-1pt]
+      {\normalsize{MPI-SWS}}\\[-1pt]
+      {\normalsize{\email{akhirsch@mpi-sws.org}}}
+      \and
+      Deepak Garg\\[-1pt]
+      {\normalsize{MPI-SWS}}\\[-1pt]
+      {\normalsize{\email{dg@mpi-sws.org}}}
+    }
+  \fi
+\fi
+\date{}
+
+\begin{document}
+
+\ifPACM
+  % PACM Required stuff here
+  \begin{abstract}
+    \input{abstract}
+  \end{abstract}
+
+  \maketitle
+\else
+  \maketitle
+  \begin{abstract}
+    \input{abstract}
+  \end{abstract}
+\fi
+
+\input{sections}
+\iftr
+  \bibliography{../bibliography/main}
+
+  \appendix
+  \input{appendices}
+\else\ifPACM
+  \appendix
+  \section*{Appendices}
+
+  \input{appendices}
+
+  \bibliography{../bibliography/main}
+\else
+  \bibliography{../bibliography/main}
+\fi\fi
+
+\end{document}  
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "PACMAnon"
+%%% eval: (setenv "TEXINPUTS" ".::$TEXMF/tex/::../styles::../latex-pl-syntax")
+%%% End:
