@@ -17,10 +17,12 @@ auto/*
 _region_.tex
 coq/Makefile
 coq/Makefile.conf
+coq/.Makefile.d
 coq/Base/Makefile
 coq/Base/Makefile.conf
 coq/.coqdeps.d
 coq/Base/.coqdeps.d
+coq/.lia.cache
 coq/src/Makefile
 coq/src/Makefile.conf
 coq/src/.coqdeps.d
