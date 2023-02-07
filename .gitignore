@@ -5,3 +5,4 @@
 *.blg
 *.pdf
 *.synctex.gz
+auto/*
