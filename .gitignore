@@ -1,8 +1,12 @@
-*~
+auto/*
 *.aux
 *.bbl
-*.log
 *.blg
-*.pdf
+*.log
+*~
+*.out
 *.synctex.gz
-auto/*
+*.pdf
+*.fdb_latexmk
+*.fls
+\#*\#
