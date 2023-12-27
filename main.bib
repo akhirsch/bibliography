@@ -34,7 +34,7 @@
 @string{JLAMP="Journal of Logical and Algebraic Methods in Programming ({JLAMP})"}
 @string{PLACES="{Programming-Language Approaches to Concurrency- and Communication-cEntric Software ({PLACES})}"}
 @string{SLE="Software Language Engineering ({SLE})"}
-
+@string{SIGPLAN="SIGPLAN Notices"}
 
 %% Software engineering
 @string{ICSE="International Conference on Software Engineering ({ICSE})"}
@@ -44,6 +44,7 @@
 @string{WWV="Workshop on Automated Specification and Verification of Web Systems ({WWV})"}
 @string{SATE="Software Analysis, Testing, and Evolution ({SATE})"}
 @string{SSS="Software, Services, and Systems"}
+@string{CAV="Computer Aided Verification ({CAV})"}
 @string{PROG="The Art, Science, and Engineering of Programming ({{\upshape\textlangle}Programming{\upshape\textrangle}})"}
 
 %% Functional Programming
@@ -55,6 +56,7 @@
 @string{FPLCA="Functional Programming Languages and Computer Architecture ({FPLCA})"}
 @string{JFP="Journal of Functional Programming ({JFP})"}
 @string{AFP="Advanced Functional Programming ({AFP})"}
+@string{FHPC="Functional High-Performance Computing ({FHPC})"}
 
 %% Security
 @string{CSF="Computer Security Foundations ({CSF})"}
@@ -91,6 +93,7 @@
 @string{JSL="Journal of Symbolic Logic"}
 @string{TABLEAUX="Automated Reasoning with Analytic Tableaux and Related Methods ({TABLEAUX})"}
 @string{ZMLGM="Zeitschrift f{\"u}r Mathematische Logik und Grundlagen der Mathematik"}
+@string{LPAR="Logic for Programming, Artificial Intelligence, and Reasoning ({LPAR})"}
 
 %% Theory
 @string{FOSSACS="Foundations of Software Science and Computational Structures ({FoSSaCS})"}
@@ -114,10 +117,12 @@
 @string{MSCS="Mathematical Structures in Computer Science ({MSCS})"}
 @string{ENTCS="Electronic Notes in Theoretical Computer Science ({ENTCS})"}
 @string{HOASC="Higher-Order and Symbolic Computation"}
+@string{FTC="Fundamentals of Computation Theory ({FTC})"}
 
 %% Systems
 @string{SOSP="Symposium on Operating Systems Principles ({SOSP})"}
 @string{OSDI="Operating Systems Design and Implementation ({OSDI})"}
+@string{NSDI = "Networked Systems Design and Implementation ({NSDI})"}
 @string{CONCUR="Concurrency Theory ({CONCUR})"}
 @string{SSM="Software \& Systems Modeling"}
 @string{FMOODSFORTE="Formal Methods for Open Object-Based Distributed Systems ({FMOODS})/Formal Techniques for Distributed Objects, Components, and Systems ({FORTE})"}
@@ -129,6 +134,7 @@
 @string{ICDS="International Conference on Distributed Systems"}
 @string{EuroSys="European Conference on Computer Systems ({EuroSys})"}
 @string{PODS="Principles of Distributed Systems ({PODS})"}
+@string{CIDR="Conference on Innovative Data Systems Research ({CIDR})"}
 
 %% Pure Mathematics
 @string{CATA="Categorical Aspects of Topology and Analysis"}
@@ -144,6 +150,12 @@
 @string{PAA="Pure and Applied Algebra"}
 @string{DIALECTICA="Dialectica"}
 @string{PRIMS="Publications of the Research Institute for Mathematical Sciences ({PRIMS})"}
+
+%% Cryptography
+@string{CRYPTO = "International Cryptology Conference ({CRYPTO})"}
+@string{ASIACRYPT = "International Conference on The Theory and Application of Cryptology and Information Security ({AsiaCrypt})"}
+@string{TCC = "Theory of Cryptography Conference ({TCC})"}
+@string{JCRYPTO="Journal of Cryptography ({JCrypto})"}
 
 %% Misc
 @string{CACM="Communications of the ACM ({CACM})"}
@@ -168,6 +180,7 @@
 @string{JACM = "Journal of the ACM"}
 @string{IJPP = "International Journal of Parallel Programming"}
 @string{IP = "Information Processing"}
+@string{ICBC = "International Conference on Blockchain and Cryptocurrency ({ICBC})"}
 
 %%% I should try to have DOIs everywhere possible.
 
@@ -3551,7 +3564,8 @@ doi={10.1093/comjnl/6.4.308}
   author = {{Peyton Jones}, Simon},
   title = {Wearing the Hair Shirt: A Retrospective on Haskell},
   url = {https://www.microsoft.com/en-us/research/publication/wearing-hair-shirt-retrospective-haskell-2003/},
-  year = {2003}
+  year = {2003},
+  note={Accessed December 27, 2023}
 }
 
 @article{Moggi91,
@@ -3568,7 +3582,8 @@ doi={10.1093/comjnl/6.4.308}
   title={The Semantic Marriage of Effects and Monads},
   author={Orchard, Dominic and Petricek, Tomas and Mycroft, Alan},
   year=2014,
-  url={https://arxiv.org/abs/1401.5391}
+  url={https://arxiv.org/abs/1401.5391},
+  note={Accessed Dec. 27, 2023}
 }
 
 @article{ZdancewicM02,
@@ -3873,6 +3888,7 @@ doi={10.1093/comjnl/6.4.308}
 
 @misc{ChorLang,
  title={The Chor Programming Language},
+ author={Montesi, Fabrizio},
  year={2015},
  url={http://www.chor-lang.org/},
  notes={Accessed July 3, 2021}
@@ -4123,6 +4139,30 @@ doi={10.1093/comjnl/6.4.308}
   year={1983}
 }
 
+@inproceedings{PlatzerC08,
+  title={Computing Differential Invariants of Hybrid Systems as Fixpoints},
+  author={Platzer, Andr\'{e} and Clarke, Edmund M.},
+  booktitle=CAV,
+  year={2008},
+  doi={10.1007/978-3-540-70545-1_17}
+}
+
+@inproceedings{Platzer12,
+  title={Logics of Dynamical Systems (Invited Paper)},
+  author={Platzer, Andr\'{e}},
+  booktitle=LICS,
+  year={2012},
+  doi={10.1109/LICS.2012.13}
+ }
+
+@article{Platzer17,
+  title={A Complete Uniform Substitution Calculus for Differential Dynamic Logic},
+  author={Platzer, Andr\'{e}},
+  journal=JAR,
+  year={2017},
+  doi={10.1007/s10817-016-9385-1}
+}
+
 @inproceedings{MondalAA22,
   title = {Applying consensus and replication securely with {FLAQR}},
   author = {Mondal, Priyanka and Algehed, Maximilian and Arden, Owen},
@@ -4131,9 +4171,9 @@ doi={10.1093/comjnl/6.4.308}
   doi = {10.1109/CSF54842.2022.9919637}
 }
 
-@inproceedings{CoskuRGMS21,
+@inproceedings{AcayRGMS21,
   title = {Viaduct: An Extensible, Optimizing Compiler for Secure Distributed Programs},
-  author = {Co\c{s}ku Acay and Rolph Recto and Joshua Gancher and Andrew C. Myers and Elaine Shi},
+  author = {Acay, Co\c{s}ku and Recto, Rolph and Gancher, Joshua and Myers, Andrew C. and Shi, Elaine},
   booktitle = PLDI,
   year = 2021,
   doi = {10.1145/3453483.3454074},
@@ -4145,7 +4185,7 @@ doi={10.1093/comjnl/6.4.308}
   booktitle = PROG,
   year = 2023,
 }
-@inproceedings{VolpanoS98,
+@inproceedings{SmithV98,
   title = {Secure Information Flow in a Multi-Threaded Imperative Language},
   author = {Smith, Geoffrey and Volpano, Dennis},
   booktitle = POPL,
@@ -4173,7 +4213,7 @@ doi={10.1093/comjnl/6.4.308}
   author = {Ethan Cecchetti and Siqiu Yao and Haobin Ni and Andrew C. Myers},
   booktitle = {Foundations and Applications of Blockchain},
   year = {2020},
-  url = {https://ethan.umiacs.io/papers/ifc-contracts-fab20.pdf},
+  url = {https://scfab.github.io/2020/FAB2020_p4.pdf},
 }
 
 @inproceedings{CecchettiYNM21,
@@ -4214,4 +4254,457 @@ doi={10.1093/comjnl/6.4.308}
   booktitle = CCS,
   year = {2019},
   doi = {10.1145/3319535.3354231},
+}
+
+@inproceedings{GollamudiCA19,
+  title = {Information Flow Control for Distributed Trusted Execution Environments},
+  author = {Gollamudi, Anitha and Chong, Stephen and Arden, Owen},
+  booktitle = CSF,
+  year = {2019},
+  doi = {10.1109/CSF.2019.00028}
+}
+
+@inproceedings{FruminKB21,
+  title = {Compositional Non-Interference for Fine-Grained Concurrent Programs},
+  author = {Frumin, Dan and Krebbers, Robbert and Birkedal, Lars},
+  booktitle = SSP,
+  year = {2021},
+  doi = {10.1109/SP40001.2021.00003}
+}
+
+@inproceedings{MilanoTM22,
+  title = {A Flexible Type System for Fearless Concurrency},
+  author = {Milano, Mae and Turcotti, Joshua and Myers, Andrew C.},
+  booktitle = PLDI,
+  year = {2022},
+  doi = {10.1145/3519939.3523443},
+}
+
+@inproceedings{CrichtonPAH22,
+  title = {Modular Information Flow through Ownership},
+  author = {Crichton, Will and Patrignani, Marco and Agrawala, Maneesh and Hanrahan, Pat},
+  booktitle = PLDI,
+  year = {2022},
+  doi = {10.1145/3519939.3523445},
+}
+
+@article{LamportSP82,
+  title = {The {B}yzantine Generals Problem},
+  author = {Lamport, Leslie and Shostak, Robert and Pease, Marshall},
+  journal = TOPLAS,
+  volume = {4},
+  number = {3},
+  year = 1982,
+  doi = {10.1145/357172.357176},
+}
+
+@inproceedings{RastogiHH14,
+  title = {Wysteria: A Programming Language for Generic, Mixed-Mode Multiparty Computations},
+  author = {Aseem Rastogi and Matthew A. Hammer and Michael Hicks},
+  booktitle = SSP,
+  year = {2014},
+  doi = {10.1109/SP.2014.48},
+}
+
+@inproceedings{RastogiSH18,
+  title = {Wys$^*$: A {DSL} for Verified Secure Multi-party Computations},
+  author = {Aseem Rastogi and Nikhil Swamy and Michael Hicks},
+  booktitle = POST,
+  year = 2019,
+  doi = {10.1007/978-3-030-17138-4_5},
+}
+
+@inproceedings{StefanRMM11b,
+  title = {Disjunction Category Labels},
+  author = {Deian Stefan and Alejandro Russo and David Mazi\`eres and John C. Mitchell},
+  booktitle = {Nordic Conference on Security IT Systems},
+  year = {2011},
+  doi = {0.1007/978-3-642-29615-4_16},
+}
+
+@inproceedings{ZeldovichBM08,
+  title = {Securing Distributed Systems with Information Flow Control},
+  author = {Zeldovich, Nickolai and Boyd-Wickizer, Silas and Mazi\`{e}res, David},
+  booktitle = NSDI,
+  year = {2008},
+  url = {https://www.usenix.org/legacy/events/nsdi08/tech/full_papers/zeldovich/zeldovich.pdf},
+}
+
+@inproceedings{GiffinLS+12,
+  title = {Hails: Protecting Data Privacy in Untrusted Web Applications},
+  author = {Giffin, Daniel B. and Levy, Amit and Stefan, Deian and Terei, David and Mazi\`{e}res, David and Mitchell, John C. and Russo, Alejandro},
+  booktitle = OSDI,
+  year = {2012},
+  url = {https://www.usenix.org/system/files/conference/osdi12/osdi12-final-35.pdf},
+}
+
+@inproceedings{YangYS12,
+  title = {A Language for Automatically Enforcing Privacy Policies},
+  author = {Yang, Jean and Yessenov, Kuat and Solar-Lezama, Armando},
+  booktitle = POPL,
+  year = {2012},
+  doi = {10.1145/2103656.2103669},
+}
+
+@inproceedings{NarayanDG+20,
+  title = {Retrofitting Fine Grain Isolation in the {F}irefox Renderer},
+  author = {Shravan Narayan and Craig Disselkoen and Tal Garfinkel and Nathan Froyd and Eric Rahm and Sorin Lerner and Hovav Shacham and Deian Stefan},
+  booktitle = USENIXSEC,
+  year = {2020},
+}
+
+@techreport{Biba77,
+  title = {Integrity considerations for secure computer systems},
+  author = {Kenneth J. Biba},
+  year = {1977},
+  institution = {MITRE Corp},
+  address = {Bedford, MA},
+  url = {https://apps.dtic.mil/sti/pdfs/ADA039324.pdf},
+}
+
+@inproceedings{ChongM06,
+  title = {Decentralized Robustness},
+  author = {Chong, Stephen  and Myers, Andrew C.},
+  booktitle = CSFW,
+  year = 2006,
+  doi = {10.1109/CSFW.2006.11},
+}
+
+@inproceedings{MenzHLG23,
+  title={Compositional Security Definitions for Higher-Order Where Declassification},
+  author={Menz, Jan and Hirsch, Andrew K. and Li, Peixuan and Garg, Deepak},
+  booktitle=OOPSLA,
+  year=2023
+}
+
+@misc{GraversenHM23,
+  title={Alice or Bob?: Process Polymorphism in Choreographies},
+  author={Graversen, Eva and Hirsch, Andrew K. and Montesi, Fabrizio},
+  year={2023},
+  url={https://arxiv.org/abs/2303.04678},
+  note={Accessed March 30, 2023. Accepted to the Journal of Functional Programming (JFP).}
+}
+
+@inproceedings{ZhengA21,
+  author = {Zheng, Haofan and Arden, Owen},
+  title = {Secure Distributed Applications the Decent Way},
+  booktitle = {Advanced Security on Software and Systems ({ASSS})},
+  year = {2021},
+  doi = {10.1145/3457340.3458304},
+}
+
+@inproceedings{ZhengTA21,
+  author = {Zheng, Haofan and Tran, Tuan and Arden, Owen},
+  title = {Total Eclipse of the Enclave: Detecting Eclipse Attacks From Inside TEEs},
+  booktitle = ICBC,
+  year = {2021},
+  doi = {10.1109/ICBC51069.2021.9461081},
+}
+
+@inproceedings{TranZAA22,
+  author = {Tran, Tuan and Zheng, Haofan and Alvaro, Peter and Arden, Owen},
+  title = {Payment Channels Under Network Congestion},
+  booktitle = ICBC,
+  year = {2022},
+  doi = {10.1109/ICBC54727.2022.9805547},
+}
+
+@inproceedings{AbadiANS20,
+  title = {{AnyLog}: a Grand Unification of the Internet of Things},
+  author = {Abadi, Daniel and Arden, Owen and Nawab, Faisal and Shadmon, Moshe},
+  booktitle = CIDR,
+  year = {2020},
+  url={https://www.cidrdb.org/cidr2020/papers/p9-abadi-cidr20.pdf}
+}
+
+@inproceedings{LiHL22,
+  title = {{HAMRAZ}: Resilient Partitioning and Replication},
+  author = {Li, Xiao and Houshmand, Farzin and Lesani, Mohsen},
+  booktitle = SSP,
+  year = {2022},
+  doi = {10.1109/SP46214.2022.9833661},
+}
+
+@article{AskarovHS08,
+  title = {Cryptographically-masked flows},
+  author = {Aslan Askarov and Daniel Hedin and Andrei Sabelfeld},
+  journal = TCS,
+  volume = {402},
+  number = {2},
+  pages = {82-101},
+  year = 2008,
+  doi = {10.1016/j.tcs.2008.04.028},
+}
+
+@inproceedings{Laud08,
+  title = {On the Computational Soundness of Cryptographically Masked Flows},
+  author = {Laud, Peeter},
+  booktitle = POPL,
+  year = 2008,
+  doi = {10.1145/1328438.1328479},
+}
+
+@inproceedings{LaudV05,
+  title = {A Type System for Computationally Secure Information Flow},
+  author = {Peeter Laud and Varmo Vene},
+  booktitle = FTC,
+  year = 2005,
+  doi = {10.1007/11537311_32},
+}
+
+@inproceedings{FournetR08,
+  author = {Fournet, C\'{e}dric and Rezk, Tamara},
+  title = {Cryptographically Sound Implementations for Typed Information-Flow Security},
+  booktitle = POPL,
+  year = 2008,
+  doi = {10.1145/1328438.1328478},
+}
+
+@inproceedings{FournetPR11,
+  author = {Fournet, C\'{e}dric and Planul, J\'{e}r\'{e}my and Rezk, Tamara},
+  title = {Information-Flow Types for Homomorphic Encryptions},
+  booktitle = CCS,
+  year = 2011,
+  doi = {10.1145/2046707.2046747},
+}
+
+@inproceedings{WayeBARC17,
+  author = {Waye, Lucas and Buiras, Pablo and Arden, Owen and Russo, Alejandro and Chong, Stephen},
+  title = {Cryptographically Secure Information Flow Control on Key-Value Stores},
+  booktitle = CCS,
+  year = 2017,
+  doi = {10.1145/3133956.3134036},
+}
+
+@inproceedings{LiaoHM19,
+  author = {Liao, Kevin and Hammer, Matthew A. and Miller, Andrew},
+  title = {{ILC}: A Calculus for Composable, Computational Cryptography},
+  booktitle = PLDI,
+  year = 2019,
+  doi = {10.1145/3314221.3314607},
+}
+
+@inproceedings{ZhengCMZ03,
+  title = {Using replication and partitioning to build secure distributed systems},
+  author = {Lantian Zheng and Stephen Chong and Andrew C. Myers and Steve Zdancewic},
+  booktitle = SSP,
+  year = 2003,
+  doi = {10.1109/SECPRI.2003.1199340},
+}
+
+@article{BackesP04,
+  title = {Computational Probabilistic Noninterference},
+  author = {Michael Backes and Birgit Pfitzmann},
+  journal = JIS,
+  volume = 3,
+  number = {42--60},
+  year = 2004,
+  doi = {10.1007/s10207-004-0039-7},
+}
+
+@inproceedings{Canetti01,
+  title = {Universally composable security: a new paradigm for cryptographic protocols},
+  author = {Ran Canetti},
+  booktitle = FOCS,
+  year = 2001,
+  doi = {10.1109/SFCS.2001.959888}
+}
+
+@inproceedings{Wikstrom16,
+  title = {Simplified Universal Composability Framework},
+  author = {Douglas Wikstr{\"o}m},
+  booktitle = TCC,
+  year = 2016,
+  doi = {10.1007/978-3-662-49096-9_24},
+}
+
+@inproceedings{CamenischKKR19,
+  title = {{iUC}: Flexible Universal Composability Made Simple},
+  author = {Camenisch, Jan and Krenn, Stephan and K{\"u}sters, Ralf and Rausch, Daniel},
+  booktitle = ASIACRYPT,
+  year = 2019,
+  doi = {10.1007/978-3-030-34618-8_7},
+}
+
+@article{KustersTR20,
+  title = {The {IITM} Model: a Simple and Expressive Model for Universal Composability},
+  author = {K{\"u}sters, Ralf and Tuengerthal, Max and Rausch, Daniel},
+  journal = JCRYPTO,
+  year = 2020,
+  month = jul,
+  number = 4,
+  volume = 33,
+  pages = {1461--1584},
+  doi = {10.1007/s00145-020-09352-1},
+}
+
+@article{GiallorenzoMP23,
+  title={Choral: Object-Oriented Choreographic Programming},
+  author={Giallorenzo, Saverio and Montesi, Fabrizio and Peressotti, Marco},
+  journal=TOPLAS,
+  year=2023,
+  month={nov},
+  doi={10.1145/3632398}
+}
+
+@misc{rfc8473,
+    series =    {Request for Comments},
+    number =    8473,
+    howpublished =  {RFC 8473},
+    publisher = {RFC Editor},
+    doi =       {10.17487/RFC8473},
+    url =       {https://www.rfc-editor.org/info/rfc8473},
+    author =    {Andrei Popov and Magnus Nystrom and Dirk Balfanz and Adam Langley and Nick Harper and Jeff Hodges},
+    title =     {{Token Binding over HTTP}},
+    pagetotal = 25,
+    year =      2018,
+    month =     oct,
+}
+
+@inproceedings{VieringHEZ21,
+  title={A Multiparty Session Typing Discipline for Fault-Tolerant Event-Driven Distributed Programming},
+  author={Viering, Malte and Hu, Raymond and Eugster, Patrick and Ziarek, Lukasz},
+  booktitle=OOPSLA,
+  year={2021},
+  doi={10.1145/3485501}
+}
+
+@inproceedings{AskarovHSS13,
+  title={Termination-Insensitive Noninterference Leaks More Than Just a Bit},
+  author={Askarov, Aslan and Hunt, Sebastian and Sabelfeld, Andrei and Sands, David},
+  booktitle=ESORICS,
+  year={2013},
+  doi={10.1007/978-3-540-88313-5_22}
+ }
+
+@inproceedings{ONeillCC06,
+  title={Information-Flow Security for Interactive Programs},
+  author={O'Neill, Kevin R. and Clarkson, Michael R. and Chong, Stephen},
+  booktitle=CSFW,
+  year={2006},
+  doi={10.1109/CSFW.2006.16}
+ }
+
+@misc{GheriY23,
+  title={Hybrid Multiparty Session Types: Compositionality for Protocol Specification through Endpoint Projection (Full Version)},
+  author={Gheri, Lorenzo and Yoshida, Nobuko},
+  year={2023},
+  url={https://arxiv.org/pdf/2302.01979.pdf},
+  note={Accessed Feb 23, 2023.
+  Accepted to OOPSLA 2023.}
+}
+
+@inproceedings{JacobsBK22,
+  title={Multiparty GV: Functional Multiparty Session Types with Certified Deadlock Freedom},
+  author={Jacobs, Jules and Balzer, Stephanie and Krebbers, Robbert},
+  year={2022},
+  booktitle=ICFP,
+  doi={10.1145/3547638}
+ }
+
+@inproceedings{PerezCPT12,
+  title={Linear Logical Relations for Session-Based Concurrency},
+  author={P\'erez, Joge A. and Caires, Lu\'is and Frank Pfenning and Bernardo Toninho},
+  year={2012},
+  booktitle=ESOP,
+  doi={10.1007/978-3-642-28869-2_27}
+}
+
+@inproceedings{DerakhshanBJ21,
+  title={Session Logical Relations for Noninterference},
+  author={Derakhshan, Farzaneh and Balzer, Stephanie and Jia, Limin},
+  year={2021},
+  booktitle=LICS,
+  doi={10.1109/LICS52264.2021.9470654}
+}
+
+@inproceedings{GommerstadtJP18,
+  title={Session-Typed Concurrent Contracts},
+  author={Gommerstadt, Hannah and Jia, Limin and Pfenning, Frank},
+  year={2018},
+  booktitle=ESOP,
+  doi={10.1007/978-3-319-89884-1_27}
+}
+
+@inproceedings{JiaGP16,
+  title={Monitors and Blame Assignment for Higher-Order Session Types},
+  author={Jia, Limin and Gommerstadt, Hannah and Pfenning, Frank},
+  year={2016},
+  booktitle=POPL,
+  doi={10.1145/2837614.2837662}
+}
+
+@inproceedings{ShenKK23,
+  title={HasChor: Functional Choreographic Programming for All (Functional Pearl)},
+  author={Shen, Gan and Kashiwa, Shun and Kuper, Lindsey},
+  year={2023},
+  booktitle=ICFP,
+  doi={10.1145/3607849}
+}
+
+@inproceedings{KuperN13,
+  title={LVars: Lattice-Based Data Structures for Deterministic Parallelism},
+  author={Kuper, Lindsey and Newton, Ryan R.},
+  year={2013},
+  booktitle=FHPC,
+  doi={10.1145/2502323.2502326}
+ }
+
+@inproceedings{KuperTKN14,
+  title={Freeze After Writing: Quasi-Deterministic Paralllel Programming with LVars},
+  author={Kuper, Lindsey and Turon, Aaron and Krishnaswami, Neelakantan R. and Newton, Ryan R.},
+  year={2014},
+  booktitle=POPL,
+  doi={10.1145/2535838.2535842}
+}
+
+@inproceedings{LiuPRKHV20,
+  title={Verifying Replicated Data Types with Typeclass Refinements in Liquid Haskell},
+  author={Liu, Yiyun and Parker, James and Redmond, Patrick and Kuper, Lindsey and Hicks, Michael and Vazou, Niki},
+  year={2020},
+  booktitle=OOPSLA,
+  doi={10.1145/3428284}
+}
+
+@article{Agha86,
+  title={An Overview of Actor Languages},
+  author={Agha, Gul},
+  year={1986},
+  volume={21},
+  number={10},
+  pages={58--67},
+  journal=SIGPLAN,
+  doi={10.1145/323648.323743}
+}
+
+@inproceedings{FowlerASGT23,
+  title={Special Delivery: Programming with Mailbox Types},
+  author={Fowler, Simon and Attard, Duncan Paul and Sowul, Franciszek and Gay, Simon J. and Trinder, Phil},
+  booktitle=ICFP,
+  year={2023},
+  doi={10.1145/3607832}
+}
+
+@inproceedings{deLiguoroP18,
+  title={Mailbox Types for Unordered Interactions},
+  author={de'Liguoro, Ugo and Padovani, Luca},
+  booktitle=ECOOP,
+  year={2018},
+  doi={10.4230/LIPIcs.ECOOP.2018.15}
+}
+
+@inproceedings{LeinoR10,
+  title={A Polymorphic Intermediate Verification Language: Design and Logical Encoding},
+  author={Leino, K. Rustan M. and R\"ummer, Philipp},
+  booktitle=TACAS,
+  year={2010},
+  doi={10.1007/978-3-642-12002-2_26}
+}
+
+@inproceedings{Leino10,
+  title={Dafny: An Automatic Program Verifier for Functional Correctness},
+  author={Leino, K Rustan M.},
+  booktitle=LPAR,
+  year={2010},
+  doi={10.1007/978-3-642-17511-4_20}
 }
