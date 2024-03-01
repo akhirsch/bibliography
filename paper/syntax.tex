@@ -1,0 +1,62 @@
+\section{Syntax}
+\label{sec:syntax}
+
+\begin{figure}[h]
+  \begin{syntax}
+    \categoryFromSet[Conrete Locations]{A, B, D}{\mathcal{L}}
+
+    \abstractCategory[Local Expressions]{e}
+
+    \category[Synchronization Labels]{d}
+    \alternative{L}
+    \alternative{R}
+
+    \abstractCategory[Choreographic Variables]{x, y, z}
+
+    \category[Locations]{\ell}
+    \alternative{\mathcal{L}}
+    \alternative{x}
+
+    \category[Choreographies]{C}
+    \alternative{x}
+    \alternative{\ell.e}
+    \alternative{C \rightsquigarrow \ell.x}\\
+    \alternative{\text{if}\; C_1 \;\text{then}\; C_2 \;\text{else}\; C_3}\\
+    \alternative{\ell[d] \rightsquigarrow \ell; C}\\
+    \alternative{\text{let}\; x := C_1 \;\text{in}\; C_2}\\
+    \alternative{\text{fun}\; F(x) := C}
+    \alternative{C\;C}\\
+    \alternative{\Lambda \ell.C}
+    \alternative{C\;\ell}\\
+  \end{syntax}
+
+  \caption{Functional Choreographies Syntax}
+  \label{fig:abstract-syntax}
+\end{figure}
+
+\begin{figure}[h]
+  \begin{syntax}
+  	\abstractCategory[Local Types]{t}
+
+    \category[Local Contexts]{\Gamma}
+    \alternative{\cdot}
+    \alternative{\Gamma, \ell.x : t}
+
+    \category[Choreography Types]{\tau}
+    \alternative{t @ \ell}
+    \alternative{\tau_1 \rightarrow \tau_2}
+    \alternative{\forall \ell.\tau}
+
+    \category[Choreography Contexts]{\Delta}
+    \alternative{\cdot}
+    \alternative{\Delta, x : \tau}
+  \end{syntax}
+
+  \caption{Functional Choreographies Types}
+  \label{fig:types}
+\end{figure}
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "conference"
+%%% End:
