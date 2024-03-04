@@ -1,0 +1,50 @@
+\section{Type System}
+\label{sec:type_system}
+
+\begin{mathparpagebreakable}
+  \infer[Loc]{\ell \in \mathcal{L} \cup \Gamma}
+  {\Gamma \vdash \ell} \and
+
+  \infer[Var]{x : \tau \in \Gamma}
+  {\Gamma \vdash x : \tau} \and
+
+  \infer[Done]{\Gamma \vdash \ell \\
+    \Gamma_\ell \vdash \ell.e \vdash t}
+  {\Gamma \vdash e \vdash t @ \ell} \and
+
+  \infer[Send]{\Gamma \vdash \ell_1, \ell_2 \\
+    \Gamma \vdash C : t @ \ell_1}{\Gamma \vdash C \overset{\ell_1}
+  {\rightsquigarrow} \ell_2 : t @ \ell_2} \and
+
+  \infer[If]{\Gamma \vdash C : \text{bool} @ \ell \\
+    \Gamma \vdash C_1 : \tau \\
+    \Gamma \vdash C_2 : \tau}
+  {\Gamma \vdash \ell.\text{if}\; C \;\text{then}\; C_1 \;\text{else}\; C_2 : \tau} \and
+
+
+  \infer[Sync]{\Gamma \vdash \ell_1, \ell_2 \\
+    \Gamma \vdash C : \tau}
+  {\Gamma \vdash \ell_1[d] \rightsquigarrow \ell_2; C : \tau} \and
+
+  \infer[Def]{\Gamma, x : \tau_1 \vdash C_2 : \tau_2}
+  {\Gamma \vdash \text{let}\; x := C_1 \;\text{in}\; C_2 : \tau_2} \and
+
+  \infer[Fun]{\Gamma, F : \tau_1 \rightarrow \tau_2, x : \tau_1 \vdash C : \tau_2}
+  {\Gamma \vdash \text{fun}\; F(x) := C : \tau_1 \rightarrow \tau_2} \and
+
+  \infer[App]{\Gamma \vdash C_1 : \tau_1 \rightarrow \tau_2 \\
+    \Gamma \vdash C_2 : \tau_1}
+  {\Gamma \vdash C_1\;C_2 : \tau_2} \and
+
+  \infer[LocAbs]{\Gamma, x \vdash C : \tau}
+  {\Gamma \vdash \Lambda x.C : \forall x.\tau} \and
+
+  \infer[LocApp]{\Gamma \vdash \ell \\
+    \Gamma \vdash C : \forall x.\tau}
+  {\Gamma \vdash C\;\ell : \tau[x \mapsto \ell]}
+\end{mathparpagebreakable}
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "conference"
+%%% End:

@@ -1,0 +1,31 @@
+\section{Control Language}
+\label{sec:control_language}
+
+\begin{figure}[h]
+  \begin{syntax}
+    \category[Control Expression]{E}
+    \alternative{x}
+    \alternative{\text{fun}\;F(x) := E}
+    \alternative{E_1\;E_2}\\
+    \alternative{()}
+    \alternative{\text{ret}(e)}
+    \alternative{\text{let}\;x := E_1 \;\text{in}\; E_2}\\
+    \alternative{\text{send}\; e \;\text{to}\; L}
+    \alternative{\text{receive from}\; L}\\
+    \alternative{\text{if}\; E \;\text{then}\; E_1 \;\text{else}\; E_2}
+    \alternative{\text{choose}\; d \;\text{for}\; L ; E}\\
+    \alternative{\text{allow}\; L \;\text{choice}\; E_1 \;\text{or}\; E_2}
+
+    \category[Systems]{\Pi}
+    \alternative{L_1 \triangleright E_1 \;\|\; \ldots \;\|\; L_n \triangleright E_n}
+  \end{syntax}
+
+  \caption{Control Expressions}
+  \label{fig:control_lang}
+\end{figure}
+
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "conference"
+%%% End:
