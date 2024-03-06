@@ -41,6 +41,14 @@
 \theoremstyle{definition}
 \newtheorem{defn}{Definition}
 
+%% Macros
+
+% Context Projection
+\newcommand\proj[2]{\ensuremath{\left.#1\right|_{#2}}}
+
+% Endpoint Projection
+\newcommand\epp[2]{\ensuremath{\llbracket#1\rrbracket_{#2}}}
+
 \bibliographystyle{plainnat}
 
 \begin{document}
@@ -72,13 +80,12 @@
 	\alternative{C_1\;C_2}\\
 	\alternative{\Lambda x.C}
 	\alternative{C\;\ell}\\
-	\alternative{\text{tell}\; C_1 \;\text{do}\; \lambda x.C_2}
+	\alternative{\ell.\text{tell}\; C_1 \;\text{do}\; \lambda x.C_2}
 \end{syntax}
 
 
 \section{Type System}
 \paragraph{Syntax of Types}
-
 \begin{syntax}
 	\abstractCategory[Local Types]{t}
 	
@@ -94,8 +101,20 @@
 	\category[Choreography Contexts]{\Gamma}
 	\alternative{\cdot}
 	\alternative{\Gamma, x : \tau}
-	\alternative{\Gamma, x}
+	\alternative{\Gamma, x : \text{Loc}}
 \end{syntax}
+
+\paragraph{Context Projection}
+\begin{align*}
+	\proj{\cdot}{\ell} &= \cdot \\
+	\proj{\Gamma, x : t @ \ell'}{\ell} &=
+		\begin{cases} 
+      		\proj{\Gamma}{\ell}, x : t & \ell' = \ell \\
+      		\proj{\Gamma}{\ell} & \ell' \neq \ell \\
+   		\end{cases}\\
+	\proj{\Gamma, x : \tau}{\ell} &= \proj{\Gamma}{\ell} \\
+	\proj{\Gamma, x : \text{Loc}}{\ell} &= \proj{\Gamma}{\ell}
+\end{align*}
 
 \paragraph{Context, Type, and Location Typing Rules}
 \begin{mathpar}
@@ -109,14 +128,13 @@
 
   \infer[LocAddCtx]{\vdash \Gamma \\
     x \notin \Gamma}
-  {\vdash \Gamma, x} \and
+  {\vdash \Gamma, x : \text{Loc}} \and
 
   \infer[Loc]{\vdash \Gamma \\
     \ell \in \mathcal{L} \cup \Gamma}
   {\Gamma \vdash \ell \;\text{Loc}} \and
 
-  \infer[AtTy]{\vdash \Gamma \\
-    \Gamma \vdash \ell}
+  \infer[AtTy]{\Gamma \vdash \ell}
   {\Gamma \vdash t @ \ell \;\text{Ty}} \and
 
   \infer[FunTy]{\Gamma \vdash \tau_1  \;\text{Ty}\\
@@ -161,7 +179,7 @@
     \Gamma \vdash C_2 : \tau_1}
   {\Gamma \vdash C_1\;C_2 : \tau_2} \and
 
-  \infer[LocAbs]{\Gamma, x \vdash C : \tau}
+  \infer[LocAbs]{\Gamma, x : \text{Loc} \vdash C : \tau}
   {\Gamma \vdash \Lambda x.C : \forall x.\tau} \and
 
   \infer[LocApp]{\Gamma \vdash \ell \;\text{Loc} \\
@@ -170,12 +188,83 @@
 
   \infer[TellDo]{\Gamma \vdash C_1 : \text{Loc} @ \ell_1 \\
     \Gamma \vdash \tau \;\text{Ty} \\
-    \Gamma, x \vdash C_2 : \tau}
-  {\Gamma \vdash \text{tell}\; C_1 \;\text{do}\; \lambda x.C_2 : \tau}
+    \Gamma, x : \text{Loc} \vdash C_2 : \tau}
+  {\Gamma \vdash \ell_1.\text{tell}\; C_1 \;\text{do}\; \lambda x.C_2 : \tau}
 \end{mathpar}
 
 \section{Operational Semantics}
+\paragraph{Redices}
+\begin{syntax}
+	\category[Redices]{R}
+	\alternative{L.(e_1 \Rightarrow e_2)}
+	\alternative{L.\text{if}\;R}
+	\alternative{L.\text{if}\;\text{true}}
+	\alternative{L.\text{if}\;\text{false}}\\
+	\alternative{R \overset{L_1}{\rightsquigarrow} L_2}
+	\alternative{L_1.(v\;\text{value}) \overset{L_1}{\rightsquigarrow} L_2}\\
+	\alternative{L_1[d] \rightsquigarrow L_2}
+	\alternative{\text{Sync}}\\
+	\alternative{\text{let}\;x := (V \;\text{Value})}
+	\alternative{\text{Arg}(R)}
+	\alternative{\text{Fun}(R)}\\
+	\alternative{\text{Fun}\beta}
+	\alternative{\text{Loc}\beta}
+	\alternative{\text{Tell}(R)}
+	\alternative{\text{TellDo}\beta}
+\end{syntax}
 
+\paragraph{Semantics}\;
+\begin{mathparpagebreakable}
+  \infer[DoneE]{L \notin \mathcal{B} \\
+  e_1 \Rightarrow_e e_2}
+  {L.e_1 \xRightarrow{L.(e_1 \Rightarrow e_2)\hfill{}\mathcal{B}}_c L.e_2} \and
+
+  \infer[SendE]{C_1 \xRightarrow{R\hfill{}\mathcal{B}}_c C_2}
+  {C_1 \overset{L_1}{\rightsquigarrow} L_2 \xRightarrow{R\hfill{}\mathcal{B}}_c C_2 \overset{L_1}{\rightsquigarrow} L_2} \and
+
+  \infer[IfE]{C \xRightarrow{R\hfill{}\mathcal{B}}_c C'}
+  {L.\text{if}\; C \;\text{then}\; C_1 \;\text{else}\; C_2 \xRightarrow{L.\text{if}\;R\hfill{}\mathcal{B}}_c L.\text{if}\; C' \;\text{then}\; C_1 \;\text{else}\; C_2} \and
+
+  \infer[IfI]{C_1 \xRightarrow{R\hfill{}\mathcal{B} \cup \{L\}}_c C_1' \\
+    C_2 \xRightarrow{R\hfill{}\mathcal{B} \cup \{L\}}_c C_2'}
+  {L.\text{if}\; C \;\text{then}\; C_1 \;\text{else}\; C_2 \xRightarrow{R\hfill{}\mathcal{B}}_c L.\text{if}\; C \;\text{then}\; C_1' \;\text{else}\; C_2'} \and
+
+  \infer[IfT]{L \notin \mathcal{B}}
+  {L.\text{if}\; L.\text{true} \;\text{then}\; C_1 \;\text{else}\; C_2 \xRightarrow{L.\text{if}\;\text{true}\hfill{}\mathcal{B}}_c C_1} \and
+
+  \infer[IfF]{L \notin \mathcal{B}}
+  {L.\text{if}\; L.\text{false} \;\text{then}\; C_1 \;\text{else}\; C_2 \xRightarrow{L.\text{if}\;\text{false}\hfill{}\mathcal{B}}_c C_2} \and
+
+  \infer[SyncI]{C_1 \xRightarrow{R\hfill{}\mathcal{B} \cup \{L_1, L_2\}}_c C_2}
+  {L_1[d] \rightsquigarrow L_2; C_1 \xRightarrow{R\hfill{}\mathcal{B}}_c L_1[d] \rightsquigarrow L_2; C_2} \and
+
+  \infer[Sync]{L_1, L_2 \notin \mathcal{B}}
+  {L_1[d] \rightsquigarrow L_2; C \xRightarrow{\text{Sync}\hfill{}\mathcal{B}}_c C} \and
+
+  \infer[DefI]{C_1 \xRightarrow{R\hfill{}\mathcal{B}}_c C_1'}
+  {\text{let}\; x := C_1 \;\text{in}\; C_2 \xRightarrow{\text{Arg}(R)\hfill{}\mathcal{B}}_c \text{let}\; x := C_1' \;\text{in}\; C_2} \and
+
+  \infer[Def]{\text{Value}(V)}
+  {\text{let}\; x := V \;\text{in}\; C \xRightarrow{\text{let}\; x := (V \;\text{Value})\hfill{}\mathcal{B}}_c C[x \mapsto V]} \and
+
+  \infer[AppFun]{C_1 \xRightarrow{R\hfill{}\mathcal{B}}_c C_1'}
+  {C_1 \; C_2 \xRightarrow{\text{Fun}(R)\hfill{}\mathcal{B}}_c C_1' \; C_2} \and
+
+  \infer[AppArg]{C_2 \xRightarrow{R\hfill{}\mathcal{B}}_c C_2'}
+  {C_1 \; C_2 \xRightarrow{\text{Arg}(R)\hfill{}\mathcal{B}}_c C_1 \; C_2'} \and
+
+  \infer[App]{\text{Value}(V)}
+  {(\text{fun}\; F(x) := C) \; V \xRightarrow{\text{Fun}\beta\hfill{}\emptyset}_c C[x \mapsto V, F \mapsto \text{fun}\; F(x) := C]} \and
+
+  \infer[LocApp]{}
+  {(\Lambda x.C) \; L \xRightarrow{\text{Loc}\beta\hfill{}\emptyset}_c C[x \mapsto L]} \and
+
+  \infer[TellDoE]{C \xRightarrow{R\hfill{}\mathcal{B}}_c C'}
+  {L.\text{tell}\;C_1\;\text{do}\;\lambda x.C_2 \xRightarrow{\text{Tell}(R)\hfill{}\mathcal{B}}_c L.\text{tell}\;C_1'\;\text{do}\;\lambda x.C_2}
+
+  \infer[TellDo]{L_1, L_2 \notin \mathcal{B}}
+  {L_1.\text{tell}\;L_1.L_2\;\text{do}\;\lambda x.C \xRightarrow{\text{Tell}\beta\hfill{}\mathcal{B}}_c C[x \mapsto L_2]}
+\end{mathparpagebreakable}
 
 \section{Endpoint Projection}
 \paragraph{Control Language}
@@ -187,15 +276,56 @@
     \alternative{()}
     \alternative{\text{ret}(e)}
     \alternative{\text{let}\;x := E_1 \;\text{in}\; E_2}\\
-    \alternative{\text{send}\; e \;\text{to}\; L}
+    \alternative{\text{send}\; E \;\text{to}\; L}
     \alternative{\text{receive from}\; L}\\
     \alternative{\text{if}\; E \;\text{then}\; E_1 \;\text{else}\; E_2}
     \alternative{\text{choose}\; d \;\text{for}\; L ; E}\\
-    \alternative{\text{allow}\; L \;\text{choice}\; E_1 \;\text{or}\; E_2}
+    \alternative{\text{allow}\; L \;\text{choice}\; (d \Rightarrow E)^*}\\
+    \alternative{\text{send do}\; \lambda x.E_1 \;\text{to}\; E_2}\\
+    \alternative{\text{receive do}\; \lambda x.E \;\text{from}\; L}
 
     \category[Systems]{\Pi}
     \alternative{L_1 \triangleright E_1 \;\|\; \ldots \;\|\; L_n \triangleright E_n}
 \end{syntax}
+
+\paragraph{Endpoint Projection}
+\as{Control language must include both ground and variable locations}
+\as{Do we need type-guided projection like Alice \& Bob? Probably}
+\as{How to project tell-do?}
+\as{Why does aligned hate me :(}
+\begin{mathparpagebreakable}
+\begin{aligned}[t]
+	\epp{x}{L} &= ? \\
+	\epp{\ell.e}{L} &= ? \\
+	\epp{C \overset{\ell_1}{\rightsquigarrow} \ell_2}{L} &=
+		\begin{cases}
+			\epp{C}{L} & L = \ell_1 = \ell_2 \\
+			\text{send}\; \epp{C}{L} \;\text{to}\; \ell_2 & L = \ell_1 \neq \ell_2 \\
+			\text{receive from}\; \ell_1 & L = \ell_2 \neq \ell_1 \\
+			() & L \neq \ell_1, \ell_2
+		\end{cases}\\
+	\epp{\ell.\text{if}\; C \;\text{then}\; C_1 \;\text{else}\; C_2}{L} &=
+		\begin{cases}
+			\text{if}\; \epp{C}{L} \;\text{then}\; \epp{C_1}{L} \;\text{else}\; \epp{C_2}{L} & L = \ell \\
+			\epp{C_1}{L} \sqcup \epp{C_2}{L} & L \neq \ell
+		\end{cases}\\
+	\epp{\ell_1[d] \rightsquigarrow \ell_2; C}{L} &=
+		\begin{cases}
+			\epp{C}{L} & L = \ell_1 = \ell_2 \\
+			\text{choose}\; d \;\text{for}\; \ell_2 ; \epp{C}{L} & L = \ell_1 \neq \ell_2 \\
+			\text{allow}\; \ell_1 \;\text{choice}\; (\mathbb{L} \Rightarrow \epp{C}{L}) & L = \ell_2 \neq \ell_1, d = \mathbb{L} \\
+			\text{allow}\; \ell_1 \;\text{choice}\; (\mathbb{R} \Rightarrow \epp{C}{L}) & L = \ell_2 \neq \ell_1, d = \mathbb{R} \\
+			\epp{C}{L} & L \neq \ell_1, \ell_2
+		\end{cases}\\
+	\epp{\text{let}\; x := C_1 \;\text{in}\; C_2}{L} &= \text{let}\; x := \epp{C_1}{L} \;\text{in}\; \epp{C_1}{L}\\
+	\epp{\text{fun}\; F(x) := C}{L} &= \text{fun}\; F(x) := \epp{C}{L}\\
+	\epp{\ell.\text{tell}\; C_1 \;\text{do}\; \lambda x.C_2}{L} &=
+		\begin{cases}
+			\text{send do}\; \lambda x.\epp{C_1}{L} \;\text{to}\; \epp{C_1}{L} & L = \ell \\
+			\text{receive do}\; \lambda x.\epp{C_1}{L} \;\text{from}\; L & L \neq \ell
+		\end{cases}\\
+\end{aligned}
+\end{mathparpagebreakable}
 
 \end{document}
 
