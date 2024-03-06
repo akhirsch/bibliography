@@ -1,0 +1,207 @@
+\documentclass{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[letterpaper, margin=1in, bottom=1in]{geometry}
+\usepackage[authoryear,sort,square]{natbib}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{bbm}
+\usepackage{bbold}
+\usepackage{stmaryrd}
+\usepackage{mathtools}
+\usepackage{mathpartir}
+\usepackage[dvipsnames]{xcolor}
+\usepackage{latex-pl-syntax/pl-syntax}
+\usepackage{xspace}
+\usepackage{suffix}
+\usepackage{turnstile}
+\usepackage{multicol}
+
+\usepackage[hidelinks]{hyperref}
+
+% Notes
+\newcommand{\uncertain}[1]{{\color{red} #1}\xspace}
+\newcommand{\newcommenter}[3]{%
+  \newcommand{#1}[1]{%
+    \textcolor{#2}{\small\textsf{[{#3}: {##1}]}}%
+  }%
+}
+\definecolor{darkgreen}{rgb}{0,0.7,0}
+\newcommenter{\akh}{purple}{AKH}
+\newcommenter{\as}{red}{AS}
+
+% AMSTHM Setup
+\newtheorem{thm}{Theorem}
+\newtheorem{lem}{Lemma}
+\newtheorem{cor}{Corollary}
+\newtheorem{conj}{Conjecture}
+\newtheorem{inv}{Invariant}
+\theoremstyle{definition}
+\newtheorem{defn}{Definition}
+
+\bibliographystyle{plainnat}
+
+\begin{document}
+
+\section{Syntax}
+\begin{syntax}
+	\categoryFromSet[Conrete Locations]{L}{\mathcal{L}}
+	
+	\abstractCategory[Local Expressions]{e}
+	
+	\category[Synchronization Labels]{d}
+	\alternative{\mathbb{L}}
+	\alternative{\mathbb{R}}
+	
+	\abstractCategory[Variables]{x, y, z}
+	
+	\category[Locations]{\ell}
+	\alternative{L}
+	\alternative{x}
+	
+	\category[Choreographies]{C}
+	\alternative{x}
+	\alternative{\ell.e}
+	\alternative{C \overset{\ell_1}{\rightsquigarrow} \ell_2}\\
+	\alternative{\ell.\text{if}\; C \;\text{then}\; C_1 \;\text{else}\; C_2}\\
+	\alternative{\ell_1[d] \rightsquigarrow \ell_2; C}\\
+	\alternative{\text{let}\; x := C_1 \;\text{in}\; C_2}\\
+	\alternative{\text{fun}\; F(x) := C}
+	\alternative{C_1\;C_2}\\
+	\alternative{\Lambda x.C}
+	\alternative{C\;\ell}\\
+	\alternative{\text{tell}\; C_1 \;\text{do}\; \lambda x.C_2}
+\end{syntax}
+
+
+\section{Type System}
+\paragraph{Syntax of Types}
+
+\begin{syntax}
+	\abstractCategory[Local Types]{t}
+	
+	\category[Local Contexts]{\Delta}
+	\alternative{\cdot}
+	\alternative{\Delta, x : t}
+	
+	\category[Choreography Types]{\tau}
+	\alternative{t @ \ell}
+	\alternative{\tau_1 \rightarrow \tau_2}
+	\alternative{\forall x.\tau}
+	
+	\category[Choreography Contexts]{\Gamma}
+	\alternative{\cdot}
+	\alternative{\Gamma, x : \tau}
+	\alternative{\Gamma, x}
+\end{syntax}
+
+\paragraph{Context, Type, and Location Typing Rules}
+\begin{mathpar}
+  \infer[EmpCtx]{}
+  {\vdash \cdot} \and
+
+  \infer[TyAddCtx]{\vdash \Gamma \\
+    \Gamma \vdash \tau \;\text{Ty},
+    x \notin \Gamma}
+  {\vdash \Gamma, x : \tau} \and
+
+  \infer[LocAddCtx]{\vdash \Gamma \\
+    x \notin \Gamma}
+  {\vdash \Gamma, x} \and
+
+  \infer[Loc]{\vdash \Gamma \\
+    \ell \in \mathcal{L} \cup \Gamma}
+  {\Gamma \vdash \ell \;\text{Loc}} \and
+
+  \infer[AtTy]{\vdash \Gamma \\
+    \Gamma \vdash \ell}
+  {\Gamma \vdash t @ \ell \;\text{Ty}} \and
+
+  \infer[FunTy]{\Gamma \vdash \tau_1  \;\text{Ty}\\
+    \Gamma \vdash \tau_2 \;\text{Ty}}
+  {\Gamma \vdash \tau_1 \rightarrow \tau_2 \;\text{Ty}} \and
+
+  \infer[AllTy]{\Gamma, x \vdash \tau \;\text{Ty}}
+  {\Gamma \vdash \forall x.\tau  \;\text{Ty}} \and
+\end{mathpar}
+
+\paragraph{Choreography Typing Rules}
+\begin{mathpar}
+  \infer[Var]{\vdash \Gamma \\
+    x : \tau \in \Gamma}
+  {\Gamma \vdash x : \tau} \and
+
+  \infer[Done]{\Gamma \vdash \ell \;\text{Loc} \\
+    \Gamma_\ell \vdash e : t}
+  {\Gamma \vdash \ell.e \vdash t @ \ell} \and
+
+  \infer[Send]{\Gamma \vdash \ell_1, \ell_2 \;\text{Loc} \\
+    \Gamma \vdash C : t @ \ell_1}{\Gamma \vdash C \overset{\ell_1}
+  {\rightsquigarrow} \ell_2 : t @ \ell_2} \and
+
+  \infer[If]{\Gamma \vdash C : \text{bool} @ \ell \\
+    \Gamma \vdash C_1 : \tau \\
+    \Gamma \vdash C_2 : \tau}
+  {\Gamma \vdash \ell.\text{if}\; C \;\text{then}\; C_1 \;\text{else}\; C_2 : \tau} \and
+
+  \infer[Sync]{\Gamma \vdash \ell_1, \ell_2 \;\text{Loc} \\
+    \Gamma \vdash C : \tau}
+  {\Gamma \vdash \ell_1[d] \rightsquigarrow \ell_2; C : \tau} \and
+
+  \infer[Def]{\Gamma, x : \tau_1 \vdash C_2 : \tau_2 \\
+    \Gamma \vdash C_1 : \tau_1}
+  {\Gamma \vdash \text{let}\; x := C_1 \;\text{in}\; C_2 : \tau_2} \and
+
+  \infer[Fun]{\Gamma, F : \tau_1 \rightarrow \tau_2, x : \tau_1 \vdash C : \tau_2}
+  {\Gamma \vdash \text{fun}\; F(x) := C : \tau_1 \rightarrow \tau_2} \and
+
+  \infer[App]{\Gamma \vdash C_1 : \tau_1 \rightarrow \tau_2 \\
+    \Gamma \vdash C_2 : \tau_1}
+  {\Gamma \vdash C_1\;C_2 : \tau_2} \and
+
+  \infer[LocAbs]{\Gamma, x \vdash C : \tau}
+  {\Gamma \vdash \Lambda x.C : \forall x.\tau} \and
+
+  \infer[LocApp]{\Gamma \vdash \ell \;\text{Loc} \\
+    \Gamma \vdash C : \forall x.\tau}
+  {\Gamma \vdash C\;\ell : \tau[x \mapsto \ell]} \and
+
+  \infer[TellDo]{\Gamma \vdash C_1 : \text{Loc} @ \ell_1 \\
+    \Gamma \vdash \tau \;\text{Ty} \\
+    \Gamma, x \vdash C_2 : \tau}
+  {\Gamma \vdash \text{tell}\; C_1 \;\text{do}\; \lambda x.C_2 : \tau}
+\end{mathpar}
+
+\section{Operational Semantics}
+
+
+\section{Endpoint Projection}
+\paragraph{Control Language}
+\begin{syntax}
+    \category[Control Expression]{E}
+    \alternative{x}
+    \alternative{\text{fun}\;F(x) := E}
+    \alternative{E_1\;E_2}\\
+    \alternative{()}
+    \alternative{\text{ret}(e)}
+    \alternative{\text{let}\;x := E_1 \;\text{in}\; E_2}\\
+    \alternative{\text{send}\; e \;\text{to}\; L}
+    \alternative{\text{receive from}\; L}\\
+    \alternative{\text{if}\; E \;\text{then}\; E_1 \;\text{else}\; E_2}
+    \alternative{\text{choose}\; d \;\text{for}\; L ; E}\\
+    \alternative{\text{allow}\; L \;\text{choice}\; E_1 \;\text{or}\; E_2}
+
+    \category[Systems]{\Pi}
+    \alternative{L_1 \triangleright E_1 \;\|\; \ldots \;\|\; L_n \triangleright E_n}
+\end{syntax}
+
+\end{document}
+
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: t
+%%% TeX-master: t
+%%% End:
