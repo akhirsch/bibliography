@@ -80,7 +80,7 @@
 	\alternative{C_1\;C_2}\\
 	\alternative{\Lambda x.C}
 	\alternative{C\;\ell}\\
-	\alternative{\ell.\text{tell}\; C_1 \;\text{do}\; \lambda x.C_2}
+	\alternative{\ell.\text{tell}\; x := C_1 \;\text{do}\; C_2}
 \end{syntax}
 
 
@@ -152,7 +152,7 @@
   {\Gamma \vdash x : \tau} \and
 
   \infer[Done]{\Gamma \vdash \ell \;\text{Loc} \\
-    \Gamma_\ell \vdash e : t}
+    \proj{\Gamma}{\ell} \vdash e : t}
   {\Gamma \vdash \ell.e \vdash t @ \ell} \and
 
   \infer[Send]{\Gamma \vdash \ell_1, \ell_2 \;\text{Loc} \\
@@ -186,10 +186,10 @@
     \Gamma \vdash C : \forall x.\tau}
   {\Gamma \vdash C\;\ell : \tau[x \mapsto \ell]} \and
 
-  \infer[TellDo]{\Gamma \vdash C_1 : \text{Loc} @ \ell_1 \\
+  \infer[TellDo]{\Gamma \vdash C_1 : \text{Loc} @ \ell \\
     \Gamma \vdash \tau \;\text{Ty} \\
     \Gamma, x : \text{Loc} \vdash C_2 : \tau}
-  {\Gamma \vdash \ell_1.\text{tell}\; C_1 \;\text{do}\; \lambda x.C_2 : \tau}
+  {\Gamma \vdash \ell.\text{tell}\; x := C_1 \;\text{do}\; C_2 : \tau}
 \end{mathpar}
 
 \section{Operational Semantics}
@@ -260,10 +260,10 @@
   {(\Lambda x.C) \; L \xRightarrow{\text{Loc}\beta\hfill{}\emptyset}_c C[x \mapsto L]} \and
 
   \infer[TellDoE]{C \xRightarrow{R\hfill{}\mathcal{B}}_c C'}
-  {L.\text{tell}\;C_1\;\text{do}\;\lambda x.C_2 \xRightarrow{\text{Tell}(R)\hfill{}\mathcal{B}}_c L.\text{tell}\;C_1'\;\text{do}\;\lambda x.C_2}
+  {L.\text{tell}\; x := C_1 \;\text{do}\; C_2 \xRightarrow{\text{Tell}(R)\hfill{}\mathcal{B}}_c L.\text{tell}\; x := C_1' \;\text{do}\; C_2}
 
   \infer[TellDo]{L_1, L_2 \notin \mathcal{B}}
-  {L_1.\text{tell}\;L_1.L_2\;\text{do}\;\lambda x.C \xRightarrow{\text{Tell}\beta\hfill{}\mathcal{B}}_c C[x \mapsto L_2]}
+  {L_1.\text{tell}\; x := L_1.L_2 \;\text{do}\; C \xRightarrow{\text{Tell}\beta\hfill{}\mathcal{B}}_c C[x \mapsto L_2]}
 \end{mathparpagebreakable}
 
 \section{Endpoint Projection}
@@ -281,7 +281,7 @@
     \alternative{\text{if}\; E \;\text{then}\; E_1 \;\text{else}\; E_2}
     \alternative{\text{choose}\; d \;\text{for}\; L ; E}\\
     \alternative{\text{allow}\; L \;\text{choice}\; (d \Rightarrow E)^*}\\
-    \alternative{\text{send do}\; \lambda x.E_1 \;\text{to}\; E_2}\\
+    \alternative{\text{send tell}\; x := E_1 \;\text{do}\; E_2}\\
     \alternative{\text{receive do}\; \lambda x.E \;\text{from}\; L}
 
     \category[Systems]{\Pi}
@@ -291,7 +291,7 @@
 \paragraph{Endpoint Projection}
 \as{Control language must include both ground and variable locations}
 \as{Do we need type-guided projection like Alice \& Bob? Probably}
-\as{How to project tell-do?}
+\as{How to project tell-do? Probably need to use AmI}
 \as{Why does aligned hate me :(}
 \begin{mathparpagebreakable}
 \begin{aligned}[t]
@@ -319,10 +319,10 @@
 		\end{cases}\\
 	\epp{\text{let}\; x := C_1 \;\text{in}\; C_2}{L} &= \text{let}\; x := \epp{C_1}{L} \;\text{in}\; \epp{C_1}{L}\\
 	\epp{\text{fun}\; F(x) := C}{L} &= \text{fun}\; F(x) := \epp{C}{L}\\
-	\epp{\ell.\text{tell}\; C_1 \;\text{do}\; \lambda x.C_2}{L} &=
+	\epp{\ell.\text{tell}\; x := C_1 \;\text{do}\; C_2}{L} &=
 		\begin{cases}
-			\text{send do}\; \lambda x.\epp{C_1}{L} \;\text{to}\; \epp{C_1}{L} & L = \ell \\
-			\text{receive do}\; \lambda x.\epp{C_1}{L} \;\text{from}\; L & L \neq \ell
+			\text{send tell}\; x := \epp{C_1}{L} \;\text{do}\; \epp{C_2}{L} & L = \ell \\
+			\text{receive do}\; \lambda x.\epp{C_2}{L} \;\text{from}\; \ell & L \neq \ell
 		\end{cases}\\
 \end{aligned}
 \end{mathparpagebreakable}
