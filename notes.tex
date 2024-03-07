@@ -53,6 +53,27 @@
 
 \begin{document}
 
+\section{Meeting Notes}
+\paragraph{Misc}
+\begin{itemize}
+	\item Local values don't seem to have an elimination form with current system
+	\item Don't need to track blocking sets in reduction rules; can compute from redices
+\end{itemize}
+
+\paragraph{Tell-do Concerns}
+\begin{itemize}
+	\item How do we know who to send the tell-do to, as it's using a local value?
+	\item We need to statically compute an over-approximation of the set of possible recipients
+	\item Idea: Have the local language compute the over-approximation, and have its soundness be an assumption for the deadlock freedom guarantees.
+	\[
+	\text{tell}\; x := C_1 \;\text{do}[S]\; C_2
+	\]
+	\item $S$ is a \emph{set} of locations that the message will be sent to
+	\item Could just send to everyone, but this uses a closed-world assumption
+	\item Weird example suggested by Ethan: Choreography where Alice continually discovers and adds new known locations, and at each point she randomly selects a person from this set to delegate something to. At each point the set is finite, but it will increase infinitely, and the size depends at which step you're at.
+	\item Need to use implicit sends rather than explicit sends (might need to do alias analysis on the value of the local location otherwise!)
+\end{itemize}
+
 \section{Syntax}
 \begin{syntax}
 	\categoryFromSet[Conrete Locations]{L}{\mathcal{L}}
