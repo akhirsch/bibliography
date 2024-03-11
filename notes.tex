@@ -88,7 +88,7 @@
 	\abstractCategory[Local Variables]{x, y, z}
 	
 	\\
-	\abstractCategory[Choreography Variables]{\alpha, \beta}
+	\abstractCategory[Choreography Variables]{\alpha, \beta, \phi}
 	
 	\category[Synchronization Labels]{d}
 	\alternative{\mathbb{L}}
@@ -102,7 +102,7 @@
 	\alternative{\ell.\text{if}\; C \;\text{then}\; C_1 \;\text{else}\; C_2}\\
 	\alternative{\ell_1[d] \rightsquigarrow \ell_2; C}\\
 	\alternative{\text{let}\; \ell.x := C_1 \;\text{in}\; C_2}\\
-	\alternative{\text{fun}\; F(\alpha) := C}
+	\alternative{\text{fun}\; \phi(\alpha) := C}
 	\alternative{C_1\;C_2}\\
 	\alternative{\Lambda X.C}
 	\alternative{C\;\ell}\\
@@ -153,7 +153,7 @@ Projects a local-let context $\Delta$ to a local context at a (possibly variable
 	\Theta;\Gamma;\Delta &\vdash \tau \tag{Choreography Typing Relation}
 \end{align*}
 
-\paragraph{Context, Type, and Location Typing Rules}
+\paragraph{Context, Type, and Location Well-Formedness Rules}
 \begin{mathpar}
   \infer[EmpCtx]{}
   {\Theta \vdash \cdot} \and
@@ -208,8 +208,8 @@ Projects a local-let context $\Delta$ to a local context at a (possibly variable
     \Theta;(\Gamma, x : \ell.t_1);\Delta \vdash C : \tau_2}
   {\Gamma \vdash \text{let}\; \ell.x := C_1 \;\text{in}\; C_2 : \tau_2} \and
 
-  \infer[Fun]{\Theta;\Gamma;(\Delta, \alpha : \tau_1 \rightarrow \tau_2, \beta : \tau_1) \vdash C : \tau_2}
-  {\Theta;\Gamma;\Delta  \vdash \text{fun}\; \alpha(\beta) := C : \tau_1 \rightarrow \tau_2} \and
+  \infer[Fun]{\Theta;\Gamma;(\Delta, \phi : \tau_1 \rightarrow \tau_2, \alpha : \tau_1) \vdash C : \tau_2}
+  {\Theta;\Gamma;\Delta  \vdash \text{fun}\; \phi(\alpha) := C : \tau_1 \rightarrow \tau_2} \and
 
   \infer[App]{\Theta;\Gamma;\Delta \vdash C_1 : \tau_1 \rightarrow \tau_2 \\
     \Theta;\Gamma;\Delta \vdash C_2 : \tau_1}
