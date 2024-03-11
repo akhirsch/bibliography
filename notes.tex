@@ -77,31 +77,36 @@
 \section{Syntax}
 \begin{syntax}
 	\categoryFromSet[Conrete Locations]{L}{\mathcal{L}}
-	
+	\abstractCategory[Location Variables]{X, Y, Z}
+		
+	\category[Locations]{\ell}
+	\alternative{L}
+	\alternative{X}
+	\\
 	\abstractCategory[Local Expressions]{e}
+		
+	\abstractCategory[Local Variables]{x, y, z}
+	
+	\\
+	\abstractCategory[Choreography Variables]{\alpha, \beta}
 	
 	\category[Synchronization Labels]{d}
 	\alternative{\mathbb{L}}
 	\alternative{\mathbb{R}}
-	
-	\abstractCategory[Variables]{x, y, z}
-	
-	\category[Locations]{\ell}
-	\alternative{L}
-	\alternative{x}
+
 	
 	\category[Choreographies]{C}
-	\alternative{x}
+	\alternative{\alpha}
 	\alternative{\ell.e}
 	\alternative{C \overset{\ell_1}{\rightsquigarrow} \ell_2}\\
 	\alternative{\ell.\text{if}\; C \;\text{then}\; C_1 \;\text{else}\; C_2}\\
 	\alternative{\ell_1[d] \rightsquigarrow \ell_2; C}\\
-	\alternative{\text{let}\; x := C_1 \;\text{in}\; C_2}\\
-	\alternative{\text{fun}\; F(x) := C}
+	\alternative{\text{let}\; \ell.x := C_1 \;\text{in}\; C_2}\\
+	\alternative{\text{fun}\; F(\alpha) := C}
 	\alternative{C_1\;C_2}\\
-	\alternative{\Lambda x.C}
+	\alternative{\Lambda X.C}
 	\alternative{C\;\ell}\\
-	\alternative{\ell.\text{tell}\; x := C_1 \;\text{do}\; C_2}
+	\alternative{\ell.\text{tell}\; X := C_1 \;\text{do}\; C_2}
 \end{syntax}
 
 
@@ -109,108 +114,118 @@
 \paragraph{Syntax of Types}
 \begin{syntax}
 	\abstractCategory[Local Types]{t}
-	
-	\category[Local Contexts]{\Delta}
-	\alternative{\cdot}
-	\alternative{\Delta, x : t}
-	
+
 	\category[Choreography Types]{\tau}
 	\alternative{t @ \ell}
 	\alternative{\tau_1 \rightarrow \tau_2}
-	\alternative{\forall x.\tau}
+	\alternative{\forall X.\tau}
+	
+	\category[Location Contexts]{\Theta}
+	\alternative{\cdot}
+	\alternative{\Theta, X : \text{Loc}}
+	
+	\category[Local-Let Contexts]{\Delta}
+	\alternative{\cdot}
+	\alternative{\Delta, \ell.x : t}
 	
 	\category[Choreography Contexts]{\Gamma}
 	\alternative{\cdot}
-	\alternative{\Gamma, x : \tau}
-	\alternative{\Gamma, x : \text{Loc}}
+	\alternative{\Gamma, \alpha : \tau}
 \end{syntax}
 
 \paragraph{Context Projection}
+Projects a local-let context $\Delta$ to a local context at a (possibly variable) location $\ell$.
 \begin{align*}
 	\proj{\cdot}{\ell} &= \cdot \\
-	\proj{\Gamma, x : t @ \ell'}{\ell} &=
+	\proj{\Delta, \ell.x : t}{\ell} &=
 		\begin{cases} 
-      		\proj{\Gamma}{\ell}, x : t & \ell' = \ell \\
-      		\proj{\Gamma}{\ell} & \ell' \neq \ell \\
-   		\end{cases}\\
-	\proj{\Gamma, x : \tau}{\ell} &= \proj{\Gamma}{\ell} \\
-	\proj{\Gamma, x : \text{Loc}}{\ell} &= \proj{\Gamma}{\ell}
+      		\proj{\Delta}{\ell}, x : t & \ell' = \ell \\
+      		\proj{\Delta}{\ell} & \ell' \neq \ell \\
+   		\end{cases}
+\end{align*}
+
+\paragraph{Typing Relations}
+\begin{align*}
+	\Theta &\vdash \Delta \tag{Local-Let Context Well-Formedness}\\
+	\Theta &\vdash \Gamma \tag{Choreography Context Well-Formedness}\\
+	\Theta &\vdash \ell \tag{Location Well-Formedness}\\
+	\Theta &\vdash \tau \tag{Choreography Type Well-Formedness}\\
+	\Theta;\Gamma;\Delta &\vdash \tau \tag{Choreography Typing Relation}
 \end{align*}
 
 \paragraph{Context, Type, and Location Typing Rules}
 \begin{mathpar}
   \infer[EmpCtx]{}
-  {\vdash \cdot} \and
+  {\Theta \vdash \cdot} \and
 
-  \infer[TyAddCtx]{\vdash \Gamma \\
-    \Gamma \vdash \tau \;\text{Ty},
-    x \notin \Gamma}
-  {\vdash \Gamma, x : \tau} \and
+	\infer[AddCtxLet]{\Theta \vdash \Delta \\
+		\Theta \vdash \ell \;\text{Loc}}
+	{\Theta \vdash \Gamma, \ell.x : t} \and
 
-  \infer[LocAddCtx]{\vdash \Gamma \\
-    x \notin \Gamma}
-  {\vdash \Gamma, x : \text{Loc}} \and
+  \infer[AddCtxChor]{\Theta \vdash \Gamma \\
+    \Theta \vdash \tau \;\text{Ty}}
+  {\Theta \vdash \Gamma, \alpha : \tau} \and
 
-  \infer[Loc]{\vdash \Gamma \\
-    \ell \in \mathcal{L} \cup \Gamma}
-  {\Gamma \vdash \ell \;\text{Loc}} \and
+  \infer[Loc]{\ell \in \mathcal{L} \cup \Theta}
+  {\Theta \vdash \ell \;\text{Loc}} \and
 
-  \infer[AtTy]{\Gamma \vdash \ell}
-  {\Gamma \vdash t @ \ell \;\text{Ty}} \and
+  \infer[AtTy]{\Theta \vdash \ell \;\text{Loc}}
+  {\Theta \vdash t @ \ell \;\text{Ty}} \and
 
-  \infer[FunTy]{\Gamma \vdash \tau_1  \;\text{Ty}\\
-    \Gamma \vdash \tau_2 \;\text{Ty}}
-  {\Gamma \vdash \tau_1 \rightarrow \tau_2 \;\text{Ty}} \and
+  \infer[FunTy]{\Theta \vdash \tau_1  \;\text{Ty}\\
+    \Theta \vdash \tau_2 \;\text{Ty}}
+  {\Theta \vdash \tau_1 \rightarrow \tau_2 \;\text{Ty}} \and
 
-  \infer[AllTy]{\Gamma, x \vdash \tau \;\text{Ty}}
-  {\Gamma \vdash \forall x.\tau  \;\text{Ty}} \and
+  \infer[AllTy]{\Theta, X \;\text{Loc} \vdash \tau \;\text{Ty}}
+  {\Theta \vdash \forall X.\tau  \;\text{Ty}} \and
 \end{mathpar}
 
 \paragraph{Choreography Typing Rules}
 \begin{mathpar}
-  \infer[Var]{\vdash \Gamma \\
+  \infer[Var]{\Theta \vdash \Gamma \\
+  	\Theta \vdash \Delta \\
     x : \tau \in \Gamma}
-  {\Gamma \vdash x : \tau} \and
+  {\Theta;\Gamma;\Delta \vdash x : \tau} \and
 
-  \infer[Done]{\Gamma \vdash \ell \;\text{Loc} \\
+  \infer[Done]{\Theta \vdash \ell \;\text{Loc} \\
     \proj{\Gamma}{\ell} \vdash e : t}
-  {\Gamma \vdash \ell.e \vdash t @ \ell} \and
+  {\Theta;\Gamma;\Delta \vdash \ell.e \vdash t @ \ell} \and
 
-  \infer[Send]{\Gamma \vdash \ell_1, \ell_2 \;\text{Loc} \\
-    \Gamma \vdash C : t @ \ell_1}{\Gamma \vdash C \overset{\ell_1}
-  {\rightsquigarrow} \ell_2 : t @ \ell_2} \and
+  \infer[Send]{\Theta \vdash \ell_1, \ell_2 \;\text{Loc} \\
+    \Theta;\Gamma;\Delta \vdash C : t @ \ell_1}
+  {\Theta;\Gamma;\Delta \vdash C \overset{\ell_1} {\rightsquigarrow} \ell_2 : t @ \ell_2} \and
 
-  \infer[If]{\Gamma \vdash C : \text{bool} @ \ell \\
-    \Gamma \vdash C_1 : \tau \\
-    \Gamma \vdash C_2 : \tau}
+  \infer[If]{\Theta;\Gamma;\Delta \vdash C : \text{bool} @ \ell \\
+    \Theta;\Gamma;\Delta \vdash C_1 : \tau \\
+    \Theta;\Gamma;\Delta \vdash C_2 : \tau}
   {\Gamma \vdash \ell.\text{if}\; C \;\text{then}\; C_1 \;\text{else}\; C_2 : \tau} \and
 
   \infer[Sync]{\Gamma \vdash \ell_1, \ell_2 \;\text{Loc} \\
-    \Gamma \vdash C : \tau}
-  {\Gamma \vdash \ell_1[d] \rightsquigarrow \ell_2; C : \tau} \and
+    \Theta;\Gamma;\Delta \vdash C : \tau}
+  {\Theta;\Gamma;\Delta \vdash \ell_1[d] \rightsquigarrow \ell_2; C : \tau} \and
 
-  \infer[Def]{\Gamma, x : \tau_1 \vdash C_2 : \tau_2 \\
-    \Gamma \vdash C_1 : \tau_1}
-  {\Gamma \vdash \text{let}\; x := C_1 \;\text{in}\; C_2 : \tau_2} \and
+  \infer[LocalLet]{\Theta;\Gamma;\Delta \vdash C_1 : t_1 @ \ell \\
+    \Theta;(\Gamma, x : \ell.t_1);\Delta \vdash C : \tau_2}
+  {\Gamma \vdash \text{let}\; \ell.x := C_1 \;\text{in}\; C_2 : \tau_2} \and
 
-  \infer[Fun]{\Gamma, F : \tau_1 \rightarrow \tau_2, x : \tau_1 \vdash C : \tau_2}
-  {\Gamma \vdash \text{fun}\; F(x) := C : \tau_1 \rightarrow \tau_2} \and
+  \infer[Fun]{\Theta;\Gamma;(\Delta, \alpha : \tau_1 \rightarrow \tau_2, \beta : \tau_1) \vdash C : \tau_2}
+  {\Theta;\Gamma;\Delta  \vdash \text{fun}\; \alpha(\beta) := C : \tau_1 \rightarrow \tau_2} \and
 
-  \infer[App]{\Gamma \vdash C_1 : \tau_1 \rightarrow \tau_2 \\
-    \Gamma \vdash C_2 : \tau_1}
-  {\Gamma \vdash C_1\;C_2 : \tau_2} \and
+  \infer[App]{\Theta;\Gamma;\Delta \vdash C_1 : \tau_1 \rightarrow \tau_2 \\
+    \Theta;\Gamma;\Delta \vdash C_2 : \tau_1}
+  {\Theta;\Gamma;\Delta  \vdash C_1\;C_2 : \tau_2} \and
 
-  \infer[LocAbs]{\Gamma, x : \text{Loc} \vdash C : \tau}
-  {\Gamma \vdash \Lambda x.C : \forall x.\tau} \and
+  \infer[LocAbs]{(\Theta, X : \;\text{Loc});\Gamma;\Delta \vdash C : \tau}
+  {\Theta;\Gamma;\Delta  \vdash \Lambda X.C : \forall X.\tau} \and
 
-  \infer[LocApp]{\Gamma \vdash \ell \;\text{Loc} \\
-    \Gamma \vdash C : \forall x.\tau}
-  {\Gamma \vdash C\;\ell : \tau[x \mapsto \ell]} \and
+  \infer[LocApp]{\Theta \vdash \ell \;\text{Loc} \\
+    \Theta;\Gamma;\Delta  \vdash C : \forall X.\tau}
+  {\Theta;\Gamma;\Delta  \vdash C\;\ell : \tau[X \mapsto \ell]} \and
 
-  \infer[TellDo]{\Gamma \vdash C_1 : \text{Loc} @ \ell \\
-    \Gamma \vdash \tau \;\text{Ty} \\
-    \Gamma, x : \text{Loc} \vdash C_2 : \tau}
-  {\Gamma \vdash \ell.\text{tell}\; x := C_1 \;\text{do}\; C_2 : \tau}
+  \infer[TellDo]{\Theta;\Gamma;\Delta  \vdash C_1 : \text{Loc} @ \ell \\
+    \Theta \vdash \tau \;\text{Ty} \\
+    (\Theta, X : \;\text{Loc});\Gamma;\Delta \vdash C_2 : \tau}
+  {\Gamma \vdash \ell.\text{tell}\; X := C_1 \;\text{do}\; C_2 : \tau}
 \end{mathpar}
 
 \section{Operational Semantics}
