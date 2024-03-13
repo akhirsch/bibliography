@@ -49,6 +49,8 @@
 % Endpoint Projection
 \newcommand\epp[2]{\ensuremath{\llbracket#1\rrbracket_{#2}}}
 
+\newcommand\step[2]{\ensuremath{\xRightarrow{{#1} \hfill{} {#2}}_{\raisebox{3pt}{\footnotesize{c}}}}}
+
 \bibliographystyle{plainnat}
 
 \begin{document}
@@ -98,15 +100,15 @@
 	\category[Choreographies]{C}
 	\alternative{\alpha}
 	\alternative{\ell.e}
-	\alternative{C \overset{\ell_1}{\rightsquigarrow} \ell_2}\\
-	\alternative{\ell.\text{if}\; C \;\text{then}\; C_1 \;\text{else}\; C_2}\\
+	\alternative{\ell_1.e \rightsquigarrow \alpha @ \ell_2; C_2}\\
+	\alternative{\text{if}\; \ell.e \;\text{then}\; C_1 \;\text{else}\; C_2}\\
 	\alternative{\ell_1[d] \rightsquigarrow \ell_2; C}\\
 	\alternative{\text{let}\; \ell.x := C_1 \;\text{in}\; C_2}\\
 	\alternative{\text{fun}\; \phi(\alpha) := C}
 	\alternative{C_1\;C_2}\\
 	\alternative{\Lambda X.C}
 	\alternative{C\;\ell}\\
-	\alternative{\ell.\text{tell}\; X := C_1 \;\text{do}\; C_2}
+	\alternative{\ell.\text{tell}\; X \in \{\ell_1,\ldots,\ell_n\} := C_1 \;\text{do}\; C_2}
 \end{syntax}
 
 
@@ -158,9 +160,9 @@ Projects a local-let context $\Delta$ to a local context at a (possibly variable
   \infer[EmpCtx]{}
   {\Theta \vdash \cdot} \and
 
-	\infer[AddCtxLet]{\Theta \vdash \Delta \\
-		\Theta \vdash \ell \;\text{Loc}}
-	{\Theta \vdash \Gamma, \ell.x : t} \and
+  \infer[AddCtxLet]{\Theta \vdash \Delta \\
+    \Theta \vdash \ell \;\text{Loc}}
+  {\Theta \vdash \Gamma, \ell.x : t} \and
 
   \infer[AddCtxChor]{\Theta \vdash \Gamma \\
     \Theta \vdash \tau \;\text{Ty}}
@@ -187,18 +189,21 @@ Projects a local-let context $\Delta$ to a local context at a (possibly variable
     x : \tau \in \Gamma}
   {\Theta;\Gamma;\Delta \vdash x : \tau} \and
 
-  \infer[Done]{\Theta \vdash \ell \;\text{Loc} \\
-    \proj{\Gamma}{\ell} \vdash e : t}
+  \infer[Done]{\Theta \vdash \Gamma \\
+  	\Theta \vdash \Delta \\
+    \Theta \vdash \ell \;\text{Loc} \\
+    \proj{\Delta}{\ell} \vdash e : t}
   {\Theta;\Gamma;\Delta \vdash \ell.e \vdash t @ \ell} \and
 
   \infer[Send]{\Theta \vdash \ell_1, \ell_2 \;\text{Loc} \\
-    \Theta;\Gamma;\Delta \vdash C : t @ \ell_1}
-  {\Theta;\Gamma;\Delta \vdash C \overset{\ell_1} {\rightsquigarrow} \ell_2 : t @ \ell_2} \and
+    \proj{\Delta}{\ell_1} \vdash e : t_1 \\
+    \Theta;\Gamma;(\Delta, \alpha : t_1 @ \ell_2) \vdash C : \tau_2}
+  {\Theta;\Gamma;\Delta \vdash \ell_1.e \rightsquigarrow \alpha @ \ell_2;C : \tau_2} \and
 
-  \infer[If]{\Theta;\Gamma;\Delta \vdash C : \text{bool} @ \ell \\
+  \infer[If]{\proj{\Delta}{\ell} \vdash e : \text{bool} \\
     \Theta;\Gamma;\Delta \vdash C_1 : \tau \\
     \Theta;\Gamma;\Delta \vdash C_2 : \tau}
-  {\Gamma \vdash \ell.\text{if}\; C \;\text{then}\; C_1 \;\text{else}\; C_2 : \tau} \and
+  {\Gamma \vdash \text{if}\; \ell.e \;\text{then}\; C_1 \;\text{else}\; C_2 : \tau} \and
 
   \infer[Sync]{\Gamma \vdash \ell_1, \ell_2 \;\text{Loc} \\
     \Theta;\Gamma;\Delta \vdash C : \tau}
@@ -224,82 +229,92 @@ Projects a local-let context $\Delta$ to a local context at a (possibly variable
 
   \infer[TellDo]{\Theta;\Gamma;\Delta  \vdash C_1 : \text{Loc} @ \ell \\
     \Theta \vdash \tau \;\text{Ty} \\
+    \Theta \vdash \ell_1,\ldots,\ell_n \;\text{Loc} \\
     (\Theta, X : \;\text{Loc});\Gamma;\Delta \vdash C_2 : \tau}
-  {\Gamma \vdash \ell.\text{tell}\; X := C_1 \;\text{do}\; C_2 : \tau}
+  {\Gamma \vdash \ell.\text{tell}\; X \in \{\ell_1,\ldots,\ell_n\} := C_1 \;\text{do}\; C_2 : \tau}
 \end{mathpar}
 
 \section{Operational Semantics}
+
+\as{Only using redices without block sets presents some challenges at a first glance, so I'm sticking with block sets for now.}
+
+\as{Letting sends be a singular operation actually makes allowing for out-of-order execution very difficult. To do so we essentially need to allow for reductions under a lambda abstraction/let binding, which introduces multiple problems.}
+
 \paragraph{Redices}
 \begin{syntax}
 	\category[Redices]{R}
 	\alternative{L.(e_1 \Rightarrow e_2)}
-	\alternative{L.\text{if}\;R}
-	\alternative{L.\text{if}\;\text{true}}
-	\alternative{L.\text{if}\;\text{false}}\\
-	\alternative{R \overset{L_1}{\rightsquigarrow} L_2}
-	\alternative{L_1.(v\;\text{value}) \overset{L_1}{\rightsquigarrow} L_2}\\
-	\alternative{L_1[d] \rightsquigarrow L_2}
-	\alternative{\text{Sync}}\\
-	\alternative{\text{let}\;x := (V \;\text{Value})}
+	\alternative{\text{if}\;L.(e_1 \Rightarrow e_2)}
+	\alternative{\text{if}\;L.\text{true}}
+	\alternative{\text{if}\;L.\text{false}}\\
+	\alternative{L_1.(e_1 \Rightarrow e_2) \rightsquigarrow L_2}
+	\alternative{L_1.(v\;\text{value}) \rightsquigarrow L_2}
+	\alternative{L_1[d] \rightsquigarrow L_2}\\
+	\alternative{\text{let}\;L.x := (v \;\text{value})}\\
 	\alternative{\text{Arg}(R)}
-	\alternative{\text{Fun}(R)}\\
-	\alternative{\text{Fun}\beta}
-	\alternative{\text{Loc}\beta}
-	\alternative{\text{Tell}(R)}
-	\alternative{\text{TellDo}\beta}
+	\alternative{\text{Fun}(R)}
+	\alternative{\text{Fun}}
+	\alternative{\text{Loc}}\\
+	\alternative{L.\text{tell}\; X \in \{L_1,\ldots,L_n\} := L.L_i}
 \end{syntax}
 
 \paragraph{Semantics}\;
 \begin{mathparpagebreakable}
-  \infer[DoneE]{L \notin \mathcal{B} \\
-  e_1 \Rightarrow_e e_2}
-  {L.e_1 \xRightarrow{L.(e_1 \Rightarrow e_2)\hfill{}\mathcal{B}}_c L.e_2} \and
+  \infer[DoneE]{e_1 \Rightarrow_e e_2 \\
+    L \notin \mathcal{B}}
+  {L.e_1 \step{L.(e_1 \Rightarrow e_2)}{\mathcal{B}} L.e_2} \and
 
-  \infer[SendE]{C_1 \xRightarrow{R\hfill{}\mathcal{B}}_c C_2}
-  {C_1 \overset{L_1}{\rightsquigarrow} L_2 \xRightarrow{R\hfill{}\mathcal{B}}_c C_2 \overset{L_1}{\rightsquigarrow} L_2} \and
+  \infer[SendE]{e_1 \Rightarrow_e e_2 \\
+    L_1 \notin \mathcal{B}}
+  {L_1.e_1 \rightsquigarrow \alpha @ L_2;C \step{L_1.(e_1 \Rightarrow e_2) \rightsquigarrow L_2}{\mathcal{B}} L_1.e_2 \rightsquigarrow \alpha @ L_2;C} \and
 
-  \infer[IfE]{C \xRightarrow{R\hfill{}\mathcal{B}}_c C'}
-  {L.\text{if}\; C \;\text{then}\; C_1 \;\text{else}\; C_2 \xRightarrow{L.\text{if}\;R\hfill{}\mathcal{B}}_c L.\text{if}\; C' \;\text{then}\; C_1 \;\text{else}\; C_2} \and
+  \infer[SendV]{\text{Value}(v) \\
+    L_1, L_2 \notin \mathcal{B}}
+  {L_1.v \rightsquigarrow \alpha @ L_2;C \step{L_1.(v\;\text{value}) \rightsquigarrow L_2}{\mathcal{B}} C[\alpha \mapsto L_2.v]} \and
 
-  \infer[IfI]{C_1 \xRightarrow{R\hfill{}\mathcal{B} \cup \{L\}}_c C_1' \\
-    C_2 \xRightarrow{R\hfill{}\mathcal{B} \cup \{L\}}_c C_2'}
-  {L.\text{if}\; C \;\text{then}\; C_1 \;\text{else}\; C_2 \xRightarrow{R\hfill{}\mathcal{B}}_c L.\text{if}\; C \;\text{then}\; C_1' \;\text{else}\; C_2'} \and
+  \infer[IfE]{e_1 \Rightarrow_e e_2 \\
+    L \notin \mathcal{B}}
+  {\text{if}\; L.e_1 \;\text{then}\; C_1 \;\text{else}\; C_2 \step{\text{if}\;L.(e_1 \Rightarrow e_2)}{\mathcal{B}} \text{if}\; L.e_2 \;\text{then}\; C_1 \;\text{else}\; C_2} \and
+
+  \infer[IfI]{C_1 \step{R}{\mathcal{B} \cup \{L\}} C_1' \\
+    C_2 \step{R}{\mathcal{B} \cup \{L\}} C_2'}
+  {\text{if}\; L.e \;\text{then}\; C_1 \;\text{else}\; C_2 \step{R}{\mathcal{B}} \text{if}\; L.e \;\text{then}\; C_1' \;\text{else}\; C_2'} \and
 
   \infer[IfT]{L \notin \mathcal{B}}
-  {L.\text{if}\; L.\text{true} \;\text{then}\; C_1 \;\text{else}\; C_2 \xRightarrow{L.\text{if}\;\text{true}\hfill{}\mathcal{B}}_c C_1} \and
+  {\text{if}\; L.\text{true} \;\text{then}\; C_1 \;\text{else}\; C_2 \step{\text{if}\;L.\text{true}}{\mathcal{B}} C_1} \and
 
   \infer[IfF]{L \notin \mathcal{B}}
-  {L.\text{if}\; L.\text{false} \;\text{then}\; C_1 \;\text{else}\; C_2 \xRightarrow{L.\text{if}\;\text{false}\hfill{}\mathcal{B}}_c C_2} \and
-
-  \infer[SyncI]{C_1 \xRightarrow{R\hfill{}\mathcal{B} \cup \{L_1, L_2\}}_c C_2}
-  {L_1[d] \rightsquigarrow L_2; C_1 \xRightarrow{R\hfill{}\mathcal{B}}_c L_1[d] \rightsquigarrow L_2; C_2} \and
+  {\text{if}\; L.\text{false} \;\text{then}\; C_1 \;\text{else}\; C_2 \step{\text{if}\;L.\text{false}}{\mathcal{B}} C_2} \and
 
   \infer[Sync]{L_1, L_2 \notin \mathcal{B}}
-  {L_1[d] \rightsquigarrow L_2; C \xRightarrow{\text{Sync}\hfill{}\mathcal{B}}_c C} \and
+  {L_1[d] \rightsquigarrow L_2; C \step{L_1[d] \rightsquigarrow L_2}{\mathcal{B}} C} \and
 
-  \infer[DefI]{C_1 \xRightarrow{R\hfill{}\mathcal{B}}_c C_1'}
-  {\text{let}\; x := C_1 \;\text{in}\; C_2 \xRightarrow{\text{Arg}(R)\hfill{}\mathcal{B}}_c \text{let}\; x := C_1' \;\text{in}\; C_2} \and
+  \infer[SyncI]{C_1 \step{R}{\mathcal{B} \cup \{L_1,L_2\}} C_2}
+  {L_1[d] \rightsquigarrow L_2; C_1 \step{R}{\mathcal{B}} L_1[d] \rightsquigarrow L_2; C_2} \and
 
-  \infer[Def]{\text{Value}(V)}
-  {\text{let}\; x := V \;\text{in}\; C \xRightarrow{\text{let}\; x := (V \;\text{Value})\hfill{}\mathcal{B}}_c C[x \mapsto V]} \and
+  \infer[DefLocal]{C_1 \step{R}{\mathcal{B}} C_1'}
+  {\text{let}\; L.x := C_1 \;\text{in}\; C_2 \step{\text{Arg}(R)}{\mathcal{B}} \text{let}\; L.x := C_1' \;\text{in}\; C_2} \and
 
-  \infer[AppFun]{C_1 \xRightarrow{R\hfill{}\mathcal{B}}_c C_1'}
-  {C_1 \; C_2 \xRightarrow{\text{Fun}(R)\hfill{}\mathcal{B}}_c C_1' \; C_2} \and
+  \infer[DefLocalV]{\text{Value}(v)}
+  {\text{let}\; L.x := L.v \;\text{in}\; C \step{\text{let}\; L.x := (v \;\text{Value})}{\mathcal{B}} C[x \mapsto v]} \and
 
-  \infer[AppArg]{C_2 \xRightarrow{R\hfill{}\mathcal{B}}_c C_2'}
-  {C_1 \; C_2 \xRightarrow{\text{Arg}(R)\hfill{}\mathcal{B}}_c C_1 \; C_2'} \and
+  \infer[AppFun]{C_1 \step{R}{\mathcal{B}} C_1'}
+  {C_1 \; C_2 \step{\text{Fun}(R)}{\mathcal{B}} C_1' \; C_2} \and
+
+  \infer[AppArg]{C_2 \step{R}{\mathcal{B}} C_2'}
+  {C_1 \; C_2 \step{\text{Arg}(R)}{\mathcal{B}} C_1 \; C_2'} \and
 
   \infer[App]{\text{Value}(V)}
-  {(\text{fun}\; F(x) := C) \; V \xRightarrow{\text{Fun}\beta\hfill{}\emptyset}_c C[x \mapsto V, F \mapsto \text{fun}\; F(x) := C]} \and
+  {(\text{fun}\; \phi(\alpha) := C) \; V \step{\text{Fun}}{\emptyset} C[\phi \mapsto \text{fun}\; \phi(\alpha) := C, \alpha \mapsto V]} \and
 
   \infer[LocApp]{}
-  {(\Lambda x.C) \; L \xRightarrow{\text{Loc}\beta\hfill{}\emptyset}_c C[x \mapsto L]} \and
+  {(\Lambda X.C) \; L \step{\text{Loc}}{\emptyset} C[X \mapsto L]} \and
 
-  \infer[TellDoE]{C \xRightarrow{R\hfill{}\mathcal{B}}_c C'}
-  {L.\text{tell}\; x := C_1 \;\text{do}\; C_2 \xRightarrow{\text{Tell}(R)\hfill{}\mathcal{B}}_c L.\text{tell}\; x := C_1' \;\text{do}\; C_2}
+  \infer[TellDo]{C_1 \step{R}{\mathcal{B}} C_1'}
+  {L.\text{tell}\; X \in \{L_1,\ldots,L_n\} := C_1 \;\text{do}\; C_2 \step{\text{Arg}(R)}{\mathcal{B}} L.\text{tell}\; X \in \{L_1,\ldots,L_n\} := C_1' \;\text{do}\; C_2}
 
-  \infer[TellDo]{L_1, L_2 \notin \mathcal{B}}
-  {L_1.\text{tell}\; x := L_1.L_2 \;\text{do}\; C \xRightarrow{\text{Tell}\beta\hfill{}\mathcal{B}}_c C[x \mapsto L_2]}
+  \infer[TellDoV]{}
+  {L.\text{tell}\; X \in \{L_1,\ldots,L_n\} := L.L_i \;\text{do}\; C \step{L.\text{tell}\; X \in \{L_1,\ldots,L_n\} := L.L_i}{\emptyset} C[X \mapsto L_i]}
 \end{mathparpagebreakable}
 
 \section{Endpoint Projection}
