@@ -108,7 +108,7 @@
 	\alternative{C_1\;C_2}\\
 	\alternative{\Lambda X.C}
 	\alternative{C\;\ell}\\
-	\alternative{\ell.\text{tell}\; X \in \{\ell_1,\ldots,\ell_n\} := C_1 \;\text{do}\; C_2}
+	\alternative{\text{tell}\; X \in \{\ell_1,\ldots,\ell_n\} := \ell.e \;\text{do}\; C}
 \end{syntax}
 
 
@@ -197,7 +197,7 @@ Projects a local-let context $\Delta$ to a local context at a (possibly variable
 
   \infer[Send]{\Theta \vdash \ell_1, \ell_2 \;\text{Loc} \\
     \proj{\Delta}{\ell_1} \vdash e : t_1 \\
-    \Theta;\Gamma;(\Delta, \alpha : t_1 @ \ell_2) \vdash C : \tau_2}
+    \Theta;(\Gamma, \alpha : t_1 @ \ell_2);(\Delta) \vdash C : \tau_2}
   {\Theta;\Gamma;\Delta \vdash \ell_1.e \rightsquigarrow \alpha @ \ell_2;C : \tau_2} \and
 
   \infer[If]{\proj{\Delta}{\ell} \vdash e : \text{bool} \\
@@ -210,7 +210,7 @@ Projects a local-let context $\Delta$ to a local context at a (possibly variable
   {\Theta;\Gamma;\Delta \vdash \ell_1[d] \rightsquigarrow \ell_2; C : \tau} \and
 
   \infer[LocalLet]{\Theta;\Gamma;\Delta \vdash C_1 : t_1 @ \ell \\
-    \Theta;(\Gamma, x : \ell.t_1);\Delta \vdash C : \tau_2}
+    \Theta;\Gamma;(\Delta, x : \ell.t_1) \vdash C : \tau_2}
   {\Gamma \vdash \text{let}\; \ell.x := C_1 \;\text{in}\; C_2 : \tau_2} \and
 
   \infer[Fun]{\Theta;\Gamma;(\Delta, \phi : \tau_1 \rightarrow \tau_2, \alpha : \tau_1) \vdash C : \tau_2}
@@ -227,11 +227,11 @@ Projects a local-let context $\Delta$ to a local context at a (possibly variable
     \Theta;\Gamma;\Delta  \vdash C : \forall X.\tau}
   {\Theta;\Gamma;\Delta  \vdash C\;\ell : \tau[X \mapsto \ell]} \and
 
-  \infer[TellDo]{\Theta;\Gamma;\Delta  \vdash C_1 : \text{Loc} @ \ell \\
+  \infer[TellDo]{\proj{\Delta}{\ell} \vdash e : \text{Loc} \\
     \Theta \vdash \tau \;\text{Ty} \\
     \Theta \vdash \ell_1,\ldots,\ell_n \;\text{Loc} \\
-    (\Theta, X : \;\text{Loc});\Gamma;\Delta \vdash C_2 : \tau}
-  {\Gamma \vdash \ell.\text{tell}\; X \in \{\ell_1,\ldots,\ell_n\} := C_1 \;\text{do}\; C_2 : \tau}
+    (\Theta, X : \;\text{Loc});\Gamma;\Delta \vdash C : \tau}
+  {\Gamma \vdash \text{tell}\; X \in \{\ell_1,\ldots,\ell_n\} := \ell.e \;\text{do}\; C : \tau}
 \end{mathpar}
 
 \section{Operational Semantics}
@@ -255,7 +255,8 @@ Projects a local-let context $\Delta$ to a local context at a (possibly variable
 	\alternative{\text{Fun}(R)}
 	\alternative{\text{Fun}}
 	\alternative{\text{Loc}}\\
-	\alternative{L.\text{tell}\; X \in \{L_1,\ldots,L_n\} := L.L_i}
+	\alternative{\text{tell}\; X \in \{L_1,\ldots,L_n\} := L.(e_1 \Rightarrow e_2)}\\
+	\alternative{\text{tell}\; X \in \{L_1,\ldots,L_n\} := L.L_i}
 \end{syntax}
 
 \paragraph{Semantics}\;
@@ -267,6 +268,9 @@ Projects a local-let context $\Delta$ to a local context at a (possibly variable
   \infer[SendE]{e_1 \Rightarrow_e e_2 \\
     L_1 \notin \mathcal{B}}
   {L_1.e_1 \rightsquigarrow \alpha @ L_2;C \step{L_1.(e_1 \Rightarrow e_2) \rightsquigarrow L_2}{\mathcal{B}} L_1.e_2 \rightsquigarrow \alpha @ L_2;C} \and
+
+  \infer[SendI]{C_1 \step{R}{\mathcal{B} \cup \{L_1,L_2\}} C_2}
+  {L_1.e \rightsquigarrow \alpha @ L_2;C_1 \step{L_1.(e_1 \Rightarrow e_2) \rightsquigarrow L_2}{\mathcal{B}} L_1.e \rightsquigarrow \alpha @ L_2;C_2} \and
 
   \infer[SendV]{\text{Value}(v) \\
     L_1, L_2 \notin \mathcal{B}}
@@ -286,12 +290,6 @@ Projects a local-let context $\Delta$ to a local context at a (possibly variable
   \infer[IfF]{L \notin \mathcal{B}}
   {\text{if}\; L.\text{false} \;\text{then}\; C_1 \;\text{else}\; C_2 \step{\text{if}\;L.\text{false}}{\mathcal{B}} C_2} \and
 
-  \infer[Sync]{L_1, L_2 \notin \mathcal{B}}
-  {L_1[d] \rightsquigarrow L_2; C \step{L_1[d] \rightsquigarrow L_2}{\mathcal{B}} C} \and
-
-  \infer[SyncI]{C_1 \step{R}{\mathcal{B} \cup \{L_1,L_2\}} C_2}
-  {L_1[d] \rightsquigarrow L_2; C_1 \step{R}{\mathcal{B}} L_1[d] \rightsquigarrow L_2; C_2} \and
-
   \infer[DefLocal]{C_1 \step{R}{\mathcal{B}} C_1'}
   {\text{let}\; L.x := C_1 \;\text{in}\; C_2 \step{\text{Arg}(R)}{\mathcal{B}} \text{let}\; L.x := C_1' \;\text{in}\; C_2} \and
 
@@ -307,14 +305,24 @@ Projects a local-let context $\Delta$ to a local context at a (possibly variable
   \infer[App]{\text{Value}(V)}
   {(\text{fun}\; \phi(\alpha) := C) \; V \step{\text{Fun}}{\emptyset} C[\phi \mapsto \text{fun}\; \phi(\alpha) := C, \alpha \mapsto V]} \and
 
+  \infer[Sync]{L_1, L_2 \notin \mathcal{B}}
+  {L_1[d] \rightsquigarrow L_2; C \step{L_1[d] \rightsquigarrow L_2}{\mathcal{B}} C} \and
+
+  \infer[SyncI]{C_1 \step{R}{\mathcal{B} \cup \{L_1,L_2\}} C_2}
+  {L_1[d] \rightsquigarrow L_2; C_1 \step{R}{\mathcal{B}} L_1[d] \rightsquigarrow L_2; C_2} \and
+
   \infer[LocApp]{}
   {(\Lambda X.C) \; L \step{\text{Loc}}{\emptyset} C[X \mapsto L]} \and
 
-  \infer[TellDo]{C_1 \step{R}{\mathcal{B}} C_1'}
-  {L.\text{tell}\; X \in \{L_1,\ldots,L_n\} := C_1 \;\text{do}\; C_2 \step{\text{Arg}(R)}{\mathcal{B}} L.\text{tell}\; X \in \{L_1,\ldots,L_n\} := C_1' \;\text{do}\; C_2}
+  \infer[TellDoE]{e_1 \Rightarrow_e e_2 \\
+    L \notin \mathcal{B}}
+  {\text{tell}\; X \in \{L_1,\ldots,L_n\} := L.e_1 \;\text{do}\; C \step{\text{tell}\; X \in \{L_1,\ldots,L_n\} := L.(e_1 \Rightarrow e_2)}{\mathcal{B}} \text{tell}\; X \in \{L_1,\ldots,L_n\} := L.e_2 \;\text{do}\; C}
 
-  \infer[TellDoV]{}
-  {L.\text{tell}\; X \in \{L_1,\ldots,L_n\} := L.L_i \;\text{do}\; C \step{L.\text{tell}\; X \in \{L_1,\ldots,L_n\} := L.L_i}{\emptyset} C[X \mapsto L_i]}
+  \infer[TellDoI]{C_1 \step{R}{\mathcal{B} \cup \{L_1,\ldots,L_n\}} C_2}
+  {\text{tell}\; X \in \{L_1,\ldots,L_n\} := L.e \;\text{do}\; C_1 \step{R}{\mathcal{B}} \text{tell}\; X \in \{L_1,\ldots,L_n\} := L.e \;\text{do}\; C_2}
+
+  \infer[TellDoV]{L_1,\ldots,L_n \notin \mathcal{B}}
+  {\text{tell}\; X \in \{L_1,\ldots,L_n\} := L.L_i \;\text{do}\; C \step{\text{tell}\; X \in \{L_1,\ldots,L_n\} := L.L_i}{\mathcal{B}} C[X \mapsto L_i]}
 \end{mathparpagebreakable}
 
 \section{Endpoint Projection}
