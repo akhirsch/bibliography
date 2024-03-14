@@ -54,28 +54,6 @@
 \bibliographystyle{plainnat}
 
 \begin{document}
-
-\section{Meeting Notes}
-\paragraph{Misc}
-\begin{itemize}
-	\item Local values don't seem to have an elimination form with current system
-	\item Don't need to track blocking sets in reduction rules; can compute from redices
-\end{itemize}
-
-\paragraph{Tell-do Concerns}
-\begin{itemize}
-	\item How do we know who to send the tell-do to, as it's using a local value?
-	\item We need to statically compute an over-approximation of the set of possible recipients
-	\item Idea: Have the local language compute the over-approximation, and have its soundness be an assumption for the deadlock freedom guarantees.
-	\[
-	\text{tell}\; x := C_1 \;\text{do}[S]\; C_2
-	\]
-	\item $S$ is a \emph{set} of locations that the message will be sent to
-	\item Could just send to everyone, but this uses a closed-world assumption
-	\item Weird example suggested by Ethan: Choreography where Alice continually discovers and adds new known locations, and at each point she randomly selects a person from this set to delegate something to. At each point the set is finite, but it will increase infinitely, and the size depends at which step you're at.
-	\item Need to use implicit sends rather than explicit sends (might need to do alias analysis on the value of the local location otherwise!)
-\end{itemize}
-
 \section{Syntax}
 \begin{syntax}
 	\categoryFromSet[Conrete Locations]{L}{\mathcal{L}}
@@ -100,7 +78,7 @@
 	\category[Choreographies]{C}
 	\alternative{\alpha}
 	\alternative{\ell.e}
-	\alternative{\ell_1.e \rightsquigarrow \alpha @ \ell_2; C_2}\\
+	\alternative{\ell_1.e \rightsquigarrow \alpha @ \ell_2; C}\\
 	\alternative{\text{if}\; \ell.e \;\text{then}\; C_1 \;\text{else}\; C_2}\\
 	\alternative{\ell_1[d] \rightsquigarrow \ell_2; C}\\
 	\alternative{\text{let}\; \ell.x := C_1 \;\text{in}\; C_2}\\
@@ -260,6 +238,8 @@ Projects a local-let context $\Delta$ to a local context at a (possibly variable
 \end{syntax}
 
 \paragraph{Semantics}\;
+Block-set semantics $C_1 \step{R}{\mathcal{B}} C_2$ where $C_1, C_2$ are \emph{closed} choreographies, $R$ is a redex, and $\mathcal{B} \subseteq \mathcal{L}$ is a set of concrete locations.
+
 \begin{mathparpagebreakable}
   \infer[DoneE]{e_1 \Rightarrow_e e_2 \\
     L \notin \mathcal{B}}
@@ -318,10 +298,10 @@ Projects a local-let context $\Delta$ to a local context at a (possibly variable
     L \notin \mathcal{B}}
   {\text{tell}\; X \in \{L_1,\ldots,L_n\} := L.e_1 \;\text{do}\; C \step{\text{tell}\; X \in \{L_1,\ldots,L_n\} := L.(e_1 \Rightarrow e_2)}{\mathcal{B}} \text{tell}\; X \in \{L_1,\ldots,L_n\} := L.e_2 \;\text{do}\; C}
 
-  \infer[TellDoI]{C_1 \step{R}{\mathcal{B} \cup \{L_1,\ldots,L_n\}} C_2}
+  \infer[TellDoI]{C_1 \step{R}{\mathcal{B} \cup \{L, L_1,\ldots,L_n\}} C_2}
   {\text{tell}\; X \in \{L_1,\ldots,L_n\} := L.e \;\text{do}\; C_1 \step{R}{\mathcal{B}} \text{tell}\; X \in \{L_1,\ldots,L_n\} := L.e \;\text{do}\; C_2}
 
-  \infer[TellDoV]{L_1,\ldots,L_n \notin \mathcal{B}}
+  \infer[TellDoV]{L, L_1,\ldots,L_n \notin \mathcal{B}}
   {\text{tell}\; X \in \{L_1,\ldots,L_n\} := L.L_i \;\text{do}\; C \step{\text{tell}\; X \in \{L_1,\ldots,L_n\} := L.L_i}{\mathcal{B}} C[X \mapsto L_i]}
 \end{mathparpagebreakable}
 
@@ -347,44 +327,96 @@ Projects a local-let context $\Delta$ to a local context at a (possibly variable
     \alternative{L_1 \triangleright E_1 \;\|\; \ldots \;\|\; L_n \triangleright E_n}
 \end{syntax}
 
-\paragraph{Endpoint Projection}
-\as{Control language must include both ground and variable locations}
-\as{Do we need type-guided projection like Alice \& Bob? Probably}
-\as{How to project tell-do? Probably need to use AmI}
-\as{Why does aligned hate me :(}
+\paragraph{Endpoint Projection}\;
+
 \begin{mathparpagebreakable}
 \begin{aligned}[t]
-	\epp{x}{L} &= ? \\
-	\epp{\ell.e}{L} &= ? \\
-	\epp{C \overset{\ell_1}{\rightsquigarrow} \ell_2}{L} &=
-		\begin{cases}
-			\epp{C}{L} & L = \ell_1 = \ell_2 \\
-			\text{send}\; \epp{C}{L} \;\text{to}\; \ell_2 & L = \ell_1 \neq \ell_2 \\
-			\text{receive from}\; \ell_1 & L = \ell_2 \neq \ell_1 \\
-			() & L \neq \ell_1, \ell_2
+	\epp{\alpha}{L} &= \begin{cases}
+		\alpha & \text{type}(\alpha) = t @ L \\
+		() & \text{otherwise}
 		\end{cases}\\
-	\epp{\ell.\text{if}\; C \;\text{then}\; C_1 \;\text{else}\; C_2}{L} &=
+	\epp{\ell.e}{L} &=
 		\begin{cases}
-			\text{if}\; \epp{C}{L} \;\text{then}\; \epp{C_1}{L} \;\text{else}\; \epp{C_2}{L} & L = \ell \\
+			\text{ret}(e) & L = \ell \\
+			() & L \neq \ell
+		\end{cases}\\
+	\epp{\ell_1.e \rightsquigarrow \alpha @ \ell_2; C}{L} &=
+		\begin{cases}
+			\text{let}\; \alpha := \text{ret}(e) \;\text{in}\; \epp{C}{L} & L = \ell_1 = \ell_2 \\
+			\text{send}\; e \;\text{to}\; \ell_2; \epp{C}{L} & L = \ell_1 \neq \ell_2 \\
+			\text{receive}\; \alpha \;\text{from}\;\ell_1 ; \epp{C}{L} & L = \ell_2 \neq \ell_1\\
+			\epp{C}{L} & L \neq \ell_1, \ell_2
+		\end{cases}\\
+	\epp{\text{if}\; \ell.e \;\text{then}\; C_1 \;\text{else}\; C_2}{L} &= 
+		\begin{cases}
+			\text{if}\; e \;\text{then}\; \epp{C_1}{L} \;\text{else}\; \epp{C_2}{L} & L = \ell \\
 			\epp{C_1}{L} \sqcup \epp{C_2}{L} & L \neq \ell
 		\end{cases}\\
 	\epp{\ell_1[d] \rightsquigarrow \ell_2; C}{L} &=
 		\begin{cases}
 			\epp{C}{L} & L = \ell_1 = \ell_2 \\
-			\text{choose}\; d \;\text{for}\; \ell_2 ; \epp{C}{L} & L = \ell_1 \neq \ell_2 \\
-			\text{allow}\; \ell_1 \;\text{choice}\; (\mathbb{L} \Rightarrow \epp{C}{L}) & L = \ell_2 \neq \ell_1, d = \mathbb{L} \\
-			\text{allow}\; \ell_1 \;\text{choice}\; (\mathbb{R} \Rightarrow \epp{C}{L}) & L = \ell_2 \neq \ell_1, d = \mathbb{R} \\
+			\text{choose}\; d \;\text{for}\; \ell_2; \epp{C}{L} & L = \ell_1 \neq \ell_2 \\
+			\text{allow}\; \ell_1 \;\text{choice}\; (d \Rightarrow \epp{C}{L}) & L = \ell_2 \neq \ell_1\\
 			\epp{C}{L} & L \neq \ell_1, \ell_2
 		\end{cases}\\
-	\epp{\text{let}\; x := C_1 \;\text{in}\; C_2}{L} &= \text{let}\; x := \epp{C_1}{L} \;\text{in}\; \epp{C_1}{L}\\
-	\epp{\text{fun}\; F(x) := C}{L} &= \text{fun}\; F(x) := \epp{C}{L}\\
-	\epp{\ell.\text{tell}\; x := C_1 \;\text{do}\; C_2}{L} &=
+	\epp{\text{let}\; \ell.x := C_1 \;\text{in}\; C_2}{L} &= 
 		\begin{cases}
-			\text{send tell}\; x := \epp{C_1}{L} \;\text{do}\; \epp{C_2}{L} & L = \ell \\
-			\text{receive do}\; \lambda x.\epp{C_2}{L} \;\text{from}\; \ell & L \neq \ell
+			\text{let}\; \text{ret}(x) := \epp{C_1}{L} \;\text{in}\; \epp{C_2}{L} & L = \ell \\
+			(\text{fun}\; \phi(\alpha) := \epp{C_2}{L})\;\epp{C_1}{L} & L \neq \ell
 		\end{cases}\\
+	\epp{\text{fun}\; \phi(\alpha) := C}{L} &= \text{fun}\; \phi(\alpha) := \epp{C}{L}\\
+	\epp{C_1\;C_2}{L} &= \epp{C_1}{L}\;\epp{C_2}{L}\\
+	\epp{\Lambda X.C}{L} &= \Lambda X.\text{AmI}\; X \;\text{?}\; \epp{C[X \mapsto L]}{L} \;\text{:}\; \epp{C}{L}\\
+	\epp{C\;\ell}{L} &= \epp{C}{L}\;\ell\\
+	\epp{\text{tell}\; X := \ell.e \;\text{do}\; C}{L} &= 
+		\begin{cases}
+			\text{send loc}\; e \;\text{to}\; \text{IP}(C); \epp{C}{L} & L = \ell \\
+			\text{receive loc}\; X \;\text{from}\; L;\epp{C}{L} & L \in \text{IP}(C), L \neq \ell\\
+			\epp{C}{L} & \text{otherwise}
+		\end{cases}
 \end{aligned}
 \end{mathparpagebreakable}
+
+
+\section{Meeting Notes}
+\paragraph{3/7/2024}
+\subparagraph{Misc}
+\begin{itemize}
+	\item Local values don't seem to have an elimination form with current system
+	\item Don't need to track blocking sets in reduction rules; can compute from redices
+\end{itemize}
+
+\subparagraph{Tell-do Concerns}
+\begin{itemize}
+	\item How do we know who to send the tell-do to, as it's using a local value?
+	\item We need to statically compute an over-approximation of the set of possible recipients
+	\item Idea: Have the local language compute the over-approximation, and have its soundness be an assumption for the deadlock freedom guarantees.
+	\[
+	\text{tell}\; x := C_1 \;\text{do}[S]\; C_2
+	\]
+	\item $S$ is a \emph{set} of locations that the message will be sent to
+	\item Could just send to everyone, but this uses a closed-world assumption
+	\item Weird example suggested by Ethan: Choreography where Alice continually discovers and adds new known locations, and at each point she randomly selects a person from this set to delegate something to. At each point the set is finite, but it will increase infinitely, and the size depends at which step you're at.
+	\item Need to use implicit sends rather than explicit sends (might need to do alias analysis on the value of the local location otherwise!)
+\end{itemize}
+
+\paragraph{3/14/2024}
+\subparagraph{Out-of-Order Execution}
+With send operations in the form $C_1 \overset{\ell_1}{\rightsquigarrow} \ell_2$ it becomes difficult to tell when you can do out-of-order execution as you need to examine $C_1$; it could block more than just $\ell_1$. Moreover, you need to allow for reduction within the scope of a function/lambda abstraction in order to do so, as this is required to use the output of a send operation. You can \emph{probably} solve this problem through a meta-function, but the old syntax works fine and is just as general, so I will use it.
+
+Solution: Revert send operations to the form $\ell_1.e \rightsquigarrow \ell_2.\alpha; C$. Now we can easily tell that $C$ can execute out-of-order when $\ell_1$ and $\ell_2$ are blocked.
+
+\subparagraph{Delegation}
+For the tell-do binding, won't you need to send the chosen location to more than just the possible set of locations it can be anyways? For instance:
+\begin{align*}
+	&\text{tell}\; X \in \{W_1,W_2\} := D.e_1 \;\text{do}\\
+	&X.e_2 \rightsquigarrow \alpha @ \text{Alice};\\
+	&\text{let}\; \text{Alice}.x := \alpha \;\text{in}\\
+	&\text{Alice}.e_3
+\end{align*}
+Alice needs to know which X was chosen as she needs to receive from them, even though she is not among $\{D,W_1,W_2\}$. Thus we need to know the set of all processes who may be involved.
+
+OK, then just try and compute the involved processes statically! Problem: Higher order functions. Who is involved in the process $\lambda \alpha : \tau_1 \rightarrow \tau_2.C$? Well, because $\alpha$ is another choreography, it depends on who is involved in $\alpha$. Do what Alice or Bob does and annotate choreographic functions with a set of processes and allow for abstraction over them: $\text{IP}(\lambda \alpha : \tau_1 \rightarrow_\rho \tau_2.C) = \rho \cup \text{IP}(C)$. This complicates the type system but seems necessary if we want to allow for this form of delegation.
 
 \end{document}
 
