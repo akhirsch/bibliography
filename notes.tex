@@ -81,6 +81,7 @@
 	\alternative{\ell_1.e \rightsquigarrow \alpha @ \ell_2; C}\\
 	\alternative{\text{if}\; \ell.e \;\text{then}\; C_1 \;\text{else}\; C_2}\\
 	\alternative{\ell_1[d] \rightsquigarrow \ell_2; C}\\
+	\alternative{\ell_1[d] \rightsquigarrow \ell_2; C}\\
 	\alternative{\text{let}\; \ell.x := C_1 \;\text{in}\; C_2}\\
 	\alternative{\text{fun}\; \phi(\alpha) := C}
 	\alternative{C_1\;C_2}\\
@@ -406,6 +407,8 @@ With send operations in the form $C_1 \overset{\ell_1}{\rightsquigarrow} \ell_2$
 
 Solution: Revert send operations to the form $\ell_1.e \rightsquigarrow \ell_2.\alpha; C$. Now we can easily tell that $C$ can execute out-of-order when $\ell_1$ and $\ell_2$ are blocked.
 
+Other solution: Use an in-order trace semantics for choreographies; function application comes easily. Then to deal with correctness use an equivalence relation on the traces allowing for re-ordering.
+
 \subparagraph{Delegation}
 For the tell-do binding, won't you need to send the chosen location to more than just the possible set of locations it can be anyways? For instance:
 \begin{align*}
@@ -417,7 +420,14 @@ For the tell-do binding, won't you need to send the chosen location to more than
 Alice needs to know which X was chosen as she needs to receive from them, even though she is not among $\{D,W_1,W_2\}$. Thus we need to know the set of all processes who may be involved.
 
 OK, then just try and compute the involved processes statically! Problem: Higher order functions. Who is involved in the process $\lambda \alpha : \tau_1 \rightarrow \tau_2.C$? Well, because $\alpha$ is another choreography, it depends on who is involved in $\alpha$. Do what Alice or Bob does and annotate choreographic functions with a set of processes and allow for abstraction over them: $\text{IP}(\lambda \alpha : \tau_1 \rightarrow_\rho \tau_2.C) = \rho \cup \text{IP}(C)$. This complicates the type system but seems necessary if we want to allow for this form of delegation.
-
+Solution:
+\begin{align*}
+	&\text{tell}_{\{\text{Alice}\}}\; X \in \{W_1,W_2\} := D.e_1 \;\text{do}\\
+	&X.e_2 \rightsquigarrow \alpha @ \text{Alice};\\
+	&\text{let}\; \text{Alice}.x := \alpha \;\text{in}\\
+	&\text{Alice}.e_3
+\end{align*}
+Send $X$ to $\{Alice, W_1, W_2\}$. If someone tries to use $X$ inside the body and we didn't sent it to them, the endpoint projection will fail.
 \end{document}
 
 
