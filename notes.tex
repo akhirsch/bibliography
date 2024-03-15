@@ -49,7 +49,7 @@
 % Endpoint Projection
 \newcommand\epp[2]{\ensuremath{\llbracket#1\rrbracket_{#2}}}
 
-\newcommand\step[2]{\ensuremath{\xRightarrow{{#1} \hfill{} {#2}}_{\raisebox{3pt}{\footnotesize{c}}}}}
+\newcommand\step[1]{\ensuremath{\xRightarrow{{#1}}_{\raisebox{3pt}{\footnotesize{c}}}}}
 
 \bibliographystyle{plainnat}
 
@@ -62,13 +62,16 @@
 	\category[Locations]{\ell}
 	\alternative{L}
 	\alternative{X}
+	
+	\category[Location Sets]{\rho}
+	\alternative{\{\ell_1,\ldots,\ell_n\}}
 	\\
 	\abstractCategory[Local Expressions]{e}
 		
 	\abstractCategory[Local Variables]{x, y, z}
 	
 	\\
-	\abstractCategory[Choreography Variables]{\alpha, \beta, \phi}
+	\abstractCategory[Choreography Variables]{\alpha, \phi}
 	
 	\category[Synchronization Labels]{d}
 	\alternative{\mathbb{L}}
@@ -78,16 +81,15 @@
 	\category[Choreographies]{C}
 	\alternative{\alpha}
 	\alternative{\ell.e}
-	\alternative{\ell_1.e \rightsquigarrow \alpha @ \ell_2; C}\\
-	\alternative{\text{if}\; \ell.e \;\text{then}\; C_1 \;\text{else}\; C_2}\\
-	\alternative{\ell_1[d] \rightsquigarrow \ell_2; C}\\
+	\alternative{C \overset{\ell_1}{\rightsquigarrow} \ell_2}\\
+	\alternative{\ell.\text{if}\; C \;\text{then}\; C_1 \;\text{else}\; C_2}\\
 	\alternative{\ell_1[d] \rightsquigarrow \ell_2; C}\\
 	\alternative{\text{let}\; \ell.x := C_1 \;\text{in}\; C_2}\\
 	\alternative{\text{fun}\; \phi(\alpha) := C}
 	\alternative{C_1\;C_2}\\
 	\alternative{\Lambda X.C}
 	\alternative{C\;\ell}\\
-	\alternative{\text{tell}\; X \in \{\ell_1,\ldots,\ell_n\} := \ell.e \;\text{do}\; C}
+	\alternative{\ell.\text{tell}\; \rho_1\; \text{let}\; X := C_1 \in \rho_2 \;\text{in}\; C_2}
 \end{syntax}
 
 
@@ -129,9 +131,10 @@ Projects a local-let context $\Delta$ to a local context at a (possibly variable
 \begin{align*}
 	\Theta &\vdash \Delta \tag{Local-Let Context Well-Formedness}\\
 	\Theta &\vdash \Gamma \tag{Choreography Context Well-Formedness}\\
-	\Theta &\vdash \ell \tag{Location Well-Formedness}\\
-	\Theta &\vdash \tau \tag{Choreography Type Well-Formedness}\\
-	\Theta;\Gamma;\Delta &\vdash \tau \tag{Choreography Typing Relation}
+	\Theta &\vdash \ell \;\text{Loc} \tag{Location Well-Formedness}\\
+	\Theta &\vdash \rho \;\text{LocSet} \tag{Location-Set Well-Formedness}\\
+	\Theta &\vdash \tau \;\text{Ty} \tag{Choreography Type Well-Formedness}\\
+	\Theta;\Gamma;\Delta &\vdash C : \tau \tag{Choreography Typing Relation}
 \end{align*}
 
 \paragraph{Context, Type, and Location Well-Formedness Rules}
@@ -141,14 +144,18 @@ Projects a local-let context $\Delta$ to a local context at a (possibly variable
 
   \infer[AddCtxLet]{\Theta \vdash \Delta \\
     \Theta \vdash \ell \;\text{Loc}}
-  {\Theta \vdash \Gamma, \ell.x : t} \and
+  {\Theta \vdash (\Gamma, \ell.x : t)} \and
 
   \infer[AddCtxChor]{\Theta \vdash \Gamma \\
     \Theta \vdash \tau \;\text{Ty}}
-  {\Theta \vdash \Gamma, \alpha : \tau} \and
+  {\Theta \vdash (\Gamma, \alpha : \tau)} \and
 
   \infer[Loc]{\ell \in \mathcal{L} \cup \Theta}
   {\Theta \vdash \ell \;\text{Loc}} \and
+
+  \infer[LocSet]{\Theta \vdash \ell_1,\ldots,\ell_n \;\text{Loc}}
+  {\Theta \vdash \{\ell_1,\ldots,\ell_n\} \;\text{LocSet}} \and
+
 
   \infer[AtTy]{\Theta \vdash \ell \;\text{Loc}}
   {\Theta \vdash t @ \ell \;\text{Ty}} \and
@@ -174,15 +181,14 @@ Projects a local-let context $\Delta$ to a local context at a (possibly variable
     \proj{\Delta}{\ell} \vdash e : t}
   {\Theta;\Gamma;\Delta \vdash \ell.e \vdash t @ \ell} \and
 
-  \infer[Send]{\Theta \vdash \ell_1, \ell_2 \;\text{Loc} \\
-    \proj{\Delta}{\ell_1} \vdash e : t_1 \\
-    \Theta;(\Gamma, \alpha : t_1 @ \ell_2);(\Delta) \vdash C : \tau_2}
-  {\Theta;\Gamma;\Delta \vdash \ell_1.e \rightsquigarrow \alpha @ \ell_2;C : \tau_2} \and
+  \infer[Send]{\Theta;\Gamma;\Delta \vdash C : t @ \ell_1 \\
+	\Theta \vdash \ell_2 \;\text{Loc}}
+  {\Theta;\Gamma;\Delta \vdash C \overset{\ell_1}{\rightsquigarrow} \ell_2 : t @ \ell_2} \and
 
-  \infer[If]{\proj{\Delta}{\ell} \vdash e : \text{bool} \\
+  \infer[If]{\Theta;\Gamma;\Delta \vdash C_1 : \text{bool} @ \ell \\
     \Theta;\Gamma;\Delta \vdash C_1 : \tau \\
     \Theta;\Gamma;\Delta \vdash C_2 : \tau}
-  {\Gamma \vdash \text{if}\; \ell.e \;\text{then}\; C_1 \;\text{else}\; C_2 : \tau} \and
+  {\Gamma \vdash \ell.\text{if}\; C \;\text{then}\; C_1 \;\text{else}\; C_2 : \tau} \and
 
   \infer[Sync]{\Gamma \vdash \ell_1, \ell_2 \;\text{Loc} \\
     \Theta;\Gamma;\Delta \vdash C : \tau}
@@ -200,110 +206,81 @@ Projects a local-let context $\Delta$ to a local context at a (possibly variable
   {\Theta;\Gamma;\Delta  \vdash C_1\;C_2 : \tau_2} \and
 
   \infer[LocAbs]{(\Theta, X : \;\text{Loc});\Gamma;\Delta \vdash C : \tau}
-  {\Theta;\Gamma;\Delta  \vdash \Lambda X.C : \forall X.\tau} \and
+  {\Theta;\Gamma;\Delta \vdash \Lambda X.C : \forall X.\tau} \and
 
   \infer[LocApp]{\Theta \vdash \ell \;\text{Loc} \\
     \Theta;\Gamma;\Delta  \vdash C : \forall X.\tau}
-  {\Theta;\Gamma;\Delta  \vdash C\;\ell : \tau[X \mapsto \ell]} \and
+  {\Theta;\Gamma;\Delta \vdash C\;\ell : \tau[X \mapsto \ell]} \and
 
-  \infer[TellDo]{\proj{\Delta}{\ell} \vdash e : \text{Loc} \\
+  \infer[TellLet]{\Theta;\Gamma;\Delta \vdash C_1 : \text{Loc} @ \ell \\
+    \Theta \vdash \rho_1, \rho_2 \;\text{LocSet} \\
     \Theta \vdash \tau \;\text{Ty} \\
-    \Theta \vdash \ell_1,\ldots,\ell_n \;\text{Loc} \\
     (\Theta, X : \;\text{Loc});\Gamma;\Delta \vdash C : \tau}
-  {\Gamma \vdash \text{tell}\; X \in \{\ell_1,\ldots,\ell_n\} := \ell.e \;\text{do}\; C : \tau}
+  {\Theta;\Gamma;\Delta \vdash \ell.\text{tell}\; \rho_1 \;\text{let}\; X := C_1 \in \rho_2 \;\text{in}\; C_2 : \tau}
 \end{mathpar}
 
 \section{Operational Semantics}
-
-\as{Only using redices without block sets presents some challenges at a first glance, so I'm sticking with block sets for now.}
-
-\as{Letting sends be a singular operation actually makes allowing for out-of-order execution very difficult. To do so we essentially need to allow for reductions under a lambda abstraction/let binding, which introduces multiple problems.}
-
-\paragraph{Redices}
+\paragraph{Traces}\;
 \begin{syntax}
-	\category[Redices]{R}
-	\alternative{L.(e_1 \Rightarrow e_2)}
-	\alternative{\text{if}\;L.(e_1 \Rightarrow e_2)}
-	\alternative{\text{if}\;L.\text{true}}
-	\alternative{\text{if}\;L.\text{false}}\\
-	\alternative{L_1.(e_1 \Rightarrow e_2) \rightsquigarrow L_2}
-	\alternative{L_1.(v\;\text{value}) \rightsquigarrow L_2}
-	\alternative{L_1[d] \rightsquigarrow L_2}\\
-	\alternative{\text{let}\;L.x := (v \;\text{value})}\\
-	\alternative{\text{Arg}(R)}
-	\alternative{\text{Fun}(R)}
-	\alternative{\text{Fun}}
-	\alternative{\text{Loc}}\\
-	\alternative{\text{tell}\; X \in \{L_1,\ldots,L_n\} := L.(e_1 \Rightarrow e_2)}\\
-	\alternative{\text{tell}\; X \in \{L_1,\ldots,L_n\} := L.L_i}
+	\category[Trace Elements]{T}
+	\alternative{L}
+	\alternative{L_1 \rightsquigarrow L_2}\\
+	\alternative{L_1[d] \rightsquigarrow L_2}
+	\alternative{L_1 \rightsquigarrow \rho}
+
+	\category[Traces]{\sigma}
+	\alternative{\epsilon}
+	\alternative{\sigma, T}
 \end{syntax}
 
-\paragraph{Semantics}\;
-Block-set semantics $C_1 \step{R}{\mathcal{B}} C_2$ where $C_1, C_2$ are \emph{closed} choreographies, $R$ is a redex, and $\mathcal{B} \subseteq \mathcal{L}$ is a set of concrete locations.
+\paragraph{Trace Semantics}\;
+Deterministic, small-step trace semantics $C_1 \step{\sigma} C_2$ where $C_1, C_2$ are \emph{closed} choreographies, and $\sigma$ is a trace.
 
 \begin{mathparpagebreakable}
-  \infer[DoneE]{e_1 \Rightarrow_e e_2 \\
-    L \notin \mathcal{B}}
-  {L.e_1 \step{L.(e_1 \Rightarrow e_2)}{\mathcal{B}} L.e_2} \and
+  \infer[Done]{e_1 \Rightarrow_e e_2}
+  {L.e_1 \step{\epsilon, L} L.e_2} \and
 
-  \infer[SendE]{e_1 \Rightarrow_e e_2 \\
-    L_1 \notin \mathcal{B}}
-  {L_1.e_1 \rightsquigarrow \alpha @ L_2;C \step{L_1.(e_1 \Rightarrow e_2) \rightsquigarrow L_2}{\mathcal{B}} L_1.e_2 \rightsquigarrow \alpha @ L_2;C} \and
+  \infer[Send]{C_1 \step{\sigma} C_2}
+  {C_1 \overset{L_1}{\rightsquigarrow} L_2 \step{\sigma} C_2 \overset{L_1}{\rightsquigarrow} L_2} \and
 
-  \infer[SendI]{C_1 \step{R}{\mathcal{B} \cup \{L_1,L_2\}} C_2}
-  {L_1.e \rightsquigarrow \alpha @ L_2;C_1 \step{L_1.(e_1 \Rightarrow e_2) \rightsquigarrow L_2}{\mathcal{B}} L_1.e \rightsquigarrow \alpha @ L_2;C_2} \and
+  \infer[SendV]{\text{Value}(v)}
+  {L_1.v \overset{L_1}{\rightsquigarrow} L_2 \step{\epsilon, L_1 \rightsquigarrow L_2} L_2.v} \and
 
-  \infer[SendV]{\text{Value}(v) \\
-    L_1, L_2 \notin \mathcal{B}}
-  {L_1.v \rightsquigarrow \alpha @ L_2;C \step{L_1.(v\;\text{value}) \rightsquigarrow L_2}{\mathcal{B}} C[\alpha \mapsto L_2.v]} \and
+  \infer[If]{C \step{\sigma} C'}
+  {L.\text{if}\; C \;\text{then}\; C_1 \;\text{else}\; C_2 \step{\sigma} L.\text{if}\; C' \;\text{then}\; C_1 \;\text{else}\; C_2} \and
 
-  \infer[IfE]{e_1 \Rightarrow_e e_2 \\
-    L \notin \mathcal{B}}
-  {\text{if}\; L.e_1 \;\text{then}\; C_1 \;\text{else}\; C_2 \step{\text{if}\;L.(e_1 \Rightarrow e_2)}{\mathcal{B}} \text{if}\; L.e_2 \;\text{then}\; C_1 \;\text{else}\; C_2} \and
+  \infer[IfT]{}
+  {L.\text{if}\; L.\text{true} \;\text{then}\; C_1 \;\text{else}\; C_2 \step{\epsilon, L} C_1} \and
 
-  \infer[IfI]{C_1 \step{R}{\mathcal{B} \cup \{L\}} C_1' \\
-    C_2 \step{R}{\mathcal{B} \cup \{L\}} C_2'}
-  {\text{if}\; L.e \;\text{then}\; C_1 \;\text{else}\; C_2 \step{R}{\mathcal{B}} \text{if}\; L.e \;\text{then}\; C_1' \;\text{else}\; C_2'} \and
+  \infer[IfF]{}
+  {L.\text{if}\; L.\text{false} \;\text{then}\; C_1 \;\text{else}\; C_2 \step{\epsilon, L} C_2} \and
 
-  \infer[IfT]{L \notin \mathcal{B}}
-  {\text{if}\; L.\text{true} \;\text{then}\; C_1 \;\text{else}\; C_2 \step{\text{if}\;L.\text{true}}{\mathcal{B}} C_1} \and
-
-  \infer[IfF]{L \notin \mathcal{B}}
-  {\text{if}\; L.\text{false} \;\text{then}\; C_1 \;\text{else}\; C_2 \step{\text{if}\;L.\text{false}}{\mathcal{B}} C_2} \and
-
-  \infer[DefLocal]{C_1 \step{R}{\mathcal{B}} C_1'}
-  {\text{let}\; L.x := C_1 \;\text{in}\; C_2 \step{\text{Arg}(R)}{\mathcal{B}} \text{let}\; L.x := C_1' \;\text{in}\; C_2} \and
+  \infer[DefLocal]{C_1 \step{\sigma} C_1'}
+  {\text{let}\; L.x := C_1 \;\text{in}\; C_2 \step{\sigma} \text{let}\; L.x := C_1' \;\text{in}\; C_2} \and
 
   \infer[DefLocalV]{\text{Value}(v)}
-  {\text{let}\; L.x := L.v \;\text{in}\; C \step{\text{let}\; L.x := (v \;\text{Value})}{\mathcal{B}} C[x \mapsto v]} \and
+  {\text{let}\; L.x := L.v \;\text{in}\; C \step{\epsilon} C[x \mapsto v]} \and
 
-  \infer[AppFun]{C_1 \step{R}{\mathcal{B}} C_1'}
-  {C_1 \; C_2 \step{\text{Fun}(R)}{\mathcal{B}} C_1' \; C_2} \and
+  \infer[AppFun]{C_1 \step{\sigma} C_1'}
+  {C_1 \; C_2 \step{\sigma} C_1' \; C_2} \and
 
-  \infer[AppArg]{C_2 \step{R}{\mathcal{B}} C_2'}
-  {C_1 \; C_2 \step{\text{Arg}(R)}{\mathcal{B}} C_1 \; C_2'} \and
+  \infer[AppArg]{C_2 \step{\sigma} C_2'}
+  {C_1 \; C_2 \step{\sigma} C_1 \; C_2'} \and
 
   \infer[App]{\text{Value}(V)}
-  {(\text{fun}\; \phi(\alpha) := C) \; V \step{\text{Fun}}{\emptyset} C[\phi \mapsto \text{fun}\; \phi(\alpha) := C, \alpha \mapsto V]} \and
+  {(\text{fun}\; \phi(\alpha) := C) \; V \step{\sigma} C[\phi \mapsto \text{fun}\; \phi(\alpha) := C, \alpha \mapsto V]} \and
 
-  \infer[Sync]{L_1, L_2 \notin \mathcal{B}}
-  {L_1[d] \rightsquigarrow L_2; C \step{L_1[d] \rightsquigarrow L_2}{\mathcal{B}} C} \and
-
-  \infer[SyncI]{C_1 \step{R}{\mathcal{B} \cup \{L_1,L_2\}} C_2}
-  {L_1[d] \rightsquigarrow L_2; C_1 \step{R}{\mathcal{B}} L_1[d] \rightsquigarrow L_2; C_2} \and
+  \infer[Sync]{}
+  {L_1[d] \rightsquigarrow L_2; C \step{\epsilon, L_1[d] \rightsquigarrow L_2} C} \and
 
   \infer[LocApp]{}
-  {(\Lambda X.C) \; L \step{\text{Loc}}{\emptyset} C[X \mapsto L]} \and
+  {(\Lambda X.C) \; L \step{\epsilon} C[X \mapsto L]} \and
 
-  \infer[TellDoE]{e_1 \Rightarrow_e e_2 \\
-    L \notin \mathcal{B}}
-  {\text{tell}\; X \in \{L_1,\ldots,L_n\} := L.e_1 \;\text{do}\; C \step{\text{tell}\; X \in \{L_1,\ldots,L_n\} := L.(e_1 \Rightarrow e_2)}{\mathcal{B}} \text{tell}\; X \in \{L_1,\ldots,L_n\} := L.e_2 \;\text{do}\; C}
+  \infer[TellLet]{C_1 \step{\sigma} C_1'}
+  {L.\text{tell}\; \rho_1\; \text{let}\; X := C_1 \in \rho_2 \;\text{in}\; C_2 \step{\sigma} L.\text{tell}\; \rho_1\; \text{let}\; X := C_1' \in \rho_2 \;\text{in}\; C_2}
 
-  \infer[TellDoI]{C_1 \step{R}{\mathcal{B} \cup \{L, L_1,\ldots,L_n\}} C_2}
-  {\text{tell}\; X \in \{L_1,\ldots,L_n\} := L.e \;\text{do}\; C_1 \step{R}{\mathcal{B}} \text{tell}\; X \in \{L_1,\ldots,L_n\} := L.e \;\text{do}\; C_2}
-
-  \infer[TellDoV]{L, L_1,\ldots,L_n \notin \mathcal{B}}
-  {\text{tell}\; X \in \{L_1,\ldots,L_n\} := L.L_i \;\text{do}\; C \step{\text{tell}\; X \in \{L_1,\ldots,L_n\} := L.L_i}{\mathcal{B}} C[X \mapsto L_i]}
+  \infer[TellLetV]{}
+  {L_1.\text{tell}\; \rho_1\; \text{let}\; X := L_1.L_2 \in \rho_2 \;\text{in}\; C \step{\epsilon, L_1 \rightsquigarrow \rho_1} C[X \mapsto L_2]}
 \end{mathparpagebreakable}
 
 \section{Endpoint Projection}
