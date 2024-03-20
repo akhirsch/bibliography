@@ -4,6 +4,7 @@ open import Data.Empty
 open import Data.Nat
 open import Relation.Nullary
 open import Relation.Binary.PropositionalEquality
+open ≡-Reasoning
 open import Function
 
 {-
@@ -72,26 +73,26 @@ record Language : Set₁ where
 record LawfulLanguage (L : Language) : Set where
   open Language L
   field
-    -- Substitution should respect extensional equality of substitutions.
-    subExtExpr : ∀{e σ₁ σ₂} → (∀ n → σ₁ n ≡ σ₂ n) → subExpr e σ₁ ≡ subExpr e σ₂
+    -- Substitution should respect extensional equality.
+    subExprExt : ∀{σ₁ σ₂} → (∀ n → σ₁ n ≡ σ₂ n) → ∀ e → subExpr e σ₁ ≡ subExpr e σ₂
     
     -- Substitution correctly replaces a variable
-    subVarExpr : ∀ n σ → subExpr (varExpr n) σ ≡ σ n
+    subExprVar : ∀ n σ → subExpr (varExpr n) σ ≡ σ n
     
     {-
       Treating a renaming as a substitution should have the same
       effect as using it directly as a renaming.
     -}
-    subRenExpr : ∀ e ξ → subExpr e (varExpr ∘ ξ) ≡ renExpr e ξ
+    subExprRen : ∀ ξ e → subExpr e (varExpr ∘ ξ) ≡ renExpr e ξ
     
     -- Renaming twice has the same effect as using the composed renaming.
-    renExpr∘ : ∀ n ξ₁ ξ₂ → renExpr n (ξ₂ ∘ ξ₁) ≡ renExpr (renExpr n ξ₁) ξ₂
+    renExpr∘ : ∀ ξ₁ ξ₂ e → renExpr e (ξ₂ ∘ ξ₁) ≡ renExpr (renExpr e ξ₁) ξ₂
     
     -- Renaming on the identity should have no effect.
-    renIdExpr : ∀ n → renExpr n idRenExpr ≡ n
+    renExprId : ∀ e → renExpr e idRenExpr ≡ e
     
     -- Substituting on the identity should have no effect.
-    subIdExpr : ∀ e → subExpr e idSubExpr ≡ e
+    subExprId : ∀ e → subExpr e idSubExpr ≡ e
 
     -- The property of being closed above should be monotonic
     closedAboveMonoExpr : ∀{m n e} → m < n → ClosedAboveExpr m e → ClosedAboveExpr n e
@@ -138,20 +139,43 @@ record LawfulLanguage (L : Language) : Set where
 
   -- Deduced lemmas for convenience.
 
+  -- Renaming respects extensional equality.
+  renExprExt : ∀{ξ1 ξ2} → (∀ n → ξ1 n ≡ ξ2 n) → ∀ e → renExpr e ξ1 ≡ renExpr e ξ2
+  renExprExt {ξ1} {ξ2} ξ1≈ξ2 e =
+    renExpr e ξ1             ≡⟨ sym (subExprRen ξ1 e) ⟩
+    subExpr e (varExpr ∘ ξ1) ≡⟨ subExprExt (λ n → cong varExpr (ξ1≈ξ2 n)) e ⟩
+    subExpr e (varExpr ∘ ξ2) ≡⟨ subExprRen ξ2 e ⟩
+    renExpr e ξ2             ∎
+
   -- Renaming correctly replaces a variable.
   renVarExpr : ∀ n ξ → renExpr (varExpr n) ξ ≡ varExpr (ξ n)
-  renVarExpr n ξ = trans (sym (subRenExpr (varExpr n) ξ)) (subVarExpr n (varExpr ∘ ξ))
+  renVarExpr n ξ =
+    renExpr (varExpr n) ξ             ≡⟨ sym (subExprRen ξ (varExpr n)) ⟩
+    subExpr (varExpr n) (varExpr ∘ ξ) ≡⟨ subExprVar n (varExpr ∘ ξ) ⟩
+    varExpr (ξ n)                     ∎
 
   -- The `up` construction should have no extensional effect on the identity substitution
   upSubIdExpr : ∀ n → upSubExpr idSubExpr n ≡ varExpr n
   upSubIdExpr zero = refl
   upSubIdExpr (suc n) = renVarExpr n suc
 
+  -- The `up` construction should respect extensional equality.
+  upRenExprExt : ∀{ξ1 ξ2} →
+                 (∀ n → ξ1 n ≡ ξ2 n) →
+                 ∀ n → upRenExpr ξ1 n ≡ upRenExpr ξ2 n
+  upRenExprExt ξ1≈ξ2 zero = refl
+  upRenExprExt ξ1≈ξ2 (suc n) = cong suc (ξ1≈ξ2 n)
+
   -- The `up` construction should have no extensional effect on the identity renaming.
   upRenIdExpr : ∀ n → upRenExpr idRenExpr n ≡ n
   upRenIdExpr zero = refl
   upRenIdExpr (suc n) = refl
 
+  -- The `up` construction extensionally commutes with composition.
+  upRenExpr∘ : ∀ ξ1 ξ2 n → upRenExpr (ξ2 ∘ ξ1) n ≡ upRenExpr ξ2 (upRenExpr ξ1 n)
+  upRenExpr∘ ξ1 ξ2 zero = refl
+  upRenExpr∘ ξ1 ξ2 (suc n) = refl
+    
   -- Substituting a closed expression has no effect.
   subClosedIdExpr : ∀ e σ → ClosedExpr e → subExpr e σ ≡ e
   subClosedIdExpr e σ closed = subClosedAboveIdExpr closed λ{ () }
