@@ -214,8 +214,21 @@ diagViewChor (TellLet ℓ ρ1 c1 ρ2 c2) with ≡-dec-Loc ℓ ℓ
 ... | yes refl = yes refl
 ≡-dec-Chor c1 c2 | nothing | [ view≡⊥ ] = no λ{ refl → diagViewChor _ view≡⊥ }
 
+{-
+  Values of the language are either local expressions,
+  global functions, or local value abstractions
+-}
 data ChorVal : Chor → Set where
-  DoneVal : (L : LocVal) (v : Expr) → Val v → ChorVal (Done (Lit L) v)
+  DoneVal : (L : LocVal) (v : Expr) → ValExpr v → ChorVal (Done (Lit L) v)
   FunVal : (C : Chor) → ChorVal (Fun C)
   LocAbsVal : (C : Chor) → ChorVal (LocAbs C)
 
+{-
+  `up` construction on local variable renamings.
+   Used when going past a binder of a specified
+   location to ensure that counting is done correctly.
+-}
+upLocRen : (Loc → ℕ → ℕ) → Loc → Loc → ℕ → ℕ
+upLocRen ξ ℓ1 ℓ2 with ≡-dec-Loc ℓ1 ℓ2
+... | yes _ = upRenExpr (ξ ℓ2)
+... | no  _ = ξ ℓ2

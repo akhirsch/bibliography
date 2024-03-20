@@ -25,30 +25,30 @@ open LawfulLanguage LL
 record TypedLocalLanguage : Set₁ where
   field
     -- Set of types
-    Typ : Set
+    TypExpr : Set
 
     -- Types should have decidable equality
-    decEq : (t₁ t₂ : Typ) → Dec (t₁ ≡ t₂)
+    ≡-dec-TypExpr : (t₁ t₂ : TypExpr) → Dec (t₁ ≡ t₂)
 
     {-
       Typing judgment of the form Γ ⊢ e : t.
       Contexts are infinite maps from variables to types.
     -}
-    Typing : (ℕ → Typ) → Expr → Typ → Set
+    _⊢ₑ_∶_ : (ℕ → TypExpr) → Expr → TypExpr → Set
 
     -- Typing respects extensional equality of contexts.
-    tyExt : ∀{Γ Δ e t} →
+    tyExprExt : ∀{Γ Δ e t} →
             (∀ n → Γ n ≡ Δ n) →
-            Typing Γ e t →
-            Typing Δ e t
+            Γ ⊢ₑ e ∶ t →
+            Δ ⊢ₑ e ∶ t
 
     -- Variables have the type they are assigned by the context.
-    tyVar : ∀ Γ n → Typing Γ (var n) (Γ n)
+    tyExprVar : ∀ Γ n → Γ ⊢ₑ varExpr n ∶ Γ n
 
     -- Expressions have a unique type.
-    tyUniq : ∀{Γ e t₁ t₂} →
-             Typing Γ e t₁ →
-             Typing Γ e t₂ →
+    tyExprUniq : ∀{Γ e t₁ t₂} →
+             Γ ⊢ₑ e ∶ t₁ →
+             Γ ⊢ₑ e ∶ t₂ →
              t₁ ≡ t₂
 
     {-
@@ -56,75 +56,75 @@ record TypedLocalLanguage : Set₁ where
       variables in an expression. Thus, if an expression is closed
       above n, the values of the context above n should not matter.
     -}
-    tyClosedAbove : ∀{Γ Δ e t n} →
-                    ClosedAbove n e →
+    tyExprClosedAbove : ∀{Γ Δ e t n} →
+                    ClosedAboveExpr n e →
                     (∀{m} → m < n → Γ m ≡ Δ m) →
-                    Typing Γ e t →
-                    Typing Δ e t
+                    Γ ⊢ₑ e ∶ t →
+                    Δ ⊢ₑ e ∶ t
 
     -- Weaking should be allowed.
-    tyWk : ∀{Γ Δ e t} →
+    tyExprWk : ∀{Γ Δ e t} →
            (ξ : ℕ → ℕ) →
            (∀ n → Γ n ≡ Δ (ξ n)) →
-           Typing Γ e t →
-           Typing Δ (ren e ξ) t
+           Γ ⊢ₑ e ∶ t →
+           Δ ⊢ₑ renExpr e ξ ∶ t
 
     -- We have a type for booleans, and the appropriate judgments.
-    boolTy : Typ
-    ty-tt : ∀{Γ} → Typing Γ tt boolTy
-    ty-ff : ∀{Γ} → Typing Γ ff boolTy
+    boolTy : TypExpr
+    tyExprTrue : ∀{Γ} → Γ ⊢ₑ trueExpr ∶ boolTy
+    tyExprFalse : ∀{Γ} → Γ ⊢ₑ falseExpr ∶ boolTy
 
     -- Each boolean value is either true or false
     boolInversion : ∀{Γ v} →
-                    Typing Γ v boolTy →
-                    Val v →
-                    (v ≡ tt) ⊎ (v ≡ ff)
+                    Γ ⊢ₑ v ∶ boolTy →
+                    ValExpr v →
+                    (v ≡ trueExpr) ⊎ (v ≡ falseExpr)
   
 
 
     -- Progress and preservation must hold.
-    preservation : ∀{Γ e₁ e₂ t} →
-                   Typing Γ e₁ t →
-                   Step e₁ e₂ →
-                   Typing Γ e₂ t
+    preservationExpr : ∀{Γ e₁ e₂ t} →
+                   Γ ⊢ₑ e₁ ∶ t →
+                   StepExpr e₁ e₂ →
+                   Γ ⊢ₑ e₂ ∶ t
 
-    progress : ∀{Γ e₁ t} →
-               Typing Γ e₁ t →
-               Closed e₁ →
-               (Val e₁) ⊎ Σ[ e₂ ∈ _ ] Step e₁ e₂
+    progressExpr : ∀{Γ e₁ t} →
+               Γ ⊢ₑ e₁ ∶ t →
+               ClosedExpr e₁ →
+               (ValExpr e₁) ⊎ Σ[ e₂ ∈ _ ] StepExpr e₁ e₂
 
   {-
     A substitution σ changes context Γ to context Δ
     if for every variable n, σ assigns n to an expression
     which, under Δ, has the same type that Γ assigns to n.
   -}
-  Changes : (ℕ → Expr) → (ℕ → Typ) → (ℕ → Typ) → Set
-  Changes σ Γ Δ = ∀ n → Typing Δ (σ n) (Γ n)
+  ChangesExpr : (ℕ → Expr) → (ℕ → TypExpr) → (ℕ → TypExpr) → Set
+  ChangesExpr σ Γ Δ = ∀ n → Δ ⊢ₑ σ n ∶ Γ n
 
   field
     {-
       The typing judgment should respect substitutions
       which change contexts.
     -}
-    tyChanges : ∀{σ Γ Δ e t} →
-                Changes σ Γ Δ →
-                Typing Γ e t →
-                Typing Δ (sub e σ) t
+    tyExprChanges : ∀{σ Γ Δ e t} →
+                ChangesExpr σ Γ Δ →
+                Γ ⊢ₑ e ∶ t →
+                Δ ⊢ₑ subExpr e σ ∶ t
 
   -- Deduced lemmas for convenience.
 
   -- The context is irrelevant when typing closed expressions.
-  tyClosed : ∀{Γ Δ e t} → Closed e → Typing Γ e t → Typing Δ e t
-  tyClosed closed Γ⊢e:t = tyClosedAbove closed (λ ()) Γ⊢e:t
+  tyExprClosed : ∀{Γ Δ e t} → ClosedExpr e → Γ ⊢ₑ e ∶ t → Δ ⊢ₑ e ∶ t
+  tyExprClosed closed Γ⊢e:t = tyExprClosedAbove closed (λ ()) Γ⊢e:t
 
   -- The context is irrelevant when typing values.
-  tyVal : ∀{Γ Δ v t} → Val v → Typing Γ v t → Typing Δ v t
-  tyVal val Γ⊢v:t = tyClosed (valClosed val) Γ⊢v:t
+  tyExprVal : ∀{Γ Δ v t} → ValExpr v → Γ ⊢ₑ v ∶ t → Δ ⊢ₑ v ∶ t
+  tyExprVal val Γ⊢v:t = tyExprClosed (valClosedExpr val) Γ⊢v:t
 
   -- The identity substitution changes any context to itself
-  idSubChanges : (Γ : ℕ → Typ) → Changes idSub Γ Γ
-  idSubChanges Γ n = tyVar Γ n
+  idSubExprChanges : (Γ : ℕ → TypExpr) → ChangesExpr idSubExpr Γ Γ
+  idSubExprChanges Γ n = tyExprVar Γ n
 
   -- The identity substitution respects typing
-  ty-idSub : ∀{Γ e t} → Typing Γ e t → Typing Γ (sub e idSub) t
-  ty-idSub Γ⊢e:t = tyChanges (idSubChanges _) Γ⊢e:t
+  tyExprSubId : ∀{Γ e t} → Γ ⊢ₑ e ∶ t → Γ ⊢ₑ subExpr e idSubExpr ∶ t
+  tyExprSubId Γ⊢e:t = tyExprChanges (idSubExprChanges _) Γ⊢e:t
