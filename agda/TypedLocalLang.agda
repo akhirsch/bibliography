@@ -2,6 +2,8 @@
 
 open import Data.Empty
 open import Data.Nat
+open import Data.Sum
+open import Data.Product
 open import Relation.Nullary
 open import Relation.Binary.PropositionalEquality
 open import Function
@@ -71,6 +73,25 @@ record TypedLocalLanguage : Set₁ where
     boolTy : Typ
     ty-tt : ∀{Γ} → Typing Γ tt boolTy
     ty-ff : ∀{Γ} → Typing Γ ff boolTy
+
+    -- Each boolean value is either true or false
+    boolInversion : ∀{Γ v} →
+                    Typing Γ v boolTy →
+                    Val v →
+                    (v ≡ tt) ⊎ (v ≡ ff)
+  
+
+
+    -- Progress and preservation must hold.
+    preservation : ∀{Γ e₁ e₂ t} →
+                   Typing Γ e₁ t →
+                   Step e₁ e₂ →
+                   Typing Γ e₂ t
+
+    progress : ∀{Γ e₁ t} →
+               Typing Γ e₁ t →
+               Closed e₁ →
+               (Val e₁) ⊎ Σ[ e₂ ∈ _ ] Step e₁ e₂
 
   {-
     A substitution σ changes context Γ to context Δ

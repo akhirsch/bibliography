@@ -22,7 +22,7 @@ record Language : Set₁ where
     Expr : Set
 
     -- Expressions should have decidable equality
-    decEq : (e₁ e₂ : Expr) → Dec (e₁ ≡ e₂)
+    ≡-dec-Expr : (e₁ e₂ : Expr) → Dec (e₁ ≡ e₂)
 
     -- de Bruijn indices are represented as natural numbers
     var : ℕ → Expr
@@ -44,7 +44,7 @@ record Language : Set₁ where
     Step : Expr → Expr → Set
 
     -- There should be expressions for true and false.
-    tt ff : Expr
+    trueExpr falseExpr : Expr
 
   -- Derived functions for convenience
 
@@ -136,9 +136,9 @@ record LawfulLanguage (L : Language) : Set where
     valNoStep : ∀{v e} → Val v → ¬ (Step v e)
 
     -- True and false are disequal values.
-    ttVal : Val tt
-    ffVal : Val ff
-    boolSep : ¬ (tt ≡ ff)
+    ttVal : Val trueExpr
+    ffVal : Val falseExpr
+    boolSep : ¬ (trueExpr ≡ falseExpr)
 
   -- Deduced lemmas for convenience.
 
