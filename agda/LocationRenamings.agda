@@ -30,54 +30,54 @@ open LawfulLanguage LE
 
 --- Locations
 
--- Rename a location
+-- Rename location variables in a location
 renₗ-Loc : Loc → (ℕ → ℕ) → Loc
 renₗ-Loc (Var x) ξ = Var (ξ x)
 renₗ-Loc (Lit L) ξ = Lit L
 
--- Renaming locations respects extensional equality
+-- Renaming location variables in a location respects extensional equality
 renExtₗ-Loc : ∀{ξ1 ξ2} →
                 (∀ n → ξ1 n ≡ ξ2 n) →
                 ∀ ℓ → renₗ-Loc ℓ ξ1 ≡ renₗ-Loc ℓ ξ2
 renExtₗ-Loc ξ1≈ξ2 (Var x) = cong Var (ξ1≈ξ2 x)
 renExtₗ-Loc ξ1≈ξ2 (Lit L) = refl
 
--- Renaming locations respects the identity
+-- Renaming location variables in a location respects the identity
 renIdₗ-Loc : ∀ ℓ → renₗ-Loc ℓ idRen ≡ ℓ
 renIdₗ-Loc (Var x) = refl
 renIdₗ-Loc (Lit L) = refl
 
--- Renaming locations enjoys fusion
+-- Renaming location variables in a location enjoys fusion
 renFuseₗ-Loc : ∀ ξ1 ξ2 ℓ → renₗ-Loc ℓ (ξ2 ∘ ξ1) ≡ renₗ-Loc (renₗ-Loc ℓ ξ1) ξ2
 renFuseₗ-Loc ξ1 ξ2 (Var x) = refl
 renFuseₗ-Loc ξ1 ξ2 (Lit L) = refl
 
 --- Location lists
 
--- Rename a location list
+-- Rename location variables in a location list
 renₗ-List : LocList → (ℕ → ℕ) → LocList
 renₗ-List ρ ξ = Data.List.map (λ ℓ → renₗ-Loc ℓ ξ) ρ
 
--- Renaming location lists respects extensional equality
+-- Renaming location variables in a location list respects extensional equality
 renExtₗ-List : ∀{ξ1 ξ2} →
                 (∀ n → ξ1 n ≡ ξ2 n) →
                 ∀ ρ → renₗ-List ρ ξ1 ≡ renₗ-List ρ ξ2
 renExtₗ-List ξ1≈ξ2 [] = refl
 renExtₗ-List ξ1≈ξ2 (ℓ ∷ ρ) = cong₂ _∷_ (renExtₗ-Loc ξ1≈ξ2 ℓ) (renExtₗ-List ξ1≈ξ2 ρ)
 
--- Renaming location lists respects the identity
+-- Renaming location variables in a location list respects the identity
 renIdₗ-List : ∀ ρ → renₗ-List ρ idRen ≡ ρ
 renIdₗ-List [] = refl
 renIdₗ-List (ℓ ∷ ρ) = cong₂ _∷_ (renIdₗ-Loc ℓ) (renIdₗ-List ρ)
 
--- Renaming location lists enjoys fusion
+-- Renaming location variables in a location list enjoys fusion
 renFuseₗ-List : ∀ ξ1 ξ2 ρ → renₗ-List ρ (ξ2 ∘ ξ1) ≡ renₗ-List (renₗ-List ρ ξ1) ξ2
 renFuseₗ-List ξ1 ξ2 [] = refl
 renFuseₗ-List ξ1 ξ2 (ℓ ∷ ρ) = cong₂ _∷_ (renFuseₗ-Loc ξ1 ξ2 ℓ) (renFuseₗ-List ξ1 ξ2 ρ)
 
 --- Choreographies
 
--- Rename the locations in a choreography
+-- Rename the location variables in a choreography
 renₗ : Chor → (ℕ → ℕ) → Chor
 renₗ (Done ℓ e) ξ = Done (renₗ-Loc ℓ ξ) e
 renₗ (Var x) ξ = Var x
@@ -91,7 +91,7 @@ renₗ (LocAbs c) ξ = LocAbs (renₗ c (↑ ξ))
 renₗ (LocApp c ℓ) ξ = LocApp (renₗ c ξ) (renₗ-Loc ℓ ξ)
 renₗ (TellLet ℓ ρ1 c ρ2 c₁) ξ = TellLet (renₗ-Loc ℓ ξ) (renₗ-List ρ1 ξ) (renₗ c ξ) (renₗ-List ρ2 ξ) (renₗ c₁ ξ)
 
--- Renaming locations in a choreography respects extensional equality
+-- Renaming the location variables in a choreography respects extensional equality
 renExtₗ : ∀{ξ1 ξ2} →
             (∀ n → ξ1 n ≡ ξ2 n) →
             ∀ c → renₗ c ξ1 ≡ renₗ c ξ2
@@ -108,7 +108,7 @@ renExtₗ ξ1≈ξ2 (LocApp c ℓ) = cong₂ LocApp (renExtₗ ξ1≈ξ2 c) (ren
 renExtₗ ξ1≈ξ2 (TellLet ℓ ρ1 c ρ2 c₁) = cong₅ TellLet
     (renExtₗ-Loc ξ1≈ξ2 ℓ) (renExtₗ-List ξ1≈ξ2 ρ1) (renExtₗ ξ1≈ξ2 c) (renExtₗ-List ξ1≈ξ2 ρ2) (renExtₗ ξ1≈ξ2 c₁)
 
--- Renaming locations in a chorepgraphy respects the identity
+-- Renaming the location variables in a choreography respects the identity
 renIdₗ :  ∀ c → renₗ c idRen ≡ c
 renIdₗ (Done ℓ e) = cong₂ Done (renIdₗ-Loc ℓ) refl
 renIdₗ (Var x) = refl
@@ -128,7 +128,7 @@ renIdₗ (LocAbs c) = cong LocAbs c⟨↑id⟩≡c
 renIdₗ (LocApp c ℓ) = cong₂ LocApp (renIdₗ c) (renIdₗ-Loc ℓ)
 renIdₗ (TellLet ℓ ρ1 c ρ2 c₁) = cong₅ TellLet (renIdₗ-Loc ℓ) (renIdₗ-List ρ1) (renIdₗ c) (renIdₗ-List ρ2) (renIdₗ c₁)
 
--- Renaming locations in a chorepgraphy enjoys fusion
+-- Renaming the location variables in a choreography enjoys fusion
 renFuseₗ :  ∀ ξ1 ξ2 c → renₗ c (ξ2 ∘ ξ1) ≡ renₗ (renₗ c ξ1) ξ2
 renFuseₗ ξ1 ξ2 (Done ℓ e) = cong₂ Done (renFuseₗ-Loc ξ1 ξ2 ℓ) refl
 renFuseₗ ξ1 ξ2 (Var x) = refl

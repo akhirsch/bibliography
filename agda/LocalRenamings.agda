@@ -28,17 +28,13 @@ open import Choreographies E LE LocVal ≡-dec-LocVal
 open Language E
 open LawfulLanguage LE
 
-{-
-  `up` construction on local variable renamings.
-   Used when going past a binder of a specified
-   location to ensure that counting is done correctly.
--}
+-- `up` construction on local variable renamings
 ↑ₗₑ : (Loc → ℕ → ℕ) → Loc → Loc → ℕ → ℕ
 ↑ₗₑ ξ ℓ1 ℓ2 with ≡-dec-Loc ℓ1 ℓ2
 ... | yes _ = upRenₑ (ξ ℓ2)
 ... | no  _ = ξ ℓ2
 
--- Renaming local expressions in a choreography
+-- Renaming local variables in a choreography
 renₗₑ : (c : Chor) (ξ : Loc → ℕ → ℕ) → Chor
 renₗₑ (Done ℓ e) ξ = Done ℓ (renₑ e (ξ ℓ))
 renₗₑ (Var x) ξ = Var x
@@ -75,7 +71,7 @@ idRenₗₑ ℓ = idRenₑ
 ... | yes _ = upRenExtₑ (ξ1≈ξ2 ℓ') n
 ... | no  _ = ξ1≈ξ2 ℓ' n
 
--- Locally renaming respects extensional equality
+-- Renaming local variables respects extensional equality
 renExtₗₑ : ∀{ξ1 ξ2} →
             (∀ ℓ n → ξ1 ℓ n ≡ ξ2 ℓ n) →
             ∀ c → renₗₑ c ξ1 ≡ renₗₑ c ξ2
@@ -91,7 +87,7 @@ renExtₗₑ ξ1≈ξ2 (LocAbs c) = cong LocAbs (renExtₗₑ ξ1≈ξ2 c)
 renExtₗₑ ξ1≈ξ2 (LocApp c ℓ) = cong₂ LocApp (renExtₗₑ ξ1≈ξ2 c) refl
 renExtₗₑ ξ1≈ξ2 (TellLet ℓ ρ1 c ρ2 c₁) = cong₅ TellLet refl refl (renExtₗₑ ξ1≈ξ2 c) refl (renExtₗₑ ξ1≈ξ2 c₁)
 
--- Locally renaming respects the identity
+-- Renaming local variables respects the identity
 renIdₗₑ : ∀ c → renₗₑ c idRenₗₑ ≡ c
 renIdₗₑ (Done ℓ e) = cong (Done ℓ) (renIdₑ e)
 renIdₗₑ (Var x) = refl
@@ -111,7 +107,7 @@ renIdₗₑ (LocAbs c) = cong LocAbs (renIdₗₑ c)
 renIdₗₑ (LocApp c ℓ) = cong₂ LocApp (renIdₗₑ c) refl
 renIdₗₑ (TellLet ℓ ρ1 c ρ2 c₁) = cong₃ (TellLet ℓ ρ1) (renIdₗₑ c) refl (renIdₗₑ c₁)
 
--- Locally renaming enjoys fusion
+-- Renaming local variables enjoys fusion
 renFuseₗₑ : ∀ ξ1 ξ2 c → renₗₑ c (λ ℓ → ξ2 ℓ ∘ ξ1 ℓ) ≡ renₗₑ (renₗₑ c ξ1) ξ2
 renFuseₗₑ ξ1 ξ2 (Done ℓ e) = cong (Done ℓ) (ren∘ₑ (ξ1 ℓ) (ξ2 ℓ) e)
 renFuseₗₑ ξ1 ξ2 (Var x) = refl
