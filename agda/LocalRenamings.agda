@@ -31,7 +31,7 @@ open LawfulLanguage LE
 -- `up` construction on local variable renamings
 ↑ₗₑ : (Loc → ℕ → ℕ) → Loc → Loc → ℕ → ℕ
 ↑ₗₑ ξ ℓ1 ℓ2 with ≡-dec-Loc ℓ1 ℓ2
-... | yes _ = upRenₑ (ξ ℓ2)
+... | yes _ = ↑ₑ (ξ ℓ2)
 ... | no  _ = ξ ℓ2
 
 -- Renaming local variables in a choreography
@@ -54,13 +54,13 @@ idRenₗₑ ℓ = idRenₑ
 -- The local `up` construction has no extensional effect on the identity renaming
 ↑Idₗₑ : ∀ ℓ ℓ' n → ↑ₗₑ idRenₗₑ ℓ ℓ' n ≡ idRenₗₑ ℓ' n
 ↑Idₗₑ ℓ ℓ' n with ≡-dec-Loc ℓ ℓ'
-... | yes _ = upRenIdₑ n
+... | yes _ = ↑Idₑ n
 ... | no  _ = refl
 
 -- The local `up` construction extensionally commutes with composition
 ↑Fuseₗₑ : ∀ ξ1 ξ2 ℓ ℓ' n → ↑ₗₑ (λ ℓ'' → ξ2 ℓ'' ∘ ξ1 ℓ'') ℓ ℓ' n ≡ ↑ₗₑ ξ2 ℓ ℓ' (↑ₗₑ ξ1 ℓ ℓ' n)
 ↑Fuseₗₑ ξ1 ξ2 ℓ ℓ' n with ≡-dec-Loc ℓ ℓ'
-... | yes _ = upRen∘ₑ (ξ1 ℓ') (ξ2 ℓ') n
+... | yes _ = ↑Fuseₑ (ξ1 ℓ') (ξ2 ℓ') n
 ... | no  _ = refl
 
 -- The local `up` construction respects extensional equality
@@ -68,7 +68,7 @@ idRenₗₑ ℓ = idRenₑ
               (∀ ℓ n → ξ1 ℓ n ≡ ξ2 ℓ n) →
               ∀ ℓ ℓ' n → ↑ₗₑ ξ1 ℓ ℓ' n ≡ ↑ₗₑ ξ2 ℓ ℓ' n
 ↑Extₗₑ ξ1≈ξ2 ℓ ℓ' n with ≡-dec-Loc ℓ ℓ'
-... | yes _ = upRenExtₑ (ξ1≈ξ2 ℓ') n
+... | yes _ = ↑Extₑ (ξ1≈ξ2 ℓ') n
 ... | no  _ = ξ1≈ξ2 ℓ' n
 
 -- Renaming local variables respects extensional equality
@@ -109,7 +109,7 @@ renIdₗₑ (TellLet ℓ ρ1 c ρ2 c₁) = cong₃ (TellLet ℓ ρ1) (renIdₗ�
 
 -- Renaming local variables enjoys fusion
 renFuseₗₑ : ∀ ξ1 ξ2 c → renₗₑ c (λ ℓ → ξ2 ℓ ∘ ξ1 ℓ) ≡ renₗₑ (renₗₑ c ξ1) ξ2
-renFuseₗₑ ξ1 ξ2 (Done ℓ e) = cong (Done ℓ) (ren∘ₑ (ξ1 ℓ) (ξ2 ℓ) e)
+renFuseₗₑ ξ1 ξ2 (Done ℓ e) = cong (Done ℓ) (renFuseₑ (ξ1 ℓ) (ξ2 ℓ) e)
 renFuseₗₑ ξ1 ξ2 (Var x) = refl
 renFuseₗₑ ξ1 ξ2 (Send ℓ1 c ℓ2) = cong (λ x → Send ℓ1 x ℓ2) (renFuseₗₑ ξ1 ξ2 c)
 renFuseₗₑ ξ1 ξ2 (If ℓ c c₁ c₂) = cong₃ (If ℓ) (renFuseₗₑ ξ1 ξ2 c) (renFuseₗₑ ξ1 ξ2 c₁) (renFuseₗₑ ξ1 ξ2 c₂)

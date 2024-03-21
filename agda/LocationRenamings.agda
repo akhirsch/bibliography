@@ -37,8 +37,8 @@ renₗ-Loc (Lit L) ξ = Lit L
 
 -- Renaming location variables in a location respects extensional equality
 renExtₗ-Loc : ∀{ξ1 ξ2} →
-                (∀ n → ξ1 n ≡ ξ2 n) →
-                ∀ ℓ → renₗ-Loc ℓ ξ1 ≡ renₗ-Loc ℓ ξ2
+              ξ1 ≈ ξ2 →
+              ∀ ℓ → renₗ-Loc ℓ ξ1 ≡ renₗ-Loc ℓ ξ2
 renExtₗ-Loc ξ1≈ξ2 (Var x) = cong Var (ξ1≈ξ2 x)
 renExtₗ-Loc ξ1≈ξ2 (Lit L) = refl
 
@@ -60,8 +60,8 @@ renₗ-List ρ ξ = Data.List.map (λ ℓ → renₗ-Loc ℓ ξ) ρ
 
 -- Renaming location variables in a location list respects extensional equality
 renExtₗ-List : ∀{ξ1 ξ2} →
-                (∀ n → ξ1 n ≡ ξ2 n) →
-                ∀ ρ → renₗ-List ρ ξ1 ≡ renₗ-List ρ ξ2
+               ξ1 ≈ ξ2 →
+               ∀ ρ → renₗ-List ρ ξ1 ≡ renₗ-List ρ ξ2
 renExtₗ-List ξ1≈ξ2 [] = refl
 renExtₗ-List ξ1≈ξ2 (ℓ ∷ ρ) = cong₂ _∷_ (renExtₗ-Loc ξ1≈ξ2 ℓ) (renExtₗ-List ξ1≈ξ2 ρ)
 
@@ -93,8 +93,8 @@ renₗ (TellLet ℓ ρ1 c ρ2 c₁) ξ = TellLet (renₗ-Loc ℓ ξ) (renₗ-Lis
 
 -- Renaming the location variables in a choreography respects extensional equality
 renExtₗ : ∀{ξ1 ξ2} →
-            (∀ n → ξ1 n ≡ ξ2 n) →
-            ∀ c → renₗ c ξ1 ≡ renₗ c ξ2
+         ξ1 ≈ ξ2 →
+         ∀ c → renₗ c ξ1 ≡ renₗ c ξ2
 renExtₗ ξ1≈ξ2 (Done ℓ e) = cong₂ Done (renExtₗ-Loc ξ1≈ξ2 ℓ) refl
 renExtₗ ξ1≈ξ2 (Var x) = refl
 renExtₗ ξ1≈ξ2 (Send ℓ1 c ℓ2) = cong₃ Send (renExtₗ-Loc ξ1≈ξ2 ℓ1) (renExtₗ ξ1≈ξ2 c) (renExtₗ-Loc ξ1≈ξ2 ℓ2)

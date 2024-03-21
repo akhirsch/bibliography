@@ -62,13 +62,13 @@ record Language : Set₁ where
     `up` construction on substitutions and variable renamings.
     Used when going past a binder to ensure that counting is done correctly.
   -}
-  upSubₑ : (ℕ → Expr) → ℕ → Expr
-  upSubₑ σ zero = varₑ zero
-  upSubₑ σ (suc n) = renₑ (σ n) suc
+  ↑σₑ : (ℕ → Expr) → ℕ → Expr
+  ↑σₑ σ zero = varₑ zero
+  ↑σₑ σ (suc n) = renₑ (σ n) suc
 
-  upRenₑ : (ℕ → ℕ) → ℕ → ℕ
-  upRenₑ ξ zero = zero
-  upRenₑ ξ (suc n) = suc (ξ n)
+  ↑ₑ : (ℕ → ℕ) → ℕ → ℕ
+  ↑ₑ ξ zero = zero
+  ↑ₑ ξ (suc n) = suc (ξ n)
 
 -- Necessary properties of a local language
 record LawfulLanguage (L : Language) : Set where
@@ -87,7 +87,7 @@ record LawfulLanguage (L : Language) : Set where
     subRenₑ : ∀ ξ e → subₑ e (varₑ ∘ ξ) ≡ renₑ e ξ
     
     -- Renaming enjoys fusion
-    ren∘ₑ : ∀ ξ₁ ξ₂ e → renₑ e (ξ₂ ∘ ξ₁) ≡ renₑ (renₑ e ξ₁) ξ₂
+    renFuseₑ : ∀ ξ₁ ξ₂ e → renₑ e (ξ₂ ∘ ξ₁) ≡ renₑ (renₑ e ξ₁) ξ₂
     
     -- Renaming respects the identity
     renIdₑ : ∀ e → renₑ e idRenₑ ≡ e
@@ -156,26 +156,26 @@ record LawfulLanguage (L : Language) : Set where
     varₑ (ξ n)              ∎
 
   -- The `up` construction should have no extensional effect on the identity substitution
-  upSubIdₑ : ∀ n → upSubₑ idSubₑ n ≡ varₑ n
-  upSubIdₑ zero = refl
-  upSubIdₑ (suc n) = renVarₑ n suc
+  ↑σIdₑ : ∀ n → ↑σₑ idSubₑ n ≡ varₑ n
+  ↑σIdₑ zero = refl
+  ↑σIdₑ (suc n) = renVarₑ n suc
 
   -- The `up` construction should respect extensional equality.
-  upRenExtₑ : ∀{ξ1 ξ2} →
+  ↑Extₑ : ∀{ξ1 ξ2} →
               (∀ n → ξ1 n ≡ ξ2 n) →
-              ∀ n → upRenₑ ξ1 n ≡ upRenₑ ξ2 n
-  upRenExtₑ ξ1≈ξ2 zero = refl
-  upRenExtₑ ξ1≈ξ2 (suc n) = cong suc (ξ1≈ξ2 n)
+              ∀ n → ↑ₑ ξ1 n ≡ ↑ₑ ξ2 n
+  ↑Extₑ ξ1≈ξ2 zero = refl
+  ↑Extₑ ξ1≈ξ2 (suc n) = cong suc (ξ1≈ξ2 n)
 
   -- The `up` construction should have no extensional effect on the identity renaming.
-  upRenIdₑ : ∀ n → upRenₑ idRenₑ n ≡ n
-  upRenIdₑ zero = refl
-  upRenIdₑ (suc n) = refl
+  ↑Idₑ : ∀ n → ↑ₑ idRenₑ n ≡ n
+  ↑Idₑ zero = refl
+  ↑Idₑ (suc n) = refl
 
   -- The `up` construction extensionally commutes with composition.
-  upRen∘ₑ : ∀ ξ1 ξ2 n → upRenₑ (ξ2 ∘ ξ1) n ≡ upRenₑ ξ2 (upRenₑ ξ1 n)
-  upRen∘ₑ ξ1 ξ2 zero = refl
-  upRen∘ₑ ξ1 ξ2 (suc n) = refl
+  ↑Fuseₑ : ∀ ξ1 ξ2 n → ↑ₑ (ξ2 ∘ ξ1) n ≡ ↑ₑ ξ2 (↑ₑ ξ1 n)
+  ↑Fuseₑ ξ1 ξ2 zero = refl
+  ↑Fuseₑ ξ1 ξ2 (suc n) = refl
     
   -- Substituting a closed expression has no effect.
   subClosedIdₑ : ∀ e σ → Closedₑ e → subₑ e σ ≡ e

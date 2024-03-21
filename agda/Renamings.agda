@@ -44,8 +44,8 @@ ren (TellLet ℓ ρ1 c ρ2 c₁) ξ = TellLet ℓ ρ1 (ren c ξ) ρ2 (ren c₁ �
 
 -- Renaming global variables respects extensional equality
 renExt : ∀{ξ1 ξ2} →
-            (∀ n → ξ1 n ≡ ξ2 n) →
-            ∀ c → ren c ξ1 ≡ ren c ξ2
+         ξ1 ≈ ξ2 →
+         ∀ c → ren c ξ1 ≡ ren c ξ2
 renExt ξ1≈ξ2 (Done ℓ e) = refl
 renExt ξ1≈ξ2 (Var x) = cong Var (ξ1≈ξ2 x)
 renExt ξ1≈ξ2 (Send ℓ1 c ℓ2) = cong₃ Send refl (renExt ξ1≈ξ2 c) refl
