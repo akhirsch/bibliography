@@ -43,6 +43,7 @@ renₗₑ (If ℓ c c₁ c₂) ξ = If ℓ (renₗₑ c ξ) (renₗₑ c₁ ξ) 
 renₗₑ (Sync ℓ1 d ℓ2 c) ξ = Sync ℓ1 d ℓ2 (renₗₑ c ξ)
 renₗₑ (DefLocal ℓ c c₁) ξ = DefLocal ℓ (renₗₑ c ξ) (renₗₑ c₁ (↑ₗₑ ξ ℓ))
 renₗₑ (Fun c) ξ = Fun (renₗₑ c ξ)
+renₗₑ (Fix c) ξ = Fix (renₗₑ c ξ)
 renₗₑ (App c c₁) ξ = App (renₗₑ c ξ) (renₗₑ c₁ ξ)
 renₗₑ (LocAbs c) ξ = LocAbs (renₗₑ c ξ)
 renₗₑ (LocApp c ℓ) ξ = LocApp (renₗₑ c ξ) ℓ
@@ -82,6 +83,7 @@ renExtₗₑ ξ1≈ξ2 (If ℓ c c₁ c₂) = cong₃ (If ℓ) (renExtₗₑ ξ1
 renExtₗₑ ξ1≈ξ2 (Sync ℓ1 d ℓ2 c) = cong (Sync ℓ1 d ℓ2) (renExtₗₑ ξ1≈ξ2 c)
 renExtₗₑ ξ1≈ξ2 (DefLocal ℓ c c₁) = cong₂ (DefLocal ℓ) (renExtₗₑ ξ1≈ξ2 c) (renExtₗₑ (↑Extₗₑ ξ1≈ξ2 ℓ) c₁)
 renExtₗₑ ξ1≈ξ2 (Fun c) = cong Fun (renExtₗₑ ξ1≈ξ2 c)
+renExtₗₑ ξ1≈ξ2 (Fix c) = cong Fix (renExtₗₑ ξ1≈ξ2 c)
 renExtₗₑ ξ1≈ξ2 (App c c₁) = cong₂ App (renExtₗₑ ξ1≈ξ2 c) (renExtₗₑ ξ1≈ξ2 c₁)
 renExtₗₑ ξ1≈ξ2 (LocAbs c) = cong LocAbs (renExtₗₑ ξ1≈ξ2 c)
 renExtₗₑ ξ1≈ξ2 (LocApp c ℓ) = cong₂ LocApp (renExtₗₑ ξ1≈ξ2 c) refl
@@ -102,6 +104,7 @@ renIdₗₑ (DefLocal ℓ c1 c2) = cong₂ (DefLocal ℓ) (renIdₗₑ c1) c2⟨
     renₗₑ c2 idRenₗₑ        ≡⟨ renIdₗₑ c2 ⟩
     c2                     ∎
 renIdₗₑ (Fun c) = cong Fun (renIdₗₑ c)
+renIdₗₑ (Fix c) = cong Fix (renIdₗₑ c)
 renIdₗₑ (App c c₁) = cong₂ App (renIdₗₑ c) (renIdₗₑ c₁)
 renIdₗₑ (LocAbs c) = cong LocAbs (renIdₗₑ c)
 renIdₗₑ (LocApp c ℓ) = cong₂ LocApp (renIdₗₑ c) refl
@@ -122,6 +125,7 @@ renFuseₗₑ ξ1 ξ2 (DefLocal ℓ c1 c2) = cong₂ (DefLocal ℓ) (renFuseₗ�
     renₗₑ c2 (λ ℓ1 → ↑ₗₑ ξ2 ℓ ℓ1 ∘ ↑ₗₑ ξ1 ℓ ℓ1) ≡⟨ renFuseₗₑ (↑ₗₑ ξ1 ℓ) (↑ₗₑ ξ2 ℓ) c2 ⟩
     renₗₑ (renₗₑ c2 (↑ₗₑ ξ1 ℓ)) (↑ₗₑ ξ2 ℓ)        ∎
 renFuseₗₑ ξ1 ξ2 (Fun c) = cong Fun (renFuseₗₑ ξ1 ξ2 c)
+renFuseₗₑ ξ1 ξ2 (Fix c) = cong Fix (renFuseₗₑ ξ1 ξ2 c)
 renFuseₗₑ ξ1 ξ2 (App c c₁) = cong₂ App (renFuseₗₑ ξ1 ξ2 c) (renFuseₗₑ ξ1 ξ2 c₁)
 renFuseₗₑ ξ1 ξ2 (LocAbs c) = cong LocAbs (renFuseₗₑ ξ1 ξ2 c)
 renFuseₗₑ ξ1 ξ2 (LocApp c ℓ) = cong₂ LocApp (renFuseₗₑ ξ1 ξ2 c) refl

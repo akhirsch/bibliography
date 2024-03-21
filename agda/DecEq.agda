@@ -39,10 +39,11 @@ ViewChor (Send ℓ1 c1 ℓ2) (Send ℓ1' c1' ℓ2') = ℓ1 ≡ ℓ1' × ℓ2 ≡
 ViewChor (If ℓ c1 c2 c3) (If ℓ' c1' c2' c3')  = ℓ ≡ ℓ'
 ViewChor (Sync ℓ1 d ℓ2 c1) (Sync ℓ1' d' ℓ2' c1') = ℓ1 ≡ ℓ1' × d ≡ d' × ℓ2 ≡ ℓ2'
 ViewChor (DefLocal ℓ c1 c2) (DefLocal ℓ' c1' c2') = ℓ ≡ ℓ'
-ViewChor (Fun c1) (Fun c1') = ⊤
+ViewChor (Fun c) (Fun c') = ⊤
+ViewChor (Fix c) (Fix c') = ⊤
 ViewChor (App c1 c2) (App c1' c2') = ⊤
-ViewChor (LocAbs c1) (LocAbs c1') = ⊤
-ViewChor (LocApp c1 ℓ) (LocApp c1' ℓ') = ℓ ≡ ℓ'
+ViewChor (LocAbs c) (LocAbs c') = ⊤
+ViewChor (LocApp c ℓ) (LocApp c' ℓ') = ℓ ≡ ℓ'
 ViewChor (TellLet ℓ ρ1 c1 ρ2 c2) (TellLet ℓ' ρ1' c1' ρ2' c2') = ℓ ≡ ℓ' × ρ1 ≡ ρ1' × ρ2 ≡ ρ2'
 ViewChor _ _ = ⊥
 
@@ -74,7 +75,8 @@ viewChor (Sync ℓ1 d ℓ2 c1) (Sync ℓ1' d' ℓ2' c1') with ≡-dec-Loc ℓ1 �
 viewChor (DefLocal ℓ c1 c2) (DefLocal ℓ' c1' c2') with ≡-dec-Loc ℓ ℓ'
 ... | no ¬p = nothing
 ... | yes p = just p
-viewChor (Fun c1) (Fun c1') = just tt
+viewChor (Fun c) (Fun c') = just tt
+viewChor (Fix c) (Fix c') = just tt
 viewChor (App c1 c2) (App c1' c2') = just tt
 viewChor (LocAbs c1) (LocAbs c1') = just tt
 viewChor (LocApp c1 ℓ) (LocApp c1' ℓ') with ≡-dec-Loc ℓ ℓ'
@@ -118,6 +120,7 @@ diagViewChor (DefLocal ℓ c1 c2) with ≡-dec-Loc ℓ ℓ
 ... | no ¬p = λ _ → ¬p refl
 ... | yes p = λ ()
 diagViewChor (Fun c1) = λ ()
+diagViewChor (Fix c1) = λ ()
 diagViewChor (App c1 c2) = λ ()
 diagViewChor (LocAbs c1) = λ ()
 diagViewChor (LocApp c1 ℓ) with ≡-dec-Loc ℓ ℓ
@@ -159,6 +162,9 @@ diagViewChor (TellLet ℓ ρ1 c1 ρ2 c2) with ≡-dec-Loc ℓ ℓ
 ... | no ¬p = no λ{ refl → ¬p refl }
 ... | yes refl = yes refl
 ≡-dec-Chor (Fun c1) (Fun c1') | just tt | eq with ≡-dec-Chor c1 c1'
+... | no ¬p = no λ{ refl → ¬p refl }
+... | yes refl = yes refl
+≡-dec-Chor (Fix c1) (Fix c1') | just tt | eq with ≡-dec-Chor c1 c1'
 ... | no ¬p = no λ{ refl → ¬p refl }
 ... | yes refl = yes refl
 ≡-dec-Chor (App c1 c2) (App c1' c2') | just tt | eq with ≡-dec-Chor c1 c1'

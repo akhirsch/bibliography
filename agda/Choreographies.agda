@@ -56,7 +56,7 @@ data Chor : Set where
   If : (ℓ : Loc) (C : Chor) (C1 : Chor) (C2 : Chor) → Chor
   Sync : (ℓ1 : Loc) (d : SyncLabel) (ℓ2 : Loc) (C : Chor) → Chor
   DefLocal : (ℓ : Loc) (C1 : Chor) (C2 : Chor) → Chor
-  Fun : (C : Chor) → Chor
+  Fun Fix : (C : Chor) → Chor
   App : (C1 C2 : Chor) → Chor
   LocAbs : (C : Chor) → Chor
   LocApp : (C : Chor) (ℓ : Loc) → Chor
@@ -64,7 +64,7 @@ data Chor : Set where
 
 {-
   Values of the language are either local expressions,
-  global functions, or local value abstractions
+  global functions, or location abstractions
 -}
 data Val : Chor → Set where
   DoneVal : (L : LocVal) (v : Expr) → Valₑ v → Val (Done (Lit L) v)

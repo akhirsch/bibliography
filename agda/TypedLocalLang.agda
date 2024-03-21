@@ -24,7 +24,7 @@ open LawfulLanguage LL
 -- Type theory for a local language
 record TypedLocalLanguage : Set₁ where
   field
-    -- Set of types
+    -- Local types
     Typₑ : Set
 
     -- Types have decidable equality
