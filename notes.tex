@@ -223,83 +223,84 @@ Projects a local-let context $\Delta$ to a local context at a (possibly variable
 \paragraph{Traces}\;
 \begin{syntax}
 	\category[Trace Elements]{T}
-	\alternative{L}
-	\alternative{L_1 \rightsquigarrow L_2}\\
-	\alternative{L_1[d] \rightsquigarrow L_2}
-	\alternative{L_1 \rightsquigarrow \rho}
-
-	\category[Traces]{\sigma}
-	\alternative{\epsilon}
-	\alternative{\sigma, T}
+	\alternative{\bullet}\\
+	\alternative{L}\\
+	\alternative{L_1[v] \rightsquigarrow L_2}\\
+	\alternative{L_1[d] \rightsquigarrow L_2}\\
+	\alternative{L_1[L_2] \rightsquigarrow \rho}
 \end{syntax}
 
 \paragraph{Trace Semantics}\;
-Deterministic, small-step trace semantics $C_1 \step{\sigma} C_2$ where $C_1, C_2$ are \emph{closed} choreographies, and $\sigma$ is a trace.
+Deterministic, small-step trace semantics $C_1 \step{T} C_2$ where $C_1, C_2$ are \emph{closed} choreographies, and $T$ is a trace element.
 
 \begin{mathparpagebreakable}
   \infer[Done]{e_1 \Rightarrow_e e_2}
-  {L.e_1 \step{\epsilon, L} L.e_2} \and
+  {L.e_1 \step{L} L.e_2} \and
 
-  \infer[Send]{C_1 \step{\sigma} C_2}
-  {C_1 \overset{L_1}{\rightsquigarrow} L_2 \step{\sigma} C_2 \overset{L_1}{\rightsquigarrow} L_2} \and
+  \infer[Send]{C_1 \step{T} C_2}
+  {C_1 \overset{L_1}{\rightsquigarrow} L_2 \step{T} C_2 \overset{L_1}{\rightsquigarrow} L_2} \and
 
   \infer[SendV]{\text{Value}(v)}
-  {L_1.v \overset{L_1}{\rightsquigarrow} L_2 \step{\epsilon, L_1 \rightsquigarrow L_2} L_2.v} \and
+  {L_1.v \overset{L_1}{\rightsquigarrow} L_2 \step{L_1[v] \rightsquigarrow L_2} L_2.v} \and
 
-  \infer[If]{C \step{\sigma} C'}
-  {L.\text{if}\; C \;\text{then}\; C_1 \;\text{else}\; C_2 \step{\sigma} L.\text{if}\; C' \;\text{then}\; C_1 \;\text{else}\; C_2} \and
+  \infer[If]{C \step{T} C'}
+  {L.\text{if}\; C \;\text{then}\; C_1 \;\text{else}\; C_2 \step{T} L.\text{if}\; C' \;\text{then}\; C_1 \;\text{else}\; C_2} \and
 
   \infer[IfT]{}
-  {L.\text{if}\; L.\text{true} \;\text{then}\; C_1 \;\text{else}\; C_2 \step{\epsilon, L} C_1} \and
+  {L.\text{if}\; L.\text{true} \;\text{then}\; C_1 \;\text{else}\; C_2 \step{L} C_1} \and
 
   \infer[IfF]{}
-  {L.\text{if}\; L.\text{false} \;\text{then}\; C_1 \;\text{else}\; C_2 \step{\epsilon, L} C_2} \and
+  {L.\text{if}\; L.\text{false} \;\text{then}\; C_1 \;\text{else}\; C_2 \step{L} C_2} \and
 
-  \infer[DefLocal]{C_1 \step{\sigma} C_1'}
-  {\text{let}\; L.x := C_1 \;\text{in}\; C_2 \step{\sigma} \text{let}\; L.x := C_1' \;\text{in}\; C_2} \and
+  \infer[DefLocal]{C_1 \step{T} C_1'}
+  {\text{let}\; L.x := C_1 \;\text{in}\; C_2 \step{T} \text{let}\; L.x := C_1' \;\text{in}\; C_2} \and
 
   \infer[DefLocalV]{\text{Value}(v)}
-  {\text{let}\; L.x := L.v \;\text{in}\; C \step{\epsilon} C[x \mapsto v]} \and
+  {\text{let}\; L.x := L.v \;\text{in}\; C \step{\bullet} C[x \mapsto v]} \and
 
-  \infer[AppFun]{C_1 \step{\sigma} C_1'}
-  {C_1 \; C_2 \step{\sigma} C_1' \; C_2} \and
+  \infer[AppFun]{C_1 \step{T} C_1'}
+  {C_1 \; C_2 \step{T} C_1' \; C_2} \and
 
-  \infer[AppArg]{C_2 \step{\sigma} C_2'}
-  {C_1 \; C_2 \step{\sigma} C_1 \; C_2'} \and
+  \infer[AppArg]{C_2 \step{T} C_2'}
+  {C_1 \; C_2 \step{T} C_1 \; C_2'} \and
 
   \infer[App]{\text{Value}(V)}
-  {(\text{fun}\; \phi(\alpha) := C) \; V \step{\sigma} C[\phi \mapsto \text{fun}\; \phi(\alpha) := C, \alpha \mapsto V]} \and
+  {(\text{fun}\; \phi(\alpha) := C) \; V \step{\bullet} C[\phi \mapsto \text{fun}\; \phi(\alpha) := C, \alpha \mapsto V]} \and
 
   \infer[Sync]{}
-  {L_1[d] \rightsquigarrow L_2; C \step{\epsilon, L_1[d] \rightsquigarrow L_2} C} \and
+  {L_1[d] \rightsquigarrow L_2; C \step{L_1[d] \rightsquigarrow L_2} C} \and
 
   \infer[LocApp]{}
-  {(\Lambda X.C) \; L \step{\epsilon} C[X \mapsto L]} \and
+  {(\Lambda X.C) \; L \step{\bullet} C[X \mapsto L]} \and
 
-  \infer[TellLet]{C_1 \step{\sigma} C_1'}
-  {L.\text{tell}\; \rho_1\; \text{let}\; X := C_1 \in \rho_2 \;\text{in}\; C_2 \step{\sigma} L.\text{tell}\; \rho_1\; \text{let}\; X := C_1' \in \rho_2 \;\text{in}\; C_2}
+  \infer[TellLet]{C_1 \step{T} C_1'}
+  {L.\text{tell}\; \rho_1\; \text{let}\; X := C_1 \in \rho_2 \;\text{in}\; C_2 \step{T} L.\text{tell}\; \rho_1\; \text{let}\; X := C_1' \in \rho_2 \;\text{in}\; C_2}
 
   \infer[TellLetV]{}
-  {L_1.\text{tell}\; \rho_1\; \text{let}\; X := L_1.L_2 \in \rho_2 \;\text{in}\; C \step{\epsilon, L_1 \rightsquigarrow \rho_1} C[X \mapsto L_2]}
+  {L_1.\text{tell}\; \rho_1\; \text{let}\; X := L_1.L_2 \in \rho_2 \;\text{in}\; C \step{L_1[L_2] \rightsquigarrow \rho_1 \cup \rho_2} C[X \mapsto L_2]}
 \end{mathparpagebreakable}
 
 \section{Endpoint Projection}
 \paragraph{Control Language}
 \begin{syntax}
     \category[Control Expression]{E}
-    \alternative{x}
-    \alternative{\text{fun}\;F(x) := E}
-    \alternative{E_1\;E_2}\\
+    \alternative{\alpha}
     \alternative{()}
+	\alternative{E_1 ; E_2}\\
+    \alternative{\text{fun}\;\phi(\alpha) := E}
+    \alternative{E_1\;E_2}\\
+	\alternative{\Lambda X.E}
+    \alternative{E\;\ell}\\
     \alternative{\text{ret}(e)}
-    \alternative{\text{let}\;x := E_1 \;\text{in}\; E_2}\\
-    \alternative{\text{send}\; E \;\text{to}\; L}
-    \alternative{\text{receive from}\; L}\\
-    \alternative{\text{if}\; E \;\text{then}\; E_1 \;\text{else}\; E_2}
-    \alternative{\text{choose}\; d \;\text{for}\; L ; E}\\
-    \alternative{\text{allow}\; L \;\text{choice}\; (d \Rightarrow E)^*}\\
-    \alternative{\text{send tell}\; x := E_1 \;\text{do}\; E_2}\\
-    \alternative{\text{receive do}\; \lambda x.E \;\text{from}\; L}
+    \alternative{\text{let}\; \text{ret}(x) := E_1 \;\text{in}\; E_2}\\
+    \alternative{\text{send}\; E \;\text{to}\; \ell}
+    \alternative{\text{receive from}\;  \ell}\\
+    \alternative{\text{if}\; E \;\text{then}\; E_1 \;\text{else}\; E_2}\\
+    \alternative{\text{choose}\; d \;\text{for}\;  \ell ; E}\\
+    \alternative{\text{allow}\; \ell \;\text{choice}\; (d \Rightarrow E)^*}\\
+    \alternative{\text{send tell}\; \rho \;\text{let}\; X := E_1 \;\text{in}\; E_2}\\
+    \alternative{\text{receive}\; X \;\text{from}\; \ell \;\text{in}\; E}\\
+	\alternative{\text{AmI}\; \ell \;\text{then}\; E_1 \;\text{else}\; E_2}
 
     \category[Systems]{\Pi}
     \alternative{L_1 \triangleright E_1 \;\|\; \ldots \;\|\; L_n \triangleright E_n}
@@ -307,27 +308,26 @@ Deterministic, small-step trace semantics $C_1 \step{\sigma} C_2$ where $C_1, C_
 
 \paragraph{Endpoint Projection}\;
 
+%	\alternative{\ell.\text{tell}\; \rho_1\; \text{let}\; X := C_1 \in \rho_2 \;\text{in}\; C_2}
+
 \begin{mathparpagebreakable}
 \begin{aligned}[t]
-	\epp{\alpha}{L} &= \begin{cases}
-		\alpha & \text{type}(\alpha) = t @ L \\
-		() & \text{otherwise}
-		\end{cases}\\
+	\epp{\alpha}{L} &= \alpha\\
 	\epp{\ell.e}{L} &=
 		\begin{cases}
 			\text{ret}(e) & L = \ell \\
 			() & L \neq \ell
 		\end{cases}\\
-	\epp{\ell_1.e \rightsquigarrow \alpha @ \ell_2; C}{L} &=
+	\epp{C \overset{\ell_1}{\rightsquigarrow} \ell_2}{L} &=
 		\begin{cases}
-			\text{let}\; \alpha := \text{ret}(e) \;\text{in}\; \epp{C}{L} & L = \ell_1 = \ell_2 \\
-			\text{send}\; e \;\text{to}\; \ell_2; \epp{C}{L} & L = \ell_1 \neq \ell_2 \\
-			\text{receive}\; \alpha \;\text{from}\;\ell_1 ; \epp{C}{L} & L = \ell_2 \neq \ell_1\\
-			\epp{C}{L} & L \neq \ell_1, \ell_2
+			\epp{C}{L} & L = \ell_1 = \ell_2 \\
+			\text{send}\; \epp{C}{L} \;\text{to}\; \ell_2 & L = \ell_1 \neq \ell_2 \\
+			\text{receive from}\;\ell_1 & L = \ell_2 \neq \ell_1\\
+			() & L \neq \ell_1, \ell_2
 		\end{cases}\\
-	\epp{\text{if}\; \ell.e \;\text{then}\; C_1 \;\text{else}\; C_2}{L} &= 
+	\epp{\ell.\text{if}\; C \;\text{then}\; C_1 \;\text{else}\; C_2}{L} &= 
 		\begin{cases}
-			\text{if}\; e \;\text{then}\; \epp{C_1}{L} \;\text{else}\; \epp{C_2}{L} & L = \ell \\
+			\text{if}\; \epp{C}{L} \;\text{then}\; \epp{C_1}{L} \;\text{else}\; \epp{C_2}{L} & L = \ell \\
 			\epp{C_1}{L} \sqcup \epp{C_2}{L} & L \neq \ell
 		\end{cases}\\
 	\epp{\ell_1[d] \rightsquigarrow \ell_2; C}{L} &=
@@ -340,17 +340,18 @@ Deterministic, small-step trace semantics $C_1 \step{\sigma} C_2$ where $C_1, C_
 	\epp{\text{let}\; \ell.x := C_1 \;\text{in}\; C_2}{L} &= 
 		\begin{cases}
 			\text{let}\; \text{ret}(x) := \epp{C_1}{L} \;\text{in}\; \epp{C_2}{L} & L = \ell \\
-			(\text{fun}\; \phi(\alpha) := \epp{C_2}{L})\;\epp{C_1}{L} & L \neq \ell
+			\epp{C_1}{L} ; \epp{C_2}{L} & L \neq \ell
 		\end{cases}\\
 	\epp{\text{fun}\; \phi(\alpha) := C}{L} &= \text{fun}\; \phi(\alpha) := \epp{C}{L}\\
 	\epp{C_1\;C_2}{L} &= \epp{C_1}{L}\;\epp{C_2}{L}\\
-	\epp{\Lambda X.C}{L} &= \Lambda X.\text{AmI}\; X \;\text{?}\; \epp{C[X \mapsto L]}{L} \;\text{:}\; \epp{C}{L}\\
+	\epp{\Lambda X.C}{L} &= \Lambda X.\text{AmI}\; X \;\text{then}\; \epp{C[X \mapsto L]}{L} \;\text{else}\; \epp{C}{L}\\
 	\epp{C\;\ell}{L} &= \epp{C}{L}\;\ell\\
-	\epp{\text{tell}\; X := \ell.e \;\text{do}\; C}{L} &= 
+	\epp{\ell.\text{tell}\; \rho_1 \; \text{let}\; X := C_1 \in \rho_2 \;\text{in}\; C_2}{L} &= 
 		\begin{cases}
-			\text{send loc}\; e \;\text{to}\; \text{IP}(C); \epp{C}{L} & L = \ell \\
-			\text{receive loc}\; X \;\text{from}\; L;\epp{C}{L} & L \in \text{IP}(C), L \neq \ell\\
-			\epp{C}{L} & \text{otherwise}
+			\text{send tell}\; (\rho_1 \cup \rho_2) \setminus \{\ell\} \;\text{let}\; X := \epp{C_1}{L} \;\text{in}\\ \text{AmI}\; X \;\text{then}\; \epp{C_2[X \mapsto L]}{L} \;\text{else}\; \epp{C_2}{L} & L = \ell\\
+			\epp{C_1}{L} ; \text{receive}\; X \;\text{from}\; \ell \;\text{in}\;\\
+			\text{AmI}\; X \;\text{then}\; \epp{C_2[X \mapsto L]}{L} \;\text{else}\; \epp{C_2}{L} & L \neq \ell, L \in \rho_1 \cup \rho_2\\
+			\epp{C_1}{L} & L \neq \ell, L \notin \rho_1 \cup \rho_2
 		\end{cases}
 \end{aligned}
 \end{mathparpagebreakable}
