@@ -81,12 +81,13 @@
 	\category[Choreographies]{C}
 	\alternative{\alpha}
 	\alternative{\ell.e}
+	\alternative{C_1\;C_2}\\
+	\alternative{\lambda \alpha.C}
+	\alternative{\mu \alpha.C}\\
 	\alternative{C \overset{\ell_1}{\rightsquigarrow} \ell_2}\\
 	\alternative{\ell.\text{if}\; C \;\text{then}\; C_1 \;\text{else}\; C_2}\\
 	\alternative{\ell_1[d] \rightsquigarrow \ell_2; C}\\
 	\alternative{\text{let}\; \ell.x := C_1 \;\text{in}\; C_2}\\
-	\alternative{\text{fun}\; \phi(\alpha) := C}
-	\alternative{C_1\;C_2}\\
 	\alternative{\Lambda X.C}
 	\alternative{C\;\ell}\\
 	\alternative{\ell.\text{tell}\; \rho_1\; \text{let}\; X := C_1 \in \rho_2 \;\text{in}\; C_2}
@@ -198,8 +199,11 @@ Projects a local-let context $\Delta$ to a local context at a (possibly variable
     \Theta;\Gamma;(\Delta, x : \ell.t_1) \vdash C : \tau_2}
   {\Gamma \vdash \text{let}\; \ell.x := C_1 \;\text{in}\; C_2 : \tau_2} \and
 
-  \infer[Fun]{\Theta;\Gamma;(\Delta, \phi : \tau_1 \rightarrow \tau_2, \alpha : \tau_1) \vdash C : \tau_2}
-  {\Theta;\Gamma;\Delta  \vdash \text{fun}\; \phi(\alpha) := C : \tau_1 \rightarrow \tau_2} \and
+  \infer[Fun]{\Theta;\Gamma;(\Delta, \alpha : \tau_1) \vdash C : \tau_2}
+  {\Theta;\Gamma;\Delta  \vdash \lambda \alpha.C : \tau_1 \rightarrow \tau_2} \and
+
+  \infer[Rec]{\Theta;\Gamma;(\Delta, \alpha : \tau) \vdash C : \tau}
+	{\Theta;\Gamma;\Delta  \vdash \mu \alpha.C : \tau} \and
 
   \infer[App]{\Theta;\Gamma;\Delta \vdash C_1 : \tau_1 \rightarrow \tau_2 \\
     \Theta;\Gamma;\Delta \vdash C_2 : \tau_1}
@@ -261,11 +265,15 @@ Deterministic, small-step trace semantics $C_1 \step{T} C_2$ where $C_1, C_2$ ar
   \infer[AppFun]{C_1 \step{T} C_1'}
   {C_1 \; C_2 \step{T} C_1' \; C_2} \and
 
-  \infer[AppArg]{C_2 \step{T} C_2'}
-  {C_1 \; C_2 \step{T} C_1 \; C_2'} \and
+  \infer[AppArg]{\text{Value}(V_1)\\
+  	C_2 \step{T} C_2'}
+  {V_1 \; C_2 \step{T} V_1 \; C_2'} \and
 
   \infer[App]{\text{Value}(V)}
-  {(\text{fun}\; \phi(\alpha) := C) \; V \step{\bullet} C[\phi \mapsto \text{fun}\; \phi(\alpha) := C, \alpha \mapsto V]} \and
+  {(\lambda \alpha.C) \; V \step{\bullet} C[\alpha \mapsto V]} \and
+  
+  \infer[Fix]{}
+  {\mu \alpha.C \step{\bullet} C[\alpha \mapsto \mu \alpha.C]} \and
 
   \infer[Sync]{}
   {L_1[d] \rightsquigarrow L_2; C \step{L_1[d] \rightsquigarrow L_2} C} \and
@@ -286,9 +294,10 @@ Deterministic, small-step trace semantics $C_1 \step{T} C_2$ where $C_1, C_2$ ar
     \category[Control Expression]{E}
     \alternative{\alpha}
     \alternative{()}
-	\alternative{E_1 ; E_2}\\
-    \alternative{\text{fun}\;\phi(\alpha) := E}
-    \alternative{E_1\;E_2}\\
+	\alternative{E_1 ; E_2}
+	\alternative{E_1\;E_2}\\
+    \alternative{\lambda \alpha.E}
+    \alternative{\mu \alpha.E}\\
 	\alternative{\Lambda X.E}
     \alternative{E\;\ell}\\
     \alternative{\text{ret}(e)}
@@ -342,7 +351,8 @@ Deterministic, small-step trace semantics $C_1 \step{T} C_2$ where $C_1, C_2$ ar
 			\text{let}\; \text{ret}(x) := \epp{C_1}{L} \;\text{in}\; \epp{C_2}{L} & L = \ell \\
 			\epp{C_1}{L} ; \epp{C_2}{L} & L \neq \ell
 		\end{cases}\\
-	\epp{\text{fun}\; \phi(\alpha) := C}{L} &= \text{fun}\; \phi(\alpha) := \epp{C}{L}\\
+	\epp{\lambda \alpha.C}{L} &= \lambda \alpha.\epp{C}{L}\\
+	\epp{\mu \alpha.C}{L} &= \mu \alpha.\epp{C}{L}\\
 	\epp{C_1\;C_2}{L} &= \epp{C_1}{L}\;\epp{C_2}{L}\\
 	\epp{\Lambda X.C}{L} &= \Lambda X.\text{AmI}\; X \;\text{then}\; \epp{C[X \mapsto L]}{L} \;\text{else}\; \epp{C}{L}\\
 	\epp{C\;\ell}{L} &= \epp{C}{L}\;\ell\\
