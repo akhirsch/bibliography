@@ -42,6 +42,11 @@ renLocExt-Loc : ∀{ξ1 ξ2} →
 renLocExt-Loc ξ1≈ξ2 (Var x) = cong Var (ξ1≈ξ2 x)
 renLocExt-Loc ξ1≈ξ2 (Lit L) = refl
 
+-- Renaming locations respects the identity
+renLocId-Loc : ∀ ℓ → renLoc-Loc ℓ idRen ≡ ℓ
+renLocId-Loc (Var x) = refl
+renLocId-Loc (Lit L) = refl
+
 -- Renaming locations enjoys fusion
 renLoc∘-Loc : ∀ ξ1 ξ2 ℓ → renLoc-Loc ℓ (ξ2 ∘ ξ1) ≡ renLoc-Loc (renLoc-Loc ℓ ξ1) ξ2
 renLoc∘-Loc ξ1 ξ2 (Var x) = refl
@@ -51,7 +56,7 @@ renLoc∘-Loc ξ1 ξ2 (Lit L) = refl
 
 -- Rename a location list
 renLoc-List : LocList → (ℕ → ℕ) → LocList
-renLoc-List ℓs ξ = Data.List.map (λ ℓ → renLoc-Loc ℓ ξ) ℓs
+renLoc-List ρ ξ = Data.List.map (λ ℓ → renLoc-Loc ℓ ξ) ρ
 
 -- Renaming location lists respects extensional equality
 renLocExt-List : ∀{ξ1 ξ2} →
@@ -59,6 +64,11 @@ renLocExt-List : ∀{ξ1 ξ2} →
                 ∀ ρ → renLoc-List ρ ξ1 ≡ renLoc-List ρ ξ2
 renLocExt-List ξ1≈ξ2 [] = refl
 renLocExt-List ξ1≈ξ2 (ℓ ∷ ρ) = cong₂ _∷_ (renLocExt-Loc ξ1≈ξ2 ℓ) (renLocExt-List ξ1≈ξ2 ρ)
+
+-- Renaming location lists respects the identity
+renLocId-List : ∀ ρ → renLoc-List ρ idRen ≡ ρ
+renLocId-List [] = refl
+renLocId-List (ℓ ∷ ρ) = cong₂ _∷_ (renLocId-Loc ℓ) (renLocId-List ρ)
 
 -- Renaming location lists enjoys fusion
 renLoc∘-List : ∀ ξ1 ξ2 ρ → renLoc-List ρ (ξ2 ∘ ξ1) ≡ renLoc-List (renLoc-List ρ ξ1) ξ2
@@ -81,7 +91,7 @@ renLoc (LocAbs c) ξ = LocAbs (renLoc c (upRen ξ))
 renLoc (LocApp c ℓ) ξ = LocApp (renLoc c ξ) (renLoc-Loc ℓ ξ)
 renLoc (TellLet ℓ ρ1 c ρ2 c₁) ξ = TellLet (renLoc-Loc ℓ ξ) (renLoc-List ρ1 ξ) (renLoc c ξ) (renLoc-List ρ2 ξ) (renLoc c₁ ξ)
 
--- Renaming locations respects extensional equality
+-- Renaming locations in a chorepgraphy respects extensional equality
 renLocExt : ∀{ξ1 ξ2} →
             (∀ n → ξ1 n ≡ ξ2 n) →
             ∀ c → renLoc c ξ1 ≡ renLoc c ξ2
@@ -98,7 +108,27 @@ renLocExt ξ1≈ξ2 (LocApp c ℓ) = cong₂ LocApp (renLocExt ξ1≈ξ2 c) (ren
 renLocExt ξ1≈ξ2 (TellLet ℓ ρ1 c ρ2 c₁) = cong₅ TellLet
     (renLocExt-Loc ξ1≈ξ2 ℓ) (renLocExt-List ξ1≈ξ2 ρ1) (renLocExt ξ1≈ξ2 c) (renLocExt-List ξ1≈ξ2 ρ2) (renLocExt ξ1≈ξ2 c₁)
 
--- Renaming locations enjoys fusion
+-- Renaming locations in a chorepgraphy respects the identity
+renLocId :  ∀ c → renLoc c idRen ≡ c
+renLocId (Done ℓ e) = cong₂ Done (renLocId-Loc ℓ) refl
+renLocId (Var x) = refl
+renLocId (Send ℓ1 c ℓ2) = cong₃ Send (renLocId-Loc ℓ1) (renLocId c) (renLocId-Loc ℓ2)
+renLocId (If ℓ c c₁ c₂) = cong₄ If (renLocId-Loc ℓ) (renLocId c) (renLocId c₁) (renLocId c₂)
+renLocId (Sync ℓ1 d ℓ2 c) = cong₄ Sync (renLocId-Loc ℓ1) refl (renLocId-Loc ℓ2) (renLocId c)
+renLocId (DefLocal ℓ c c₁) = cong₃ DefLocal (renLocId-Loc ℓ) (renLocId c) (renLocId c₁)
+renLocId (Fun c) = cong Fun (renLocId c)
+renLocId (App c c₁) = cong₂ App (renLocId c) (renLocId c₁)
+renLocId (LocAbs c) = cong LocAbs c⟨↑id⟩≡c
+  where
+  c⟨↑id⟩≡c : renLoc c (upRen idRen) ≡ c
+  c⟨↑id⟩≡c = 
+    renLoc c (upRen idRen) ≡⟨ renLocExt upRenId c ⟩
+    renLoc c idRen         ≡⟨ renLocId c ⟩
+    c                      ∎
+renLocId (LocApp c ℓ) = cong₂ LocApp (renLocId c) (renLocId-Loc ℓ)
+renLocId (TellLet ℓ ρ1 c ρ2 c₁) = cong₅ TellLet (renLocId-Loc ℓ) (renLocId-List ρ1) (renLocId c) (renLocId-List ρ2) (renLocId c₁)
+
+-- Renaming locations in a chorepgraphy enjoys fusion
 renLoc∘ :  ∀ ξ1 ξ2 c → renLoc c (ξ2 ∘ ξ1) ≡ renLoc (renLoc c ξ1) ξ2
 renLoc∘ ξ1 ξ2 (Done ℓ e) = cong₂ Done (renLoc∘-Loc ξ1 ξ2 ℓ) refl
 renLoc∘ ξ1 ξ2 (Var x) = refl
@@ -108,10 +138,10 @@ renLoc∘ ξ1 ξ2 (Sync ℓ1 d ℓ2 c) = cong₄ Sync (renLoc∘-Loc ξ1 ξ2 ℓ
 renLoc∘ ξ1 ξ2 (DefLocal ℓ c c₁) = cong₃ DefLocal (renLoc∘-Loc ξ1 ξ2 ℓ) (renLoc∘ ξ1 ξ2 c) (renLoc∘ ξ1 ξ2 c₁)
 renLoc∘ ξ1 ξ2 (Fun c) = cong Fun (renLoc∘ ξ1 ξ2 c)
 renLoc∘ ξ1 ξ2 (App c c₁) = cong₂ App (renLoc∘ ξ1 ξ2 c) (renLoc∘ ξ1 ξ2 c₁)
-renLoc∘ ξ1 ξ2 (LocAbs c) = cong LocAbs c⟨ξ2∘ξ⟩≡c⟨ξ1⟩⟨ξ2⟩
+renLoc∘ ξ1 ξ2 (LocAbs c) = cong LocAbs c⟨↑[ξ2∘ξ1]⟩≡c⟨↑ξ1⟩⟨↑ξ2⟩
     where
-    c⟨ξ2∘ξ⟩≡c⟨ξ1⟩⟨ξ2⟩ : renLoc c (upRen (ξ2 ∘ ξ1)) ≡ renLoc (renLoc c (upRen ξ1)) (upRen ξ2)
-    c⟨ξ2∘ξ⟩≡c⟨ξ1⟩⟨ξ2⟩ =
+    c⟨↑[ξ2∘ξ1]⟩≡c⟨↑ξ1⟩⟨↑ξ2⟩ : renLoc c (upRen (ξ2 ∘ ξ1)) ≡ renLoc (renLoc c (upRen ξ1)) (upRen ξ2)
+    c⟨↑[ξ2∘ξ1]⟩≡c⟨↑ξ1⟩⟨↑ξ2⟩ =
         renLoc c (upRen (ξ2 ∘ ξ1))              ≡⟨ renLocExt (upRen∘ ξ1 ξ2) c ⟩
         renLoc c (upRen ξ2 ∘ upRen ξ1)          ≡⟨ renLoc∘ (upRen ξ1) (upRen ξ2) c ⟩
         renLoc (renLoc c (upRen ξ1)) (upRen ξ2) ∎

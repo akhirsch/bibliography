@@ -52,13 +52,19 @@ locRen (LocAbs c) ξ = LocAbs (locRen c ξ)
 locRen (LocApp c ℓ) ξ = LocApp (locRen c ξ) ℓ
 locRen (TellLet ℓ ρ1 c ρ2 c₁) ξ = TellLet ℓ ρ1 (locRen c ξ) ρ2 (locRen c₁ ξ)
 
-idRenLoc : Loc → ℕ → ℕ
-idRenLoc ℓ = idRenExpr
+idLocRen : Loc → ℕ → ℕ
+idLocRen ℓ = idRenExpr
 
 -- The local `up` construction has no extensional effect on the identity renaming
-upLocRenId : ∀ ℓ ℓ' n → upLocRen idRenLoc ℓ ℓ' n ≡ idRenLoc ℓ' n
+upLocRenId : ∀ ℓ ℓ' n → upLocRen idLocRen ℓ ℓ' n ≡ idLocRen ℓ' n
 upLocRenId ℓ ℓ' n with ≡-dec-Loc ℓ ℓ'
 ... | yes _ = upRenIdExpr n
+... | no  _ = refl
+
+-- The local `up` construction extensionally commutes with composition.
+upLocRen∘ : ∀ ξ1 ξ2 ℓ ℓ' n → upLocRen (λ ℓ'' → ξ2 ℓ'' ∘ ξ1 ℓ'') ℓ ℓ' n ≡ upLocRen ξ2 ℓ ℓ' (upLocRen ξ1 ℓ ℓ' n)
+upLocRen∘ ξ1 ξ2 ℓ ℓ' n with ≡-dec-Loc ℓ ℓ'
+... | yes _ = upRenExpr∘ (ξ1 ℓ') (ξ2 ℓ') n
 ... | no  _ = refl
 
 -- The local `up` construction respects extensional equality
@@ -69,7 +75,7 @@ upLocRenExt ξ1≈ξ2 ℓ ℓ' n with ≡-dec-Loc ℓ ℓ'
 ... | yes _ = upRenExprExt (ξ1≈ξ2 ℓ') n
 ... | no  _ = ξ1≈ξ2 ℓ' n
 
--- Renaming local expressions respects extensional equality
+-- Locally renaming respects extensional equality
 locRenExt : ∀{ξ1 ξ2} →
             (∀ ℓ n → ξ1 ℓ n ≡ ξ2 ℓ n) →
             ∀ c → locRen c ξ1 ≡ locRen c ξ2
@@ -85,23 +91,37 @@ locRenExt ξ1≈ξ2 (LocAbs c) = cong LocAbs (locRenExt ξ1≈ξ2 c)
 locRenExt ξ1≈ξ2 (LocApp c ℓ) = cong (λ x → LocApp x ℓ) (locRenExt ξ1≈ξ2 c)
 locRenExt ξ1≈ξ2 (TellLet ℓ ρ1 c ρ2 c₁) = cong₂ (λ x y → TellLet ℓ ρ1 x ρ2 y) (locRenExt ξ1≈ξ2 c) (locRenExt ξ1≈ξ2 c₁)
 
--- The local `up` construction extensionally commutes with composition.
-upLocRen∘ : ∀ ξ1 ξ2 ℓ ℓ' n → upLocRen (λ ℓ'' → ξ2 ℓ'' ∘ ξ1 ℓ'') ℓ ℓ' n ≡ upLocRen ξ2 ℓ ℓ' (upLocRen ξ1 ℓ ℓ' n)
-upLocRen∘ ξ1 ξ2 ℓ ℓ' n with ≡-dec-Loc ℓ ℓ'
-... | yes _ = upRenExpr∘ (ξ1 ℓ') (ξ2 ℓ') n
-... | no  _ = refl
+-- Locally renaming respects the identity
+locRenId : ∀ c → locRen c idLocRen ≡ c
+locRenId (Done ℓ e) = cong (Done ℓ) (renExprId e)
+locRenId (Var x) = refl
+locRenId (Send ℓ1 c ℓ2) = cong₃ Send refl (locRenId c) refl
+locRenId (If ℓ c c₁ c₂) = cong₄ If refl (locRenId c) (locRenId c₁) (locRenId c₂)
+locRenId (Sync ℓ1 d ℓ2 c) = cong (Sync ℓ1 d ℓ2) (locRenId c)
+locRenId (DefLocal ℓ c1 c2) = cong₂ (DefLocal ℓ) (locRenId c1) c2⟨↑id⟩≡c2
+  where
+  c2⟨↑id⟩≡c2 : locRen c2 (upLocRen idLocRen ℓ) ≡ c2
+  c2⟨↑id⟩≡c2 = 
+    locRen c2 (upLocRen idLocRen ℓ) ≡⟨ locRenExt (upLocRenId ℓ) c2 ⟩
+    locRen c2 idLocRen              ≡⟨ locRenId c2 ⟩
+    c2                              ∎
+locRenId (Fun c) = cong Fun (locRenId c)
+locRenId (App c c₁) = cong₂ App (locRenId c) (locRenId c₁)
+locRenId (LocAbs c) = cong LocAbs (locRenId c)
+locRenId (LocApp c ℓ) = cong₂ LocApp (locRenId c) refl
+locRenId (TellLet ℓ ρ1 c ρ2 c₁) = cong₃ (TellLet ℓ ρ1) (locRenId c) refl (locRenId c₁)
 
--- Renaming locally enjoys fusion
+-- Locally renaming enjoys fusion
 locRen∘ : ∀ ξ1 ξ2 c → locRen c (λ ℓ → ξ2 ℓ ∘ ξ1 ℓ) ≡ locRen (locRen c ξ1) ξ2
 locRen∘ ξ1 ξ2 (Done ℓ e) = cong (Done ℓ) (renExpr∘ (ξ1 ℓ) (ξ2 ℓ) e)
 locRen∘ ξ1 ξ2 (Var x) = refl
 locRen∘ ξ1 ξ2 (Send ℓ1 c ℓ2) = cong (λ x → Send ℓ1 x ℓ2) (locRen∘ ξ1 ξ2 c)
 locRen∘ ξ1 ξ2 (If ℓ c c₁ c₂) = cong₃ (If ℓ) (locRen∘ ξ1 ξ2 c) (locRen∘ ξ1 ξ2 c₁) (locRen∘ ξ1 ξ2 c₂)
 locRen∘ ξ1 ξ2 (Sync ℓ1 d ℓ2 c) = cong (Sync ℓ1 d ℓ2) (locRen∘ ξ1 ξ2 c)
-locRen∘ ξ1 ξ2 (DefLocal ℓ c1 c2) = cong₂ (DefLocal ℓ) (locRen∘ ξ1 ξ2 c1) c2⟨ξ2∘ξ1⟩≡c⟨ξ1⟩⟨ξ2⟩
+locRen∘ ξ1 ξ2 (DefLocal ℓ c1 c2) = cong₂ (DefLocal ℓ) (locRen∘ ξ1 ξ2 c1) c2⟨↑[ξ2∘ξ1]⟩≡c2⟨↑ξ1⟩⟨↑ξ2⟩
   where
-  c2⟨ξ2∘ξ1⟩≡c⟨ξ1⟩⟨ξ2⟩ : locRen c2 (upLocRen (λ ℓ1 → ξ2 ℓ1 ∘ ξ1 ℓ1) ℓ) ≡ locRen (locRen c2 (upLocRen ξ1 ℓ)) (upLocRen ξ2 ℓ)
-  c2⟨ξ2∘ξ1⟩≡c⟨ξ1⟩⟨ξ2⟩ =
+  c2⟨↑[ξ2∘ξ1]⟩≡c2⟨↑ξ1⟩⟨↑ξ2⟩ : locRen c2 (upLocRen (λ ℓ1 → ξ2 ℓ1 ∘ ξ1 ℓ1) ℓ) ≡ locRen (locRen c2 (upLocRen ξ1 ℓ)) (upLocRen ξ2 ℓ)
+  c2⟨↑[ξ2∘ξ1]⟩≡c2⟨↑ξ1⟩⟨↑ξ2⟩ =
     locRen c2 (upLocRen (λ ℓ1 → ξ2 ℓ1 ∘ ξ1 ℓ1) ℓ)          ≡⟨ locRenExt (upLocRen∘ ξ1 ξ2 ℓ) c2 ⟩
     locRen c2 (λ ℓ1 → upLocRen ξ2 ℓ ℓ1 ∘ upLocRen ξ1 ℓ ℓ1) ≡⟨ locRen∘ (upLocRen ξ1 ℓ) (upLocRen ξ2 ℓ) c2 ⟩
     locRen (locRen c2 (upLocRen ξ1 ℓ)) (upLocRen ξ2 ℓ)    ∎
