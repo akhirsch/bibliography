@@ -27,7 +27,7 @@ record TypedLocalLanguage : Set₁ where
     -- Set of types
     TypExpr : Set
 
-    -- Types should have decidable equality
+    -- Types have decidable equality
     ≡-dec-TypExpr : (t₁ t₂ : TypExpr) → Dec (t₁ ≡ t₂)
 
     {-
@@ -62,7 +62,7 @@ record TypedLocalLanguage : Set₁ where
                     Γ ⊢ₑ e ∶ t →
                     Δ ⊢ₑ e ∶ t
 
-    -- Weaking should be allowed.
+    -- Weakening should be allowed.
     tyExprWk : ∀{Γ Δ e t} →
            (ξ : ℕ → ℕ) →
            (∀ n → Γ n ≡ Δ (ξ n)) →

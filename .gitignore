@@ -19,3 +19,5 @@ _region_.tex
 *.fdb_latexmk
 *.fls
 \#*\#
+agda/.vscode/tasks.json
+agda/MAlonzo
