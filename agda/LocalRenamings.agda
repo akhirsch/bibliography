@@ -33,100 +33,100 @@ open LawfulLanguage LE
    Used when going past a binder of a specified
    location to ensure that counting is done correctly.
 -}
-upLocRen : (Loc → ℕ → ℕ) → Loc → Loc → ℕ → ℕ
-upLocRen ξ ℓ1 ℓ2 with ≡-dec-Loc ℓ1 ℓ2
-... | yes _ = upRenExpr (ξ ℓ2)
+↑ₗₑ : (Loc → ℕ → ℕ) → Loc → Loc → ℕ → ℕ
+↑ₗₑ ξ ℓ1 ℓ2 with ≡-dec-Loc ℓ1 ℓ2
+... | yes _ = upRenₑ (ξ ℓ2)
 ... | no  _ = ξ ℓ2
 
 -- Renaming local expressions in a choreography
-locRen : (c : Chor) (ξ : Loc → ℕ → ℕ) → Chor
-locRen (Done ℓ e) ξ = Done ℓ (renExpr e (ξ ℓ))
-locRen (Var x) ξ = Var x
-locRen (Send ℓ1 c ℓ2) ξ = Send ℓ1 (locRen c ξ) ℓ2
-locRen (If ℓ c c₁ c₂) ξ = If ℓ (locRen c ξ) (locRen c₁ ξ) (locRen c₂ ξ)
-locRen (Sync ℓ1 d ℓ2 c) ξ = Sync ℓ1 d ℓ2 (locRen c ξ)
-locRen (DefLocal ℓ c c₁) ξ = DefLocal ℓ (locRen c ξ) (locRen c₁ (upLocRen ξ ℓ))
-locRen (Fun c) ξ = Fun (locRen c ξ)
-locRen (App c c₁) ξ = App (locRen c ξ) (locRen c₁ ξ)
-locRen (LocAbs c) ξ = LocAbs (locRen c ξ)
-locRen (LocApp c ℓ) ξ = LocApp (locRen c ξ) ℓ
-locRen (TellLet ℓ ρ1 c ρ2 c₁) ξ = TellLet ℓ ρ1 (locRen c ξ) ρ2 (locRen c₁ ξ)
+renₗₑ : (c : Chor) (ξ : Loc → ℕ → ℕ) → Chor
+renₗₑ (Done ℓ e) ξ = Done ℓ (renₑ e (ξ ℓ))
+renₗₑ (Var x) ξ = Var x
+renₗₑ (Send ℓ1 c ℓ2) ξ = Send ℓ1 (renₗₑ c ξ) ℓ2
+renₗₑ (If ℓ c c₁ c₂) ξ = If ℓ (renₗₑ c ξ) (renₗₑ c₁ ξ) (renₗₑ c₂ ξ)
+renₗₑ (Sync ℓ1 d ℓ2 c) ξ = Sync ℓ1 d ℓ2 (renₗₑ c ξ)
+renₗₑ (DefLocal ℓ c c₁) ξ = DefLocal ℓ (renₗₑ c ξ) (renₗₑ c₁ (↑ₗₑ ξ ℓ))
+renₗₑ (Fun c) ξ = Fun (renₗₑ c ξ)
+renₗₑ (App c c₁) ξ = App (renₗₑ c ξ) (renₗₑ c₁ ξ)
+renₗₑ (LocAbs c) ξ = LocAbs (renₗₑ c ξ)
+renₗₑ (LocApp c ℓ) ξ = LocApp (renₗₑ c ξ) ℓ
+renₗₑ (TellLet ℓ ρ1 c ρ2 c₁) ξ = TellLet ℓ ρ1 (renₗₑ c ξ) ρ2 (renₗₑ c₁ ξ)
 
-idLocRen : Loc → ℕ → ℕ
-idLocRen ℓ = idRenExpr
+idRenₗₑ : Loc → ℕ → ℕ
+idRenₗₑ ℓ = idRenₑ
 
 -- The local `up` construction has no extensional effect on the identity renaming
-upLocRenId : ∀ ℓ ℓ' n → upLocRen idLocRen ℓ ℓ' n ≡ idLocRen ℓ' n
-upLocRenId ℓ ℓ' n with ≡-dec-Loc ℓ ℓ'
-... | yes _ = upRenIdExpr n
+↑Idₗₑ : ∀ ℓ ℓ' n → ↑ₗₑ idRenₗₑ ℓ ℓ' n ≡ idRenₗₑ ℓ' n
+↑Idₗₑ ℓ ℓ' n with ≡-dec-Loc ℓ ℓ'
+... | yes _ = upRenIdₑ n
 ... | no  _ = refl
 
--- The local `up` construction extensionally commutes with composition.
-upLocRen∘ : ∀ ξ1 ξ2 ℓ ℓ' n → upLocRen (λ ℓ'' → ξ2 ℓ'' ∘ ξ1 ℓ'') ℓ ℓ' n ≡ upLocRen ξ2 ℓ ℓ' (upLocRen ξ1 ℓ ℓ' n)
-upLocRen∘ ξ1 ξ2 ℓ ℓ' n with ≡-dec-Loc ℓ ℓ'
-... | yes _ = upRenExpr∘ (ξ1 ℓ') (ξ2 ℓ') n
+-- The local `up` construction extensionally commutes with composition
+↑Fuseₗₑ : ∀ ξ1 ξ2 ℓ ℓ' n → ↑ₗₑ (λ ℓ'' → ξ2 ℓ'' ∘ ξ1 ℓ'') ℓ ℓ' n ≡ ↑ₗₑ ξ2 ℓ ℓ' (↑ₗₑ ξ1 ℓ ℓ' n)
+↑Fuseₗₑ ξ1 ξ2 ℓ ℓ' n with ≡-dec-Loc ℓ ℓ'
+... | yes _ = upRen∘ₑ (ξ1 ℓ') (ξ2 ℓ') n
 ... | no  _ = refl
 
 -- The local `up` construction respects extensional equality
-upLocRenExt : ∀{ξ1 ξ2} →
+↑Extₗₑ : ∀{ξ1 ξ2} →
               (∀ ℓ n → ξ1 ℓ n ≡ ξ2 ℓ n) →
-              ∀ ℓ ℓ' n → upLocRen ξ1 ℓ ℓ' n ≡ upLocRen ξ2 ℓ ℓ' n
-upLocRenExt ξ1≈ξ2 ℓ ℓ' n with ≡-dec-Loc ℓ ℓ'
-... | yes _ = upRenExprExt (ξ1≈ξ2 ℓ') n
+              ∀ ℓ ℓ' n → ↑ₗₑ ξ1 ℓ ℓ' n ≡ ↑ₗₑ ξ2 ℓ ℓ' n
+↑Extₗₑ ξ1≈ξ2 ℓ ℓ' n with ≡-dec-Loc ℓ ℓ'
+... | yes _ = upRenExtₑ (ξ1≈ξ2 ℓ') n
 ... | no  _ = ξ1≈ξ2 ℓ' n
 
 -- Locally renaming respects extensional equality
-locRenExt : ∀{ξ1 ξ2} →
+renExtₗₑ : ∀{ξ1 ξ2} →
             (∀ ℓ n → ξ1 ℓ n ≡ ξ2 ℓ n) →
-            ∀ c → locRen c ξ1 ≡ locRen c ξ2
-locRenExt ξ1≈ξ2 (Done ℓ e) = cong (Done ℓ) (renExprExt (ξ1≈ξ2 ℓ) e)
-locRenExt ξ1≈ξ2 (Var x) = refl
-locRenExt ξ1≈ξ2 (Send ℓ1 c ℓ2) = cong (λ x → Send ℓ1 x ℓ2) (locRenExt ξ1≈ξ2 c)
-locRenExt ξ1≈ξ2 (If ℓ c c₁ c₂) = cong₃ (If ℓ) (locRenExt ξ1≈ξ2 c) (locRenExt ξ1≈ξ2 c₁) (locRenExt ξ1≈ξ2 c₂)
-locRenExt ξ1≈ξ2 (Sync ℓ1 d ℓ2 c) = cong (Sync ℓ1 d ℓ2) (locRenExt ξ1≈ξ2 c)
-locRenExt ξ1≈ξ2 (DefLocal ℓ c c₁) = cong₂ (DefLocal ℓ) (locRenExt ξ1≈ξ2 c) (locRenExt (upLocRenExt ξ1≈ξ2 ℓ) c₁)
-locRenExt ξ1≈ξ2 (Fun c) = cong Fun (locRenExt ξ1≈ξ2 c)
-locRenExt ξ1≈ξ2 (App c c₁) = cong₂ App (locRenExt ξ1≈ξ2 c) (locRenExt ξ1≈ξ2 c₁)
-locRenExt ξ1≈ξ2 (LocAbs c) = cong LocAbs (locRenExt ξ1≈ξ2 c)
-locRenExt ξ1≈ξ2 (LocApp c ℓ) = cong (λ x → LocApp x ℓ) (locRenExt ξ1≈ξ2 c)
-locRenExt ξ1≈ξ2 (TellLet ℓ ρ1 c ρ2 c₁) = cong₂ (λ x y → TellLet ℓ ρ1 x ρ2 y) (locRenExt ξ1≈ξ2 c) (locRenExt ξ1≈ξ2 c₁)
+            ∀ c → renₗₑ c ξ1 ≡ renₗₑ c ξ2
+renExtₗₑ ξ1≈ξ2 (Done ℓ e) = cong (Done ℓ) (renExtₑ (ξ1≈ξ2 ℓ) e)
+renExtₗₑ ξ1≈ξ2 (Var x) = refl
+renExtₗₑ ξ1≈ξ2 (Send ℓ1 c ℓ2) = cong₃ Send refl (renExtₗₑ ξ1≈ξ2 c) refl
+renExtₗₑ ξ1≈ξ2 (If ℓ c c₁ c₂) = cong₃ (If ℓ) (renExtₗₑ ξ1≈ξ2 c) (renExtₗₑ ξ1≈ξ2 c₁) (renExtₗₑ ξ1≈ξ2 c₂)
+renExtₗₑ ξ1≈ξ2 (Sync ℓ1 d ℓ2 c) = cong (Sync ℓ1 d ℓ2) (renExtₗₑ ξ1≈ξ2 c)
+renExtₗₑ ξ1≈ξ2 (DefLocal ℓ c c₁) = cong₂ (DefLocal ℓ) (renExtₗₑ ξ1≈ξ2 c) (renExtₗₑ (↑Extₗₑ ξ1≈ξ2 ℓ) c₁)
+renExtₗₑ ξ1≈ξ2 (Fun c) = cong Fun (renExtₗₑ ξ1≈ξ2 c)
+renExtₗₑ ξ1≈ξ2 (App c c₁) = cong₂ App (renExtₗₑ ξ1≈ξ2 c) (renExtₗₑ ξ1≈ξ2 c₁)
+renExtₗₑ ξ1≈ξ2 (LocAbs c) = cong LocAbs (renExtₗₑ ξ1≈ξ2 c)
+renExtₗₑ ξ1≈ξ2 (LocApp c ℓ) = cong₂ LocApp (renExtₗₑ ξ1≈ξ2 c) refl
+renExtₗₑ ξ1≈ξ2 (TellLet ℓ ρ1 c ρ2 c₁) = cong₅ TellLet refl refl (renExtₗₑ ξ1≈ξ2 c) refl (renExtₗₑ ξ1≈ξ2 c₁)
 
 -- Locally renaming respects the identity
-locRenId : ∀ c → locRen c idLocRen ≡ c
-locRenId (Done ℓ e) = cong (Done ℓ) (renExprId e)
-locRenId (Var x) = refl
-locRenId (Send ℓ1 c ℓ2) = cong₃ Send refl (locRenId c) refl
-locRenId (If ℓ c c₁ c₂) = cong₄ If refl (locRenId c) (locRenId c₁) (locRenId c₂)
-locRenId (Sync ℓ1 d ℓ2 c) = cong (Sync ℓ1 d ℓ2) (locRenId c)
-locRenId (DefLocal ℓ c1 c2) = cong₂ (DefLocal ℓ) (locRenId c1) c2⟨↑id⟩≡c2
+renIdₗₑ : ∀ c → renₗₑ c idRenₗₑ ≡ c
+renIdₗₑ (Done ℓ e) = cong (Done ℓ) (renIdₑ e)
+renIdₗₑ (Var x) = refl
+renIdₗₑ (Send ℓ1 c ℓ2) = cong₃ Send refl (renIdₗₑ c) refl
+renIdₗₑ (If ℓ c c₁ c₂) = cong₄ If refl (renIdₗₑ c) (renIdₗₑ c₁) (renIdₗₑ c₂)
+renIdₗₑ (Sync ℓ1 d ℓ2 c) = cong (Sync ℓ1 d ℓ2) (renIdₗₑ c)
+renIdₗₑ (DefLocal ℓ c1 c2) = cong₂ (DefLocal ℓ) (renIdₗₑ c1) c2⟨↑id⟩≡c2
   where
-  c2⟨↑id⟩≡c2 : locRen c2 (upLocRen idLocRen ℓ) ≡ c2
+  c2⟨↑id⟩≡c2 : renₗₑ c2 (↑ₗₑ idRenₗₑ ℓ) ≡ c2
   c2⟨↑id⟩≡c2 = 
-    locRen c2 (upLocRen idLocRen ℓ) ≡⟨ locRenExt (upLocRenId ℓ) c2 ⟩
-    locRen c2 idLocRen              ≡⟨ locRenId c2 ⟩
-    c2                              ∎
-locRenId (Fun c) = cong Fun (locRenId c)
-locRenId (App c c₁) = cong₂ App (locRenId c) (locRenId c₁)
-locRenId (LocAbs c) = cong LocAbs (locRenId c)
-locRenId (LocApp c ℓ) = cong₂ LocApp (locRenId c) refl
-locRenId (TellLet ℓ ρ1 c ρ2 c₁) = cong₃ (TellLet ℓ ρ1) (locRenId c) refl (locRenId c₁)
+    renₗₑ c2 (↑ₗₑ idRenₗₑ ℓ) ≡⟨ renExtₗₑ (↑Idₗₑ ℓ) c2 ⟩
+    renₗₑ c2 idRenₗₑ        ≡⟨ renIdₗₑ c2 ⟩
+    c2                     ∎
+renIdₗₑ (Fun c) = cong Fun (renIdₗₑ c)
+renIdₗₑ (App c c₁) = cong₂ App (renIdₗₑ c) (renIdₗₑ c₁)
+renIdₗₑ (LocAbs c) = cong LocAbs (renIdₗₑ c)
+renIdₗₑ (LocApp c ℓ) = cong₂ LocApp (renIdₗₑ c) refl
+renIdₗₑ (TellLet ℓ ρ1 c ρ2 c₁) = cong₃ (TellLet ℓ ρ1) (renIdₗₑ c) refl (renIdₗₑ c₁)
 
 -- Locally renaming enjoys fusion
-locRen∘ : ∀ ξ1 ξ2 c → locRen c (λ ℓ → ξ2 ℓ ∘ ξ1 ℓ) ≡ locRen (locRen c ξ1) ξ2
-locRen∘ ξ1 ξ2 (Done ℓ e) = cong (Done ℓ) (renExpr∘ (ξ1 ℓ) (ξ2 ℓ) e)
-locRen∘ ξ1 ξ2 (Var x) = refl
-locRen∘ ξ1 ξ2 (Send ℓ1 c ℓ2) = cong (λ x → Send ℓ1 x ℓ2) (locRen∘ ξ1 ξ2 c)
-locRen∘ ξ1 ξ2 (If ℓ c c₁ c₂) = cong₃ (If ℓ) (locRen∘ ξ1 ξ2 c) (locRen∘ ξ1 ξ2 c₁) (locRen∘ ξ1 ξ2 c₂)
-locRen∘ ξ1 ξ2 (Sync ℓ1 d ℓ2 c) = cong (Sync ℓ1 d ℓ2) (locRen∘ ξ1 ξ2 c)
-locRen∘ ξ1 ξ2 (DefLocal ℓ c1 c2) = cong₂ (DefLocal ℓ) (locRen∘ ξ1 ξ2 c1) c2⟨↑[ξ2∘ξ1]⟩≡c2⟨↑ξ1⟩⟨↑ξ2⟩
+renFuseₗₑ : ∀ ξ1 ξ2 c → renₗₑ c (λ ℓ → ξ2 ℓ ∘ ξ1 ℓ) ≡ renₗₑ (renₗₑ c ξ1) ξ2
+renFuseₗₑ ξ1 ξ2 (Done ℓ e) = cong (Done ℓ) (ren∘ₑ (ξ1 ℓ) (ξ2 ℓ) e)
+renFuseₗₑ ξ1 ξ2 (Var x) = refl
+renFuseₗₑ ξ1 ξ2 (Send ℓ1 c ℓ2) = cong (λ x → Send ℓ1 x ℓ2) (renFuseₗₑ ξ1 ξ2 c)
+renFuseₗₑ ξ1 ξ2 (If ℓ c c₁ c₂) = cong₃ (If ℓ) (renFuseₗₑ ξ1 ξ2 c) (renFuseₗₑ ξ1 ξ2 c₁) (renFuseₗₑ ξ1 ξ2 c₂)
+renFuseₗₑ ξ1 ξ2 (Sync ℓ1 d ℓ2 c) = cong (Sync ℓ1 d ℓ2) (renFuseₗₑ ξ1 ξ2 c)
+renFuseₗₑ ξ1 ξ2 (DefLocal ℓ c1 c2) = cong₂ (DefLocal ℓ) (renFuseₗₑ ξ1 ξ2 c1) c2⟨↑[ξ2∘ξ1]⟩≡c2⟨↑ξ1⟩⟨↑ξ2⟩
   where
-  c2⟨↑[ξ2∘ξ1]⟩≡c2⟨↑ξ1⟩⟨↑ξ2⟩ : locRen c2 (upLocRen (λ ℓ1 → ξ2 ℓ1 ∘ ξ1 ℓ1) ℓ) ≡ locRen (locRen c2 (upLocRen ξ1 ℓ)) (upLocRen ξ2 ℓ)
+  c2⟨↑[ξ2∘ξ1]⟩≡c2⟨↑ξ1⟩⟨↑ξ2⟩ : renₗₑ c2 (↑ₗₑ (λ ℓ1 → ξ2 ℓ1 ∘ ξ1 ℓ1) ℓ) ≡ renₗₑ (renₗₑ c2 (↑ₗₑ ξ1 ℓ)) (↑ₗₑ ξ2 ℓ)
   c2⟨↑[ξ2∘ξ1]⟩≡c2⟨↑ξ1⟩⟨↑ξ2⟩ =
-    locRen c2 (upLocRen (λ ℓ1 → ξ2 ℓ1 ∘ ξ1 ℓ1) ℓ)          ≡⟨ locRenExt (upLocRen∘ ξ1 ξ2 ℓ) c2 ⟩
-    locRen c2 (λ ℓ1 → upLocRen ξ2 ℓ ℓ1 ∘ upLocRen ξ1 ℓ ℓ1) ≡⟨ locRen∘ (upLocRen ξ1 ℓ) (upLocRen ξ2 ℓ) c2 ⟩
-    locRen (locRen c2 (upLocRen ξ1 ℓ)) (upLocRen ξ2 ℓ)    ∎
-locRen∘ ξ1 ξ2 (Fun c) = cong Fun (locRen∘ ξ1 ξ2 c)
-locRen∘ ξ1 ξ2 (App c c₁) = cong₂ App (locRen∘ ξ1 ξ2 c) (locRen∘ ξ1 ξ2 c₁)
-locRen∘ ξ1 ξ2 (LocAbs c) = cong LocAbs (locRen∘ ξ1 ξ2 c)
-locRen∘ ξ1 ξ2 (LocApp c ℓ) = cong (λ x → LocApp x ℓ) (locRen∘ ξ1 ξ2 c)
-locRen∘ ξ1 ξ2 (TellLet ℓ ρ1 c ρ2 c₁) = cong₂ (λ x y → TellLet ℓ ρ1 x ρ2 y) (locRen∘ ξ1 ξ2 c) (locRen∘ ξ1 ξ2 c₁)
+    renₗₑ c2 (↑ₗₑ (λ ℓ1 → ξ2 ℓ1 ∘ ξ1 ℓ1) ℓ)    ≡⟨ renExtₗₑ (↑Fuseₗₑ ξ1 ξ2 ℓ) c2 ⟩
+    renₗₑ c2 (λ ℓ1 → ↑ₗₑ ξ2 ℓ ℓ1 ∘ ↑ₗₑ ξ1 ℓ ℓ1) ≡⟨ renFuseₗₑ (↑ₗₑ ξ1 ℓ) (↑ₗₑ ξ2 ℓ) c2 ⟩
+    renₗₑ (renₗₑ c2 (↑ₗₑ ξ1 ℓ)) (↑ₗₑ ξ2 ℓ)        ∎
+renFuseₗₑ ξ1 ξ2 (Fun c) = cong Fun (renFuseₗₑ ξ1 ξ2 c)
+renFuseₗₑ ξ1 ξ2 (App c c₁) = cong₂ App (renFuseₗₑ ξ1 ξ2 c) (renFuseₗₑ ξ1 ξ2 c₁)
+renFuseₗₑ ξ1 ξ2 (LocAbs c) = cong LocAbs (renFuseₗₑ ξ1 ξ2 c)
+renFuseₗₑ ξ1 ξ2 (LocApp c ℓ) = cong₂ LocApp (renFuseₗₑ ξ1 ξ2 c) refl
+renFuseₗₑ ξ1 ξ2 (TellLet ℓ ρ1 c ρ2 c₁) = cong₅ TellLet refl refl (renFuseₗₑ ξ1 ξ2 c) refl (renFuseₗₑ ξ1 ξ2 c₁)

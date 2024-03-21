@@ -14,6 +14,7 @@ module LocalLang where
 
 -- Syntax and semantics of a local language
 record Language : Set₁ where
+  infixr 6 _⇒ₑ_
   field
     -- Set of expressions in the language
     Expr : Set
@@ -22,164 +23,164 @@ record Language : Set₁ where
     ≡-dec-Expr : (e₁ e₂ : Expr) → Dec (e₁ ≡ e₂)
 
     -- de Bruijn indices are represented as natural numbers
-    varExpr : ℕ → Expr
+    varₑ : ℕ → Expr
   
     -- Infinite variable renaming and substitution operators.
-    renExpr : Expr → (ℕ → ℕ) → Expr
-    subExpr : Expr → (ℕ → Expr) → Expr
+    renₑ : Expr → (ℕ → ℕ) → Expr
+    subₑ : Expr → (ℕ → Expr) → Expr
       
     {-
       Expression closure predicate.
       An expression is closed above `n` if no variables above `n` appear free.
     -}
-    ClosedAboveExpr : ℕ → Expr → Set
+    ClosedAboveₑ : ℕ → Expr → Set
   
     -- Values of the language
-    ValExpr : Expr → Set
+    Valₑ : Expr → Set
   
     -- Small-step operational semantics
-    StepExpr : Expr → Expr → Set
+    _⇒ₑ_ : Expr → Expr → Set
 
     -- There should be expressions for true and false.
-    trueExpr falseExpr : Expr
+    ttₑ ffₑ : Expr
 
   -- Derived functions for convenience
 
   -- An expression is closed if it has no free variables.
-  ClosedExpr : Expr → Set
-  ClosedExpr e = ClosedAboveExpr 0 e
+  Closedₑ : Expr → Set
+  Closedₑ e = ClosedAboveₑ 0 e
 
   -- Identity variable renaming.
-  idRenExpr : ℕ → ℕ
-  idRenExpr n = n
+  idRenₑ : ℕ → ℕ
+  idRenₑ n = n
 
   -- Identity substitution.
-  idSubExpr : ℕ → Expr
-  idSubExpr n = varExpr n
+  idSubₑ : ℕ → Expr
+  idSubₑ n = varₑ n
 
   {-
     `up` construction on substitutions and variable renamings.
     Used when going past a binder to ensure that counting is done correctly.
   -}
-  upSubExpr : (ℕ → Expr) → ℕ → Expr
-  upSubExpr σ zero = varExpr zero
-  upSubExpr σ (suc n) = renExpr (σ n) suc
+  upSubₑ : (ℕ → Expr) → ℕ → Expr
+  upSubₑ σ zero = varₑ zero
+  upSubₑ σ (suc n) = renₑ (σ n) suc
 
-  upRenExpr : (ℕ → ℕ) → ℕ → ℕ
-  upRenExpr ξ zero = zero
-  upRenExpr ξ (suc n) = suc (ξ n)
+  upRenₑ : (ℕ → ℕ) → ℕ → ℕ
+  upRenₑ ξ zero = zero
+  upRenₑ ξ (suc n) = suc (ξ n)
 
 -- Necessary properties of a local language
 record LawfulLanguage (L : Language) : Set where
   open Language L
   field
     -- Substitution should respect extensional equality.
-    subExprExt : ∀{σ₁ σ₂} → (∀ n → σ₁ n ≡ σ₂ n) → ∀ e → subExpr e σ₁ ≡ subExpr e σ₂
+    subExtₑ : ∀{σ₁ σ₂} → (∀ n → σ₁ n ≡ σ₂ n) → ∀ e → subₑ e σ₁ ≡ subₑ e σ₂
     
     -- Substitution correctly replaces a variable
-    subExprVar : ∀ n σ → subExpr (varExpr n) σ ≡ σ n
+    subVarₑ : ∀ n σ → subₑ (varₑ n) σ ≡ σ n
     
     {-
       Treating a renaming as a substitution should have the same
       effect as using it directly as a renaming.
     -}
-    subExprRen : ∀ ξ e → subExpr e (varExpr ∘ ξ) ≡ renExpr e ξ
+    subRenₑ : ∀ ξ e → subₑ e (varₑ ∘ ξ) ≡ renₑ e ξ
     
-    -- Renaming twice has the same effect as using the composed renaming.
-    renExpr∘ : ∀ ξ₁ ξ₂ e → renExpr e (ξ₂ ∘ ξ₁) ≡ renExpr (renExpr e ξ₁) ξ₂
+    -- Renaming enjoys fusion
+    ren∘ₑ : ∀ ξ₁ ξ₂ e → renₑ e (ξ₂ ∘ ξ₁) ≡ renₑ (renₑ e ξ₁) ξ₂
     
-    -- Renaming on the identity should have no effect.
-    renExprId : ∀ e → renExpr e idRenExpr ≡ e
+    -- Renaming respects the identity
+    renIdₑ : ∀ e → renₑ e idRenₑ ≡ e
     
-    -- Substituting on the identity should have no effect.
-    subExprId : ∀ e → subExpr e idSubExpr ≡ e
+    -- Substituting respects the identity
+    subIdₑ : ∀ e → subₑ e idSubₑ ≡ e
 
     -- The property of being closed above should be monotonic
-    closedAboveMonoExpr : ∀{m n e} → m < n → ClosedAboveExpr m e → ClosedAboveExpr n e
+    closedAboveMonoₑ : ∀{m n e} → m < n → ClosedAboveₑ m e → ClosedAboveₑ n e
     
-    -- A de Bruijn index m is considered closed above n for any n > m.
-    varClosedExpr₁ : ∀{m n} → m < n → ClosedAboveExpr n (varExpr m)
+    -- A de Bruijn index m is considered closed above n if n > m.
+    <⇒varClosedₑ : ∀{m n} → m < n → ClosedAboveₑ n (varₑ m)
     
     -- If de Bruijn index m is closed above n then necessarily n > m.
-    varClosedExpr₂ : ∀{m n} → ClosedAboveExpr n (varExpr m) → m < n
+    varClosedₑ⇒< : ∀{m n} → ClosedAboveₑ n (varₑ m) → m < n
     
     -- Values must have no free variables.
-    valClosedExpr : ∀{v} → ValExpr v → ClosedExpr v
+    valClosedₑ : ∀{v} → Valₑ v → Closedₑ v
 
     {-
       For an expression which is closed above `n`, substitution on σ
       which acts as the identity below `n` should have no effect.
     -}
-    subClosedAboveIdExpr : ∀{e σ n} →
-                     ClosedAboveExpr n e →
-                     (∀{m} → m < n → σ m ≡ varExpr m) →
-                     subExpr e σ ≡ e
+    subClosedAboveIdₑ : ∀{e σ n} →
+                     ClosedAboveₑ n e →
+                     (∀{m} → m < n → σ m ≡ varₑ m) →
+                     subₑ e σ ≡ e
 
     {- 
       Substitution, renaming, and stepping should not change the fact that expressions are
       closed above some level.
     -}
-    subClosedAboveExpr : ∀{e σ m n} →
-                     ClosedAboveExpr n e →
-                     (∀{k} → k < n → ClosedAboveExpr m (σ k)) →
-                     ClosedAboveExpr m (subExpr e σ)
-    renClosedAboveExpr : ∀{e ξ m n} →
-                     ClosedAboveExpr n e →
+    subClosedAboveₑ : ∀{e σ m n} →
+                     ClosedAboveₑ n e →
+                     (∀{k} → k < n → ClosedAboveₑ m (σ k)) →
+                     ClosedAboveₑ m (subₑ e σ)
+    renClosedAboveₑ : ∀{e ξ m n} →
+                     ClosedAboveₑ n e →
                      (∀{k} → k < n → ξ k < m) →
-                     ClosedAboveExpr m (renExpr e ξ)
-    stepClosedAboveExpr : ∀{e₁ e₂ n} → StepExpr e₁ e₂ → ClosedAboveExpr n e₁ → ClosedAboveExpr n e₂
+                     ClosedAboveₑ m (renₑ e ξ)
+    stepClosedAboveₑ : ∀{e₁ e₂ n} → e₁ ⇒ₑ e₂ → ClosedAboveₑ n e₁ → ClosedAboveₑ n e₂
 
     -- Values cannot step.
-    valNoStepExpr : ∀{v e} → ValExpr v → ¬ (StepExpr v e)
+    valNoStepₑ : ∀{v e} → Valₑ v → ¬ (v ⇒ₑ e)
 
     -- True and false are disequal values.
-    ttVal : ValExpr trueExpr
-    ffVal : ValExpr falseExpr
-    boolSep : ¬ (trueExpr ≡ falseExpr)
+    ttValₑ : Valₑ ttₑ
+    ffValₑ : Valₑ ffₑ
+    ttₑ≠ffₑ : ¬ (ttₑ ≡ ffₑ)
 
   -- Deduced lemmas for convenience.
 
   -- Renaming respects extensional equality.
-  renExprExt : ∀{ξ1 ξ2} → (∀ n → ξ1 n ≡ ξ2 n) → ∀ e → renExpr e ξ1 ≡ renExpr e ξ2
-  renExprExt {ξ1} {ξ2} ξ1≈ξ2 e =
-    renExpr e ξ1             ≡⟨ sym (subExprRen ξ1 e) ⟩
-    subExpr e (varExpr ∘ ξ1) ≡⟨ subExprExt (λ n → cong varExpr (ξ1≈ξ2 n)) e ⟩
-    subExpr e (varExpr ∘ ξ2) ≡⟨ subExprRen ξ2 e ⟩
-    renExpr e ξ2             ∎
+  renExtₑ : ∀{ξ1 ξ2} → (∀ n → ξ1 n ≡ ξ2 n) → ∀ e → renₑ e ξ1 ≡ renₑ e ξ2
+  renExtₑ {ξ1} {ξ2} ξ1≈ξ2 e =
+    renₑ e ξ1          ≡⟨ sym (subRenₑ ξ1 e) ⟩
+    subₑ e (varₑ ∘ ξ1) ≡⟨ subExtₑ (λ n → cong varₑ (ξ1≈ξ2 n)) e ⟩
+    subₑ e (varₑ ∘ ξ2) ≡⟨ subRenₑ ξ2 e ⟩
+    renₑ e ξ2          ∎
 
   -- Renaming correctly replaces a variable.
-  renVarExpr : ∀ n ξ → renExpr (varExpr n) ξ ≡ varExpr (ξ n)
-  renVarExpr n ξ =
-    renExpr (varExpr n) ξ             ≡⟨ sym (subExprRen ξ (varExpr n)) ⟩
-    subExpr (varExpr n) (varExpr ∘ ξ) ≡⟨ subExprVar n (varExpr ∘ ξ) ⟩
-    varExpr (ξ n)                     ∎
+  renVarₑ : ∀ n ξ → renₑ (varₑ n) ξ ≡ varₑ (ξ n)
+  renVarₑ n ξ =
+    renₑ (varₑ n) ξ          ≡⟨ sym (subRenₑ ξ (varₑ n)) ⟩
+    subₑ (varₑ n) (varₑ ∘ ξ) ≡⟨ subVarₑ n (varₑ ∘ ξ) ⟩
+    varₑ (ξ n)              ∎
 
   -- The `up` construction should have no extensional effect on the identity substitution
-  upSubIdExpr : ∀ n → upSubExpr idSubExpr n ≡ varExpr n
-  upSubIdExpr zero = refl
-  upSubIdExpr (suc n) = renVarExpr n suc
+  upSubIdₑ : ∀ n → upSubₑ idSubₑ n ≡ varₑ n
+  upSubIdₑ zero = refl
+  upSubIdₑ (suc n) = renVarₑ n suc
 
   -- The `up` construction should respect extensional equality.
-  upRenExprExt : ∀{ξ1 ξ2} →
-                 (∀ n → ξ1 n ≡ ξ2 n) →
-                 ∀ n → upRenExpr ξ1 n ≡ upRenExpr ξ2 n
-  upRenExprExt ξ1≈ξ2 zero = refl
-  upRenExprExt ξ1≈ξ2 (suc n) = cong suc (ξ1≈ξ2 n)
+  upRenExtₑ : ∀{ξ1 ξ2} →
+              (∀ n → ξ1 n ≡ ξ2 n) →
+              ∀ n → upRenₑ ξ1 n ≡ upRenₑ ξ2 n
+  upRenExtₑ ξ1≈ξ2 zero = refl
+  upRenExtₑ ξ1≈ξ2 (suc n) = cong suc (ξ1≈ξ2 n)
 
   -- The `up` construction should have no extensional effect on the identity renaming.
-  upRenIdExpr : ∀ n → upRenExpr idRenExpr n ≡ n
-  upRenIdExpr zero = refl
-  upRenIdExpr (suc n) = refl
+  upRenIdₑ : ∀ n → upRenₑ idRenₑ n ≡ n
+  upRenIdₑ zero = refl
+  upRenIdₑ (suc n) = refl
 
   -- The `up` construction extensionally commutes with composition.
-  upRenExpr∘ : ∀ ξ1 ξ2 n → upRenExpr (ξ2 ∘ ξ1) n ≡ upRenExpr ξ2 (upRenExpr ξ1 n)
-  upRenExpr∘ ξ1 ξ2 zero = refl
-  upRenExpr∘ ξ1 ξ2 (suc n) = refl
+  upRen∘ₑ : ∀ ξ1 ξ2 n → upRenₑ (ξ2 ∘ ξ1) n ≡ upRenₑ ξ2 (upRenₑ ξ1 n)
+  upRen∘ₑ ξ1 ξ2 zero = refl
+  upRen∘ₑ ξ1 ξ2 (suc n) = refl
     
   -- Substituting a closed expression has no effect.
-  subClosedIdExpr : ∀ e σ → ClosedExpr e → subExpr e σ ≡ e
-  subClosedIdExpr e σ closed = subClosedAboveIdExpr closed λ{ () }
+  subClosedIdₑ : ∀ e σ → Closedₑ e → subₑ e σ ≡ e
+  subClosedIdₑ e σ closed = subClosedAboveIdₑ closed λ{ () }
 
   -- Stepping a closed expression remains closed.
-  stepClosedExpr : ∀{e₁ e₂} → StepExpr e₁ e₂ → ClosedExpr e₁ → ClosedExpr e₂
-  stepClosedExpr e₁⇒e₂ closed = stepClosedAboveExpr e₁⇒e₂ closed
+  stepClosedₑ : ∀{e₁ e₂} → e₁ ⇒ₑ e₂ → Closedₑ e₁ → Closedₑ e₂
+  stepClosedₑ e₁⇒e₂ closed = stepClosedAboveₑ e₁⇒e₂ closed

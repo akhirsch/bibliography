@@ -7,29 +7,29 @@ open import Function
 module Common where
 
 -- `up` construction on variable renamings
-upRen : (ℕ → ℕ) → ℕ → ℕ
-upRen ξ zero = zero
-upRen ξ (suc n) = suc (ξ n)
+↑ : (ℕ → ℕ) → ℕ → ℕ
+↑ ξ zero = zero
+↑ ξ (suc n) = suc (ξ n)
 
 idRen : ℕ → ℕ
 idRen n = n
 
 -- `up` construction has no extensional effect on the identity renaming
-upRenId : ∀ n → upRen idRen n ≡ idRen n
-upRenId zero = refl
-upRenId (suc n) = refl
+↑Id : ∀ n → ↑ idRen n ≡ idRen n
+↑Id zero = refl
+↑Id (suc n) = refl
 
 -- The `up` construction respects extensional equality
-upRenExt : ∀{ξ1 ξ2} →
+↑Ext : ∀{ξ1 ξ2} →
               (∀ n → ξ1 n ≡ ξ2 n) →
-              ∀ n → upRen ξ1 n ≡ upRen ξ2 n
-upRenExt ξ1≈ξ2 zero = refl
-upRenExt ξ1≈ξ2 (suc n) = cong suc (ξ1≈ξ2 n)
+              ∀ n → ↑ ξ1 n ≡ ↑ ξ2 n
+↑Ext ξ1≈ξ2 zero = refl
+↑Ext ξ1≈ξ2 (suc n) = cong suc (ξ1≈ξ2 n)
 
 -- The `up` construction extensionally commutes with composition
-upRen∘ : ∀ ξ1 ξ2 n → upRen (ξ2 ∘ ξ1) n ≡ upRen ξ2 (upRen ξ1 n)
-upRen∘ ξ1 ξ2 zero = refl
-upRen∘ ξ1 ξ2 (suc n) = refl
+↑Fuse : ∀ ξ1 ξ2 n → ↑ (ξ2 ∘ ξ1) n ≡ ↑ ξ2 (↑ ξ1 n)
+↑Fuse ξ1 ξ2 zero = refl
+↑Fuse ξ1 ξ2 (suc n) = refl
 
 -- Extended congruence methods as the standard library only goes up to cong₂
 cong₃ : ∀{a b c d} {A : Set a} {B : Set b} {C : Set c} {D : Set d}

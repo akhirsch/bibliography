@@ -7,7 +7,6 @@ open import Data.List.Properties renaming (≡-dec to ≡-dec-List)
 open import Relation.Nullary
 open import Relation.Binary
 open import Relation.Binary.PropositionalEquality
-open ≡-Reasoning
 open import Function
 
 open import LocalLang
@@ -67,7 +66,7 @@ data Chor : Set where
   Values of the language are either local expressions,
   global functions, or local value abstractions
 -}
-data ChorVal : Chor → Set where
-  DoneVal : (L : LocVal) (v : Expr) → ValExpr v → ChorVal (Done (Lit L) v)
-  FunVal : (C : Chor) → ChorVal (Fun C)
-  LocAbsVal : (C : Chor) → ChorVal (LocAbs C)
+data Val : Chor → Set where
+  DoneVal : (L : LocVal) (v : Expr) → Valₑ v → Val (Done (Lit L) v)
+  FunVal : (C : Chor) → Val (Fun C)
+  LocAbsVal : (C : Chor) → Val (LocAbs C)
