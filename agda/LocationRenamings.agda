@@ -19,12 +19,12 @@ open import LocalLang
 open import Locations
 
 module LocationRenamings
-  (E : Language)
-  (LE : LawfulLanguage E)
   (L : Location)
+  (E : Language L)
+  (LE : LawfulLanguage L E)
   where
 
-open import Choreographies E L
+open import Choreographies L E
 open Language E
 open LawfulLanguage LE
 open Location L

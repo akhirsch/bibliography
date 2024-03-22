@@ -19,13 +19,13 @@ open import LocalLang
 open import Locations
 
 module Substitutions
-  (E : Language)
-  (LE : LawfulLanguage E)
   (L : Location)
+  (E : Language L)
+  (LE : LawfulLanguage L E)
   where
 
-open import Choreographies E L
-open import Renamings E LE L
+open import Choreographies L E
+open import Renamings L E LE
 
 -- Identity substitution
 idSub : ℕ → Chor
