@@ -1,14 +1,7 @@
 {-# OPTIONS --safe #-}
 
-open import Data.Empty
-open import Data.Unit
-open import Data.Maybe
 open import Data.Nat renaming (_≟_ to ≡-dec-ℕ)
 open import Data.Bool renaming (_≟_ to ≡-dec-Bool)
-open import Data.List
-open import Data.List.Properties renaming (≡-dec to ≡-dec-List)
-open import Data.Product
-open import Relation.Nullary
 open import Relation.Binary
 open import Relation.Binary.PropositionalEquality
 open ≡-Reasoning

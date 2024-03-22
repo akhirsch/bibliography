@@ -148,6 +148,10 @@ record LawfulLanguage
     ffValₑ : Valₑ ffₑ
     ttₑ≠ffₑ : ¬ (ttₑ ≡ ffₑ)
 
+    -- Location literals are unique values.
+    locValₑ : (L : LocVal) → Valₑ (locₑ L)
+    locₑ-inj : ∀{L1 L2} → locₑ L1 ≡ locₑ L2 → L1 ≡ L2
+
   -- Deduced lemmas for convenience.
 
   -- Renaming respects extensional equality.

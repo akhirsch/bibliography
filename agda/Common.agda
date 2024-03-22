@@ -7,11 +7,22 @@ open import Function
 
 module Common where
 
+
+s = _∘_
+
 -- Extensional function equality
 infix 4 _≈_
 _≈_ : ∀{a b} {A : Set a} {B : A → Set b} →
       (f g : (x : A) → B x) → Set (a ⊔ b)
 f ≈ g = ∀ x → f x ≡ g x
+
+-- 2-argument extensional function equality
+infix 4 _≈₂_
+_≈₂_ : ∀{a b c} {A : Set a} {B : A → Set b}
+       {C : (x : A) → B x → Set c} →
+       (f g : (x : A) (y : B x) → C x y) → Set (a ⊔ b ⊔ c)
+f ≈₂ g = ∀ x y → f x y ≡ g x y
+
 
 -- Identity renaming
 idRen : ℕ → ℕ

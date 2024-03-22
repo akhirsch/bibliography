@@ -103,10 +103,24 @@ record Location : Set₁ where
   (σ ▸ₗ ℓ) zero = ℓ
   (σ ▸ₗ ℓ) (suc n) = renₗ-Loc (σ n) suc
 
+  -- Adding a topmost term respects extensional equality
+  ▸Extₗ : ∀{σ1 σ2} → σ1 ≈ σ2 → ∀ ℓ → σ1 ▸ₗ ℓ ≈ σ2 ▸ₗ ℓ
+  ▸Extₗ σ1≈σ2 c zero = refl
+  ▸Extₗ σ1≈σ2 c (suc n) = cong₂ renₗ-Loc (σ1≈σ2 n) refl
+
   -- The `up` construction on location substitutions
   ↑σₗ :  (ℕ → Loc) → ℕ → Loc
   ↑σₗ σ = σ ▸ₗ Var zero
  
+  -- The `up` construction respects extensional equality
+  ↑σExtₗ : ∀{σ1 σ2} → σ1 ≈ σ2 → ↑σₗ σ1 ≈ ↑σₗ σ2
+  ↑σExtₗ σ1≈σ2 = ▸Extₗ σ1≈σ2 (Var zero) 
+
+  -- The `up` construction respects the identity
+  ↑σIdₗ : ↑σₗ idSubₗ ≈ idSubₗ
+  ↑σIdₗ zero = refl
+  ↑σIdₗ (suc n) = refl
+
   -- Substitute location variables
   subₗ-Loc : Loc → (ℕ → Loc) → Loc
   subₗ-Loc (Var x) σ = σ x
@@ -137,3 +151,27 @@ record Location : Set₁ where
   subιₗ-Loc : ∀ ξ ℓ → subₗ-Loc ℓ (ιₗ ξ) ≡ renₗ-Loc ℓ ξ
   subιₗ-Loc ξ (Var x) = refl
   subιₗ-Loc ξ (Lit L) = refl
+
+  
+  -- Substitute location variables in a location list
+  subₗ-List : LocList → (ℕ → Loc) → LocList
+  subₗ-List [] σ = []
+  subₗ-List (ℓ ∷ ρ) σ = subₗ-Loc ℓ σ ∷ subₗ-List ρ σ
+
+    -- Substituting location variables in a location list respects extensional equality
+  subExtₗ-List : ∀{σ1 σ2} →
+                σ1 ≈ σ2 →
+                ∀ ρ → subₗ-List ρ σ1 ≡ subₗ-List ρ σ2
+  subExtₗ-List σ1≈σ2 [] = refl
+  subExtₗ-List σ1≈σ2 (ℓ ∷ ρ) = cong₂ _∷_ (subExtₗ-Loc σ1≈σ2 ℓ) (subExtₗ-List σ1≈σ2 ρ)
+
+  -- Substituting location variables in a location list respects the identity
+  subIdₗ-List : ∀ ρ → subₗ-List ρ idSubₗ ≡ ρ
+  subIdₗ-List [] = refl
+  subIdₗ-List (ℓ ∷ ρ) = cong₂ _∷_ (subIdₗ-Loc ℓ) (subIdₗ-List ρ)
+
+    -- Substitution along an inclusion is the same as a renaming
+  subιₗ-List : ∀ ξ ρ → subₗ-List ρ (ιₗ ξ) ≡ renₗ-List ρ ξ
+  subιₗ-List ξ [] = refl
+  subιₗ-List ξ (ℓ ∷ ρ) = cong₂ _∷_ (subιₗ-Loc ξ ℓ) (subιₗ-List ξ ρ)
+

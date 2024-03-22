@@ -36,14 +36,18 @@ _▸_ : (ℕ → Chor) → Chor → ℕ → Chor
 (σ ▸ c) zero = c
 (σ ▸ c) (suc n) = ren (σ n) suc
 
+-- Adding a topmost term respects extensional equality
+▸Ext : ∀{σ1 σ2} → σ1 ≈ σ2 → ∀ c → σ1 ▸ c ≈ σ2 ▸ c
+▸Ext σ1≈σ2 c zero = refl
+▸Ext σ1≈σ2 c (suc n) = cong₂ ren (σ1≈σ2 n) refl
+
 -- The `up` construction on substitutions
 ↑σ : (ℕ → Chor) → ℕ → Chor
 ↑σ σ = σ ▸ Var zero
 
 -- The `up` construction respects extensional equality
 ↑σExt : ∀{σ1 σ2} → σ1 ≈ σ2 → ↑σ σ1 ≈ ↑σ σ2
-↑σExt σ1≈σ2 zero = refl
-↑σExt σ1≈σ2 (suc n) = cong₂ ren (σ1≈σ2 n) refl
+↑σExt σ1≈σ2 = ▸Ext σ1≈σ2 (Var zero)
 
 -- The `up` construction respects the identity
 ↑σId : ↑σ idSub ≈ idSub
