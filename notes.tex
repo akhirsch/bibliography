@@ -145,7 +145,7 @@ Projects a local-let context $\Delta$ to a local context at a (possibly variable
 
   \infer[AddCtxLet]{\Theta \vdash \Delta \\
     \Theta \vdash \ell \;\text{Loc}}
-  {\Theta \vdash (\Gamma, \ell.x : t)} \and
+  {\Theta \vdash (\Delta, \ell.x : t)} \and
 
   \infer[AddCtxChor]{\Theta \vdash \Gamma \\
     \Theta \vdash \tau \;\text{Ty}}
