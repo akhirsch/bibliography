@@ -16,66 +16,18 @@ open import Function
 
 open import Common
 open import LocalLang
+open import Locations
 
 module LocationRenamings
   (E : Language)
   (LE : LawfulLanguage E)
-  (LocVal : Set)
-  (≡-dec-LocVal : DecidableEquality LocVal)
+  (L : Location)
   where
 
-open import Choreographies E LE LocVal ≡-dec-LocVal
+open import Choreographies E L
 open Language E
 open LawfulLanguage LE
-
---- Locations
-
--- Rename location variables in a location
-renₗ-Loc : Loc → (ℕ → ℕ) → Loc
-renₗ-Loc (Var x) ξ = Var (ξ x)
-renₗ-Loc (Lit L) ξ = Lit L
-
--- Renaming location variables in a location respects extensional equality
-renExtₗ-Loc : ∀{ξ1 ξ2} →
-              ξ1 ≈ ξ2 →
-              ∀ ℓ → renₗ-Loc ℓ ξ1 ≡ renₗ-Loc ℓ ξ2
-renExtₗ-Loc ξ1≈ξ2 (Var x) = cong Var (ξ1≈ξ2 x)
-renExtₗ-Loc ξ1≈ξ2 (Lit L) = refl
-
--- Renaming location variables in a location respects the identity
-renIdₗ-Loc : ∀ ℓ → renₗ-Loc ℓ idRen ≡ ℓ
-renIdₗ-Loc (Var x) = refl
-renIdₗ-Loc (Lit L) = refl
-
--- Renaming location variables in a location enjoys fusion
-renFuseₗ-Loc : ∀ ξ1 ξ2 ℓ → renₗ-Loc ℓ (ξ2 ∘ ξ1) ≡ renₗ-Loc (renₗ-Loc ℓ ξ1) ξ2
-renFuseₗ-Loc ξ1 ξ2 (Var x) = refl
-renFuseₗ-Loc ξ1 ξ2 (Lit L) = refl
-
---- Location lists
-
--- Rename location variables in a location list
-renₗ-List : LocList → (ℕ → ℕ) → LocList
-renₗ-List ρ ξ = Data.List.map (λ ℓ → renₗ-Loc ℓ ξ) ρ
-
--- Renaming location variables in a location list respects extensional equality
-renExtₗ-List : ∀{ξ1 ξ2} →
-               ξ1 ≈ ξ2 →
-               ∀ ρ → renₗ-List ρ ξ1 ≡ renₗ-List ρ ξ2
-renExtₗ-List ξ1≈ξ2 [] = refl
-renExtₗ-List ξ1≈ξ2 (ℓ ∷ ρ) = cong₂ _∷_ (renExtₗ-Loc ξ1≈ξ2 ℓ) (renExtₗ-List ξ1≈ξ2 ρ)
-
--- Renaming location variables in a location list respects the identity
-renIdₗ-List : ∀ ρ → renₗ-List ρ idRen ≡ ρ
-renIdₗ-List [] = refl
-renIdₗ-List (ℓ ∷ ρ) = cong₂ _∷_ (renIdₗ-Loc ℓ) (renIdₗ-List ρ)
-
--- Renaming location variables in a location list enjoys fusion
-renFuseₗ-List : ∀ ξ1 ξ2 ρ → renₗ-List ρ (ξ2 ∘ ξ1) ≡ renₗ-List (renₗ-List ρ ξ1) ξ2
-renFuseₗ-List ξ1 ξ2 [] = refl
-renFuseₗ-List ξ1 ξ2 (ℓ ∷ ρ) = cong₂ _∷_ (renFuseₗ-Loc ξ1 ξ2 ℓ) (renFuseₗ-List ξ1 ξ2 ρ)
-
---- Choreographies
+open Location L
 
 -- Rename the location variables in a choreography
 renₗ : Chor → (ℕ → ℕ) → Chor

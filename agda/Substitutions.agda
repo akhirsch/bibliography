@@ -16,19 +16,16 @@ open import Function
 
 open import Common
 open import LocalLang
+open import Locations
 
 module Substitutions
   (E : Language)
   (LE : LawfulLanguage E)
-  (LocVal : Set)
-  (≡-dec-LocVal : DecidableEquality LocVal)
+  (L : Location)
   where
 
-open import Choreographies E LE LocVal ≡-dec-LocVal
-open Language E
-open LawfulLanguage LE
-open import Renamings E LE LocVal ≡-dec-LocVal
-
+open import Choreographies E L
+open import Renamings E LE L
 
 -- Identity substitution
 idSub : ℕ → Chor

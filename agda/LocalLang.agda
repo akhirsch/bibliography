@@ -16,7 +16,7 @@ module LocalLang where
 record Language : Set₁ where
   infixr 6 _⇒ₑ_
   field
-    -- Set of expressions in the language
+    -- Set of local expressions
     Expr : Set
 
     -- Expressions should have decidable equality
@@ -70,9 +70,10 @@ record Language : Set₁ where
   ↑ₑ ξ zero = zero
   ↑ₑ ξ (suc n) = suc (ξ n)
 
--- Necessary properties of a local language
-record LawfulLanguage (L : Language) : Set where
+-- A local language that has extra "lawfulness" properties
+record LawfulLanguage (L : Language) : Set₁ where
   open Language L
+
   field
     -- Substitution should respect extensional equality.
     subExtₑ : ∀{σ₁ σ₂} → (∀ n → σ₁ n ≡ σ₂ n) → ∀ e → subₑ e σ₁ ≡ subₑ e σ₂

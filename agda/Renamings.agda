@@ -16,17 +16,18 @@ open import Function
 
 open import Common
 open import LocalLang
+open import Locations
 
 module Renamings
   (E : Language)
   (LE : LawfulLanguage E)
-  (LocVal : Set)
-  (≡-dec-LocVal : DecidableEquality LocVal)
+  (L : Location)
   where
 
-open import Choreographies E LE LocVal ≡-dec-LocVal
+open import Choreographies E L
 open Language E
 open LawfulLanguage LE
+open Location L
 
 -- Renaming global variables
 ren : (c : Chor) (ξ : ℕ → ℕ) → Chor

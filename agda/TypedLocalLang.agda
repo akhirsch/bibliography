@@ -10,19 +10,16 @@ open import Function
 
 open import LocalLang
 
-{-
-Module for (non-dependent) type systems of local languages
--}
-module TypedLocalLang
-  (L : Language)
-  (LL : LawfulLanguage L)
-  where
-
-open Language L
-open LawfulLanguage LL
+-- Module for (non-dependent) type systems of local languages
+module TypedLocalLang where
 
 -- Type theory for a local language
-record TypedLocalLanguage : Set₁ where
+record TypedLocalLanguage
+       (L : Language)
+       (LL : LawfulLanguage L) : Set₁ where
+  open Language L
+  open LawfulLanguage LL
+
   field
     -- Local types
     Typₑ : Set

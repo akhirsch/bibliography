@@ -10,43 +10,19 @@ open import Relation.Binary.PropositionalEquality
 open import Function
 
 open import LocalLang
+open import Locations
 
 module Choreographies
   (E : Language)
-  (LE : LawfulLanguage E)
-  (LocVal : Set)
-  (≡-dec-LocVal : DecidableEquality LocVal)
+  (L : Location)
   where
 
 open Language E
-open LawfulLanguage LE
+open Location L
 
 -- Synchronization labels are represented by booleans
 SyncLabel : Set
 SyncLabel = Bool
-
--- Locations are either concrete or a variable
-data Loc : Set where
-  Var : (x : ℕ) → Loc
-  Lit : (L : LocVal) → Loc
-
--- Locations have decidable equality
-≡-dec-Loc : DecidableEquality Loc
-≡-dec-Loc (Var x1) (Var x2) with ≡-dec-ℕ x1 x2
-... | yes refl = yes refl
-... | no x1≠x2 = no λ{ refl → x1≠x2 refl }
-≡-dec-Loc (Var x) (Lit L) = no (λ ())
-≡-dec-Loc (Lit L) (Var x) = no (λ ())
-≡-dec-Loc (Lit L1) (Lit L2) with ≡-dec-LocVal L1 L2
-... | yes refl = yes refl
-... | no L1≠L2 = no λ{ refl → L1≠L2 refl }
-
--- Lists of locations
-LocList : Set
-LocList = List Loc
-
-≡-dec-LocList : DecidableEquality LocList
-≡-dec-LocList = ≡-dec-List ≡-dec-Loc
 
 -- Choreographic programs
 data Chor : Set where
