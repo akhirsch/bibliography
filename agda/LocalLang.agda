@@ -1,4 +1,4 @@
-{-# OPTIONS --safe --without-K #-}
+{-# OPTIONS --safe #-}
 
 open import Data.Empty
 open import Data.Nat
@@ -7,13 +7,16 @@ open import Relation.Binary.PropositionalEquality
 open ≡-Reasoning
 open import Function
 
-{-
-Module for expression-based local languages.
--}
+open import Locations
+
+-- Module for expression-based local languages.
 module LocalLang where
 
 -- Syntax and semantics of a local language
-record Language : Set₁ where
+record Language
+  (L : Location) : Set₁ where
+  open Location L
+
   infixr 6 _⇒ₑ_
   field
     -- Set of local expressions
@@ -44,6 +47,9 @@ record Language : Set₁ where
     -- There should be expressions for true and false.
     ttₑ ffₑ : Expr
 
+    -- There should be expressions for each location value.
+    locₑ : LocVal → Expr
+
   -- Derived functions for convenience
 
   -- An expression is closed if it has no free variables.
@@ -71,8 +77,11 @@ record Language : Set₁ where
   ↑ₑ ξ (suc n) = suc (ξ n)
 
 -- A local language that has extra "lawfulness" properties
-record LawfulLanguage (L : Language) : Set₁ where
-  open Language L
+record LawfulLanguage
+  (L : Location)
+  (E : Language L) : Set₁ where
+  open Location L
+  open Language E
 
   field
     -- Substitution should respect extensional equality.

@@ -13,12 +13,12 @@ open import LocalLang
 open import Locations
 
 module Choreographies
-  (E : Language)
   (L : Location)
+  (E : Language L)
   where
 
-open Language E
 open Location L
+open Language E
 
 -- Synchronization labels are represented by booleans
 SyncLabel : Set

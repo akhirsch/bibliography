@@ -31,10 +31,14 @@ open import Renamings E LE L
 idSub : ℕ → Chor
 idSub n = Var n
 
+-- Substitution with the topmost variable instantiated 
+_▸_ : (ℕ → Chor) → Chor → ℕ → Chor
+(σ ▸ c) zero = c
+(σ ▸ c) (suc n) = ren (σ n) suc
+
 -- The `up` construction on substitutions
-↑σ : (σ : ℕ → Chor) → ℕ → Chor
-↑σ σ zero = Var zero
-↑σ σ (suc n) = ren (σ n) suc
+↑σ : (ℕ → Chor) → ℕ → Chor
+↑σ σ = σ ▸ Var zero
 
 -- The `up` construction respects extensional equality
 ↑σExt : ∀{σ1 σ2} → σ1 ≈ σ2 → ↑σ σ1 ≈ ↑σ σ2

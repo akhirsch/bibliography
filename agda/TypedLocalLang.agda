@@ -1,4 +1,4 @@
-{-# OPTIONS --safe --without-K #-}
+{-# OPTIONS --safe #-}
 
 open import Data.Empty
 open import Data.Nat
@@ -9,16 +9,20 @@ open import Relation.Binary.PropositionalEquality
 open import Function
 
 open import LocalLang
+open import Locations
 
 -- Module for (non-dependent) type systems of local languages
 module TypedLocalLang where
 
 -- Type theory for a local language
 record TypedLocalLanguage
-       (L : Language)
-       (LL : LawfulLanguage L) : Set₁ where
-  open Language L
-  open LawfulLanguage LL
+       (L : Location)
+       (E : Language L)
+       (LE : LawfulLanguage L E)
+       : Set₁ where
+  open Location L
+  open Language E
+  open LawfulLanguage LE
 
   field
     -- Local types
@@ -71,12 +75,22 @@ record TypedLocalLanguage
     ty-ttₑ : ∀{Γ} → Γ ⊢ₑ ttₑ ∶ Boolₑ
     ty-ffₑ : ∀{Γ} → Γ ⊢ₑ ffₑ ∶ Boolₑ
 
-    -- Each boolean value is either true or false
+    -- Each boolean value is either true or false.
     boolValₑ : ∀{Γ v} →
-                    Γ ⊢ₑ v ∶ Boolₑ →
-                    Valₑ v →
-                    (v ≡ ttₑ) ⊎ (v ≡ ffₑ)
-  
+               Γ ⊢ₑ v ∶ Boolₑ →
+               Valₑ v →
+               (v ≡ ttₑ) ⊎ (v ≡ ffₑ)
+    
+    -- We have a type for locations, and the appropriate judgments.
+    Locₑ : Typₑ
+    ty-locₑ : ∀{Γ ℓ} → Γ ⊢ₑ locₑ ℓ ∶ Locₑ
+
+    -- Each location value corresponds to an actual location.
+    locValₑ : ∀{Γ v} →
+              Γ ⊢ₑ v ∶ Locₑ →
+              Valₑ v →
+              Σ[ ℓ ∈ LocVal ] (v ≡ locₑ ℓ)
+    
 
     -- Progress and preservation must hold.
     preservationₑ : ∀{Γ e₁ e₂ t} →

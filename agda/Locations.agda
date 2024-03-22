@@ -98,10 +98,14 @@ record Location : Set₁ where
   idSubₗ : ℕ → Loc
   idSubₗ n = Var n
 
+  -- Location substitution with the topmost variable instantiated 
+  _▸ₗ_ : (ℕ → Loc) → Loc → ℕ → Loc
+  (σ ▸ₗ ℓ) zero = ℓ
+  (σ ▸ₗ ℓ) (suc n) = renₗ-Loc (σ n) suc
+
   -- The `up` construction on location substitutions
   ↑σₗ :  (ℕ → Loc) → ℕ → Loc
-  ↑σₗ σ zero = Var zero
-  ↑σₗ σ (suc n) = renₗ-Loc (σ n) suc
+  ↑σₗ σ = σ ▸ₗ Var zero
  
   -- Substitute location variables
   subₗ-Loc : Loc → (ℕ → Loc) → Loc
