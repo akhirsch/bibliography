@@ -20,6 +20,8 @@ module Semantics
 
 open import Choreographies L E
 open import Substitutions L E LE
+open import LocalSubstitutions L E LE
+open import LocationSubstitutions L E LE
 open Location L
 open Language E
 
@@ -70,7 +72,7 @@ data _⇒[_]_ : Chor → TraceElem → Chor → Set where
   stepDefLocalV : ∀{v C L}
                   (v-Val : Valₑ v) →
                   DefLocal (Lit L) (Done (Lit L) v) C ⇒[ • ]
-                  {!!}
+                  subₗₑ C (idSubₗₑ ▸[ Lit L ] v)
                   
   stepAppFun : ∀{C1 C1' C2 T}
                (C1⇒C1' : C1 ⇒[ T ] C1') →
@@ -88,7 +90,9 @@ data _⇒[_]_ : Chor → TraceElem → Chor → Set where
                   (C⇒C' : C ⇒[ T ] C') →
                   LocApp C (Lit L) ⇒[ T ] LocApp C' (Lit L)
   stepLocApp : ∀{C L} →
-               (LocApp (LocAbs C) (Lit L)) ⇒[ • ] {!!}
+               (LocApp (LocAbs C) (Lit L))
+               ⇒[ • ]
+               subₗ C (idSubₗ ▸ₗ Lit L)
 
   stepTellLet : ∀{C1 C1' C2 T ρ1 ρ2 L} →
                 (C1⇒C1' : C1 ⇒[ T ] C1') →
@@ -97,4 +101,4 @@ data _⇒[_]_ : Chor → TraceElem → Chor → Set where
   stepTellLetV : ∀{L1 L2 C ρ1 ρ2} →
                  TellLet (Lit L1) (map Lit ρ1) (Done (Lit L1) (locₑ L2)) (map Lit ρ2) C
                  ⇒[ TellLoc L1 L2 ρ1 ρ2 ]
-                 {!subₗ!}
+                 subₗ C (idSubₗ ▸ₗ Lit L2)
