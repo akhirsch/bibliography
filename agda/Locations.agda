@@ -94,37 +94,14 @@ record Location : Set₁ where
   --- SUBSTITUTION ---
   --------------------
 
-  -- Identity location substitution
-  idSubₗ : ℕ → Loc
-  idSubₗ n = Var n
-
-  -- Location substitution with the topmost variable instantiated 
-  _▸ₗ_ : (ℕ → Loc) → Loc → ℕ → Loc
-  (σ ▸ₗ ℓ) zero = ℓ
-  (σ ▸ₗ ℓ) (suc n) = renₗ-Loc (σ n) suc
-
-  -- Adding a topmost term respects extensional equality
-  ▸Extₗ : ∀{σ1 σ2} → σ1 ≈ σ2 → ∀ ℓ → σ1 ▸ₗ ℓ ≈ σ2 ▸ₗ ℓ
-  ▸Extₗ σ1≈σ2 c zero = refl
-  ▸Extₗ σ1≈σ2 c (suc n) = cong₂ renₗ-Loc (σ1≈σ2 n) refl
-
-  -- The `up` construction on location substitutions
-  ↑σₗ :  (ℕ → Loc) → ℕ → Loc
-  ↑σₗ σ = σ ▸ₗ Var zero
- 
-  -- The `up` construction respects extensional equality
-  ↑σExtₗ : ∀{σ1 σ2} → σ1 ≈ σ2 → ↑σₗ σ1 ≈ ↑σₗ σ2
-  ↑σExtₗ σ1≈σ2 = ▸Extₗ σ1≈σ2 (Var zero) 
-
-  -- The `up` construction respects the identity
-  ↑σIdₗ : ↑σₗ idSubₗ ≈ idSubₗ
-  ↑σIdₗ zero = refl
-  ↑σIdₗ (suc n) = refl
-
   -- Substitute location variables
   subₗ-Loc : Loc → (ℕ → Loc) → Loc
   subₗ-Loc (Var x) σ = σ x
   subₗ-Loc (Lit L) σ = Lit L
+
+  subₗ-List : LocList → (ℕ → Loc) → LocList
+  subₗ-List [] σ = []
+  subₗ-List (ℓ ∷ ρ) σ = subₗ-Loc ℓ σ ∷ subₗ-List ρ σ
 
   -- Substituting location variables respects extensional equality
   subExtₗ-Loc : ∀{σ1 σ2} →
@@ -133,45 +110,114 @@ record Location : Set₁ where
   subExtₗ-Loc σ1≈σ2 (Var x) = σ1≈σ2 x
   subExtₗ-Loc σ1≈σ2 (Lit L) = refl
 
-  -- Substituting location variables respects the identity
-  subIdₗ-Loc : ∀ ℓ → subₗ-Loc ℓ idSubₗ ≡ ℓ
-  subIdₗ-Loc (Var x) = refl
-  subIdₗ-Loc (Lit L) = refl
-  
-  -- Inclusion from renamings to location substitutions
-  ιₗ : (ℕ → ℕ) → ℕ → Loc
-  ιₗ ξ n = Var (ξ n)
-
-  -- The `up` construction commutes with the inclusion
-  ↑σιₗ : ∀ ξ → ↑σₗ (ιₗ ξ) ≈ ιₗ (↑ ξ)
-  ↑σιₗ ξ zero = refl
-  ↑σιₗ ξ (suc n) = refl
-
-  -- Substitution along an inclusion is the same as a renaming
-  subιₗ-Loc : ∀ ξ ℓ → subₗ-Loc ℓ (ιₗ ξ) ≡ renₗ-Loc ℓ ξ
-  subιₗ-Loc ξ (Var x) = refl
-  subιₗ-Loc ξ (Lit L) = refl
-
-  
-  -- Substitute location variables in a location list
-  subₗ-List : LocList → (ℕ → Loc) → LocList
-  subₗ-List [] σ = []
-  subₗ-List (ℓ ∷ ρ) σ = subₗ-Loc ℓ σ ∷ subₗ-List ρ σ
-
-    -- Substituting location variables in a location list respects extensional equality
   subExtₗ-List : ∀{σ1 σ2} →
                 σ1 ≈ σ2 →
                 ∀ ρ → subₗ-List ρ σ1 ≡ subₗ-List ρ σ2
   subExtₗ-List σ1≈σ2 [] = refl
   subExtₗ-List σ1≈σ2 (ℓ ∷ ρ) = cong₂ _∷_ (subExtₗ-Loc σ1≈σ2 ℓ) (subExtₗ-List σ1≈σ2 ρ)
 
-  -- Substituting location variables in a location list respects the identity
+  -- Identity location substitution
+  idSubₗ : ℕ → Loc
+  idSubₗ n = Var n
+
+  -- Substituting location variables respects the identity
+  subIdₗ-Loc : ∀ ℓ → subₗ-Loc ℓ idSubₗ ≡ ℓ
+  subIdₗ-Loc (Var x) = refl
+  subIdₗ-Loc (Lit L) = refl
+
   subIdₗ-List : ∀ ρ → subₗ-List ρ idSubₗ ≡ ρ
   subIdₗ-List [] = refl
   subIdₗ-List (ℓ ∷ ρ) = cong₂ _∷_ (subIdₗ-Loc ℓ) (subIdₗ-List ρ)
 
-    -- Substitution along an inclusion is the same as a renaming
+  -- Composition of location substitutions
+  infixr 9 _•ₗ_
+  _•ₗ_ : (σ1 σ2 : ℕ → Loc) → ℕ → Loc
+  (σ1 •ₗ σ2) n = subₗ-Loc (σ2 n) σ1
+
+  open ≡-Reasoning
+
+  -- Composition respects extensional equality
+  •Extₗ : ∀{σ1 σ1' σ2 σ2'} →
+          σ1 ≈ σ1' →
+          σ2 ≈ σ2' →
+          σ1 •ₗ σ2 ≈ σ1' •ₗ σ2'
+  •Extₗ {σ1} {σ1'} {σ2} {σ2'} σ1≈σ1' σ2≈σ2' n =
+    subₗ-Loc (σ2 n) σ1   ≡⟨ subExtₗ-Loc σ1≈σ1' (σ2 n) ⟩
+    subₗ-Loc (σ2 n) σ1'  ≡⟨ cong₂ subₗ-Loc (σ2≈σ2' n) refl ⟩
+    subₗ-Loc (σ2' n) σ1' ∎
+
+  -- Composition respects the identity
+  •ₗ-idₗ : ∀ σ → idSubₗ •ₗ σ ≈ σ
+  •ₗ-idₗ σ n = subIdₗ-Loc (σ n)
+
+  •ₗ-idᵣ : ∀ σ → σ •ₗ idSubₗ ≈ σ
+  •ₗ-idᵣ σ n = refl
+
+  -- Substitution on locations enjoys fusion
+  subFuseₗ-Loc : ∀ σ1 σ2 ℓ → subₗ-Loc ℓ (σ1 •ₗ σ2) ≡ subₗ-Loc (subₗ-Loc ℓ σ2) σ1
+  subFuseₗ-Loc σ1 σ2 (Var x) = refl
+  subFuseₗ-Loc σ1 σ2 (Lit L) = refl
+
+  subFuseₗ-List : ∀ σ1 σ2 ρ → subₗ-List ρ (σ1 •ₗ σ2) ≡ subₗ-List (subₗ-List ρ σ2) σ1
+  subFuseₗ-List σ1 σ2 [] = refl
+  subFuseₗ-List σ1 σ2 (ℓ ∷ ρ) = cong₂ _∷_ (subFuseₗ-Loc σ1 σ2 ℓ) (subFuseₗ-List σ1 σ2 ρ)
+
+  -- Composition is associative
+  •ₗ-assoc : ∀ σ1 σ2 σ3 → (σ1 •ₗ σ2) •ₗ σ3 ≈ σ1 •ₗ σ2 •ₗ σ3
+  •ₗ-assoc σ1 σ2 σ3 n = subFuseₗ-Loc σ1 σ2 (σ3 n)
+
+  -- Location substitution with the topmost variable instantiated 
+  _▸ₗ_ : (ℕ → Loc) → Loc → ℕ → Loc
+  (σ ▸ₗ ℓ) zero = ℓ
+  (σ ▸ₗ ℓ) (suc n) = σ n
+
+  -- Adding a topmost term respects extensional equality
+  ▸Extₗ : ∀{σ1 σ2} → σ1 ≈ σ2 → ∀ ℓ → σ1 ▸ₗ ℓ ≈ σ2 ▸ₗ ℓ
+  ▸Extₗ σ1≈σ2 c zero = refl
+  ▸Extₗ σ1≈σ2 c (suc n) = σ1≈σ2 n
+
+  -- How adding a topmost variable acts on composition
+  ▸•ₗ : ∀ σ1 σ2 ℓ → (σ1 •ₗ σ2) ▸ₗ subₗ-Loc ℓ σ1 ≈ (σ1 •ₗ (σ2 ▸ₗ ℓ))
+  ▸•ₗ σ1 σ2 ℓ zero = refl
+  ▸•ₗ σ1 σ2 ℓ (suc n) = refl
+
+  -- Inclusion from renamings to location substitutions
+  ιₗ : (ℕ → ℕ) → ℕ → Loc
+  ιₗ ξ n = Var (ξ n)
+
+  -- Substitution respects the inclusion
+  subιₗ-Loc : ∀ ξ ℓ → subₗ-Loc ℓ (ιₗ ξ) ≡ renₗ-Loc ℓ ξ
+  subιₗ-Loc ξ (Var x) = refl
+  subιₗ-Loc ξ (Lit L) = refl
+
   subιₗ-List : ∀ ξ ρ → subₗ-List ρ (ιₗ ξ) ≡ renₗ-List ρ ξ
   subιₗ-List ξ [] = refl
   subιₗ-List ξ (ℓ ∷ ρ) = cong₂ _∷_ (subιₗ-Loc ξ ℓ) (subιₗ-List ξ ρ)
 
+  -- The `up` construction on location substitutions
+  ↑σₗ :  (ℕ → Loc) → ℕ → Loc
+  ↑σₗ σ = (ιₗ suc •ₗ σ) ▸ₗ Var zero
+
+  -- The `up` construction respects extensional equality
+  ↑σExtₗ : ∀{σ1 σ2} → σ1 ≈ σ2 → ↑σₗ σ1 ≈ ↑σₗ σ2
+  ↑σExtₗ σ1≈σ2 = ▸Extₗ (•Extₗ ≈-refl σ1≈σ2) (Var zero)
+  
+  -- The `up` construction respects the identity
+  ↑σIdₗ : ↑σₗ idSubₗ ≈ idSubₗ
+  ↑σIdₗ zero = refl
+  ↑σIdₗ (suc n) = refl
+
+  -- `up` distributes over composition
+  ↑σ•ₗ : ∀ σ1 σ2 → ↑σₗ (σ1 •ₗ σ2) ≈ ↑σₗ σ1 •ₗ ↑σₗ σ2
+  ↑σ•ₗ σ1 σ2 zero = refl
+  ↑σ•ₗ σ1 σ2 (suc n) =
+    subₗ-Loc (subₗ-Loc (σ2 n) σ1) (ιₗ suc)       ≡⟨ sym (subFuseₗ-Loc (ιₗ suc) σ1 (σ2 n)) ⟩
+    subₗ-Loc (σ2 n) (ιₗ suc •ₗ σ1)               ≡⟨ subExtₗ-Loc (λ _ → refl) (σ2 n) ⟩
+    subₗ-Loc (σ2 n) (↑σₗ σ1 •ₗ ιₗ suc)           ≡⟨ subFuseₗ-Loc (↑σₗ σ1) (ιₗ suc) (σ2 n) ⟩
+    subₗ-Loc (subₗ-Loc (σ2 n) (ιₗ suc)) (↑σₗ σ1) ∎
+
+  -- `up` construction commutes with the inclusion
+  ↑σιₗ : ∀ ξ → ↑σₗ (ιₗ ξ) ≈ ιₗ (↑ ξ)
+  ↑σιₗ ξ zero = refl
+  ↑σιₗ ξ (suc n) = refl
+ 

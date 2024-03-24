@@ -2,26 +2,76 @@
 
 open import Level hiding (zero; suc)
 open import Data.Nat hiding (_⊔_)
+open import Relation.Binary
 open import Relation.Binary.PropositionalEquality
 open import Function
 
 module Common where
 
-
-s = _∘_
+-- Transporting across equal types
+transport : ∀{a} {A B : Set a} →
+            A ≡ B → A → B
+transport refl x = x
 
 -- Extensional function equality
-infix 4 _≈_
-_≈_ : ∀{a b} {A : Set a} {B : A → Set b} →
-      (f g : (x : A) → B x) → Set (a ⊔ b)
-f ≈ g = ∀ x → f x ≡ g x
+module FunExt {a b} {A : Set a} {B : A → Set b} where
+  infix 4 _≈_
+  _≈_ : (f g : (x : A) → B x) → Set (a ⊔ b)
+  f ≈ g = ∀ x → f x ≡ g x
 
--- 2-argument extensional function equality
-infix 4 _≈₂_
-_≈₂_ : ∀{a b c} {A : Set a} {B : A → Set b}
-       {C : (x : A) → B x → Set c} →
-       (f g : (x : A) (y : B x) → C x y) → Set (a ⊔ b ⊔ c)
-f ≈₂ g = ∀ x y → f x y ≡ g x y
+  ≈-refl : Reflexive _≈_
+  ≈-refl x = refl
+
+  ≈-sym : Symmetric _≈_
+  ≈-sym p x = sym (p x)
+
+  ≈-trans : Transitive _≈_
+  ≈-trans p q x = trans (p x) (q x)
+
+  ≈-isEquiv : IsEquivalence _≈_
+  IsEquivalence.refl ≈-isEquiv = ≈-refl
+  IsEquivalence.sym ≈-isEquiv = ≈-sym
+  IsEquivalence.trans ≈-isEquiv = ≈-trans
+
+  ≈-Setoid : Setoid (a ⊔ b) (a ⊔ b)
+  Setoid.Carrier ≈-Setoid = (x : A) → B x
+  Setoid._≈_ ≈-Setoid = _≈_
+  Setoid.isEquivalence ≈-Setoid = ≈-isEquiv
+  
+open FunExt public
+
+≈-Setoid′ : ∀{a b} (A : Set a) (B : Set b) → Setoid (a ⊔ b) (a ⊔ b)
+≈-Setoid′ A B = ≈-Setoid {A = A} {B = λ _ → B}
+
+-- Two-argument extensional function equality
+module FunExt₂ {a b c} {A : Set a} {B : A → Set b} {C : (x : A) (y : B x) → Set c} where
+  infix 4 _≈₂_
+  _≈₂_ : (f g : (x : A) (y : B x) → C x y) → Set (a ⊔ b ⊔ c)
+  f ≈₂ g = ∀ x y → f x y ≡ g x y
+
+  ≈₂-refl : Reflexive _≈₂_
+  ≈₂-refl x y = refl
+
+  ≈₂-sym : Symmetric _≈₂_
+  ≈₂-sym p x y = sym (p x y)
+
+  ≈₂-trans : Transitive _≈₂_
+  ≈₂-trans p q x y = trans (p x y) (q x y)
+
+  ≈₂-isEquiv : IsEquivalence _≈₂_
+  IsEquivalence.refl ≈₂-isEquiv = ≈₂-refl
+  IsEquivalence.sym ≈₂-isEquiv = ≈₂-sym
+  IsEquivalence.trans ≈₂-isEquiv = ≈₂-trans
+
+  ≈₂-Setoid : Setoid (a ⊔ b ⊔ c) (a ⊔ b ⊔ c)
+  Setoid.Carrier ≈₂-Setoid = (x : A) (y : B x) → C x y
+  Setoid._≈_ ≈₂-Setoid = _≈₂_
+  Setoid.isEquivalence ≈₂-Setoid = ≈₂-isEquiv
+
+open FunExt₂ public
+
+≈₂-Setoid′ : ∀{a b c} (A : Set a) (B : Set b) (C : Set c) → Setoid (a ⊔ b ⊔ c) (a ⊔ b ⊔ c)
+≈₂-Setoid′ A B C = ≈₂-Setoid {A = A} {B = λ _ → B} {C = λ _ _ → C}
 
 
 -- Identity renaming
@@ -47,6 +97,10 @@ idRen n = n
 ↑Fuse : ∀ ξ1 ξ2 → ↑ (ξ2 ∘ ξ1) ≈ ↑ ξ2 ∘ ↑ ξ1
 ↑Fuse ξ1 ξ2 zero = refl
 ↑Fuse ξ1 ξ2 (suc n) = refl
+
+↑∘suc : ∀ ξ → ↑ ξ ∘ suc ≈ suc ∘ ξ
+↑∘suc ξ zero = refl
+↑∘suc ξ (suc n) = refl
 
 -- Extended congruence methods as the standard library only goes up to cong₂
 cong₃ : ∀{a b c d} {A : Set a} {B : Set b} {C : Set c} {D : Set d}

@@ -8,6 +8,7 @@ open import Relation.Nullary
 open import Relation.Binary.PropositionalEquality
 open import Function
 
+open import Common
 open import LocalLang
 open import Locations
 
@@ -39,7 +40,7 @@ record TypedLocalLanguage
 
     -- Typing respects extensional equality of contexts.
     tyExtₑ : ∀{Γ Δ e t} →
-            (∀ n → Γ n ≡ Δ n) →
+            Γ ≈ Δ →
             Γ ⊢ₑ e ∶ t →
             Δ ⊢ₑ e ∶ t
 
@@ -66,7 +67,7 @@ record TypedLocalLanguage
     -- Weakening should be allowed.
     tyWkₑ : ∀{Γ Δ e t} →
            (ξ : ℕ → ℕ) →
-           (∀ n → Γ n ≡ Δ (ξ n)) →
+           Γ ≈ Δ ∘ ξ →
            Γ ⊢ₑ e ∶ t →
            Δ ⊢ₑ renₑ e ξ ∶ t
 
@@ -108,8 +109,8 @@ record TypedLocalLanguage
     if for every variable n, σ assigns n to an expression
     which, under Δ, has the same type that Γ assigns to n.
   -}
-  Changesₑ : (ℕ → Expr) → (ℕ → Typₑ) → (ℕ → Typₑ) → Set
-  Changesₑ σ Γ Δ = ∀ n → Δ ⊢ₑ σ n ∶ Γ n
+  _∶_⇒ₑ_ : (σ : ℕ → Expr) (Γ Δ : ℕ → Typₑ) → Set
+  σ ∶ Γ ⇒ₑ Δ = ∀ n → Δ ⊢ₑ σ n ∶ Γ n
 
   field
     {-
@@ -117,7 +118,7 @@ record TypedLocalLanguage
       which change contexts.
     -}
     tyChangesₑ : ∀{σ Γ Δ e t} →
-                Changesₑ σ Γ Δ →
+                σ ∶ Γ ⇒ₑ Δ →
                 Γ ⊢ₑ e ∶ t →
                 Δ ⊢ₑ subₑ e σ ∶ t
 
@@ -132,7 +133,7 @@ record TypedLocalLanguage
   tyValₑ val Γ⊢v:t = tyClosedₑ (valClosedₑ val) Γ⊢v:t
 
   -- The identity substitution changes any context to itself
-  idSubChangesₑ : (Γ : ℕ → Typₑ) → Changesₑ idSubₑ Γ Γ
+  idSubChangesₑ : (Γ : ℕ → Typₑ) → idSubₑ ∶ Γ ⇒ₑ Γ
   idSubChangesₑ Γ n = tyExprₑ Γ n
 
   -- The identity substitution respects typing
