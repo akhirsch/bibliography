@@ -32,7 +32,7 @@ open Location L
 LocalRen : Set
 LocalRen = Loc → ℕ → ℕ
 
--- `up` construction on local variable renamings
+-- ↑ on local variable renamings
 ↑[_] : Loc → LocalRen → LocalRen
 ↑[ ℓ ] ξ ℓ' with ≡-dec-Loc ℓ ℓ'
 ... | yes _ = ↑ₑ (ξ ℓ')
@@ -56,19 +56,19 @@ renₗₑ (TellLet ℓ ρ1 c ρ2 c₁) ξ = TellLet ℓ ρ1 (renₗₑ c ξ) ρ2
 idRenₗₑ : LocalRen
 idRenₗₑ ℓ = idRenₑ
 
--- The `up` construction respects the identity
+-- The ↑ respects the identity
 ↑Idₗₑ : ∀ ℓ → ↑[ ℓ ] idRenₗₑ ≈₂ idRenₗₑ
 ↑Idₗₑ ℓ ℓ' n with ≡-dec-Loc ℓ ℓ'
 ... | yes _ = ↑Idₑ n
 ... | no  _ = refl
 
--- The `up` construction enjoys fusion
+-- The ↑ enjoys fusion
 ↑Fuseₗₑ : ∀ ξ1 ξ2 ℓ → ↑[ ℓ ] (∣ ξ2 ⟫- ξ1) ≈₂ (∣ ↑[ ℓ ] ξ2 ⟫- ↑[ ℓ ] ξ1)
 ↑Fuseₗₑ ξ1 ξ2 ℓ ℓ' n with ≡-dec-Loc ℓ ℓ'
 ... | yes _ = ↑Fuseₑ (ξ1 ℓ') (ξ2 ℓ') n
 ... | no  _ = refl
 
--- The `up` construction respects extensional equality
+-- The ↑ respects extensional equality
 ↑Extₗₑ : ∀{ξ1 ξ2} →
         ξ1 ≈₂ ξ2 →
         ∀ ℓ → ↑[ ℓ ] ξ1 ≈₂ ↑[ ℓ ] ξ2

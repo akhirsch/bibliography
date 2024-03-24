@@ -11,7 +11,6 @@ open import Data.Product
 open import Relation.Nullary
 open import Relation.Binary
 open import Relation.Binary.PropositionalEquality
-open ≡-Reasoning
 open import Function
 
 open import Common
@@ -28,6 +27,7 @@ open import Choreographies L E
 open Language E
 open LawfulLanguage LE
 open Location L
+open ≡-Reasoning
 
 -- Rename the location variables in a choreography
 renₗ : Chor → (ℕ → ℕ) → Chor

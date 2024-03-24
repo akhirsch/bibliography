@@ -41,15 +41,15 @@ _▸_ : (ℕ → Chor) → Chor → ℕ → Chor
 ▸Ext σ1≈σ2 c zero = refl
 ▸Ext σ1≈σ2 c (suc n) = cong₂ ren (σ1≈σ2 n) refl
 
--- The `up` construction on substitutions
+-- The ↑ on substitutions
 ↑σ : (ℕ → Chor) → ℕ → Chor
 ↑σ σ = σ ▸ Var zero
 
--- The `up` construction respects extensional equality
+-- The ↑ respects extensional equality
 ↑σExt : ∀{σ1 σ2} → σ1 ≈ σ2 → ↑σ σ1 ≈ ↑σ σ2
 ↑σExt σ1≈σ2 = ▸Ext σ1≈σ2 (Var zero)
 
--- The `up` construction respects the identity
+-- The ↑ respects the identity
 ↑σId : ↑σ idSub ≈ idSub
 ↑σId zero = refl
 ↑σId (suc n) = refl
@@ -117,7 +117,7 @@ subId (TellLet ℓ ρ1 c ρ2 c₁) = cong₅ TellLet refl refl (subId c) refl (s
 ι : (ℕ → ℕ) → ℕ → Chor
 ι ξ n = Var (ξ n)
 
--- The `up` construction commutes with the inclusion
+-- The ↑ commutes with the inclusion
 ↑σι : ∀ ξ → ↑σ (ι ξ) ≈ ι (↑ ξ)
 ↑σι ξ zero = refl
 ↑σι ξ (suc n) = refl

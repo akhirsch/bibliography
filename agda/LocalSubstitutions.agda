@@ -54,16 +54,16 @@ _▸[_]_ : LocalSubst → Loc → Expr → LocalSubst
 ... | yes _ = λ{ zero → refl ; (suc n) → cong₂ renₑ (σ1≈σ2 ℓ n) refl }
 ... | no  _ = σ1≈σ2 ℓ'
 
--- The `up` construction on substitutions at a specified location
+-- The ↑ on substitutions at a specified location
 ↑σ[_] : Loc → LocalSubst → LocalSubst
 ↑σ[ ℓ ] σ = σ ▸[ ℓ ] varₑ zero
 
--- The `up` construction respects extensional equality
+-- The ↑ respects extensional equality
 ↑σExtₗₑ : ∀{σ1 σ2} → σ1 ≈₂ σ2 →
           ∀ ℓ → ↑σ[ ℓ ] σ1 ≈₂ ↑σ[ ℓ ] σ2
 ↑σExtₗₑ σ1≈σ2 ℓ = ▸Extₗₑ σ1≈σ2 ℓ (varₑ zero)
 
--- The `up` construction respects the identity
+-- The ↑ respects the identity
 ↑σIdₗₑ : ∀ ℓ → ↑σ[ ℓ ] idSubₗₑ ≈₂ idSubₗₑ
 ↑σIdₗₑ ℓ ℓ' with ≡-dec-Loc ℓ ℓ'
 ... | yes _ = λ{ zero → refl ; (suc n) → renVarₑ n suc }
@@ -127,7 +127,7 @@ subIdₗₑ (TellLet ℓ ρ1 c ρ2 c₁) = cong₅ TellLet refl refl (subIdₗ�
 ιₗₑ : (Loc → ℕ → ℕ) → LocalSubst
 ιₗₑ ξ ℓ n = varₑ (ξ ℓ n)
 
--- The `up` construction commutes with the inclusion
+-- The ↑ commutes with the inclusion
 ↑σιₗₑ : ∀ ξ ℓ → ↑σ[ ℓ ] (ιₗₑ ξ) ≈₂ ιₗₑ (↑[ ℓ ] ξ)
 ↑σιₗₑ ξ ℓ ℓ' with ≡-dec-Loc ℓ ℓ'
 ... | yes refl = λ{ zero → refl ; (suc n) → renVarₑ (ξ ℓ n) suc }

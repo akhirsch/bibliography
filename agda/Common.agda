@@ -2,6 +2,7 @@
 
 open import Level hiding (zero; suc)
 open import Data.Nat hiding (_⊔_)
+open import Data.Nat.Properties
 open import Relation.Binary
 open import Relation.Binary.PropositionalEquality
 open import Function
@@ -78,26 +79,37 @@ open FunExt₂ public
 idRen : ℕ → ℕ
 idRen n = n
 
--- `up` construction on variable renamings
+-- ↑ on variable renamings
 ↑ : (ξ : ℕ → ℕ) → ℕ → ℕ
 ↑ ξ zero = zero
 ↑ ξ (suc n) = suc (ξ n)
 
--- The `up` construction respects the identity
+-- ↑ respects the identity
 ↑Id : ∀ n → ↑ idRen n ≡ idRen n
 ↑Id zero = refl
 ↑Id (suc n) = refl
 
--- The `up` construction respects extensional equality
+-- ↑ respects extensional equality
 ↑Ext : ∀{ξ1 ξ2} → ξ1 ≈ ξ2 → ↑ ξ1 ≈ ↑ ξ2
 ↑Ext ξ1≈ξ2 zero = refl
 ↑Ext ξ1≈ξ2 (suc n) = cong suc (ξ1≈ξ2 n)
 
--- The `up` construction enjoys fusion
+-- ↑ distributes over composition
 ↑Fuse : ∀ ξ1 ξ2 → ↑ (ξ2 ∘ ξ1) ≈ ↑ ξ2 ∘ ↑ ξ1
 ↑Fuse ξ1 ξ2 zero = refl
 ↑Fuse ξ1 ξ2 (suc n) = refl
 
+-- ↑ preserves injectivity
+↑-pres-inj : ∀{ξ} → Injective _≡_ _≡_ ξ → Injective _≡_ _≡_ (↑ ξ)
+↑-pres-inj ξ-inj {x = zero} {zero} refl = refl
+↑-pres-inj ξ-inj {x = zero} {suc y} ()
+↑-pres-inj ξ-inj {x = suc x} {zero} ()
+↑-pres-inj ξ-inj {x = suc x} {suc y} sξx≡sξy = cong suc (ξ-inj (suc-injective sξx≡sξy))
+
+{-
+  Applying ↑ ξ after increasing all variables is
+  identical to applying ξ and then increasing all variables
+-}
 ↑∘suc : ∀ ξ → ↑ ξ ∘ suc ≈ suc ∘ ξ
 ↑∘suc ξ zero = refl
 ↑∘suc ξ (suc n) = refl

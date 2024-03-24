@@ -35,6 +35,13 @@ record Location : Set₁ where
   ... | yes refl = yes refl
   ... | no L1≠L2 = no λ{ refl → L1≠L2 refl }
 
+  -- Injectivity of constructors
+  Varₗ-inj : ∀{ℓ ℓ'} → Var ℓ ≡ Var ℓ' → ℓ ≡ ℓ'
+  Varₗ-inj refl = refl
+
+  Litₗ-inj : ∀{L L'} → Lit L ≡ Lit L' → L ≡ L'
+  Litₗ-inj refl = refl
+
   -- Lists of locations
   LocList : Set
   LocList = List Loc
