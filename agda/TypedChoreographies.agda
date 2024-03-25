@@ -53,6 +53,7 @@ data _⊢_∶_ : LocCtx × LocalCtx × Ctx → Chor → Typ → Set where
           ∀ x →
           (Θ , Δ , Γ) ⊢ Var x ∶ Γ x
   tyDone : ∀{Θ Δ Γ e t ℓ}
+           (Θ⊢Γ : Θ ⊢ Γ) →
            (Θ⊢ℓ : Θ ⊢ₗ ℓ) →
            (Δ[ℓ]⊢e∶t : Δ ℓ ⊢ₑ e ∶ t) →
            (Θ , Δ , Γ) ⊢ Done ℓ e ∶ At t ℓ
@@ -84,6 +85,7 @@ data _⊢_∶_ : LocCtx × LocalCtx × Ctx → Chor → Typ → Set where
           (Θ；Δ；Γ⊢C2:τ1 : (Θ , Δ , Γ) ⊢ C2 ∶ τ1) →
           (Θ , Δ , Γ) ⊢ App C1 C2 ∶ τ2
   tyLocAbs : ∀{Θ Δ Γ C τ}
+             (Θ⊢Γ : Θ ⊢ Γ) →
              (↑Θ；↑Δ；↑Γ⊢C∶τ : (↑LocCtx Θ , ↑LocalCtx Δ , ↑Ctx Γ)  ⊢ C ∶ τ) →
              (Θ , Δ , Γ) ⊢ LocAbs C ∶ AllLoc τ
   tyLocApp : ∀{Θ Δ Γ C τ ℓ}
@@ -104,8 +106,8 @@ tyExt : ∀{Θ Θ' Δ Δ' Γ Γ' C τ} →
         (Θ' , Δ' , Γ') ⊢ C ∶ τ
 tyExt Θ≈Θ' Δ≈Δ' Γ≈Γ' (tyVar Θ⊢Γ x) =
   subst (λ z → _ ⊢ Var x ∶ z) (sym (Γ≈Γ' x)) (tyVar (wfCtxExt Θ≈Θ' Γ≈Γ' Θ⊢Γ) x)
-tyExt Θ≈Θ' Δ≈Δ' Γ≈Γ' (tyDone {ℓ = ℓ} Θ⊢ℓ Δ[ℓ]⊢e∶t) =
-  tyDone (wfExtₗ Θ≈Θ' Θ⊢ℓ) (tyExtₑ (Δ≈Δ' ℓ) Δ[ℓ]⊢e∶t)
+tyExt Θ≈Θ' Δ≈Δ' Γ≈Γ' (tyDone {ℓ = ℓ} Θ⊢Γ Θ⊢ℓ Δ[ℓ]⊢e∶t) =
+  tyDone (wfCtxExt Θ≈Θ' Γ≈Γ' Θ⊢Γ) (wfExtₗ Θ≈Θ' Θ⊢ℓ) (tyExtₑ (Δ≈Δ' ℓ) Δ[ℓ]⊢e∶t)
 tyExt Θ≈Θ' Δ≈Δ' Γ≈Γ' (tySend C∶τ Θ⊢ℓ2) =
   tySend (tyExt Θ≈Θ' Δ≈Δ' Γ≈Γ' C∶τ) (wfExtₗ Θ≈Θ' Θ⊢ℓ2)
 tyExt Θ≈Θ' Δ≈Δ' Γ≈Γ' (tyIf C∶τ C∶τ1 C∶τ2) =
@@ -118,8 +120,8 @@ tyExt Θ≈Θ' Δ≈Δ' Γ≈Γ' (tyFun C∶τ2) = tyFun (tyExt Θ≈Θ' Δ≈Δ
 tyExt Θ≈Θ' Δ≈Δ' Γ≈Γ' (tyFix C∶τ) = tyFix (tyExt Θ≈Θ' Δ≈Δ' (addCtxExt Γ≈Γ') C∶τ)
 tyExt Θ≈Θ' Δ≈Δ' Γ≈Γ' (tyApp C1∶τ1⇒τ2 C2∶τ1) =
   tyApp (tyExt Θ≈Θ' Δ≈Δ' Γ≈Γ' C1∶τ1⇒τ2) (tyExt Θ≈Θ' Δ≈Δ' Γ≈Γ' C2∶τ1)
-tyExt Θ≈Θ' Δ≈Δ' Γ≈Γ' (tyLocAbs C∶τ) =
-  tyLocAbs (tyExt (↑LocCtxExt Θ≈Θ') (↑LocalCtxExt Δ≈Δ') (↑CtxExt Γ≈Γ') C∶τ)
+tyExt Θ≈Θ' Δ≈Δ' Γ≈Γ' (tyLocAbs Θ⊢Γ C∶τ) =
+  tyLocAbs (wfCtxExt Θ≈Θ' Γ≈Γ' Θ⊢Γ) (tyExt (↑LocCtxExt Θ≈Θ') (↑LocalCtxExt Δ≈Δ') (↑CtxExt Γ≈Γ') C∶τ)
 tyExt Θ≈Θ' Δ≈Δ' Γ≈Γ' (tyLocApp C∶τ Θ⊢ℓ) = tyLocApp (tyExt Θ≈Θ' Δ≈Δ' Γ≈Γ' C∶τ) (wfExtₗ Θ≈Θ' Θ⊢ℓ)
 tyExt Θ≈Θ' Δ≈Δ' Γ≈Γ' (tyTellLet C∶Loc Θ⊢ρ1 Θ⊢ρ2 Θ⊢τ C∶τ) =
   tyTellLet (tyExt Θ≈Θ' Δ≈Δ' Γ≈Γ' C∶Loc) (wfExtₗₗ Θ≈Θ' Θ⊢ρ1) (wfExtₗₗ Θ≈Θ' Θ⊢ρ2)
@@ -133,8 +135,8 @@ tyWkₗ : ∀{Θ Θ' Δ Δ' Γ C τ} ξ →
         (Θ , Δ , Γ) ⊢ C ∶ τ →
         (Θ' , Δ' , renCtx Γ ξ) ⊢ renₗ C ξ ∶ renₜ τ ξ
 tyWkₗ ξ ξ-inj Θ≈Θ'∘ξ Δ≈Δ'∘ξ (tyVar Θ⊢Γ x) = tyVar (wfCtxWk ξ Θ≈Θ'∘ξ Θ⊢Γ) x
-tyWkₗ ξ ξ-inj Θ≈Θ'∘ξ Δ≈Δ'∘ξ (tyDone {e = e} {t = t} {ℓ = ℓ} Θ⊢ℓ Δ[ℓ]⊢e:t) =
-  tyDone (wfWkₗ ξ Θ≈Θ'∘ξ Θ⊢ℓ) (tyExtₑ (Δ≈Δ'∘ξ ℓ) Δ[ℓ]⊢e:t)
+tyWkₗ ξ ξ-inj Θ≈Θ'∘ξ Δ≈Δ'∘ξ (tyDone {e = e} {t = t} {ℓ = ℓ} Θ⊢Γ Θ⊢ℓ Δ[ℓ]⊢e:t) =
+  tyDone (wfCtxWk ξ Θ≈Θ'∘ξ Θ⊢Γ) (wfWkₗ ξ Θ≈Θ'∘ξ Θ⊢ℓ) (tyExtₑ (Δ≈Δ'∘ξ ℓ) Δ[ℓ]⊢e:t)
 tyWkₗ ξ ξ-inj Θ≈Θ'∘ξ Δ≈Δ'∘ξ (tySend C∶τ Θ⊢ℓ2) =
   tySend (tyWkₗ ξ ξ-inj Θ≈Θ'∘ξ Δ≈Δ'∘ξ C∶τ) (wfWkₗ ξ Θ≈Θ'∘ξ Θ⊢ℓ2)
 tyWkₗ ξ ξ-inj Θ≈Θ'∘ξ Δ≈Δ'∘ξ (tyIf C∶Bool C1∶τ C2∶τ) =
@@ -157,8 +159,8 @@ tyWkₗ {Θ} {Θ'} {Δ} {Δ'} {Γ} ξ ξ-inj Θ≈Θ'∘ξ Δ≈Δ'∘ξ (tyFix 
   tyFix (tyExt ≈-refl ≈₂-refl (renCtx,, Γ τ ξ) (tyWkₗ ξ ξ-inj Θ≈Θ'∘ξ Δ≈Δ'∘ξ C∶τ))
 tyWkₗ ξ ξ-inj Θ≈Θ'∘ξ Δ≈Δ'∘ξ (tyApp C1∶τ1⇒τ2 C2∶τ2) =
   tyApp (tyWkₗ ξ ξ-inj Θ≈Θ'∘ξ Δ≈Δ'∘ξ C1∶τ1⇒τ2) (tyWkₗ ξ ξ-inj Θ≈Θ'∘ξ Δ≈Δ'∘ξ C2∶τ2)
-tyWkₗ {Θ} {Θ'} {Δ} {Δ'} {Γ} ξ ξ-inj Θ≈Θ'∘ξ Δ≈Δ'∘ξ (tyLocAbs {C = C} {τ = τ} C∶τ) =
-  tyLocAbs ↑Θ'；↑Δ'；↑[Γ⟨ξ⟩]⊢C⟨↑ξ⟩∶τ⟨↑ξ⟩
+tyWkₗ {Θ} {Θ'} {Δ} {Δ'} {Γ} ξ ξ-inj Θ≈Θ'∘ξ Δ≈Δ'∘ξ (tyLocAbs {C = C} {τ = τ} Θ⊢Γ C∶τ) =
+  tyLocAbs (wfCtxWk ξ Θ≈Θ'∘ξ Θ⊢Γ) ↑Θ'；↑Δ'；↑[Γ⟨ξ⟩]⊢C⟨↑ξ⟩∶τ⟨↑ξ⟩
     where
     module _ where
       open import Relation.Binary.Reasoning.Setoid (≈-Setoid′ ℕ Set)
@@ -252,14 +254,14 @@ tyWkₗ {Θ} {Θ'} {Δ} {Δ'} {Γ} ξ ξ-inj Θ≈Θ'∘ξ Δ≈Δ'∘ξ (tyTell
     ↑Θ'；↑Δ'；↑[Γ⟨ξ⟩]⊢C⟨↑ξ⟩∶↑τ⟨ξ⟩ = subst (λ x → (↑LocCtx Θ' , ↑LocalCtx Δ' , ↑Ctx (renCtx Γ ξ)) ⊢ renₗ C2 (↑ ξ) ∶ x)
         ↑τ⟨↑ξ⟩≡↑τ⟨ξ⟩ ↑Θ'；↑Δ'；↑[Γ⟨ξ⟩]⊢C⟨↑ξ⟩∶↑τ⟨↑ξ⟩
 
-
 -- The typing relation has weakening on local variables
 tyWkₗₑ : ∀{Θ Δ Δ' Γ C τ} ξ →
          Δ ≈₂ Δ' ∘ₗₑ ξ →
          (Θ , Δ , Γ) ⊢ C ∶ τ →
          (Θ , Δ' , Γ) ⊢ renₗₑ C ξ ∶ τ
 tyWkₗₑ ξ Δ≈Δ'∘ξ (tyVar Θ⊢Γ x) = tyVar Θ⊢Γ x
-tyWkₗₑ ξ Δ≈Δ'∘ξ (tyDone {ℓ = ℓ} Θ⊢ℓ Δ[ℓ]⊢e∶t) = tyDone Θ⊢ℓ (tyWkₑ (ξ ℓ) (Δ≈Δ'∘ξ ℓ) Δ[ℓ]⊢e∶t)
+tyWkₗₑ ξ Δ≈Δ'∘ξ (tyDone {ℓ = ℓ} Θ⊢Γ Θ⊢ℓ Δ[ℓ]⊢e∶t) =
+  tyDone Θ⊢Γ Θ⊢ℓ (tyWkₑ (ξ ℓ) (Δ≈Δ'∘ξ ℓ) Δ[ℓ]⊢e∶t)
 tyWkₗₑ ξ Δ≈Δ'∘ξ (tySend C∶t Θ⊢ℓ2) = tySend (tyWkₗₑ ξ Δ≈Δ'∘ξ C∶t) Θ⊢ℓ2
 tyWkₗₑ ξ Δ≈Δ'∘ξ (tyIf C∶bool C1∶τ C2∶τ) =
   tyIf (tyWkₗₑ ξ Δ≈Δ'∘ξ C∶bool) (tyWkₗₑ ξ Δ≈Δ'∘ξ C1∶τ) (tyWkₗₑ ξ Δ≈Δ'∘ξ C2∶τ)
@@ -277,7 +279,7 @@ tyWkₗₑ {Δ = Δ} {Δ'} ξ Δ≈Δ'∘ξ (tyDefLocal {t1 = t1} {ℓ = ℓ} C1
 tyWkₗₑ ξ Δ≈Δ'∘ξ (tyFun C∶τ) = tyFun (tyWkₗₑ ξ Δ≈Δ'∘ξ C∶τ)
 tyWkₗₑ ξ Δ≈Δ'∘ξ (tyFix C∶τ) = tyFix (tyWkₗₑ ξ Δ≈Δ'∘ξ C∶τ)
 tyWkₗₑ ξ Δ≈Δ'∘ξ (tyApp C1∶τ1⇒τ2 C2∶τ1) = tyApp (tyWkₗₑ ξ Δ≈Δ'∘ξ C1∶τ1⇒τ2) (tyWkₗₑ ξ Δ≈Δ'∘ξ C2∶τ1)
-tyWkₗₑ {Θ} {Δ} {Δ'} {Γ} ξ Δ≈Δ'∘ξ (tyLocAbs {C = C} {τ = τ} C∶τ) = tyLocAbs C⟨↑ξ⟩∶τ
+tyWkₗₑ {Θ} {Δ} {Δ'} {Γ} ξ Δ≈Δ'∘ξ (tyLocAbs {C = C} {τ = τ} Θ⊢Γ C∶τ) = tyLocAbs Θ⊢Γ C⟨↑ξ⟩∶τ
   where
   open import Relation.Binary.Reasoning.Setoid (≈₂-Setoid′ Loc ℕ Typₑ)
 
@@ -303,3 +305,84 @@ tyWkₗₑ {Θ} {Δ} {Δ'} {Γ} ξ Δ≈Δ'∘ξ (tyTellLet {C2 = C2} {τ = τ} 
 
   C2⟨↑ξ⟩∶↑τ : (↑LocCtx Θ , ↑LocalCtx Δ' , ↑Ctx Γ) ⊢ renₗₑ C2 (↑ₗₑ ξ) ∶ ↑ₜ τ
   C2⟨↑ξ⟩∶↑τ = tyWkₗₑ (↑ₗₑ ξ) ctx-eq C2∶τ
+
+{-
+  If we have a typing judgment under location context Θ
+  and global context Γ, then Γ must be well-formed under Θ
+-}
+ty⇒wfCtx : ∀{Θ Δ Γ C τ} →
+         (Θ , Δ , Γ) ⊢ C ∶ τ →
+         Θ ⊢ Γ
+ty⇒wfCtx (tyVar Θ⊢Γ x) = Θ⊢Γ
+ty⇒wfCtx (tyDone Θ⊢Γ Θ⊢ℓ Δ[ℓ]⊢e∶t) = Θ⊢Γ
+ty⇒wfCtx (tySend C∶τ Θ⊢ℓ2) = ty⇒wfCtx C∶τ
+ty⇒wfCtx (tyIf C∶bool C1∶τ C2∶τ) = ty⇒wfCtx C∶bool
+ty⇒wfCtx (tySync Θ⊢ℓ1 Θ⊢ℓ2 C∶τ) = ty⇒wfCtx C∶τ
+ty⇒wfCtx (tyDefLocal C1∶t1 C2∶τ2) = ty⇒wfCtx C1∶t1
+ty⇒wfCtx (tyFun C∶τ) = wfCtxTail (ty⇒wfCtx C∶τ)
+ty⇒wfCtx (tyFix C∶τ) = wfCtxTail (ty⇒wfCtx C∶τ)
+ty⇒wfCtx (tyApp C1 C2) = ty⇒wfCtx C1
+ty⇒wfCtx (tyLocAbs Θ⊢Γ C∶τ) = Θ⊢Γ
+ty⇒wfCtx (tyLocApp C∶τ Θ⊢ℓ) = ty⇒wfCtx C∶τ
+ty⇒wfCtx (tyTellLet C∶τ Θ⊢ρ1 Θ⊢ρ2 Θ⊢τ C∶τ₁) = ty⇒wfCtx C∶τ
+
+-- The typing relation has weakening on global variables
+tyWk : ∀{Θ Δ Γ Γ' C τ} ξ →
+       Γ ≈ Γ' ∘ ξ →
+       Θ ⊢ Γ' →
+       (Θ , Δ , Γ) ⊢ C ∶ τ →
+       (Θ , Δ , Γ') ⊢ ren C ξ ∶ τ
+tyWk {Θ} {Δ} {Γ} {Γ'} ξ Γ≈Γ'∘ξ Θ⊢Γ' (tyVar Θ⊢Γ x) = ξx∶Γx
+  where
+  ξx∶Γ'[ξx] : (Θ , Δ , Γ') ⊢ Var (ξ x) ∶ Γ' (ξ x)
+  ξx∶Γ'[ξx] = tyVar Θ⊢Γ' (ξ x)
+
+  ξx∶Γx : (Θ , Δ , Γ') ⊢ Var (ξ x) ∶ Γ x
+  ξx∶Γx = subst (λ z → (Θ , Δ , Γ') ⊢ Var (ξ x) ∶ z) (sym (Γ≈Γ'∘ξ x)) ξx∶Γ'[ξx]
+tyWk ξ Γ≈Γ'∘ξ Θ⊢Γ' (tyDone Θ⊢Γ Θ⊢ℓ Δ[ℓ]⊢e∶t) = tyDone Θ⊢Γ' Θ⊢ℓ Δ[ℓ]⊢e∶t
+tyWk ξ Γ≈Γ'∘ξ Θ⊢Γ' (tySend C∶τ Θ⊢ℓ2) = tySend (tyWk ξ Γ≈Γ'∘ξ Θ⊢Γ' C∶τ) Θ⊢ℓ2
+tyWk ξ Γ≈Γ'∘ξ Θ⊢Γ' (tyIf C∶bool C1∶τ C2∶τ) =
+  tyIf (tyWk ξ Γ≈Γ'∘ξ Θ⊢Γ' C∶bool) (tyWk ξ Γ≈Γ'∘ξ Θ⊢Γ' C1∶τ) (tyWk ξ Γ≈Γ'∘ξ Θ⊢Γ' C2∶τ)
+tyWk ξ Γ≈Γ'∘ξ Θ⊢Γ' (tySync Θ⊢ℓ1 Θ⊢ℓ2 C∶τ) = tySync Θ⊢ℓ1 Θ⊢ℓ2 (tyWk ξ Γ≈Γ'∘ξ Θ⊢Γ' C∶τ)
+tyWk ξ Γ≈Γ'∘ξ Θ⊢Γ' (tyDefLocal C1∶t1 C2∶τ2) =
+  tyDefLocal (tyWk ξ Γ≈Γ'∘ξ Θ⊢Γ' C1∶t1) (tyWk ξ Γ≈Γ'∘ξ Θ⊢Γ' C2∶τ2)
+tyWk {Θ} {Δ} {Γ} {Γ'} ξ Γ≈Γ'∘ξ Θ⊢Γ' (tyFun {C = C} {τ1 = τ1} {τ2 = τ2} C∶τ2) = tyFun C⟨↑ξ⟩∶τ2
+  where
+  Γ,,τ1≈[Γ',,τ1]∘↑ξ : Γ ,, τ1 ≈ (Γ' ,, τ1) ∘ (↑ ξ)
+  Γ,,τ1≈[Γ',,τ1]∘↑ξ zero = refl
+  Γ,,τ1≈[Γ',,τ1]∘↑ξ (suc n) = Γ≈Γ'∘ξ n
+
+  C⟨↑ξ⟩∶τ2 : (Θ , Δ , (Γ' ,, τ1)) ⊢ ren C (↑ ξ) ∶ τ2
+  C⟨↑ξ⟩∶τ2 = tyWk (↑ ξ) Γ,,τ1≈[Γ',,τ1]∘↑ξ (wfCtx,, Θ⊢Γ' (ty⇒wfCtx C∶τ2 0)) C∶τ2
+tyWk {Θ} {Δ} {Γ} {Γ'} ξ Γ≈Γ'∘ξ Θ⊢Γ' (tyFix {C = C} {τ = τ} C∶τ) = tyFix C⟨↑ξ⟩∶τ
+  where
+  Γ,,τ≈[Γ',,τ]∘↑ξ : Γ ,, τ ≈ (Γ' ,, τ) ∘ (↑ ξ)
+  Γ,,τ≈[Γ',,τ]∘↑ξ zero = refl
+  Γ,,τ≈[Γ',,τ]∘↑ξ (suc n) = Γ≈Γ'∘ξ n
+
+  C⟨↑ξ⟩∶τ : (Θ , Δ , (Γ' ,, τ)) ⊢ ren C (↑ ξ) ∶ τ
+  C⟨↑ξ⟩∶τ = tyWk (↑ ξ) Γ,,τ≈[Γ',,τ]∘↑ξ (wfCtx,, Θ⊢Γ' (ty⇒wfCtx C∶τ 0)) C∶τ
+tyWk ξ Γ≈Γ'∘ξ Θ⊢Γ' (tyApp C1∶τ1⇒τ2 C2∶τ1) =
+  tyApp (tyWk ξ Γ≈Γ'∘ξ Θ⊢Γ' C1∶τ1⇒τ2) (tyWk ξ Γ≈Γ'∘ξ Θ⊢Γ' C2∶τ1)
+tyWk {Θ} {Δ} {Γ} {Γ'} ξ Γ≈Γ'∘ξ Θ⊢Γ' (tyLocAbs {C = C} Θ⊢Γ C∶τ) =
+  tyLocAbs Θ⊢Γ' (tyWk ξ ↑Γ≈↑Γ'∘ξ (wfCtx↑ Θ⊢Γ') C∶τ)
+  where
+  open import Relation.Binary.Reasoning.Setoid (≈-Setoid′ ℕ Typ)
+
+  ↑Γ≈↑Γ'∘ξ : ↑Ctx Γ ≈ ↑Ctx Γ' ∘ ξ
+  ↑Γ≈↑Γ'∘ξ = begin
+    ↑Ctx Γ        ≈⟨ ↑CtxExt Γ≈Γ'∘ξ ⟩
+    ↑Ctx (Γ' ∘ ξ) ≈⟨ ↑Ctx∘ Γ' ξ ⟩
+    ↑Ctx Γ' ∘ ξ   ∎
+tyWk {Θ} {Δ} {Γ} {Γ'} ξ Γ≈Γ'∘ξ Θ⊢Γ' (tyLocApp C∶τ Θ⊢ℓ) =
+  tyLocApp (tyWk ξ Γ≈Γ'∘ξ Θ⊢Γ' C∶τ) Θ⊢ℓ
+tyWk {Θ} {Δ} {Γ} {Γ'} ξ Γ≈Γ'∘ξ Θ⊢Γ' (tyTellLet C1∶Loc Θ⊢ρ1 Θ⊢ρ2 Θ⊢τ C2∶τ) =
+  tyTellLet (tyWk ξ Γ≈Γ'∘ξ Θ⊢Γ' C1∶Loc) Θ⊢ρ1 Θ⊢ρ2 Θ⊢τ (tyWk ξ ↑Γ≈↑Γ'∘ξ (wfCtx↑ Θ⊢Γ') C2∶τ)
+  where
+  open import Relation.Binary.Reasoning.Setoid (≈-Setoid′ ℕ Typ)
+
+  ↑Γ≈↑Γ'∘ξ : ↑Ctx Γ ≈ ↑Ctx Γ' ∘ ξ
+  ↑Γ≈↑Γ'∘ξ = begin
+    ↑Ctx Γ        ≈⟨ ↑CtxExt Γ≈Γ'∘ξ ⟩
+    ↑Ctx (Γ' ∘ ξ) ≈⟨ ↑Ctx∘ Γ' ξ ⟩
+    ↑Ctx Γ' ∘ ξ   ∎

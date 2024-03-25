@@ -1,13 +1,8 @@
 {-# OPTIONS --safe #-}
 
-open import Data.Empty
 open import Data.Unit
 open import Data.Nat
-open import Data.Nat.Properties
 open import Data.List
-open import Data.Product
-open import Relation.Nullary
-open import Relation.Binary
 open import Relation.Binary.PropositionalEquality
 open import Function
 
@@ -42,7 +37,7 @@ open TypedLocalLanguage TE
 LocCtx : Set₁
 LocCtx = ℕ → Set
 
--- ↑ adds another variale to the context
+-- ↑ adds another variable to the context
 ↑LocCtx : LocCtx → LocCtx
 ↑LocCtx Θ zero = ⊤
 ↑LocCtx Θ (suc n) = Θ n
@@ -56,6 +51,17 @@ LocCtx = ℕ → Set
 ↑-distr-∘ : ∀ Θ ξ → ↑LocCtx (Θ ∘ ξ) ≈ ↑LocCtx Θ ∘ ↑ ξ
 ↑-distr-∘ Θ ξ zero = refl
 ↑-distr-∘ Θ ξ (suc n) = refl
+
+-- Context inclusion
+_⊆_ : LocCtx → LocCtx → Set
+Θ1 ⊆ Θ2 = ∀ x → Θ1 x → Θ2 x
+
+-- ↑ respects inclusions
+↑LocCtx⊆ : ∀{Θ1 Θ2} →
+           Θ1 ⊆ Θ2 →
+           ↑LocCtx Θ1 ⊆ ↑LocCtx Θ2
+↑LocCtx⊆ Θ1⊆Θ2 zero tt = tt
+↑LocCtx⊆ Θ1⊆Θ2 (suc n) ↑Θ1n = Θ1⊆Θ2 n ↑Θ1n
 
 -- Location well-formedness
 data _⊢ₗ_ : LocCtx → Loc → Set where
@@ -77,6 +83,14 @@ wfExtₗ : ∀{Θ1 Θ2 ℓ} →
         Θ2 ⊢ₗ ℓ
 wfExtₗ Θ1≈Θ2 (wfVar {x = x} Θ1x) = wfVar (transport (Θ1≈Θ2 x) Θ1x)
 wfExtₗ Θ1≈Θ2 (wfLit L) = wfLit L
+
+-- Location well-formedness is monotone
+wfMonoₗ : ∀{Θ1 Θ2 ℓ} →
+          Θ1 ⊆ Θ2 →
+          Θ1 ⊢ₗ ℓ →
+          Θ2 ⊢ₗ ℓ
+wfMonoₗ Θ1⊆Θ2 (wfVar {x = x} Θ1x) = wfVar (Θ1⊆Θ2 x Θ1x)
+wfMonoₗ Θ1⊆Θ2 (wfLit L) = wfLit L
 
 -- Location list well-formedness
 data _⊢ₗₗ_ : LocCtx → LocList → Set where
@@ -132,3 +146,20 @@ wfExtₜ : ∀{Θ1 Θ2 τ} →
 wfExtₜ Θ1≈Θ2 (wfAt Θ⊢ℓ) = wfAt (wfExtₗ Θ1≈Θ2 Θ⊢ℓ)
 wfExtₜ Θ1≈Θ2 (wfArrow Θ⊢τ1 Θ⊢τ2) = wfArrow (wfExtₜ Θ1≈Θ2 Θ⊢τ1) (wfExtₜ Θ1≈Θ2 Θ⊢τ2)
 wfExtₜ Θ1≈Θ2 (wfAllLoc ↑Θ⊢τ) = wfAllLoc (wfExtₜ (↑LocCtxExt Θ1≈Θ2) ↑Θ⊢τ)
+
+-- Type well-formedness is monotone
+wfMonoₜ : ∀{Θ1 Θ2 τ} →
+          Θ1 ⊆ Θ2 →
+          Θ1 ⊢ₜ τ →
+          Θ2 ⊢ₜ τ
+wfMonoₜ Θ1⊆Θ2 (wfAt Θ⊢ℓ) = wfAt (wfMonoₗ Θ1⊆Θ2 Θ⊢ℓ) 
+wfMonoₜ Θ1⊆Θ2 (wfArrow Θ1⊢τ1 Θ1⊢τ2) = wfArrow (wfMonoₜ Θ1⊆Θ2 Θ1⊢τ1) (wfMonoₜ Θ1⊆Θ2 Θ1⊢τ2)
+wfMonoₜ Θ1⊆Θ2 (wfAllLoc ↑Θ1⊢τ) = wfAllLoc (wfMonoₜ (↑LocCtx⊆ Θ1⊆Θ2) ↑Θ1⊢τ)
+
+-- If τ is well-formed in Θ, then ↑τ is well-formed in ↑Θ
+wfTy↑ : ∀{Θ τ} → Θ ⊢ₜ τ → ↑LocCtx Θ ⊢ₜ ↑ₜ τ
+wfTy↑ {Θ} Θ⊢τ = wfWkₜ suc Θ≈↑Θ∘suc Θ⊢τ
+  where
+  Θ≈↑Θ∘suc : Θ ≈ ↑LocCtx Θ ∘ suc
+  Θ≈↑Θ∘suc n = refl
+

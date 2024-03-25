@@ -31,10 +31,12 @@ open import Substitutions L E LE
 open import Types L E LE TE
 open import LocationContexts L E LE TE
 open import LocalContexts L E LE TE
+
 open Location L
 open Language E
 open LawfulLanguage LE
 open TypedLocalLanguage TE
+open ≡-Reasoning
 
 
 -- Choreographic/global contexts
@@ -52,7 +54,7 @@ addCtxExt : ∀{Γ Γ' τ} →
 addCtxExt Γ≈Γ' zero = refl
 addCtxExt Γ≈Γ' (suc n) = Γ≈Γ' n
 
--- Renaming on global contexts
+-- Renaming locations on global contexts
 renCtx : Ctx → (ℕ → ℕ) → Ctx
 renCtx Γ ξ n = renₜ (Γ n) ξ
 
@@ -62,6 +64,11 @@ renCtx,, : ∀ Γ τ ξ →
 renCtx,, Γ τ ξ zero = refl
 renCtx,, Γ τ ξ (suc n) = refl
 
+-- Renaming distributes over composition
+renCtx∘ : ∀ Γ ξ1 ξ2 →
+          renCtx (Γ ∘ ξ1) ξ2 ≈ renCtx Γ ξ2 ∘ ξ1
+renCtx∘ Γ ξ1 ξ2 n = refl
+
 -- ↑ on global contexts
 ↑Ctx : Ctx → Ctx
 ↑Ctx Γ = renCtx Γ suc
@@ -70,12 +77,16 @@ renCtx,, Γ τ ξ (suc n) = refl
 ↑CtxExt : ∀{Γ1 Γ2} → Γ1 ≈ Γ2 → ↑Ctx Γ1 ≈ ↑Ctx Γ2
 ↑CtxExt Γ1≈Γ2 n = cong₂ renₜ (Γ1≈Γ2 n) refl
 
+-- ↑ distributes over composition
+↑Ctx∘ : ∀ Γ ξ →
+        ↑Ctx (Γ ∘ ξ) ≈ ↑Ctx Γ ∘ ξ
+↑Ctx∘ Γ ξ = renCtx∘ Γ ξ suc
+
 -- ↑ distributes over renaming contexts
 renCtx↑ : ∀ Γ ξ → renCtx (↑Ctx Γ) (↑ ξ) ≈ ↑Ctx (renCtx Γ ξ)
 renCtx↑ Γ ξ n = eq
   where
-  open ≡-Reasoning
-
+  
   eq : renₜ (renₜ (Γ n) suc) (↑ ξ) ≡ renₜ (renₜ (Γ n) ξ) suc
   eq = 
     renₜ (renₜ (Γ n) suc) (↑ ξ) ≡⟨ sym (renFuseₜ suc (↑ ξ) (Γ n)) ⟩
@@ -104,3 +115,28 @@ wfCtxExt : ∀{Θ1 Θ2 Γ1 Γ2} →
            Θ1 ⊢ Γ1 →
            Θ2 ⊢ Γ2
 wfCtxExt Θ1≈Θ2 Γ1≈Γ2 Θ1⊢Γ1 n = subst (λ x → _ ⊢ₜ x) (Γ1≈Γ2 n) (wfExtₜ Θ1≈Θ2 (Θ1⊢Γ1 n))
+
+-- Context well-formedness is monotone
+wfMono : ∀{Θ1 Θ2 Γ} →
+          Θ1 ⊆ Θ2 →
+          Θ1 ⊢ Γ →
+          Θ2 ⊢ Γ
+wfMono Θ1⊆Θ2 Θ1⊢Γ n = wfMonoₜ Θ1⊆Θ2 (Θ1⊢Γ n)
+
+-- Adding a well-formed type to a well-formed context retains its well-formedness
+wfCtx,, : ∀{Θ Γ τ} →
+          Θ ⊢ Γ →
+          Θ ⊢ₜ τ →
+          Θ ⊢ (Γ ,, τ)
+wfCtx,, Θ⊢Γ Θ⊢τ zero = Θ⊢τ
+wfCtx,, Θ⊢Γ Θ⊢τ (suc n) = Θ⊢Γ n
+
+-- Removing the top-most type from a well-formed context retains its well-formedness
+wfCtxTail : ∀{Θ Γ τ} →
+            Θ ⊢ (Γ ,, τ) →
+            Θ ⊢ Γ
+wfCtxTail Θ⊢Γ,,τ n = Θ⊢Γ,,τ (suc n)
+
+-- If Γ is well-formed in Θ, then ↑Γ is well-formed in ↑Γ
+wfCtx↑ : ∀{Θ Γ} → Θ ⊢ Γ → ↑LocCtx Θ ⊢ ↑Ctx Γ
+wfCtx↑ Θ⊢Γ n = wfTy↑ (Θ⊢Γ n)
