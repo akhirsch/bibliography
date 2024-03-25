@@ -16,17 +16,23 @@ open import Function
 
 open import Common
 open import LocalLang
+open import TypedLocalLang
 open import Locations
 
 module LocationSubstitutions
   (L : Location)
   (E : Language L)
   (LE : LawfulLanguage L E)
+  (TE : TypedLocalLanguage L E LE)
   where
 
+open import Types L E LE TE
+open import Choreographies L E LE TE
+open import LocationRenamings L E LE TE
+open Language E
+open LawfulLanguage LE
 open Location L
-open import Choreographies L E
-open import LocationRenamings L E LE
+open ≡-Reasoning
 
 -- Substitute location variables in a choreography
 subₗ : (c : Chor) (σ : ℕ → Loc) → Chor
@@ -36,8 +42,8 @@ subₗ (Send ℓ1 c ℓ2) σ = Send (subₗ-Loc ℓ1 σ) (subₗ c σ) (subₗ-L
 subₗ (If ℓ c c1 c2) σ = If (subₗ-Loc ℓ σ) (subₗ c σ) (subₗ c1 σ) (subₗ c2 σ)
 subₗ (Sync ℓ1 d ℓ2 c) σ = Sync (subₗ-Loc ℓ1 σ) d (subₗ-Loc ℓ2 σ) (subₗ c σ)
 subₗ (DefLocal ℓ c1 c2) σ = DefLocal (subₗ-Loc ℓ σ) (subₗ c1 σ) (subₗ c2 σ)
-subₗ (Fun c) σ = Fun (subₗ c σ)
-subₗ (Fix c) σ = Fix (subₗ c σ)
+subₗ (Fun τ c) σ = Fun (subₜ τ σ) (subₗ c σ)
+subₗ (Fix τ c) σ = Fix (subₜ τ σ) (subₗ c σ)
 subₗ (App c1 c2) σ = App (subₗ c1 σ) (subₗ c2 σ)
 subₗ (LocAbs c) σ = LocAbs (subₗ c (↑σₗ σ))
 subₗ (LocApp c ℓ) σ = LocApp (subₗ c σ) (subₗ-Loc ℓ σ)
@@ -55,8 +61,8 @@ subExtₗ σ1≈σ2 (Send ℓ1 c ℓ2) = cong₃ Send (subExtₗ-Loc σ1≈σ2 �
 subExtₗ σ1≈σ2 (If ℓ c c1 c2) = cong₄ If (subExtₗ-Loc σ1≈σ2 ℓ) (subExtₗ σ1≈σ2 c) (subExtₗ σ1≈σ2 c1) (subExtₗ σ1≈σ2 c2)
 subExtₗ σ1≈σ2 (Sync ℓ1 d ℓ2 c) = cong₄ Sync (subExtₗ-Loc σ1≈σ2 ℓ1) refl (subExtₗ-Loc σ1≈σ2 ℓ2) (subExtₗ σ1≈σ2 c)
 subExtₗ σ1≈σ2 (DefLocal ℓ c1 c2) = cong₃ DefLocal (subExtₗ-Loc σ1≈σ2 ℓ) (subExtₗ σ1≈σ2 c1) (subExtₗ σ1≈σ2 c2)
-subExtₗ σ1≈σ2 (Fun c) = cong Fun (subExtₗ σ1≈σ2 c)
-subExtₗ σ1≈σ2 (Fix c) = cong Fix (subExtₗ σ1≈σ2 c)
+subExtₗ σ1≈σ2 (Fun τ c) = cong₂ Fun (subExtₜ σ1≈σ2 τ) (subExtₗ σ1≈σ2 c)
+subExtₗ σ1≈σ2 (Fix τ c) = cong₂ Fix (subExtₜ σ1≈σ2 τ) (subExtₗ σ1≈σ2 c)
 subExtₗ σ1≈σ2 (App c1 c2) = cong₂ App (subExtₗ σ1≈σ2 c1) (subExtₗ σ1≈σ2 c2)
 subExtₗ σ1≈σ2 (LocAbs c) = cong LocAbs (subExtₗ (↑σExtₗ σ1≈σ2) c)
 subExtₗ σ1≈σ2 (LocApp c ℓ) = cong₂ LocApp (subExtₗ σ1≈σ2 c) (subExtₗ-Loc σ1≈σ2 ℓ)
@@ -72,8 +78,8 @@ subIdₗ (Send ℓ1 c ℓ2) = cong₃ Send (subIdₗ-Loc ℓ1) (subIdₗ c) (sub
 subIdₗ (If ℓ c c1 c2) = cong₄ If (subIdₗ-Loc ℓ) (subIdₗ c) (subIdₗ c1) (subIdₗ c2)
 subIdₗ (Sync ℓ1 d ℓ2 c) = cong₄ Sync (subIdₗ-Loc ℓ1) refl (subIdₗ-Loc ℓ2) (subIdₗ c)
 subIdₗ (DefLocal ℓ c1 c2) = cong₃ DefLocal (subIdₗ-Loc ℓ) (subIdₗ c1) (subIdₗ c2)
-subIdₗ (Fun c) = cong Fun (subIdₗ c)
-subIdₗ (Fix c) = cong Fix (subIdₗ c)
+subIdₗ (Fun τ c) = cong₂ Fun (subIdₜ τ) (subIdₗ c)
+subIdₗ (Fix τ c) = cong₂ Fix (subIdₜ τ) (subIdₗ c)
 subIdₗ (App c1 c2) = cong₂ App (subIdₗ c1) (subIdₗ c2)
 subIdₗ (LocAbs c) = cong LocAbs c⟨↑id⟩≡c
   where
@@ -101,8 +107,8 @@ subιₗ ξ (Send ℓ1 c ℓ2) = cong₃ Send (subιₗ-Loc ξ ℓ1) (subιₗ �
 subιₗ ξ (If ℓ c c1 c2) = cong₄ If (subιₗ-Loc ξ ℓ) (subιₗ ξ c) (subιₗ ξ c1) (subιₗ ξ c2)
 subιₗ ξ (Sync ℓ1 d ℓ2 c) = cong₄ Sync (subιₗ-Loc ξ ℓ1) refl (subιₗ-Loc ξ ℓ2) (subιₗ ξ c)
 subιₗ ξ (DefLocal ℓ c1 c2) = cong₃ DefLocal (subιₗ-Loc ξ ℓ) (subιₗ ξ c1) (subιₗ ξ c2)
-subιₗ ξ (Fun c) = cong Fun (subιₗ ξ c)
-subιₗ ξ (Fix c) = cong Fix (subιₗ ξ c)
+subιₗ ξ (Fun τ c) = cong₂ Fun (subιₜ ξ τ) (subιₗ ξ c)
+subιₗ ξ (Fix τ c) = cong₂ Fix (subιₜ ξ τ) (subιₗ ξ c)
 subιₗ ξ (App c1 c2) = cong₂ App (subιₗ ξ c1) (subιₗ ξ c2)
 subιₗ ξ (LocAbs c) = cong LocAbs c⟨↑ιξ⟩≡c⟨↑ξ⟩
   where

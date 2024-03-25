@@ -10,21 +10,32 @@ open import Function
 
 open import Common
 open import LocalLang
+open import TypedLocalLang
 open import Locations
 
 module Semantics
   (L : Location)
   (E : Language L)
   (LE : LawfulLanguage L E)
+  (TE : TypedLocalLanguage L E LE)
   where
 
-open import Choreographies L E
-open import Substitutions L E LE
-open import LocalSubstitutions L E LE
-open import LocationSubstitutions L E LE
+open import Choreographies L E LE TE
+open import LocalRenamings L E LE TE
+open import LocationRenamings L E LE TE
+open import Renamings L E LE TE
+open import LocationSubstitutions L E LE TE
+open import LocalSubstitutions L E LE TE
+open import Substitutions L E LE TE
+open import Types L E LE TE
+open import LocationContexts L E LE TE
+open import LocalContexts L E LE TE
+open import GlobalContexts L E LE TE
+
 open Location L
 open Language E
 open LawfulLanguage LE
+open TypedLocalLanguage TE
 
 data TraceElem : Set where
   • : TraceElem
@@ -84,10 +95,10 @@ data _⇒[_]_ : Chor → TraceElem → Chor → Set where
                (V-Val : Val V)
                (C⇒C' : C ⇒[ T ] C') →
                App V C ⇒[ T ] App V C'
-  stepApp : ∀{V C}
+  stepApp : ∀{V C τ}
             (V-Val : Val V) →
-            App (Fun C) V ⇒[ • ] sub C (idSub ▸ V)
-  stepFix : ∀{C} → Fix C ⇒[ • ] sub C (idSub ▸ Fix C)
+            App (Fun τ C) V ⇒[ • ] sub C (idSub ▸ V)
+  stepFix : ∀{C τ} → Fix τ C ⇒[ • ] sub C (idSub ▸ Fix τ C)
 
   stepLocAppFun : ∀{C C' L T}
                   (C⇒C' : C ⇒[ T ] C') →
@@ -108,4 +119,4 @@ data _⇒[_]_ : Chor → TraceElem → Chor → Set where
 
 -- Values cannot step
 valNoStep : ∀{V C T} → Val V → ¬ (V ⇒[ T ] C)
-valNoStep (DoneVal L v v-val) (stepDone v⇒e) = valNoStepₑ v-val v⇒e
+valNoStep (DoneVal L v v-val) (stepDone v⇒e) = valNoStepₑ v-val v⇒e 
