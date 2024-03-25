@@ -42,7 +42,8 @@ renₗ (Fix c) ξ = Fix (renₗ c ξ)
 renₗ (App c1 c2) ξ = App (renₗ c1 ξ) (renₗ c2 ξ)
 renₗ (LocAbs c) ξ = LocAbs (renₗ c (↑ ξ))
 renₗ (LocApp c ℓ) ξ = LocApp (renₗ c ξ) (renₗ-Loc ℓ ξ)
-renₗ (TellLet ℓ ρ1 c1 ρ2 c2) ξ = TellLet (renₗ-Loc ℓ ξ) (renₗ-List ρ1 ξ) (renₗ c1 ξ) (renₗ-List ρ2 ξ) (renₗ c2 (↑ ξ))
+renₗ (TellLet ℓ ρ1 c1 ρ2 c2) ξ =
+  TellLet (renₗ-Loc ℓ ξ) (renₗ-List ρ1 ξ) (renₗ c1 ξ) (renₗ-List ρ2 ξ) (renₗ c2 (↑ ξ))
 
 -- Renaming the location variables in a choreography respects extensional equality
 renExtₗ : ∀{ξ1 ξ2} →

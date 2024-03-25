@@ -42,7 +42,8 @@ subₗ (App c1 c2) σ = App (subₗ c1 σ) (subₗ c2 σ)
 subₗ (LocAbs c) σ = LocAbs (subₗ c (↑σₗ σ))
 subₗ (LocApp c ℓ) σ = LocApp (subₗ c σ) (subₗ-Loc ℓ σ)
 subₗ (TellLet ℓ ρ1 c1 ρ2 c2) σ =
-  TellLet (subₗ-Loc ℓ σ) (subₗ-List ρ1 σ) (subₗ c1 σ) (subₗ-List ρ2 σ) (subₗ c2 σ)
+  TellLet (subₗ-Loc ℓ σ) (subₗ-List ρ1 σ) (subₗ c1 σ)
+    (subₗ-List ρ2 σ) (subₗ c2 (↑σₗ σ))
 
 -- Substituting location variables respects extensional equality
 subExtₗ : ∀{σ1 σ2} →
@@ -60,7 +61,8 @@ subExtₗ σ1≈σ2 (App c1 c2) = cong₂ App (subExtₗ σ1≈σ2 c1) (subExt�
 subExtₗ σ1≈σ2 (LocAbs c) = cong LocAbs (subExtₗ (↑σExtₗ σ1≈σ2) c)
 subExtₗ σ1≈σ2 (LocApp c ℓ) = cong₂ LocApp (subExtₗ σ1≈σ2 c) (subExtₗ-Loc σ1≈σ2 ℓ)
 subExtₗ σ1≈σ2 (TellLet ℓ ρ1 c1 ρ2 c2) =
-  cong₅ TellLet (subExtₗ-Loc σ1≈σ2 ℓ) (subExtₗ-List σ1≈σ2 ρ1) (subExtₗ σ1≈σ2 c1) (subExtₗ-List σ1≈σ2 ρ2) (subExtₗ σ1≈σ2 c2)
+  cong₅ TellLet (subExtₗ-Loc σ1≈σ2 ℓ) (subExtₗ-List σ1≈σ2 ρ1) (subExtₗ σ1≈σ2 c1)
+  (subExtₗ-List σ1≈σ2 ρ2) (subExtₗ (↑σExtₗ σ1≈σ2) c2)
 
 -- Substituting location variables respects the identity
 subIdₗ : ∀ c → subₗ c idSubₗ ≡ c
@@ -82,7 +84,14 @@ subIdₗ (LocAbs c) = cong LocAbs c⟨↑id⟩≡c
     c                 ∎
 subIdₗ (LocApp c ℓ) = cong₂ LocApp (subIdₗ c) (subIdₗ-Loc ℓ)
 subIdₗ (TellLet ℓ ρ1 c1 ρ2 c2) =
-  cong₅ TellLet (subIdₗ-Loc ℓ) (subIdₗ-List ρ1) (subIdₗ c1) (subIdₗ-List ρ2) (subIdₗ c2)
+  cong₅ TellLet (subIdₗ-Loc ℓ) (subIdₗ-List ρ1) (subIdₗ c1)
+    (subIdₗ-List ρ2) c2⟨↑id⟩≡c2
+  where
+    c2⟨↑id⟩≡c2 : subₗ c2 (↑σₗ idSubₗ) ≡ c2
+    c2⟨↑id⟩≡c2 = 
+      subₗ c2 (↑σₗ idSubₗ) ≡⟨ subExtₗ ↑σIdₗ c2 ⟩
+      subₗ c2 idSubₗ       ≡⟨ subIdₗ c2 ⟩
+      c2                   ∎
 
 -- Substitution along an inclusion is the same as a renaming
 subιₗ : ∀ ξ c → subₗ c (ιₗ ξ) ≡ renₗ c ξ
@@ -104,4 +113,11 @@ subιₗ ξ (LocAbs c) = cong LocAbs c⟨↑ιξ⟩≡c⟨↑ξ⟩
     renₗ c (↑ ξ)       ∎
 subιₗ ξ (LocApp c ℓ) = cong₂ LocApp (subιₗ ξ c) (subιₗ-Loc ξ ℓ)
 subιₗ ξ (TellLet ℓ ρ1 c1 ρ2 c2) =
-  cong₅ TellLet (subιₗ-Loc ξ ℓ) (subιₗ-List ξ ρ1) (subιₗ ξ c1) (subιₗ-List ξ ρ2) (subιₗ ξ c2)
+  cong₅ TellLet (subιₗ-Loc ξ ℓ) (subιₗ-List ξ ρ1) (subιₗ ξ c1)
+    (subιₗ-List ξ ρ2) c2⟨↑ιξ⟩≡c2⟨↑ξ⟩ 
+  where
+    c2⟨↑ιξ⟩≡c2⟨↑ξ⟩ : subₗ c2 (↑σₗ (ιₗ ξ)) ≡ renₗ c2 (↑ ξ)
+    c2⟨↑ιξ⟩≡c2⟨↑ξ⟩ =
+      subₗ c2 (↑σₗ (ιₗ ξ)) ≡⟨ subExtₗ (↑σιₗ ξ)  c2 ⟩
+      subₗ c2 (ιₗ (↑ ξ))  ≡⟨ subιₗ (↑ ξ) c2 ⟩
+      renₗ c2 (↑ ξ)       ∎

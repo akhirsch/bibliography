@@ -36,7 +36,7 @@ idRenₗₑ : LocalRen
 idRenₗₑ ℓ = idRenₑ
 
 {-
-  ↑ on local variable renaming at a specified location ℓ.
+  ↑ on local variable renamings at a specified location ℓ.
   Used when binding a local variable.
 -}
 ↑[_] : Loc → LocalRen → LocalRen

@@ -54,20 +54,46 @@ _▸[_]_ : LocalSubst → Loc → Expr → LocalSubst
 ... | yes _ = λ{ zero → refl ; (suc n) → cong₂ renₑ (σ1≈σ2 ℓ n) refl }
 ... | no  _ = σ1≈σ2 ℓ'
 
--- The ↑ on substitutions at a specified location
+{-
+  ↑ on local variable substitutions at a specified location ℓ.
+  Used when binding a local variable.
+-}
 ↑σ[_] : Loc → LocalSubst → LocalSubst
 ↑σ[ ℓ ] σ = σ ▸[ ℓ ] varₑ zero
 
--- The ↑ respects extensional equality
-↑σExtₗₑ : ∀{σ1 σ2} → σ1 ≈₂ σ2 →
+-- ↑[ℓ] respects extensional equality
+↑σ[ℓ]Ext : ∀{σ1 σ2} → σ1 ≈₂ σ2 →
           ∀ ℓ → ↑σ[ ℓ ] σ1 ≈₂ ↑σ[ ℓ ] σ2
-↑σExtₗₑ σ1≈σ2 ℓ = ▸Extₗₑ σ1≈σ2 ℓ (varₑ zero)
+↑σ[ℓ]Ext σ1≈σ2 ℓ = ▸Extₗₑ σ1≈σ2 ℓ (varₑ zero)
 
--- The ↑ respects the identity
-↑σIdₗₑ : ∀ ℓ → ↑σ[ ℓ ] idSubₗₑ ≈₂ idSubₗₑ
-↑σIdₗₑ ℓ ℓ' with ≡-dec-Loc ℓ ℓ'
+-- ↑[ℓ] respects the identity
+↑σ[ℓ]Id : ∀ ℓ → ↑σ[ ℓ ] idSubₗₑ ≈₂ idSubₗₑ
+↑σ[ℓ]Id ℓ ℓ' with ≡-dec-Loc ℓ ℓ'
 ... | yes _ = λ{ zero → refl ; (suc n) → renVarₑ n suc }
 ... | no  _ = λ n → refl
+
+{-
+  Add a top-most location variable to a local renaming.
+  Used when binding a location variable.
+-}
+↑σₗₑ : LocalSubst → LocalSubst
+↑σₗₑ σ (Var zero) = λ n → varₑ n
+↑σₗₑ σ (Var (suc x)) = σ (Var x)
+↑σₗₑ σ (Lit L) = σ (Lit L)
+
+-- ↑ respects the identity
+↑σIdₗₑ : ↑σₗₑ idSubₗₑ ≈₂ idSubₗₑ
+↑σIdₗₑ (Var zero) n = refl
+↑σIdₗₑ (Var (suc x)) n = refl
+↑σIdₗₑ (Lit L) n = refl
+
+-- ↑ respects extensional equality
+↑σExtₗₑ : ∀{σ1 σ2} →
+          σ1 ≈₂ σ2 →
+          ↑σₗₑ σ1 ≈₂ ↑σₗₑ σ2
+↑σExtₗₑ ξ1≈ξ2 (Var zero) n = refl
+↑σExtₗₑ ξ1≈ξ2 (Var (suc x)) n = ξ1≈ξ2 (Var x) n
+↑σExtₗₑ ξ1≈ξ2 (Lit L) n = ξ1≈ξ2 (Lit L) n
 
 -- Substitute local variables in a choreography
 subₗₑ : (c : Chor) (σ : LocalSubst) → Chor
@@ -80,10 +106,9 @@ subₗₑ (DefLocal ℓ c1 c2) σ = DefLocal ℓ (subₗₑ c1 σ) (subₗₑ c2
 subₗₑ (Fun c) σ = Fun (subₗₑ c σ)
 subₗₑ (Fix c) σ = Fix (subₗₑ c σ)
 subₗₑ (App c1 c2) σ = App (subₗₑ c1 σ) (subₗₑ c2 σ)
-subₗₑ (LocAbs c) σ = LocAbs (subₗₑ c σ)
+subₗₑ (LocAbs c) σ = LocAbs (subₗₑ c (↑σₗₑ σ))
 subₗₑ (LocApp c ℓ) σ = LocApp (subₗₑ c σ) ℓ
-subₗₑ (TellLet ℓ ρ1 c1 ρ2 c2) σ =
-  TellLet ℓ ρ1 (subₗₑ c1 σ) ρ2 (subₗₑ c2 σ)
+subₗₑ (TellLet ℓ ρ1 c1 ρ2 c2) σ = TellLet ℓ ρ1 (subₗₑ c1 σ) ρ2 (subₗₑ c2 (↑σₗₑ σ))
 
 -- Substituting local variables respects extensional equality
 subExtₗₑ : ∀{σ1 σ2} →
@@ -92,15 +117,18 @@ subExtₗₑ : ∀{σ1 σ2} →
 subExtₗₑ σ1≈σ2 (Done ℓ e) = cong₂ Done refl (subExtₑ (σ1≈σ2 ℓ) e)
 subExtₗₑ σ1≈σ2 (Var x) = refl
 subExtₗₑ σ1≈σ2 (Send ℓ1 c ℓ2) = cong₃ Send refl (subExtₗₑ σ1≈σ2 c) refl
-subExtₗₑ σ1≈σ2 (If ℓ c c₁ c₂) = cong₄ If refl (subExtₗₑ σ1≈σ2 c) (subExtₗₑ σ1≈σ2 c₁) (subExtₗₑ σ1≈σ2 c₂)
+subExtₗₑ σ1≈σ2 (If ℓ c c₁ c₂) =
+  cong₄ If refl (subExtₗₑ σ1≈σ2 c) (subExtₗₑ σ1≈σ2 c₁) (subExtₗₑ σ1≈σ2 c₂)
 subExtₗₑ σ1≈σ2 (Sync ℓ1 d ℓ2 c) = cong₄ Sync refl refl refl (subExtₗₑ σ1≈σ2 c)
-subExtₗₑ σ1≈σ2 (DefLocal ℓ c1 c2) = cong₃ DefLocal refl (subExtₗₑ σ1≈σ2 c1) (subExtₗₑ (↑σExtₗₑ σ1≈σ2 ℓ) c2)
+subExtₗₑ σ1≈σ2 (DefLocal ℓ c1 c2) =
+  cong₃ DefLocal refl (subExtₗₑ σ1≈σ2 c1) (subExtₗₑ (↑σ[ℓ]Ext σ1≈σ2 ℓ) c2)
 subExtₗₑ σ1≈σ2 (Fun c) = cong Fun (subExtₗₑ σ1≈σ2 c)
 subExtₗₑ σ1≈σ2 (Fix c) = cong Fix (subExtₗₑ σ1≈σ2 c)
 subExtₗₑ σ1≈σ2 (App c1 c2) = cong₂ App (subExtₗₑ σ1≈σ2 c1) (subExtₗₑ σ1≈σ2 c2)
-subExtₗₑ σ1≈σ2 (LocAbs c) = cong LocAbs (subExtₗₑ σ1≈σ2 c)
+subExtₗₑ σ1≈σ2 (LocAbs c) = cong LocAbs (subExtₗₑ (↑σExtₗₑ σ1≈σ2) c)
 subExtₗₑ σ1≈σ2 (LocApp c ℓ) = cong₂ LocApp (subExtₗₑ σ1≈σ2 c) refl
-subExtₗₑ σ1≈σ2 (TellLet ℓ ρ1 c ρ2 c₁) = cong₅ TellLet refl refl (subExtₗₑ σ1≈σ2 c) refl (subExtₗₑ σ1≈σ2 c₁)
+subExtₗₑ σ1≈σ2 (TellLet ℓ ρ1 c1 ρ2 c2) =
+  cong₅ TellLet refl refl (subExtₗₑ σ1≈σ2 c1) refl (subExtₗₑ (↑σExtₗₑ σ1≈σ2) c2)
 
 -- Substituting local variables respects the identity
 subIdₗₑ : ∀ c → subₗₑ c idSubₗₑ ≡ c
@@ -113,27 +141,46 @@ subIdₗₑ (DefLocal ℓ c1 c2) = cong₃ DefLocal refl (subIdₗₑ c1) c2⟨�
   where
   c2⟨↑[ℓ]id⟩≡c2 : subₗₑ c2 (↑σ[ ℓ ] idSubₗₑ) ≡ c2
   c2⟨↑[ℓ]id⟩≡c2 = 
-    subₗₑ c2 (↑σ[ ℓ ] idSubₗₑ) ≡⟨ subExtₗₑ (↑σIdₗₑ ℓ) c2 ⟩
+    subₗₑ c2 (↑σ[ ℓ ] idSubₗₑ) ≡⟨ subExtₗₑ (↑σ[ℓ]Id ℓ) c2 ⟩
     subₗₑ c2 idSubₗₑ           ≡⟨ subIdₗₑ c2 ⟩
     c2                        ∎
 subIdₗₑ (Fun c) = cong Fun (subIdₗₑ c)
 subIdₗₑ (Fix c) = cong Fix (subIdₗₑ c)
 subIdₗₑ (App c1 c2) = cong₂ App (subIdₗₑ c1) (subIdₗₑ c2)
-subIdₗₑ (LocAbs c) = cong LocAbs (subIdₗₑ c)
+subIdₗₑ (LocAbs c) = cong LocAbs c⟨↑id⟩≡c
+  where
+  c⟨↑id⟩≡c : subₗₑ c (↑σₗₑ idSubₗₑ) ≡ c
+  c⟨↑id⟩≡c =
+    subₗₑ c (↑σₗₑ idSubₗₑ) ≡⟨ subExtₗₑ ↑σIdₗₑ c ⟩
+    subₗₑ c idSubₗₑ        ≡⟨ subIdₗₑ c ⟩
+    c                      ∎
 subIdₗₑ (LocApp c ℓ) = cong₂ LocApp (subIdₗₑ c) refl
-subIdₗₑ (TellLet ℓ ρ1 c ρ2 c₁) = cong₅ TellLet refl refl (subIdₗₑ c) refl (subIdₗₑ c₁)
+subIdₗₑ (TellLet ℓ ρ1 c1 ρ2 c2) =
+  cong₅ TellLet refl refl (subIdₗₑ c1) refl c2⟨↑id⟩≡c2
+  where
+  c2⟨↑id⟩≡c2 : subₗₑ c2 (↑σₗₑ idSubₗₑ) ≡ c2
+  c2⟨↑id⟩≡c2 =
+    subₗₑ c2 (↑σₗₑ idSubₗₑ) ≡⟨ subExtₗₑ ↑σIdₗₑ c2 ⟩
+    subₗₑ c2 idSubₗₑ        ≡⟨ subIdₗₑ c2 ⟩
+    c2                      ∎
 
 -- Inclusion from renamings to substitutions
 ιₗₑ : (Loc → ℕ → ℕ) → LocalSubst
 ιₗₑ ξ ℓ n = varₑ (ξ ℓ n)
 
--- The ↑ commutes with the inclusion
-↑σιₗₑ : ∀ ξ ℓ → ↑σ[ ℓ ] (ιₗₑ ξ) ≈₂ ιₗₑ (↑[ ℓ ] ξ)
-↑σιₗₑ ξ ℓ ℓ' with ≡-dec-Loc ℓ ℓ'
+-- ↑[ℓ] commutes with the inclusion
+↑σ[ℓ]ιₗₑ : ∀ ξ ℓ → ↑σ[ ℓ ] (ιₗₑ ξ) ≈₂ ιₗₑ (↑[ ℓ ] ξ)
+↑σ[ℓ]ιₗₑ ξ ℓ ℓ' with ≡-dec-Loc ℓ ℓ'
 ... | yes refl = λ{ zero → refl ; (suc n) → renVarₑ (ξ ℓ n) suc }
 ... | no  _ = λ n → refl
 
--- Substitution along an inclusion is the same as a renaming
+-- ↑ commutes with the inclusion
+↑σιₗₑ : ∀ ξ → ↑σₗₑ (ιₗₑ ξ) ≈₂ ιₗₑ (↑ₗₑ ξ)
+↑σιₗₑ ξ (Var zero) n = refl
+↑σιₗₑ ξ (Var (suc x)) n = refl
+↑σιₗₑ ξ (Lit L) n = refl
+
+-- Substitution respects the inclusion
 subιₗₑ : ∀ ξ c → subₗₑ c (ιₗₑ ξ) ≡ renₗₑ c ξ
 subιₗₑ ξ (Done ℓ e) = cong₂ Done refl (subRenₑ (ξ ℓ) e)
 subιₗₑ ξ (Var x) = refl
@@ -144,12 +191,25 @@ subιₗₑ ξ (DefLocal ℓ c1 c2) = cong₃ DefLocal refl (subιₗₑ ξ c1) 
   where
   c2⟨↑[ℓ]ιξ⟩≡c2⟨↑[ℓ]ξ⟩ : subₗₑ c2 (↑σ[ ℓ ] (ιₗₑ ξ)) ≡ renₗₑ c2 (↑[ ℓ ] ξ)
   c2⟨↑[ℓ]ιξ⟩≡c2⟨↑[ℓ]ξ⟩ = 
-    subₗₑ c2 (↑σ[ ℓ ] (ιₗₑ ξ)) ≡⟨ subExtₗₑ (↑σιₗₑ ξ ℓ) c2 ⟩
+    subₗₑ c2 (↑σ[ ℓ ] (ιₗₑ ξ)) ≡⟨ subExtₗₑ (↑σ[ℓ]ιₗₑ ξ ℓ) c2 ⟩
     subₗₑ c2 (ιₗₑ (↑[ ℓ ] ξ))  ≡⟨ subιₗₑ (↑[ ℓ ] ξ) c2 ⟩
     renₗₑ c2 (↑[ ℓ ] ξ)       ∎
 subιₗₑ ξ (Fun c) = cong Fun (subιₗₑ ξ c)
 subιₗₑ ξ (Fix c) = cong Fix (subιₗₑ ξ c)
 subιₗₑ ξ (App c1 c2) = cong₂ App (subιₗₑ ξ c1) (subιₗₑ ξ c2)
-subιₗₑ ξ (LocAbs c) = cong LocAbs (subιₗₑ ξ c)
+subιₗₑ ξ (LocAbs c) = cong LocAbs c⟨↑ιξ⟩≡c⟨ξ⟩
+  where
+  c⟨↑ιξ⟩≡c⟨ξ⟩ : subₗₑ c (↑σₗₑ (ιₗₑ ξ)) ≡ renₗₑ c (↑ₗₑ ξ)
+  c⟨↑ιξ⟩≡c⟨ξ⟩ =
+    subₗₑ c (↑σₗₑ (ιₗₑ ξ)) ≡⟨ subExtₗₑ (↑σιₗₑ ξ) c ⟩
+    subₗₑ c (ιₗₑ (↑ₗₑ ξ))  ≡⟨ subιₗₑ (↑ₗₑ ξ) c ⟩
+    renₗₑ c (↑ₗₑ ξ)        ∎
 subιₗₑ ξ (LocApp c ℓ) = cong₂ LocApp (subιₗₑ ξ c) refl
-subιₗₑ ξ (TellLet ℓ ρ1 c ρ2 c₁) = cong₅ TellLet refl refl (subιₗₑ ξ c) refl (subιₗₑ ξ c₁)
+subιₗₑ ξ (TellLet ℓ ρ1 c1 ρ2 c2) =
+  cong₅ TellLet refl refl (subιₗₑ ξ c1) refl c2⟨↑ιξ⟩≡c2⟨ξ⟩
+  where
+  c2⟨↑ιξ⟩≡c2⟨ξ⟩ : subₗₑ c2 (↑σₗₑ (ιₗₑ ξ)) ≡ renₗₑ c2 (↑ₗₑ ξ)
+  c2⟨↑ιξ⟩≡c2⟨ξ⟩ =
+    subₗₑ c2 (↑σₗₑ (ιₗₑ ξ)) ≡⟨ subExtₗₑ (↑σιₗₑ ξ) c2 ⟩
+    subₗₑ c2 (ιₗₑ (↑ₗₑ ξ))  ≡⟨ subιₗₑ (↑ₗₑ ξ) c2 ⟩
+    renₗₑ c2 (↑ₗₑ ξ)        ∎
