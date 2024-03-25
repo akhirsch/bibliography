@@ -91,8 +91,7 @@ record TypedLocalLanguage
               Γ ⊢ₑ v ∶ Locₑ →
               Valₑ v →
               Σ[ ℓ ∈ LocVal ] (v ≡ locₑ ℓ)
-    
-
+ 
     -- Progress and preservation must hold.
     preservationₑ : ∀{Γ e₁ e₂ t} →
                    Γ ⊢ₑ e₁ ∶ t →

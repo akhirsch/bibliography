@@ -24,6 +24,7 @@ open import LocalSubstitutions L E LE
 open import LocationSubstitutions L E LE
 open Location L
 open Language E
+open LawfulLanguage LE
 
 data TraceElem : Set where
   • : TraceElem
@@ -54,7 +55,9 @@ data _⇒[_]_ : Chor → TraceElem → Chor → Set where
              Send L1 C L2 ⇒[ T ] Send L1 C' L2
   stepSendV : ∀{v L1 L2}
               (v-Val : Valₑ v) →
-              Done (Lit L1) v ⇒[ SendVal L1 v v-Val L2 ] Done (Lit L2) v
+              Send (Lit L1) (Done (Lit L1) v) (Lit L2)
+              ⇒[ SendVal L1 v v-Val L2 ]
+              Done (Lit L2) v
   stepSync : ∀{L1 d L2 C} →
              Sync (Lit L1) d (Lit L2) C ⇒[ SendSync L1 d L2 ] C
 
@@ -102,3 +105,7 @@ data _⇒[_]_ : Chor → TraceElem → Chor → Set where
                  TellLet (Lit L1) (map Lit ρ1) (Done (Lit L1) (locₑ L2)) (map Lit ρ2) C
                  ⇒[ TellLoc L1 L2 ρ1 ρ2 ]
                  subₗ C (idSubₗ ▸ₗ Lit L2)
+
+-- Values cannot step
+valNoStep : ∀{V C T} → Val V → ¬ (V ⇒[ T ] C)
+valNoStep (DoneVal L v v-val) (stepDone v⇒e) = valNoStepₑ v-val v⇒e

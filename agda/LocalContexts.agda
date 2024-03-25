@@ -23,12 +23,12 @@ module LocalContexts
   (TE : TypedLocalLanguage L E LE)
   where
 
-open import Choreographies L E
-open import LocalRenamings L E LE
-open import LocationRenamings L E LE
-open import Renamings L E LE
-open import Substitutions L E LE
 open import Types L E LE TE
+open import Choreographies L E LE TE
+open import LocalRenamings L E LE TE
+open import LocationRenamings L E LE TE
+open import Renamings L E LE TE
+open import Substitutions L E LE TE
 open import LocationContexts L E LE TE
 open Location L
 open Language E

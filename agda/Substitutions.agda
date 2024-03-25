@@ -16,16 +16,19 @@ open import Function
 
 open import Common
 open import LocalLang
+open import TypedLocalLang
 open import Locations
 
 module Substitutions
   (L : Location)
   (E : Language L)
   (LE : LawfulLanguage L E)
+  (TE : TypedLocalLanguage L E LE)
   where
 
-open import Choreographies L E
-open import Renamings L E LE
+open import Types L E LE TE
+open import Choreographies L E LE TE
+open import Renamings L E LE TE
 
 -- Identity substitution
 idSub : ℕ → Chor
@@ -63,8 +66,8 @@ sub (Send ℓ1 c ℓ2) σ = Send ℓ1 (sub c σ) ℓ2
 sub (If ℓ c c₁ c₂) σ = If ℓ (sub c σ) (sub c₁ σ) (sub c₂ σ)
 sub (Sync ℓ1 d ℓ2 c) σ = Sync ℓ1 d ℓ2 (sub c σ)
 sub (DefLocal ℓ c c₁) σ = DefLocal ℓ (sub c σ) (sub c₁ σ)
-sub (Fun c) σ = Fun (sub c (↑σ σ))
-sub (Fix c) σ = Fix (sub c (↑σ σ))
+sub (Fun τ c) σ = Fun τ (sub c (↑σ σ))
+sub (Fix τ c) σ = Fix τ (sub c (↑σ σ))
 sub (App c1 c2) σ = App (sub c1 σ) (sub c2 σ)
 sub (LocAbs c) σ = LocAbs (sub c σ)
 sub (LocApp c ℓ) σ = LocApp (sub c σ) ℓ
@@ -80,8 +83,8 @@ subExt σ1≈σ2 (Send ℓ1 c ℓ2) = cong₃ Send refl (subExt σ1≈σ2 c) ref
 subExt σ1≈σ2 (If ℓ c c₁ c₂) = cong₄ If refl (subExt σ1≈σ2 c) (subExt σ1≈σ2 c₁) (subExt σ1≈σ2 c₂)
 subExt σ1≈σ2 (Sync ℓ1 d ℓ2 c) = cong₄ Sync refl refl refl (subExt σ1≈σ2 c)
 subExt σ1≈σ2 (DefLocal ℓ c c₁) = cong₃ DefLocal refl (subExt σ1≈σ2 c) (subExt σ1≈σ2 c₁)
-subExt σ1≈σ2 (Fun c) = cong Fun (subExt (↑σExt σ1≈σ2) c)
-subExt σ1≈σ2 (Fix c) = cong Fix (subExt (↑σExt σ1≈σ2) c)
+subExt σ1≈σ2 (Fun τ c) = cong₂ Fun refl (subExt (↑σExt σ1≈σ2) c)
+subExt σ1≈σ2 (Fix τ c) = cong₂ Fix refl (subExt (↑σExt σ1≈σ2) c)
 subExt σ1≈σ2 (App c1 c2) = cong₂ App (subExt σ1≈σ2 c1) (subExt σ1≈σ2 c2)
 subExt σ1≈σ2 (LocAbs c) = cong LocAbs (subExt σ1≈σ2 c)
 subExt σ1≈σ2 (LocApp c ℓ) = cong₂ LocApp (subExt σ1≈σ2 c) refl
@@ -95,14 +98,14 @@ subId (Send ℓ1 c ℓ2) = cong₃ Send refl (subId c) refl
 subId (If ℓ c c₁ c₂) = cong₄ If refl (subId c) (subId c₁) (subId c₂)
 subId (Sync ℓ1 d ℓ2 c) = cong₄ Sync refl refl refl (subId c)
 subId (DefLocal ℓ c c₁) = cong₃ DefLocal refl (subId c) (subId c₁)
-subId (Fun c) = cong Fun c⟨↑id⟩≡c
+subId (Fun τ c) = cong₂ Fun refl c⟨↑id⟩≡c
   where
   c⟨↑id⟩≡c : sub c (↑σ idSub) ≡ c
   c⟨↑id⟩≡c = 
     sub c (↑σ idSub) ≡⟨ subExt ↑σId c ⟩
     sub c idSub      ≡⟨ subId c ⟩
     c                ∎
-subId (Fix c) = cong Fix c⟨↑id⟩≡c
+subId (Fix τ c) = cong₂ Fix refl c⟨↑id⟩≡c
   where
   c⟨↑id⟩≡c : sub c (↑σ idSub) ≡ c
   c⟨↑id⟩≡c = 
@@ -136,14 +139,14 @@ subι ξ (Send ℓ1 c ℓ2) = cong₃ Send refl (subι ξ c) refl
 subι ξ (If ℓ c c₁ c₂) = cong₄ If refl (subι ξ c) (subι ξ c₁) (subι ξ c₂)
 subι ξ (Sync ℓ1 d ℓ2 c) = cong₄ Sync refl refl refl (subι ξ c)
 subι ξ (DefLocal ℓ c c₁) = cong₃ DefLocal refl (subι ξ c) (subι ξ c₁)
-subι ξ (Fun c) = cong Fun c⟨↑ιξ⟩≡c⟨↑ξ⟩
+subι ξ (Fun τ c) = cong₂ Fun refl c⟨↑ιξ⟩≡c⟨↑ξ⟩
   where
   c⟨↑ιξ⟩≡c⟨↑ξ⟩ : sub c (↑σ (ι ξ)) ≡ ren c (↑ ξ)
   c⟨↑ιξ⟩≡c⟨↑ξ⟩ = 
     sub c (↑σ (ι ξ)) ≡⟨ subExt (↑σι ξ) c ⟩
     sub c (ι (↑ ξ))  ≡⟨ subι (↑ ξ) c ⟩
     ren c (↑ ξ)      ∎
-subι ξ (Fix c) = cong Fix c⟨↑ιξ⟩≡c⟨↑ξ⟩
+subι ξ (Fix τ c) = cong₂ Fix refl c⟨↑ιξ⟩≡c⟨↑ξ⟩
   where
   c⟨↑ιξ⟩≡c⟨↑ξ⟩ : sub c (↑σ (ι ξ)) ≡ ren c (↑ ξ)
   c⟨↑ιξ⟩≡c⟨↑ξ⟩ = 

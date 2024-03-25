@@ -9,16 +9,25 @@ open import Relation.Binary
 open import Relation.Binary.PropositionalEquality
 open import Function
 
+open import Common
 open import LocalLang
+open import TypedLocalLang
 open import Locations
 
 module Choreographies
   (L : Location)
   (E : Language L)
+  (LE : LawfulLanguage L E)
+  (TE : TypedLocalLanguage L E LE)
   where
+
+open import Types L E LE TE
 
 open Location L
 open Language E
+open LawfulLanguage LE
+open TypedLocalLanguage TE
+open ≡-Reasoning
 
 -- Synchronization labels are represented by booleans
 SyncLabel : Set
@@ -32,7 +41,7 @@ data Chor : Set where
   If : (ℓ : Loc) (C : Chor) (C1 : Chor) (C2 : Chor) → Chor
   Sync : (ℓ1 : Loc) (d : SyncLabel) (ℓ2 : Loc) (C : Chor) → Chor
   DefLocal : (ℓ : Loc) (C1 : Chor) (C2 : Chor) → Chor
-  Fun Fix : (C : Chor) → Chor
+  Fun Fix : (τ : Typ) (C : Chor) → Chor
   App : (C1 C2 : Chor) → Chor
   LocAbs : (C : Chor) → Chor
   LocApp : (C : Chor) (ℓ : Loc) → Chor
@@ -44,5 +53,5 @@ data Chor : Set where
 -}
 data Val : Chor → Set where
   DoneVal : (L : LocVal) (v : Expr) → Valₑ v → Val (Done (Lit L) v)
-  FunVal : (C : Chor) → Val (Fun C)
+  FunVal : (τ : Typ) (C : Chor) → Val (Fun τ C)
   LocAbsVal : (C : Chor) → Val (LocAbs C)

@@ -5,7 +5,7 @@ open import Data.Unit
 open import Data.Nat
 open import Data.Nat.Properties
 open import Data.List
-open import Data.Product
+open import Data.Product renaming (proj₁ to fst; proj₂ to snd)
 open import Relation.Nullary
 open import Relation.Binary
 open import Relation.Binary.PropositionalEquality
@@ -23,11 +23,6 @@ module Types
   (TE : TypedLocalLanguage L E LE)
   where
 
-open import Choreographies L E
-open import LocalRenamings L E LE
-open import LocationRenamings L E LE
-open import Renamings L E LE
-open import Substitutions L E LE
 open Location L
 open Language E
 open LawfulLanguage LE
@@ -39,6 +34,22 @@ data Typ : Set where
   At : (t : Typₑ) (ℓ : Loc) → Typ
   Arrow : (τ1 τ2 : Typ) → Typ
   AllLoc : (τ : Typ) → Typ
+
+-- Injectivity of constructors
+At-inj : ∀{t t' ℓ ℓ'} → 
+         At t ℓ ≡ At t' ℓ' →
+         t ≡ t' × ℓ ≡ ℓ'
+At-inj refl = refl , refl
+
+Arrow-inj : ∀{τ1 τ1' τ2 τ2'} →
+            Arrow τ1 τ2 ≡ Arrow τ1' τ2' →
+            τ1 ≡ τ1' × τ2 ≡ τ2'
+Arrow-inj refl = refl , refl
+
+AllLoc-inj : ∀{τ τ'} →
+             AllLoc τ ≡ AllLoc τ' →
+             τ ≡ τ'
+AllLoc-inj refl = refl
 
 -- Location renaming on types
 renₜ : Typ → (ℕ → ℕ) → Typ
@@ -80,9 +91,27 @@ renFuseₜ ξ1 ξ2 (AllLoc τ) = cong AllLoc τ⟨↑[ξ2∘ξ1]⟩≡τ⟨↑ξ
     renₜ τ (↑ ξ2 ∘ ↑ ξ1)        ≡⟨ renFuseₜ (↑ ξ1) (↑ ξ2) τ ⟩
     renₜ (renₜ τ (↑ ξ1)) (↑ ξ2) ∎
 
+-- Renaming preserves injectivity
+renₜ-pres-inj : ∀{ξ} →
+                Injective _≡_ _≡_ ξ →
+                ∀ τ1 τ2 →
+                renₜ τ1 ξ ≡ renₜ τ2 ξ →
+                τ1 ≡ τ2
+renₜ-pres-inj ξ-inj (At t ℓ) (At t' ℓ') eq =
+  cong₂ At (At-inj eq .fst) (renₗ-Loc-pres-inj ξ-inj ℓ ℓ' (At-inj eq .snd))
+renₜ-pres-inj ξ-inj (Arrow τ1 τ2) (Arrow τ1' τ2') eq =
+  cong₂ Arrow (renₜ-pres-inj ξ-inj τ1 τ1' (Arrow-inj eq .fst))
+    (renₜ-pres-inj ξ-inj τ2 τ2' (Arrow-inj eq .snd))
+renₜ-pres-inj ξ-inj (AllLoc τ) (AllLoc τ') eq =
+  cong AllLoc (renₜ-pres-inj (↑-pres-inj ξ-inj) τ τ' (AllLoc-inj eq))
+
 -- Weakening a type by one variable
 ↑ₜ : Typ → Typ
 ↑ₜ τ = renₜ τ suc
+
+-- ↑ preserves injectivity
+↑ₜ-pres-inj : ∀ τ1 τ2 → ↑ₜ τ1 ≡ ↑ₜ τ2 → τ1 ≡ τ2
+↑ₜ-pres-inj = renₜ-pres-inj suc-injective
 
 -- Location substitution on types
 subₜ : Typ → (ℕ → Loc) → Typ

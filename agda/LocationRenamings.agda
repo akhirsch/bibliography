@@ -15,15 +15,18 @@ open import Function
 
 open import Common
 open import LocalLang
+open import TypedLocalLang
 open import Locations
 
 module LocationRenamings
   (L : Location)
   (E : Language L)
   (LE : LawfulLanguage L E)
+  (TE : TypedLocalLanguage L E LE)
   where
 
-open import Choreographies L E
+open import Types L E LE TE
+open import Choreographies L E LE TE
 open Language E
 open LawfulLanguage LE
 open Location L
@@ -37,8 +40,8 @@ renₗ (Send ℓ1 c ℓ2) ξ = Send (renₗ-Loc ℓ1 ξ) (renₗ c ξ) (renₗ-L
 renₗ (If ℓ c c₁ c₂) ξ = If (renₗ-Loc ℓ ξ) (renₗ c ξ) (renₗ c₁ ξ) (renₗ c₂ ξ)
 renₗ (Sync ℓ1 d ℓ2 c) ξ = Sync (renₗ-Loc ℓ1 ξ) d (renₗ-Loc ℓ2 ξ) (renₗ c ξ)
 renₗ (DefLocal ℓ c c₁) ξ = DefLocal (renₗ-Loc ℓ ξ) (renₗ c ξ) (renₗ c₁ ξ)
-renₗ (Fun c) ξ = Fun (renₗ c ξ)
-renₗ (Fix c) ξ = Fix (renₗ c ξ)
+renₗ (Fun τ c) ξ = Fun (renₜ τ ξ) (renₗ c ξ)
+renₗ (Fix τ c) ξ = Fix (renₜ τ ξ) (renₗ c ξ)
 renₗ (App c1 c2) ξ = App (renₗ c1 ξ) (renₗ c2 ξ)
 renₗ (LocAbs c) ξ = LocAbs (renₗ c (↑ ξ))
 renₗ (LocApp c ℓ) ξ = LocApp (renₗ c ξ) (renₗ-Loc ℓ ξ)
@@ -55,8 +58,8 @@ renExtₗ ξ1≈ξ2 (Send ℓ1 c ℓ2) = cong₃ Send (renExtₗ-Loc ξ1≈ξ2 �
 renExtₗ ξ1≈ξ2 (If ℓ c c₁ c₂) = cong₄ If (renExtₗ-Loc ξ1≈ξ2 ℓ) (renExtₗ ξ1≈ξ2 c) (renExtₗ ξ1≈ξ2 c₁) (renExtₗ ξ1≈ξ2 c₂)
 renExtₗ ξ1≈ξ2 (Sync ℓ1 d ℓ2 c) = cong₄ Sync (renExtₗ-Loc ξ1≈ξ2 ℓ1) refl (renExtₗ-Loc ξ1≈ξ2 ℓ2) (renExtₗ ξ1≈ξ2 c)
 renExtₗ ξ1≈ξ2 (DefLocal ℓ c c₁) = cong₃ DefLocal (renExtₗ-Loc ξ1≈ξ2 ℓ) (renExtₗ ξ1≈ξ2 c) (renExtₗ ξ1≈ξ2 c₁)
-renExtₗ ξ1≈ξ2 (Fun c) = cong Fun (renExtₗ ξ1≈ξ2 c)
-renExtₗ ξ1≈ξ2 (Fix c) = cong Fix (renExtₗ ξ1≈ξ2 c)
+renExtₗ ξ1≈ξ2 (Fun τ c) = cong₂ Fun (renExtₜ ξ1≈ξ2 τ) (renExtₗ ξ1≈ξ2 c)
+renExtₗ ξ1≈ξ2 (Fix τ c) = cong₂ Fix (renExtₜ ξ1≈ξ2 τ) (renExtₗ ξ1≈ξ2 c)
 renExtₗ ξ1≈ξ2 (App c c₁) = cong₂ App (renExtₗ ξ1≈ξ2 c) (renExtₗ ξ1≈ξ2 c₁)
 renExtₗ ξ1≈ξ2 (LocAbs c) = cong LocAbs (renExtₗ (↑Ext ξ1≈ξ2) c)
 renExtₗ ξ1≈ξ2 (LocApp c ℓ) = cong₂ LocApp (renExtₗ ξ1≈ξ2 c) (renExtₗ-Loc ξ1≈ξ2 ℓ)
@@ -71,8 +74,8 @@ renIdₗ (Send ℓ1 c ℓ2) = cong₃ Send (renIdₗ-Loc ℓ1) (renIdₗ c) (ren
 renIdₗ (If ℓ c c₁ c₂) = cong₄ If (renIdₗ-Loc ℓ) (renIdₗ c) (renIdₗ c₁) (renIdₗ c₂)
 renIdₗ (Sync ℓ1 d ℓ2 c) = cong₄ Sync (renIdₗ-Loc ℓ1) refl (renIdₗ-Loc ℓ2) (renIdₗ c)
 renIdₗ (DefLocal ℓ c c₁) = cong₃ DefLocal (renIdₗ-Loc ℓ) (renIdₗ c) (renIdₗ c₁)
-renIdₗ (Fun c) = cong Fun (renIdₗ c)
-renIdₗ (Fix c) = cong Fix (renIdₗ c)
+renIdₗ (Fun τ c) = cong₂ Fun (renIdₜ τ) (renIdₗ c)
+renIdₗ (Fix τ c) = cong₂ Fix (renIdₜ τ) (renIdₗ c)
 renIdₗ (App c c₁) = cong₂ App (renIdₗ c) (renIdₗ c₁)
 renIdₗ (LocAbs c) = cong LocAbs c⟨↑id⟩≡c
   where
@@ -100,8 +103,8 @@ renFuseₗ ξ1 ξ2 (Send ℓ1 c ℓ2) = cong₃ Send (renFuseₗ-Loc ξ1 ξ2 ℓ
 renFuseₗ ξ1 ξ2 (If ℓ c c₁ c₂) = cong₄ If (renFuseₗ-Loc ξ1 ξ2 ℓ) (renFuseₗ ξ1 ξ2 c) (renFuseₗ ξ1 ξ2 c₁) (renFuseₗ ξ1 ξ2 c₂)
 renFuseₗ ξ1 ξ2 (Sync ℓ1 d ℓ2 c) = cong₄ Sync (renFuseₗ-Loc ξ1 ξ2 ℓ1) refl (renFuseₗ-Loc ξ1 ξ2 ℓ2) (renFuseₗ ξ1 ξ2 c)
 renFuseₗ ξ1 ξ2 (DefLocal ℓ c c₁) = cong₃ DefLocal (renFuseₗ-Loc ξ1 ξ2 ℓ) (renFuseₗ ξ1 ξ2 c) (renFuseₗ ξ1 ξ2 c₁)
-renFuseₗ ξ1 ξ2 (Fun c) = cong Fun (renFuseₗ ξ1 ξ2 c)
-renFuseₗ ξ1 ξ2 (Fix c) = cong Fix (renFuseₗ ξ1 ξ2 c)
+renFuseₗ ξ1 ξ2 (Fun τ c) = cong₂ Fun (renFuseₜ ξ1 ξ2 τ)  (renFuseₗ ξ1 ξ2 c)
+renFuseₗ ξ1 ξ2 (Fix τ c) = cong₂ Fix (renFuseₜ ξ1 ξ2 τ) (renFuseₗ ξ1 ξ2 c)
 renFuseₗ ξ1 ξ2 (App c1 c2) = cong₂ App (renFuseₗ ξ1 ξ2 c1) (renFuseₗ ξ1 ξ2 c2)
 renFuseₗ ξ1 ξ2 (LocAbs c) = cong LocAbs c⟨↑[ξ2∘ξ1]⟩≡c⟨↑ξ1⟩⟨↑ξ2⟩
     where

@@ -9,15 +9,18 @@ open import Function
 
 open import Common
 open import LocalLang
+open import TypedLocalLang
 open import Locations
 
 module Renamings
   (L : Location)
   (E : Language L)
   (LE : LawfulLanguage L E)
+  (TE : TypedLocalLanguage L E LE)
   where
 
-open import Choreographies L E
+open import Types L E LE TE
+open import Choreographies L E LE TE
 open Location L
 open Language E
 open LawfulLanguage LE
@@ -30,8 +33,8 @@ ren (Send ℓ1 c ℓ2) ξ = Send ℓ1 (ren c ξ) ℓ2
 ren (If ℓ c c₁ c₂) ξ = If ℓ (ren c ξ) (ren c₁ ξ) (ren c₂ ξ)
 ren (Sync ℓ1 d ℓ2 c) ξ = Sync ℓ1 d ℓ2 (ren c ξ)
 ren (DefLocal ℓ c c₁) ξ = DefLocal ℓ (ren c ξ) (ren c₁ ξ)
-ren (Fun c) ξ = Fun (ren c (↑ ξ))
-ren (Fix c) ξ = Fix (ren c (↑ ξ))
+ren (Fun τ c) ξ = Fun τ (ren c (↑ ξ))
+ren (Fix τ c) ξ = Fix τ (ren c (↑ ξ))
 ren (App c c₁) ξ = App (ren c ξ) (ren c₁ ξ)
 ren (LocAbs c) ξ = LocAbs (ren c ξ)
 ren (LocApp c ℓ) ξ = LocApp (ren c ξ) ℓ
@@ -47,8 +50,8 @@ renExt ξ1≈ξ2 (Send ℓ1 c ℓ2) = cong₃ Send refl (renExt ξ1≈ξ2 c) ref
 renExt ξ1≈ξ2 (If ℓ c c₁ c₂) = cong₄ If refl (renExt ξ1≈ξ2 c) (renExt ξ1≈ξ2 c₁) (renExt ξ1≈ξ2 c₂)
 renExt ξ1≈ξ2 (Sync ℓ1 d ℓ2 c) = cong₄ Sync refl refl refl (renExt ξ1≈ξ2 c)
 renExt ξ1≈ξ2 (DefLocal ℓ c c₁) = cong₃ DefLocal refl (renExt ξ1≈ξ2 c) (renExt ξ1≈ξ2 c₁)
-renExt ξ1≈ξ2 (Fun c) = cong Fun (renExt (↑Ext ξ1≈ξ2) c)
-renExt ξ1≈ξ2 (Fix c) = cong Fix (renExt (↑Ext ξ1≈ξ2) c)
+renExt ξ1≈ξ2 (Fun τ c) = cong₂ Fun refl (renExt (↑Ext ξ1≈ξ2) c)
+renExt ξ1≈ξ2 (Fix τ c) = cong₂ Fix refl (renExt (↑Ext ξ1≈ξ2) c)
 renExt ξ1≈ξ2 (App c c₁) = cong₂ App (renExt ξ1≈ξ2 c) (renExt ξ1≈ξ2 c₁)
 renExt ξ1≈ξ2 (LocAbs c) = cong LocAbs (renExt ξ1≈ξ2 c)
 renExt ξ1≈ξ2 (LocApp c ℓ) = cong₂ LocApp (renExt ξ1≈ξ2 c) refl
@@ -62,14 +65,14 @@ renId (Send ℓ1 c ℓ2) = cong₃ Send refl (renId c) refl
 renId (If ℓ c c₁ c₂) = cong₄ If refl (renId c) (renId c₁) (renId c₂)
 renId (Sync ℓ1 d ℓ2 c) = cong₄ Sync refl refl refl (renId c)
 renId (DefLocal ℓ c c₁) = cong₃ DefLocal refl (renId c) (renId c₁)
-renId (Fun c) = cong Fun c⟨↑id⟩≡c
+renId (Fun τ c) = cong₂ Fun refl c⟨↑id⟩≡c
   where
   c⟨↑id⟩≡c : ren c (↑ idRen) ≡ c
   c⟨↑id⟩≡c = 
     ren c (↑ idRen) ≡⟨ renExt ↑Id c ⟩
     ren c idRen        ≡⟨ renId c ⟩
     c                     ∎
-renId (Fix c) = cong Fix c⟨↑id⟩≡c
+renId (Fix τ c) = cong₂ Fix refl c⟨↑id⟩≡c
   where
   c⟨↑id⟩≡c : ren c (↑ idRen) ≡ c
   c⟨↑id⟩≡c = 
@@ -89,14 +92,14 @@ renFuse ξ1 ξ2 (Send ℓ1 c ℓ2) = cong₃ Send refl (renFuse ξ1 ξ2 c) refl
 renFuse ξ1 ξ2 (If ℓ c c₁ c₂) = cong₄ If refl (renFuse ξ1 ξ2 c) (renFuse ξ1 ξ2 c₁) (renFuse ξ1 ξ2 c₂)
 renFuse ξ1 ξ2 (Sync ℓ1 d ℓ2 c) = cong₄ Sync refl refl refl (renFuse ξ1 ξ2 c)
 renFuse ξ1 ξ2 (DefLocal ℓ c c₁) = cong₃ DefLocal refl (renFuse ξ1 ξ2 c) (renFuse ξ1 ξ2 c₁)
-renFuse ξ1 ξ2 (Fun c) = cong Fun c⟨↑[ξ2∘ξ1]⟩≡c⟨↑ξ1⟩⟨↑ξ2⟩
+renFuse ξ1 ξ2 (Fun τ c) = cong₂ Fun refl c⟨↑[ξ2∘ξ1]⟩≡c⟨↑ξ1⟩⟨↑ξ2⟩
   where
   c⟨↑[ξ2∘ξ1]⟩≡c⟨↑ξ1⟩⟨↑ξ2⟩ : ren c (↑ (ξ2 ∘ ξ1)) ≡ ren (ren c (↑ ξ1)) (↑ ξ2)
   c⟨↑[ξ2∘ξ1]⟩≡c⟨↑ξ1⟩⟨↑ξ2⟩ = 
     ren c (↑ (ξ2 ∘ ξ1))       ≡⟨ renExt (↑Fuse ξ1 ξ2) c ⟩
     ren c (↑ ξ2 ∘ ↑ ξ1)       ≡⟨ renFuse (↑ ξ1) (↑ ξ2) c ⟩
     ren (ren c (↑ ξ1)) (↑ ξ2) ∎
-renFuse ξ1 ξ2 (Fix c) = cong Fix c⟨↑[ξ2∘ξ1]⟩≡c⟨↑ξ1⟩⟨↑ξ2⟩
+renFuse ξ1 ξ2 (Fix τ c) = cong₂ Fix refl c⟨↑[ξ2∘ξ1]⟩≡c⟨↑ξ1⟩⟨↑ξ2⟩
   where
   c⟨↑[ξ2∘ξ1]⟩≡c⟨↑ξ1⟩⟨↑ξ2⟩ : ren c (↑ (ξ2 ∘ ξ1)) ≡ ren (ren c (↑ ξ1)) (↑ ξ2)
   c⟨↑[ξ2∘ξ1]⟩≡c⟨↑ξ1⟩⟨↑ξ2⟩ = 

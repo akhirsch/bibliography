@@ -16,15 +16,17 @@ open import Function
 
 open import Common
 open import LocalLang
+open import TypedLocalLang
 open import Locations
 
 module LocalRenamings
   (L : Location)
   (E : Language L)
   (LE : LawfulLanguage L E)
+  (TE : TypedLocalLanguage L E LE)
   where
 
-open import Choreographies L E
+open import Choreographies L E LE TE
 open Language E
 open LawfulLanguage LE
 open Location L
@@ -101,8 +103,8 @@ renₗₑ (Send ℓ1 c ℓ2) ξ = Send ℓ1 (renₗₑ c ξ) ℓ2
 renₗₑ (If ℓ c c₁ c₂) ξ = If ℓ (renₗₑ c ξ) (renₗₑ c₁ ξ) (renₗₑ c₂ ξ)
 renₗₑ (Sync ℓ1 d ℓ2 c) ξ = Sync ℓ1 d ℓ2 (renₗₑ c ξ)
 renₗₑ (DefLocal ℓ c1 c2) ξ = DefLocal ℓ (renₗₑ c1 ξ) (renₗₑ c2 (↑[ ℓ ] ξ))
-renₗₑ (Fun c) ξ = Fun (renₗₑ c ξ)
-renₗₑ (Fix c) ξ = Fix (renₗₑ c ξ)
+renₗₑ (Fun τ c) ξ = Fun τ (renₗₑ c ξ)
+renₗₑ (Fix τ c) ξ = Fix τ (renₗₑ c ξ)
 renₗₑ (App c c₁) ξ = App (renₗₑ c ξ) (renₗₑ c₁ ξ)
 renₗₑ (LocAbs c) ξ = LocAbs (renₗₑ c (↑ₗₑ ξ))
 renₗₑ (LocApp c ℓ) ξ = LocApp (renₗₑ c ξ) ℓ
@@ -120,8 +122,8 @@ renExtₗₑ ξ1≈ξ2 (If ℓ c c₁ c₂) =
 renExtₗₑ ξ1≈ξ2 (Sync ℓ1 d ℓ2 c) = cong (Sync ℓ1 d ℓ2) (renExtₗₑ ξ1≈ξ2 c)
 renExtₗₑ ξ1≈ξ2 (DefLocal ℓ c1 c2) =
   cong₂ (DefLocal ℓ) (renExtₗₑ ξ1≈ξ2 c1) (renExtₗₑ (↑[ℓ]Ext ξ1≈ξ2 ℓ) c2)
-renExtₗₑ ξ1≈ξ2 (Fun c) = cong Fun (renExtₗₑ ξ1≈ξ2 c)
-renExtₗₑ ξ1≈ξ2 (Fix c) = cong Fix (renExtₗₑ ξ1≈ξ2 c)
+renExtₗₑ ξ1≈ξ2 (Fun τ c) = cong₂ Fun refl (renExtₗₑ ξ1≈ξ2 c)
+renExtₗₑ ξ1≈ξ2 (Fix τ c) = cong₂ Fix refl (renExtₗₑ ξ1≈ξ2 c)
 renExtₗₑ ξ1≈ξ2 (App c c₁) = cong₂ App (renExtₗₑ ξ1≈ξ2 c) (renExtₗₑ ξ1≈ξ2 c₁)
 renExtₗₑ ξ1≈ξ2 (LocAbs c) = cong LocAbs (renExtₗₑ (↑Extₗₑ ξ1≈ξ2) c)
 renExtₗₑ ξ1≈ξ2 (LocApp c ℓ) = cong₂ LocApp (renExtₗₑ ξ1≈ξ2 c) refl
@@ -140,10 +142,10 @@ renIdₗₑ (DefLocal ℓ c1 c2) = cong₂ (DefLocal ℓ) (renIdₗₑ c1) c2⟨
   c2⟨↑id⟩≡c2 : renₗₑ c2 (↑[ ℓ ] idRenₗₑ) ≡ c2
   c2⟨↑id⟩≡c2 = 
     renₗₑ c2 (↑[ ℓ ] idRenₗₑ) ≡⟨ renExtₗₑ (↑[ℓ]Id ℓ) c2 ⟩
-    renₗₑ c2 idRenₗₑ        ≡⟨ renIdₗₑ c2 ⟩
-    c2                     ∎
-renIdₗₑ (Fun c) = cong Fun (renIdₗₑ c)
-renIdₗₑ (Fix c) = cong Fix (renIdₗₑ c)
+    renₗₑ c2 idRenₗₑ          ≡⟨ renIdₗₑ c2 ⟩
+    c2                        ∎
+renIdₗₑ (Fun τ c) = cong₂ Fun refl (renIdₗₑ c)
+renIdₗₑ (Fix τ c) = cong₂ Fix refl (renIdₗₑ c)
 renIdₗₑ (App c c₁) = cong₂ App (renIdₗₑ c) (renIdₗₑ c₁)
 renIdₗₑ (LocAbs c) = cong LocAbs c⟨↑Id⟩≡c -- cong LocAbs (renIdₗₑ c)
   where
@@ -180,8 +182,8 @@ renFuseₗₑ ξ1 ξ2 (DefLocal ℓ c1 c2) = cong₂ (DefLocal ℓ) (renFuseₗ�
     renₗₑ c2 (↑[ ℓ ] (∣ ξ2 ⟫- ξ1))    ≡⟨ renExtₗₑ (↑[ℓ]Fuse ξ1 ξ2 ℓ) c2 ⟩
     renₗₑ c2 (∣ ↑[ ℓ ] ξ2 ⟫- ↑[ ℓ ] ξ1) ≡⟨ renFuseₗₑ (↑[ ℓ ] ξ1) (↑[ ℓ ] ξ2) c2 ⟩
     renₗₑ (renₗₑ c2 (↑[ ℓ ] ξ1)) (↑[ ℓ ] ξ2)        ∎
-renFuseₗₑ ξ1 ξ2 (Fun c) = cong Fun (renFuseₗₑ ξ1 ξ2 c)
-renFuseₗₑ ξ1 ξ2 (Fix c) = cong Fix (renFuseₗₑ ξ1 ξ2 c)
+renFuseₗₑ ξ1 ξ2 (Fun τ c) = cong₂ Fun refl (renFuseₗₑ ξ1 ξ2 c)
+renFuseₗₑ ξ1 ξ2 (Fix τ c) = cong₂ Fix refl (renFuseₗₑ ξ1 ξ2 c)
 renFuseₗₑ ξ1 ξ2 (App c c₁) = cong₂ App (renFuseₗₑ ξ1 ξ2 c) (renFuseₗₑ ξ1 ξ2 c₁)
 renFuseₗₑ ξ1 ξ2 (LocAbs c) = cong LocAbs eq
   where

@@ -5,7 +5,7 @@ open import Data.Unit
 open import Data.Nat
 open import Data.Nat.Properties
 open import Data.List
-open import Data.Product
+open import Data.Product renaming (proj₁ to fst; proj₂ to snd)
 open import Relation.Nullary
 open import Relation.Binary
 open import Relation.Binary.PropositionalEquality
@@ -23,11 +23,11 @@ module TypedChoreographies
   (TE : TypedLocalLanguage L E LE)
   where
 
-open import Choreographies L E
-open import LocalRenamings L E LE
-open import LocationRenamings L E LE
-open import Renamings L E LE
-open import Substitutions L E LE
+open import Choreographies L E LE TE
+open import LocalRenamings L E LE TE
+open import LocationRenamings L E LE TE
+open import Renamings L E LE TE
+open import Substitutions L E LE TE
 open import Types L E LE TE
 open import LocationContexts L E LE TE
 open import LocalContexts L E LE TE
@@ -76,10 +76,10 @@ data _⊢_∶_ : LocCtx × LocalCtx × Ctx → Chor → Typ → Set where
                (Θ , Δ , Γ) ⊢ DefLocal ℓ C1 C2 ∶ τ2
   tyFun : ∀{Θ Δ Γ C τ1 τ2} →
           (Θ；Δ；Γ,τ1⊢C:τ2 : (Θ , Δ , (Γ ,, τ1)) ⊢ C ∶ τ2) →
-          (Θ , Δ , Γ) ⊢ Fun C ∶ Arrow τ1 τ2
+          (Θ , Δ , Γ) ⊢ Fun τ1 C ∶ Arrow τ1 τ2
   tyFix : ∀{Θ Δ Γ C τ} →
           (Θ；Δ；Γ,τ⊢C:τ : (Θ , Δ , (Γ ,, τ)) ⊢ C ∶ τ) →
-          (Θ , Δ , Γ) ⊢ Fix C ∶ τ
+          (Θ , Δ , Γ) ⊢ Fix τ C ∶ τ
   tyApp : ∀{Θ Δ Γ C1 C2 τ1 τ2}
           (Θ；Δ；Γ⊢C1:τ1⇒τ2 : (Θ , Δ , Γ)  ⊢ C1 ∶ Arrow τ1 τ2)
           (Θ；Δ；Γ⊢C2:τ1 : (Θ , Δ , Γ) ⊢ C2 ∶ τ1) →
@@ -98,6 +98,31 @@ data _⊢_∶_ : LocCtx × LocalCtx × Ctx → Chor → Typ → Set where
               (Θ⊢τ : Θ ⊢ₜ τ)
               (↑Θ；↑Δ；↑Γ⊢C2:↑τ : (↑LocCtx Θ , ↑LocalCtx Δ , ↑Ctx Γ) ⊢ C2 ∶ ↑ₜ τ) →
               (Θ , Δ , Γ) ⊢ TellLet ℓ ρ1 C1 ρ2 C2 ∶ τ
+
+-- Choreographies have a unique type
+tyUniq : ∀{Θ Δ Γ C τ1 τ2} → 
+         (Θ , Δ , Γ) ⊢ C ∶ τ1 →
+         (Θ , Δ , Γ) ⊢ C ∶ τ2 →
+         τ1 ≡ τ2
+tyUniq (tyVar Θ⊢Γ x) (tyVar Θ⊢Γ' .x) = refl
+tyUniq (tyDone Θ⊢Γ Θ⊢ℓ Δ[ℓ]⊢e∶t) (tyDone Θ⊢Γ' Θ⊢ℓ' Δ[ℓ]⊢e∶t') =
+  cong₂ At (tyUniqₑ Δ[ℓ]⊢e∶t Δ[ℓ]⊢e∶t') refl
+tyUniq (tySend C∶t Θ⊢ℓ2) (tySend C∶t' Θ⊢ℓ2') =
+  cong₂ At (At-inj (tyUniq C∶t C∶t') .fst) refl
+tyUniq (tyIf C C1 C2) (tyIf C' C1' C2') = tyUniq C1 C1'
+tyUniq (tySync _ _ C) (tySync _ _ C') = tyUniq C C'
+tyUniq (tyDefLocal C1 C2) (tyDefLocal C1' C2') with tyUniq C1 C1'
+... | refl = tyUniq C2 C2'
+tyUniq (tyFun C) (tyFun C') = cong₂ Arrow refl (tyUniq C C')
+tyUniq (tyFix C) (tyFix C') = tyUniq C C'
+tyUniq (tyApp C1 C2) (tyApp C1' C2') = Arrow-inj (tyUniq C1 C1') .snd
+tyUniq (tyLocAbs _ C) (tyLocAbs _ C') = cong AllLoc (tyUniq C C')
+tyUniq (tyLocApp {τ = τ} {ℓ = ℓ} C Θ⊢ℓ) (tyLocApp {τ = τ'} C' Θ⊢ℓ') = cong₂ subₜ τ≡τ' refl
+  where
+  τ≡τ' : τ ≡ τ'
+  τ≡τ' = AllLoc-inj (tyUniq C C')
+tyUniq (tyTellLet C1 Θ⊢ρ1 Θ⊢ρ2 Θ⊢τ C2) (tyTellLet C1' Θ⊢ρ3 Θ⊢ρ4 Θ⊢τ₁ C2') =
+  ↑ₜ-pres-inj _ _ (tyUniq C2 C2')
 
 -- The typing relation respects extensional equality
 tyExt : ∀{Θ Θ' Δ Δ' Γ Γ' C τ} →
@@ -386,3 +411,4 @@ tyWk {Θ} {Δ} {Γ} {Γ'} ξ Γ≈Γ'∘ξ Θ⊢Γ' (tyTellLet C1∶Loc Θ⊢ρ1
     ↑Ctx Γ        ≈⟨ ↑CtxExt Γ≈Γ'∘ξ ⟩
     ↑Ctx (Γ' ∘ ξ) ≈⟨ ↑Ctx∘ Γ' ξ ⟩
     ↑Ctx Γ' ∘ ξ   ∎
+ 

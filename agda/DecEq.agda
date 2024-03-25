@@ -19,13 +19,14 @@ open import LocalLang
 open import Locations
 
 module DecEq
-  (E : Language)
   (L : Location)
+  (E : Language L)
   where
 
-open import Choreographies E L
-open Language E
+open import Choreographies L E
+
 open Location L
+open Language E
 
 {-
   A `view` of two elements of a recursive data type

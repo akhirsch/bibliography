@@ -97,6 +97,15 @@ record Location : Set₁ where
   renFuseₗ-List ξ1 ξ2 [] = refl
   renFuseₗ-List ξ1 ξ2 (ℓ ∷ ρ) = cong₂ _∷_ (renFuseₗ-Loc ξ1 ξ2 ℓ) (renFuseₗ-List ξ1 ξ2 ρ)
 
+  -- Renaming preserves injectivity
+  renₗ-Loc-pres-inj : ∀{ξ} →
+                      Injective _≡_ _≡_ ξ →
+                      ∀ ℓ1 ℓ2 →
+                      renₗ-Loc ℓ1 ξ ≡ renₗ-Loc ℓ2 ξ →
+                      ℓ1 ≡ ℓ2
+  renₗ-Loc-pres-inj ξ-inj (Var x) (Var x') eq = cong Var (ξ-inj (Varₗ-inj eq))
+  renₗ-Loc-pres-inj ξ-inj (Lit L) (Lit .L) refl = refl
+
   --------------------
   --- SUBSTITUTION ---
   --------------------
