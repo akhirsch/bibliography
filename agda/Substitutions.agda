@@ -34,22 +34,23 @@ idSub n = Var n
 -- Substitution with the topmost variable instantiated 
 _▸_ : (ℕ → Chor) → Chor → ℕ → Chor
 (σ ▸ c) zero = c
-(σ ▸ c) (suc n) = ren (σ n) suc
+(σ ▸ c) (suc n) = σ n
 
 -- Adding a topmost term respects extensional equality
 ▸Ext : ∀{σ1 σ2} → σ1 ≈ σ2 → ∀ c → σ1 ▸ c ≈ σ2 ▸ c
 ▸Ext σ1≈σ2 c zero = refl
-▸Ext σ1≈σ2 c (suc n) = cong₂ ren (σ1≈σ2 n) refl
+▸Ext σ1≈σ2 c (suc n) = σ1≈σ2 n
 
--- The ↑ on substitutions
+-- ↑ on substitutions
 ↑σ : (ℕ → Chor) → ℕ → Chor
-↑σ σ = σ ▸ Var zero
+↑σ σ = (λ n → ren (σ n) suc) ▸ Var zero
 
--- The ↑ respects extensional equality
+-- ↑ respects extensional equality
 ↑σExt : ∀{σ1 σ2} → σ1 ≈ σ2 → ↑σ σ1 ≈ ↑σ σ2
-↑σExt σ1≈σ2 = ▸Ext σ1≈σ2 (Var zero)
+↑σExt σ1≈σ2 zero = refl
+↑σExt σ1≈σ2 (suc n) = cong₂ ren (σ1≈σ2 n) refl
 
--- The ↑ respects the identity
+-- ↑ respects the identity
 ↑σId : ↑σ idSub ≈ idSub
 ↑σId zero = refl
 ↑σId (suc n) = refl
@@ -117,12 +118,17 @@ subId (TellLet ℓ ρ1 c ρ2 c₁) = cong₅ TellLet refl refl (subId c) refl (s
 ι : (ℕ → ℕ) → ℕ → Chor
 ι ξ n = Var (ξ n)
 
--- The ↑ commutes with the inclusion
+-- ↑ commutes with the inclusion
 ↑σι : ∀ ξ → ↑σ (ι ξ) ≈ ι (↑ ξ)
 ↑σι ξ zero = refl
 ↑σι ξ (suc n) = refl
 
--- Substitution along an inclusion is the same as a renaming
+-- The inclusion respects the identity
+ιId : ι idRen ≈ idSub
+ιId zero = refl
+ιId (suc n) = refl
+
+-- Substitution respects the inclusion
 subι : ∀ ξ c → sub c (ι ξ) ≡ ren c ξ
 subι ξ (Done ℓ e) = refl
 subι ξ (Var x) = refl
