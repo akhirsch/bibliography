@@ -32,11 +32,66 @@ open Location L
 LocalRen : Set
 LocalRen = Loc → ℕ → ℕ
 
--- ↑ on local variable renamings
+idRenₗₑ : LocalRen
+idRenₗₑ ℓ = idRenₑ
+
+{-
+  ↑ on local variable renaming at a specified location ℓ.
+  Used when binding a local variable.
+-}
 ↑[_] : Loc → LocalRen → LocalRen
 ↑[ ℓ ] ξ ℓ' with ≡-dec-Loc ℓ ℓ'
-... | yes _ = ↑ₑ (ξ ℓ')
+... | yes _ = ↑ (ξ ℓ')
 ... | no  _ = ξ ℓ'
+
+-- ↑[ℓ] respects the identity
+↑[ℓ]Id : ∀ ℓ → ↑[ ℓ ] idRenₗₑ ≈₂ idRenₗₑ
+↑[ℓ]Id ℓ ℓ' n with ≡-dec-Loc ℓ ℓ'
+... | yes _ = ↑Idₑ n
+... | no  _ = refl
+
+-- ↑[ℓ] enjoys fusion
+↑[ℓ]Fuse : ∀ ξ1 ξ2 ℓ → ↑[ ℓ ] (∣ ξ2 ⟫- ξ1) ≈₂ (∣ ↑[ ℓ ] ξ2 ⟫- ↑[ ℓ ] ξ1)
+↑[ℓ]Fuse ξ1 ξ2 ℓ ℓ' n with ≡-dec-Loc ℓ ℓ'
+... | yes _ = ↑Fuseₑ (ξ1 ℓ') (ξ2 ℓ') n
+... | no  _ = refl
+
+-- ↑[ℓ] respects extensional equality
+↑[ℓ]Ext : ∀{ξ1 ξ2} →
+        ξ1 ≈₂ ξ2 →
+        ∀ ℓ → ↑[ ℓ ] ξ1 ≈₂ ↑[ ℓ ] ξ2
+↑[ℓ]Ext ξ1≈ξ2 ℓ ℓ' n with ≡-dec-Loc ℓ ℓ'
+... | yes _ = ↑Extₑ (ξ1≈ξ2 ℓ') n
+... | no  _ = ξ1≈ξ2 ℓ' n
+
+{-
+  Add a top-most location variable to a local renaming.
+  Used when binding a location variable.
+-}
+↑ₗₑ : LocalRen → LocalRen
+↑ₗₑ ξ (Var zero) n = n
+↑ₗₑ ξ (Var (suc x)) n = ξ (Var x) n
+↑ₗₑ ξ (Lit L) n = ξ (Lit L) n
+
+-- ↑ respects the identity
+↑Idₗₑ : ↑ₗₑ idRenₗₑ ≈₂ idRenₗₑ
+↑Idₗₑ (Var zero) n = refl
+↑Idₗₑ (Var (suc x)) n = refl
+↑Idₗₑ (Lit L) n = refl
+
+-- ↑ enjoys fusion
+↑Fuseₗₑ : ∀ ξ1 ξ2 → ↑ₗₑ (∣ ξ2 ⟫- ξ1) ≈₂ (∣ ↑ₗₑ ξ2 ⟫- ↑ₗₑ ξ1)
+↑Fuseₗₑ ξ1 ξ2 (Var zero) n = refl
+↑Fuseₗₑ ξ1 ξ2 (Var (suc x)) n = refl
+↑Fuseₗₑ ξ1 ξ2 (Lit L) n = refl
+
+-- ↑ respects extensional equality
+↑Extₗₑ : ∀{ξ1 ξ2} →
+         ξ1 ≈₂ ξ2 →
+         ↑ₗₑ ξ1 ≈₂ ↑ₗₑ ξ2
+↑Extₗₑ ξ1≈ξ2 (Var zero) n = refl
+↑Extₗₑ ξ1≈ξ2 (Var (suc x)) n = ξ1≈ξ2 (Var x) n
+↑Extₗₑ ξ1≈ξ2 (Lit L) n = ξ1≈ξ2 (Lit L) n
 
 -- Renaming local variables in a choreography
 renₗₑ : (c : Chor) (ξ : LocalRen) → Chor
@@ -49,32 +104,9 @@ renₗₑ (DefLocal ℓ c1 c2) ξ = DefLocal ℓ (renₗₑ c1 ξ) (renₗₑ c2
 renₗₑ (Fun c) ξ = Fun (renₗₑ c ξ)
 renₗₑ (Fix c) ξ = Fix (renₗₑ c ξ)
 renₗₑ (App c c₁) ξ = App (renₗₑ c ξ) (renₗₑ c₁ ξ)
-renₗₑ (LocAbs c) ξ = LocAbs (renₗₑ c ξ)
+renₗₑ (LocAbs c) ξ = LocAbs (renₗₑ c (↑ₗₑ ξ))
 renₗₑ (LocApp c ℓ) ξ = LocApp (renₗₑ c ξ) ℓ
-renₗₑ (TellLet ℓ ρ1 c ρ2 c₁) ξ = TellLet ℓ ρ1 (renₗₑ c ξ) ρ2 (renₗₑ c₁ ξ)
-
-idRenₗₑ : LocalRen
-idRenₗₑ ℓ = idRenₑ
-
--- The ↑ respects the identity
-↑Idₗₑ : ∀ ℓ → ↑[ ℓ ] idRenₗₑ ≈₂ idRenₗₑ
-↑Idₗₑ ℓ ℓ' n with ≡-dec-Loc ℓ ℓ'
-... | yes _ = ↑Idₑ n
-... | no  _ = refl
-
--- The ↑ enjoys fusion
-↑Fuseₗₑ : ∀ ξ1 ξ2 ℓ → ↑[ ℓ ] (∣ ξ2 ⟫- ξ1) ≈₂ (∣ ↑[ ℓ ] ξ2 ⟫- ↑[ ℓ ] ξ1)
-↑Fuseₗₑ ξ1 ξ2 ℓ ℓ' n with ≡-dec-Loc ℓ ℓ'
-... | yes _ = ↑Fuseₑ (ξ1 ℓ') (ξ2 ℓ') n
-... | no  _ = refl
-
--- The ↑ respects extensional equality
-↑Extₗₑ : ∀{ξ1 ξ2} →
-        ξ1 ≈₂ ξ2 →
-        ∀ ℓ → ↑[ ℓ ] ξ1 ≈₂ ↑[ ℓ ] ξ2
-↑Extₗₑ ξ1≈ξ2 ℓ ℓ' n with ≡-dec-Loc ℓ ℓ'
-... | yes _ = ↑Extₑ (ξ1≈ξ2 ℓ') n
-... | no  _ = ξ1≈ξ2 ℓ' n
+renₗₑ (TellLet ℓ ρ1 c1 ρ2 c2) ξ = TellLet ℓ ρ1 (renₗₑ c1 ξ) ρ2 (renₗₑ c2 (↑ₗₑ ξ))
 
 -- Renaming local variables respects extensional equality
 renExtₗₑ : ∀{ξ1 ξ2} →
@@ -83,15 +115,18 @@ renExtₗₑ : ∀{ξ1 ξ2} →
 renExtₗₑ ξ1≈ξ2 (Done ℓ e) = cong (Done ℓ) (renExtₑ (ξ1≈ξ2 ℓ) e)
 renExtₗₑ ξ1≈ξ2 (Var x) = refl
 renExtₗₑ ξ1≈ξ2 (Send ℓ1 c ℓ2) = cong₃ Send refl (renExtₗₑ ξ1≈ξ2 c) refl
-renExtₗₑ ξ1≈ξ2 (If ℓ c c₁ c₂) = cong₃ (If ℓ) (renExtₗₑ ξ1≈ξ2 c) (renExtₗₑ ξ1≈ξ2 c₁) (renExtₗₑ ξ1≈ξ2 c₂)
+renExtₗₑ ξ1≈ξ2 (If ℓ c c₁ c₂) =
+  cong₃ (If ℓ) (renExtₗₑ ξ1≈ξ2 c) (renExtₗₑ ξ1≈ξ2 c₁) (renExtₗₑ ξ1≈ξ2 c₂)
 renExtₗₑ ξ1≈ξ2 (Sync ℓ1 d ℓ2 c) = cong (Sync ℓ1 d ℓ2) (renExtₗₑ ξ1≈ξ2 c)
-renExtₗₑ ξ1≈ξ2 (DefLocal ℓ c c₁) = cong₂ (DefLocal ℓ) (renExtₗₑ ξ1≈ξ2 c) (renExtₗₑ (↑Extₗₑ ξ1≈ξ2 ℓ) c₁)
+renExtₗₑ ξ1≈ξ2 (DefLocal ℓ c1 c2) =
+  cong₂ (DefLocal ℓ) (renExtₗₑ ξ1≈ξ2 c1) (renExtₗₑ (↑[ℓ]Ext ξ1≈ξ2 ℓ) c2)
 renExtₗₑ ξ1≈ξ2 (Fun c) = cong Fun (renExtₗₑ ξ1≈ξ2 c)
 renExtₗₑ ξ1≈ξ2 (Fix c) = cong Fix (renExtₗₑ ξ1≈ξ2 c)
 renExtₗₑ ξ1≈ξ2 (App c c₁) = cong₂ App (renExtₗₑ ξ1≈ξ2 c) (renExtₗₑ ξ1≈ξ2 c₁)
-renExtₗₑ ξ1≈ξ2 (LocAbs c) = cong LocAbs (renExtₗₑ ξ1≈ξ2 c)
+renExtₗₑ ξ1≈ξ2 (LocAbs c) = cong LocAbs (renExtₗₑ (↑Extₗₑ ξ1≈ξ2) c)
 renExtₗₑ ξ1≈ξ2 (LocApp c ℓ) = cong₂ LocApp (renExtₗₑ ξ1≈ξ2 c) refl
-renExtₗₑ ξ1≈ξ2 (TellLet ℓ ρ1 c ρ2 c₁) = cong₅ TellLet refl refl (renExtₗₑ ξ1≈ξ2 c) refl (renExtₗₑ ξ1≈ξ2 c₁)
+renExtₗₑ ξ1≈ξ2 (TellLet ℓ ρ1 c1 ρ2 c2) =
+  cong₅ TellLet refl refl (renExtₗₑ ξ1≈ξ2 c1) refl (renExtₗₑ (↑Extₗₑ ξ1≈ξ2) c2)
 
 -- Renaming local variables respects the identity
 renIdₗₑ : ∀ c → renₗₑ c idRenₗₑ ≡ c
@@ -104,15 +139,32 @@ renIdₗₑ (DefLocal ℓ c1 c2) = cong₂ (DefLocal ℓ) (renIdₗₑ c1) c2⟨
   where
   c2⟨↑id⟩≡c2 : renₗₑ c2 (↑[ ℓ ] idRenₗₑ) ≡ c2
   c2⟨↑id⟩≡c2 = 
-    renₗₑ c2 (↑[ ℓ ] idRenₗₑ) ≡⟨ renExtₗₑ (↑Idₗₑ ℓ) c2 ⟩
+    renₗₑ c2 (↑[ ℓ ] idRenₗₑ) ≡⟨ renExtₗₑ (↑[ℓ]Id ℓ) c2 ⟩
     renₗₑ c2 idRenₗₑ        ≡⟨ renIdₗₑ c2 ⟩
     c2                     ∎
 renIdₗₑ (Fun c) = cong Fun (renIdₗₑ c)
 renIdₗₑ (Fix c) = cong Fix (renIdₗₑ c)
 renIdₗₑ (App c c₁) = cong₂ App (renIdₗₑ c) (renIdₗₑ c₁)
-renIdₗₑ (LocAbs c) = cong LocAbs (renIdₗₑ c)
+renIdₗₑ (LocAbs c) = cong LocAbs c⟨↑Id⟩≡c -- cong LocAbs (renIdₗₑ c)
+  where
+  open ≡-Reasoning
+
+  c⟨↑Id⟩≡c : renₗₑ c (↑ₗₑ idRenₗₑ) ≡ c
+  c⟨↑Id⟩≡c =
+    renₗₑ c (↑ₗₑ idRenₗₑ) ≡⟨ renExtₗₑ ↑Idₗₑ c ⟩
+    renₗₑ c idRenₗₑ       ≡⟨ renIdₗₑ c ⟩
+    c ∎
 renIdₗₑ (LocApp c ℓ) = cong₂ LocApp (renIdₗₑ c) refl
-renIdₗₑ (TellLet ℓ ρ1 c ρ2 c₁) = cong₃ (TellLet ℓ ρ1) (renIdₗₑ c) refl (renIdₗₑ c₁)
+renIdₗₑ (TellLet ℓ ρ1 c1 ρ2 c2) =
+  cong₅ TellLet refl refl (renIdₗₑ c1) refl c2⟨↑Id⟩≡c2
+  where
+  open ≡-Reasoning
+
+  c2⟨↑Id⟩≡c2 : renₗₑ c2 (↑ₗₑ idRenₗₑ) ≡ c2
+  c2⟨↑Id⟩≡c2 =
+    renₗₑ c2 (↑ₗₑ idRenₗₑ) ≡⟨ renExtₗₑ ↑Idₗₑ c2 ⟩
+    renₗₑ c2 idRenₗₑ       ≡⟨ renIdₗₑ c2 ⟩
+    c2 ∎
 
 -- Renaming local variables enjoys fusion
 renFuseₗₑ : ∀ ξ1 ξ2 c → renₗₑ c (∣ ξ2 ⟫- ξ1) ≡ renₗₑ (renₗₑ c ξ1) ξ2
@@ -125,12 +177,29 @@ renFuseₗₑ ξ1 ξ2 (DefLocal ℓ c1 c2) = cong₂ (DefLocal ℓ) (renFuseₗ�
   where
   c2⟨↑[ξ2∘ξ1]⟩≡c2⟨↑ξ1⟩⟨↑ξ2⟩ : renₗₑ c2 (↑[ ℓ ] (∣ ξ2 ⟫- ξ1)) ≡ renₗₑ (renₗₑ c2 (↑[ ℓ ] ξ1)) (↑[ ℓ ] ξ2)
   c2⟨↑[ξ2∘ξ1]⟩≡c2⟨↑ξ1⟩⟨↑ξ2⟩ =
-    renₗₑ c2 (↑[ ℓ ] (∣ ξ2 ⟫- ξ1))    ≡⟨ renExtₗₑ (↑Fuseₗₑ ξ1 ξ2 ℓ) c2 ⟩
+    renₗₑ c2 (↑[ ℓ ] (∣ ξ2 ⟫- ξ1))    ≡⟨ renExtₗₑ (↑[ℓ]Fuse ξ1 ξ2 ℓ) c2 ⟩
     renₗₑ c2 (∣ ↑[ ℓ ] ξ2 ⟫- ↑[ ℓ ] ξ1) ≡⟨ renFuseₗₑ (↑[ ℓ ] ξ1) (↑[ ℓ ] ξ2) c2 ⟩
     renₗₑ (renₗₑ c2 (↑[ ℓ ] ξ1)) (↑[ ℓ ] ξ2)        ∎
 renFuseₗₑ ξ1 ξ2 (Fun c) = cong Fun (renFuseₗₑ ξ1 ξ2 c)
 renFuseₗₑ ξ1 ξ2 (Fix c) = cong Fix (renFuseₗₑ ξ1 ξ2 c)
 renFuseₗₑ ξ1 ξ2 (App c c₁) = cong₂ App (renFuseₗₑ ξ1 ξ2 c) (renFuseₗₑ ξ1 ξ2 c₁)
-renFuseₗₑ ξ1 ξ2 (LocAbs c) = cong LocAbs (renFuseₗₑ ξ1 ξ2 c)
+renFuseₗₑ ξ1 ξ2 (LocAbs c) = cong LocAbs eq
+  where
+  open ≡-Reasoning
+
+  eq : renₗₑ c (↑ₗₑ (∣ ξ2 ⟫- ξ1)) ≡ renₗₑ (renₗₑ c (↑ₗₑ ξ1)) (↑ₗₑ ξ2)
+  eq =
+    renₗₑ c (↑ₗₑ (∣ ξ2 ⟫- ξ1))        ≡⟨ renExtₗₑ (↑Fuseₗₑ ξ1 ξ2) c ⟩
+    renₗₑ c (∣ ↑ₗₑ ξ2 ⟫- ↑ₗₑ ξ1)      ≡⟨ renFuseₗₑ (↑ₗₑ ξ1) (↑ₗₑ ξ2) c ⟩
+    renₗₑ (renₗₑ c (↑ₗₑ ξ1)) (↑ₗₑ ξ2) ∎
 renFuseₗₑ ξ1 ξ2 (LocApp c ℓ) = cong₂ LocApp (renFuseₗₑ ξ1 ξ2 c) refl
-renFuseₗₑ ξ1 ξ2 (TellLet ℓ ρ1 c ρ2 c₁) = cong₅ TellLet refl refl (renFuseₗₑ ξ1 ξ2 c) refl (renFuseₗₑ ξ1 ξ2 c₁)
+renFuseₗₑ ξ1 ξ2 (TellLet ℓ ρ1 c1 ρ2 c2) =
+  cong₅ TellLet refl refl (renFuseₗₑ ξ1 ξ2 c1) refl eq
+  where
+  open ≡-Reasoning
+
+  eq : renₗₑ c2 (↑ₗₑ (∣ ξ2 ⟫- ξ1)) ≡ renₗₑ (renₗₑ c2 (↑ₗₑ ξ1)) (↑ₗₑ ξ2)
+  eq =
+    renₗₑ c2 (↑ₗₑ (∣ ξ2 ⟫- ξ1))        ≡⟨ renExtₗₑ (↑Fuseₗₑ ξ1 ξ2) c2 ⟩
+    renₗₑ c2 (∣ ↑ₗₑ ξ2 ⟫- ↑ₗₑ ξ1)      ≡⟨ renFuseₗₑ (↑ₗₑ ξ1) (↑ₗₑ ξ2) c2 ⟩
+    renₗₑ (renₗₑ c2 (↑ₗₑ ξ1)) (↑ₗₑ ξ2) ∎

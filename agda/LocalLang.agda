@@ -7,6 +7,7 @@ open import Relation.Binary.PropositionalEquality
 open ≡-Reasoning
 open import Function
 
+open import Common
 open import Locations
 
 -- Module for expression-based local languages.
@@ -71,10 +72,6 @@ record Language
   ↑σₑ : (ℕ → Expr) → ℕ → Expr
   ↑σₑ σ zero = varₑ zero
   ↑σₑ σ (suc n) = renₑ (σ n) suc
-
-  ↑ₑ : (ℕ → ℕ) → ℕ → ℕ
-  ↑ₑ ξ zero = zero
-  ↑ₑ ξ (suc n) = suc (ξ n)
 
 -- A local language that has extra "lawfulness" properties
 record LawfulLanguage
@@ -177,17 +174,17 @@ record LawfulLanguage
   -- The `up` construction should respect extensional equality.
   ↑Extₑ : ∀{ξ1 ξ2} →
               (∀ n → ξ1 n ≡ ξ2 n) →
-              ∀ n → ↑ₑ ξ1 n ≡ ↑ₑ ξ2 n
+              ∀ n → ↑ ξ1 n ≡ ↑ ξ2 n
   ↑Extₑ ξ1≈ξ2 zero = refl
   ↑Extₑ ξ1≈ξ2 (suc n) = cong suc (ξ1≈ξ2 n)
 
   -- The `up` construction should have no extensional effect on the identity renaming.
-  ↑Idₑ : ∀ n → ↑ₑ idRenₑ n ≡ n
+  ↑Idₑ : ∀ n → ↑ idRenₑ n ≡ n
   ↑Idₑ zero = refl
   ↑Idₑ (suc n) = refl
 
   -- The `up` construction extensionally commutes with composition.
-  ↑Fuseₑ : ∀ ξ1 ξ2 n → ↑ₑ (ξ2 ∘ ξ1) n ≡ ↑ₑ ξ2 (↑ₑ ξ1 n)
+  ↑Fuseₑ : ∀ ξ1 ξ2 n → ↑ (ξ2 ∘ ξ1) n ≡ ↑ ξ2 (↑ ξ1 n)
   ↑Fuseₑ ξ1 ξ2 zero = refl
   ↑Fuseₑ ξ1 ξ2 (suc n) = refl
     

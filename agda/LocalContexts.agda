@@ -46,7 +46,8 @@ LocalCtx = Loc → ℕ → Typₑ
 -- Add a type to specified local context
 _,,[_]_ : LocalCtx → Loc → Typₑ → LocalCtx
 (Δ ,,[ ℓ ] t) ℓ' with ≡-dec-Loc ℓ ℓ'
-... | yes _ = λ{ zero → t ; (suc n) → Δ ℓ n }
+... | yes _ = λ{ zero → t
+              ; (suc n) → Δ ℓ n }
 ... | no  _ = Δ ℓ'
 
 -- Adding to a local context respects extensional equality
@@ -58,7 +59,7 @@ addLocalCtxExt Δ≈Δ' ℓ t ℓ' with ≡-dec-Loc ℓ ℓ'
 ... | yes _ = λ{ zero → refl ; (suc n) → Δ≈Δ' ℓ n }
 ... | no  _ = Δ≈Δ' ℓ'              
 
--- Renaming of local contexts
+-- Renaming of locations in local contexts
 _∘ₗ_ : LocalCtx → (ℕ → ℕ) → LocalCtx
 (Δ ∘ₗ ξ) ℓ = Δ (renₗ-Loc ℓ ξ)
 
@@ -103,8 +104,29 @@ renₗ-Loc-inj {ℓ = Lit L} {Lit .L} ξ-inj refl = refl
 ↑LocalCtxExt Δ1≈Δ2 (Var (suc x)) n = Δ1≈Δ2 (Var x) n
 ↑LocalCtxExt Δ1≈Δ2 (Lit L) n = Δ1≈Δ2 (Lit L) n
 
--- ↑ distributes over renaming
-↑LocalCtxFuse : ∀ Δ ξ → ↑LocalCtx (Δ ∘ₗ ξ) ≈₂ ↑LocalCtx Δ ∘ₗ ↑ ξ
-↑LocalCtxFuse Δ ξ (Var zero) n = refl
-↑LocalCtxFuse Δ ξ (Var (suc x)) n = refl
-↑LocalCtxFuse Δ ξ (Lit L) n = refl
+-- ↑ distributes over location renaming
+↑LocalCtx-distr-∘ₗ : ∀ Δ ξ → ↑LocalCtx (Δ ∘ₗ ξ) ≈₂ ↑LocalCtx Δ ∘ₗ ↑ ξ
+↑LocalCtx-distr-∘ₗ Δ ξ (Var zero) n = refl
+↑LocalCtx-distr-∘ₗ Δ ξ (Var (suc x)) n = refl
+↑LocalCtx-distr-∘ₗ Δ ξ (Lit L) n = refl
+
+-- Renaming of local variables in local contexts
+_∘ₗₑ_ : LocalCtx → LocalRen → LocalCtx
+(Δ ∘ₗₑ ξ) ℓ n = Δ ℓ (ξ ℓ n)
+
+{-
+  Composing a local context with a local renaming
+  distributes over adding to the context
+-}
+∘ₗₑ,, : ∀ Δ ξ ℓ t →
+       (Δ ∘ₗₑ ξ) ,,[ ℓ ] t ≈₂ (Δ ,,[ ℓ ] t) ∘ₗₑ (↑[ ℓ ] ξ)
+∘ₗₑ,, Δ ξ ℓ t ℓ' with ≡-dec-Loc ℓ ℓ'
+... | yes refl = λ{ zero → refl
+               ; (suc n) → refl }
+... | no  _ = λ n →  refl
+
+-- ↑ distributes over local renaming
+↑LocalCtx-distr-∘ₗₑ : ∀ Δ ξ → ↑LocalCtx (Δ ∘ₗₑ ξ) ≈₂ ↑LocalCtx Δ ∘ₗₑ ↑ₗₑ ξ
+↑LocalCtx-distr-∘ₗₑ Δ ξ (Var zero) n = refl
+↑LocalCtx-distr-∘ₗₑ Δ ξ (Var (suc x)) n = refl
+↑LocalCtx-distr-∘ₗₑ Δ ξ (Lit L) n = refl

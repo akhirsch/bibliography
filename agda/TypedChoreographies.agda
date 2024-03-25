@@ -148,8 +148,8 @@ tyWkₗ {Θ} {Θ'} {Δ} {Δ'} {Γ} ξ ξ-inj Θ≈Θ'∘ξ Δ≈Δ'∘ξ (tyDefL
     
     eq : (Δ ,,[ ℓ ] t1) ≈₂ ((Δ' ,,[ renₗ-Loc ℓ ξ ] t1) ∘ₗ ξ)
     eq = begin
-      Δ ,,[ ℓ ] t1                  ≈⟨ addLocalCtxExt Δ≈Δ'∘ξ ℓ t1 ⟩
-      (Δ' ∘ₗ ξ) ,,[ ℓ ] t1           ≈⟨ ∘ₗ,, Δ' ξ ℓ t1 ξ-inj ⟩
+      Δ ,,[ ℓ ] t1                    ≈⟨ addLocalCtxExt Δ≈Δ'∘ξ ℓ t1 ⟩
+      (Δ' ∘ₗ ξ) ,,[ ℓ ] t1            ≈⟨ ∘ₗ,, Δ' ξ ℓ t1 ξ-inj ⟩
       (Δ' ,,[ renₗ-Loc ℓ ξ ] t1) ∘ₗ ξ ∎
 tyWkₗ {Θ} {Θ'} {Δ} {Δ'} {Γ} ξ ξ-inj Θ≈Θ'∘ξ Δ≈Δ'∘ξ (tyFun {τ1 = τ1} C∶τ2) =
   tyFun (tyExt ≈-refl ≈₂-refl (renCtx,, Γ τ1 ξ) (tyWkₗ ξ ξ-inj Θ≈Θ'∘ξ Δ≈Δ'∘ξ C∶τ2))
@@ -174,8 +174,8 @@ tyWkₗ {Θ} {Θ'} {Δ} {Δ'} {Γ} ξ ξ-inj Θ≈Θ'∘ξ Δ≈Δ'∘ξ (tyLocA
 
       ↑Δ≈↑Δ'∘↑ξ : ↑LocalCtx Δ ≈₂ ↑LocalCtx Δ' ∘ₗ ↑ ξ
       ↑Δ≈↑Δ'∘↑ξ = begin
-        ↑LocalCtx Δ        ≈⟨ ↑LocalCtxExt Δ≈Δ'∘ξ ⟩
-        ↑LocalCtx (Δ' ∘ₗ ξ) ≈⟨ ↑LocalCtxFuse Δ' ξ ⟩
+        ↑LocalCtx Δ         ≈⟨ ↑LocalCtxExt Δ≈Δ'∘ξ ⟩
+        ↑LocalCtx (Δ' ∘ₗ ξ) ≈⟨ ↑LocalCtx-distr-∘ₗ Δ' ξ ⟩
         ↑LocalCtx Δ' ∘ₗ ↑ ξ ∎
 
     ↑Θ'；↑Δ'；[↑Γ]⟨↑ξ⟩⊢C⟨↑ξ⟩∶τ⟨↑ξ⟩ : (↑LocCtx Θ' , ↑LocalCtx Δ' , renCtx (↑Ctx Γ) (↑ ξ)) ⊢ renₗ C (↑ ξ) ∶ renₜ τ (↑ ξ)
@@ -230,7 +230,7 @@ tyWkₗ {Θ} {Θ'} {Δ} {Δ'} {Γ} ξ ξ-inj Θ≈Θ'∘ξ Δ≈Δ'∘ξ (tyTell
       ↑Δ≈↑Δ'∘↑ξ : ↑LocalCtx Δ ≈₂ ↑LocalCtx Δ' ∘ₗ ↑ ξ
       ↑Δ≈↑Δ'∘↑ξ = begin
         ↑LocalCtx Δ         ≈⟨ ↑LocalCtxExt Δ≈Δ'∘ξ ⟩
-        ↑LocalCtx (Δ' ∘ₗ ξ) ≈⟨ ↑LocalCtxFuse Δ' ξ ⟩
+        ↑LocalCtx (Δ' ∘ₗ ξ) ≈⟨ ↑LocalCtx-distr-∘ₗ Δ' ξ ⟩
         ↑LocalCtx Δ' ∘ₗ ↑ ξ ∎
 
     ↑Θ'；↑Δ'；[↑Γ]⟨↑ξ⟩⊢C2⟨↑ξ⟩∶↑τ⟨↑ξ⟩ : (↑LocCtx Θ' , ↑LocalCtx Δ' , renCtx (↑Ctx Γ) (↑ ξ)) ⊢ renₗ C2 (↑ ξ) ∶ renₜ (↑ₜ τ) (↑ ξ)
@@ -251,4 +251,55 @@ tyWkₗ {Θ} {Θ'} {Δ} {Δ'} {Γ} ξ ξ-inj Θ≈Θ'∘ξ Δ≈Δ'∘ξ (tyTell
     ↑Θ'；↑Δ'；↑[Γ⟨ξ⟩]⊢C⟨↑ξ⟩∶↑τ⟨ξ⟩ : (↑LocCtx Θ' , ↑LocalCtx Δ' , ↑Ctx (renCtx Γ ξ)) ⊢ renₗ C2 (↑ ξ) ∶ ↑ₜ (renₜ τ ξ)
     ↑Θ'；↑Δ'；↑[Γ⟨ξ⟩]⊢C⟨↑ξ⟩∶↑τ⟨ξ⟩ = subst (λ x → (↑LocCtx Θ' , ↑LocalCtx Δ' , ↑Ctx (renCtx Γ ξ)) ⊢ renₗ C2 (↑ ξ) ∶ x)
         ↑τ⟨↑ξ⟩≡↑τ⟨ξ⟩ ↑Θ'；↑Δ'；↑[Γ⟨ξ⟩]⊢C⟨↑ξ⟩∶↑τ⟨↑ξ⟩
- 
+
+
+-- The typing relation has weakening on local variables
+tyWkₗₑ : ∀{Θ Δ Δ' Γ C τ} ξ →
+         Δ ≈₂ Δ' ∘ₗₑ ξ →
+         (Θ , Δ , Γ) ⊢ C ∶ τ →
+         (Θ , Δ' , Γ) ⊢ renₗₑ C ξ ∶ τ
+tyWkₗₑ ξ Δ≈Δ'∘ξ (tyVar Θ⊢Γ x) = tyVar Θ⊢Γ x
+tyWkₗₑ ξ Δ≈Δ'∘ξ (tyDone {ℓ = ℓ} Θ⊢ℓ Δ[ℓ]⊢e∶t) = tyDone Θ⊢ℓ (tyWkₑ (ξ ℓ) (Δ≈Δ'∘ξ ℓ) Δ[ℓ]⊢e∶t)
+tyWkₗₑ ξ Δ≈Δ'∘ξ (tySend C∶t Θ⊢ℓ2) = tySend (tyWkₗₑ ξ Δ≈Δ'∘ξ C∶t) Θ⊢ℓ2
+tyWkₗₑ ξ Δ≈Δ'∘ξ (tyIf C∶bool C1∶τ C2∶τ) =
+  tyIf (tyWkₗₑ ξ Δ≈Δ'∘ξ C∶bool) (tyWkₗₑ ξ Δ≈Δ'∘ξ C1∶τ) (tyWkₗₑ ξ Δ≈Δ'∘ξ C2∶τ)
+tyWkₗₑ ξ Δ≈Δ'∘ξ (tySync Θ⊢ℓ1 Θ⊢ℓ2 C∶τ) = tySync Θ⊢ℓ1 Θ⊢ℓ2 (tyWkₗₑ ξ Δ≈Δ'∘ξ C∶τ)
+tyWkₗₑ {Δ = Δ} {Δ'} ξ Δ≈Δ'∘ξ (tyDefLocal {t1 = t1} {ℓ = ℓ} C1∶t1 C2∶τ2) =
+  tyDefLocal (tyWkₗₑ ξ Δ≈Δ'∘ξ C1∶t1) (tyWkₗₑ (↑[ ℓ ] ξ) ctx-eq C2∶τ2)
+  where
+  open import Relation.Binary.Reasoning.Setoid (≈₂-Setoid′ Loc ℕ Typₑ)
+
+  ctx-eq : Δ ,,[ ℓ ] t1 ≈₂ (Δ' ,,[ ℓ ] t1) ∘ₗₑ ↑[ ℓ ] ξ
+  ctx-eq = begin
+    Δ ,,[ ℓ ] t1                 ≈⟨ addLocalCtxExt Δ≈Δ'∘ξ ℓ t1 ⟩
+    (Δ' ∘ₗₑ ξ) ,,[ ℓ ] t1        ≈⟨ ∘ₗₑ,, Δ' ξ ℓ t1 ⟩
+    (Δ' ,,[ ℓ ] t1) ∘ₗₑ ↑[ ℓ ] ξ ∎
+tyWkₗₑ ξ Δ≈Δ'∘ξ (tyFun C∶τ) = tyFun (tyWkₗₑ ξ Δ≈Δ'∘ξ C∶τ)
+tyWkₗₑ ξ Δ≈Δ'∘ξ (tyFix C∶τ) = tyFix (tyWkₗₑ ξ Δ≈Δ'∘ξ C∶τ)
+tyWkₗₑ ξ Δ≈Δ'∘ξ (tyApp C1∶τ1⇒τ2 C2∶τ1) = tyApp (tyWkₗₑ ξ Δ≈Δ'∘ξ C1∶τ1⇒τ2) (tyWkₗₑ ξ Δ≈Δ'∘ξ C2∶τ1)
+tyWkₗₑ {Θ} {Δ} {Δ'} {Γ} ξ Δ≈Δ'∘ξ (tyLocAbs {C = C} {τ = τ} C∶τ) = tyLocAbs C⟨↑ξ⟩∶τ
+  where
+  open import Relation.Binary.Reasoning.Setoid (≈₂-Setoid′ Loc ℕ Typₑ)
+
+  ctx-eq : ↑LocalCtx Δ ≈₂ ↑LocalCtx Δ' ∘ₗₑ ↑ₗₑ ξ
+  ctx-eq = begin
+    ↑LocalCtx Δ            ≈⟨ ↑LocalCtxExt Δ≈Δ'∘ξ ⟩
+    ↑LocalCtx (Δ' ∘ₗₑ ξ)   ≈⟨ ↑LocalCtx-distr-∘ₗₑ Δ' ξ ⟩
+    ↑LocalCtx Δ' ∘ₗₑ ↑ₗₑ ξ ∎
+
+  C⟨↑ξ⟩∶τ : (↑LocCtx Θ , ↑LocalCtx Δ' , ↑Ctx Γ) ⊢ renₗₑ C (↑ₗₑ ξ) ∶ τ
+  C⟨↑ξ⟩∶τ = tyWkₗₑ (↑ₗₑ ξ) ctx-eq C∶τ
+tyWkₗₑ ξ Δ≈Δ'∘ξ (tyLocApp C∶Loc Θ⊢ℓ) = tyLocApp (tyWkₗₑ ξ Δ≈Δ'∘ξ C∶Loc) Θ⊢ℓ
+tyWkₗₑ {Θ} {Δ} {Δ'} {Γ} ξ Δ≈Δ'∘ξ (tyTellLet {C2 = C2} {τ = τ} C1∶Loc Θ⊢ρ1 Θ⊢ρ2 Θ⊢τ C2∶τ) =
+  tyTellLet (tyWkₗₑ ξ Δ≈Δ'∘ξ C1∶Loc) Θ⊢ρ1 Θ⊢ρ2 Θ⊢τ C2⟨↑ξ⟩∶↑τ 
+  where
+  open import Relation.Binary.Reasoning.Setoid (≈₂-Setoid′ Loc ℕ Typₑ)
+
+  ctx-eq : ↑LocalCtx Δ ≈₂ ↑LocalCtx Δ' ∘ₗₑ ↑ₗₑ ξ
+  ctx-eq = begin
+    ↑LocalCtx Δ            ≈⟨ ↑LocalCtxExt Δ≈Δ'∘ξ ⟩
+    ↑LocalCtx (Δ' ∘ₗₑ ξ)   ≈⟨ ↑LocalCtx-distr-∘ₗₑ Δ' ξ ⟩
+    ↑LocalCtx Δ' ∘ₗₑ ↑ₗₑ ξ ∎
+
+  C2⟨↑ξ⟩∶↑τ : (↑LocCtx Θ , ↑LocalCtx Δ' , ↑Ctx Γ) ⊢ renₗₑ C2 (↑ₗₑ ξ) ∶ ↑ₜ τ
+  C2⟨↑ξ⟩∶↑τ = tyWkₗₑ (↑ₗₑ ξ) ctx-eq C2∶τ
