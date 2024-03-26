@@ -351,6 +351,27 @@ ty⇒wfCtx (tyLocAbs Θ⊢Γ C∶τ) = Θ⊢Γ
 ty⇒wfCtx (tyLocApp C∶τ Θ⊢ℓ) = ty⇒wfCtx C∶τ
 ty⇒wfCtx (tyTellLet C∶τ Θ⊢ρ1 Θ⊢ρ2 Θ⊢τ C∶τ₁) = ty⇒wfCtx C∶τ
 
+{-
+  If we have a typing judgment under location context Θ
+  with type τ, then τ must be well-formed under Θ
+-}
+ty⇒wfTy : ∀{Θ Δ Γ C τ} →
+         (Θ , Δ , Γ) ⊢ C ∶ τ →
+         Θ ⊢ₜ τ
+ty⇒wfTy (tyVar Θ⊢Γ x) = Θ⊢Γ x
+ty⇒wfTy (tyDone Θ⊢Γ Θ⊢ℓ Δ[ℓ]⊢e∶t) = wfAt Θ⊢ℓ
+ty⇒wfTy (tySend C∶τ Θ⊢ℓ2) = wfAt Θ⊢ℓ2
+ty⇒wfTy (tyIf C∶bool C1∶τ C2∶τ) = ty⇒wfTy C1∶τ
+ty⇒wfTy (tySync Θ⊢ℓ1 Θ⊢ℓ2 C∶τ) = ty⇒wfTy C∶τ
+ty⇒wfTy (tyDefLocal C1∶t1 C2∶τ2) = ty⇒wfTy C2∶τ2
+ty⇒wfTy (tyFun C∶τ2) = wfArrow (ty⇒wfCtx C∶τ2 0) (ty⇒wfTy C∶τ2)
+ty⇒wfTy (tyFix C∶τ) = ty⇒wfTy C∶τ
+ty⇒wfTy (tyApp C1∶τ1⇒τ2 C2∶τ1) = wfArrow₂ (ty⇒wfTy C1∶τ1⇒τ2)
+ty⇒wfTy (tyLocAbs Θ⊢Γ C∶τ) = wfAllLoc (ty⇒wfTy C∶τ)
+ty⇒wfTy {Θ} (tyLocApp C∶τ Θ⊢ℓ) =
+  wfSubₜ (▸ₗ⇒ (idSubₗ⇒ Θ) Θ⊢ℓ) (wfAllLocArg (ty⇒wfTy C∶τ))
+ty⇒wfTy (tyTellLet C1∶Loc Θ⊢ρ1 Θ⊢ρ2 Θ⊢τ C2∶τ) = Θ⊢τ
+
 -- The typing relation has weakening on global variables
 tyWk : ∀{Θ Δ Γ Γ' C τ} ξ →
        Γ ≈ Γ' ∘ ξ →
@@ -420,12 +441,15 @@ tyWk {Θ} {Δ} {Γ} {Γ'} ξ Γ≈Γ'∘ξ Θ⊢Γ' (tyTellLet C1∶Loc Θ⊢ρ1
 _∶_⇒_ : LocCtx × LocalCtx × (ℕ → Chor) → (Γ1 Γ2 : ℕ → Typ) → Set
 (Θ , Δ , σ) ∶ Γ1 ⇒ Γ2 = ∀ n → (Θ , Δ , Γ2) ⊢ σ n ∶ Γ1 n
 
--- If σ changes Γ1 to Γ2 and Γ1 is well-formed, then Γ2 is well-formed
+-- The identity substitution changes any context to itself
+idSub⇒ : ∀ Θ Δ Γ → Θ ⊢ Γ → (Θ , Δ , idSub) ∶ Γ ⇒ Γ
+idSub⇒ Θ Δ Γ Θ⊢Γ n = tyVar Θ⊢Γ n
+
+-- If σ changes Γ1 to Γ2 then Γ2 is well-formed
 wfCtx⇒ : ∀{Θ Δ Γ1 Γ2 σ} →
          (Θ , Δ , σ) ∶ Γ1 ⇒ Γ2 →
-         Θ ⊢ Γ1 →
          Θ ⊢ Γ2
-wfCtx⇒ σ Θ⊢Γ1 = ty⇒wfCtx (σ 0)
+wfCtx⇒ σ = ty⇒wfCtx (σ 0)
 
 -- Adding to a local context preserves change in context
 ,,[ℓ]⇒ : ∀{Θ Δ Γ1 Γ2 σ} →
@@ -444,17 +468,17 @@ wfCtx⇒ σ Θ⊢Γ1 = ty⇒wfCtx (σ 0)
 
 -- ↑ preserves change in context
 ↑σ⇒ : ∀{Θ Δ Γ1 Γ2 σ τ} →
-      Θ ⊢ Γ1 → Θ ⊢ₜ τ →
+      Θ ⊢ₜ τ →
       (Θ , Δ , σ) ∶ Γ1 ⇒ Γ2 →
       (Θ , Δ , ↑σ σ) ∶ Γ1 ,, τ ⇒ (Γ2 ,, τ)
-↑σ⇒ Θ⊢Γ1 Θ⊢τ σ⇒ zero = tyVar (wfCtx,, (wfCtx⇒ σ⇒ Θ⊢Γ1) Θ⊢τ) 0
-↑σ⇒ Θ⊢Γ1 Θ⊢τ σ⇒ (suc n) = tyWk suc (λ n → refl) (wfCtx,, (wfCtx⇒ σ⇒ Θ⊢Γ1) Θ⊢τ) (σ⇒ n)
+↑σ⇒ Θ⊢τ σ⇒ zero = tyVar (wfCtx,, (wfCtx⇒ σ⇒) Θ⊢τ) 0
+↑σ⇒ Θ⊢τ σ⇒ (suc n) = tyWk suc (λ n → refl) (wfCtx,, (wfCtx⇒ σ⇒) Θ⊢τ) (σ⇒ n)
 
 -- Adding to the location context preserves change in context
 ↑Loc⇒ : ∀{Θ Δ Γ1 Γ2 σ} →
         (Θ , Δ , σ) ∶ Γ1 ⇒ Γ2 →
         (↑LocCtx Θ , ↑LocalCtx Δ , (λ n → renₗ (σ n) suc)) ∶ ↑Ctx Γ1 ⇒ ↑Ctx Γ2
-↑Loc⇒ {Θ} {Δ} {Γ1} {Γ2} {σ} σ⇒ n = tyWkₗ suc suc-injective Θ≈↑Θ∘suc Δ≈↑Δ∘suc (σ⇒ n)
+↑Loc⇒ {Θ} {Δ} σ⇒ n = tyWkₗ suc suc-injective Θ≈↑Θ∘suc Δ≈↑Δ∘suc (σ⇒ n)
   where
   Θ≈↑Θ∘suc : Θ ≈ ↑LocCtx Θ ∘ suc
   Θ≈↑Θ∘suc n = refl
@@ -463,22 +487,22 @@ wfCtx⇒ σ Θ⊢Γ1 = ty⇒wfCtx (σ 0)
   Δ≈↑Δ∘suc (Var x) n = refl
   Δ≈↑Δ∘suc (Lit L) n = refl
 
--- Typing is closed under substitutions which change contexts
+-- Typing is closed under context-changing substitutions
 tySub : ∀{Θ Δ Γ1 Γ2 C τ σ} →
         (Θ , Δ , σ) ∶ Γ1 ⇒ Γ2 →
         (Θ , Δ , Γ1) ⊢ C ∶ τ →
         (Θ , Δ , Γ2) ⊢ sub C σ ∶ τ
 tySub σ (tyVar Θ⊢Γ x) = σ x
-tySub σ (tyDone Θ⊢Γ Θ⊢ℓ Δ[ℓ]⊢e∶t) = tyDone (wfCtx⇒ σ Θ⊢Γ) Θ⊢ℓ Δ[ℓ]⊢e∶t
+tySub σ (tyDone Θ⊢Γ Θ⊢ℓ Δ[ℓ]⊢e∶t) = tyDone (wfCtx⇒ σ) Θ⊢ℓ Δ[ℓ]⊢e∶t
 tySub σ (tySend C Θ⊢ℓ2) = tySend (tySub σ C) Θ⊢ℓ2
 tySub σ (tyIf C C1 C2) = tyIf (tySub σ C) (tySub σ C1) (tySub σ C2)
 tySub σ (tySync Θ⊢ℓ1 Θ⊢ℓ2 C) = tySync Θ⊢ℓ1 Θ⊢ℓ2 (tySub σ C)
 tySub σ (tyDefLocal {t1 = t1} {ℓ = ℓ} C1 C2) = 
   tyDefLocal (tySub σ C1) (tySub (,,[ℓ]⇒ σ ℓ t1) C2)
-tySub σ (tyFun C) = tyFun (tySub (↑σ⇒ (wfCtxTail (ty⇒wfCtx C)) (ty⇒wfCtx C 0) σ) C)
-tySub σ (tyFix C) = tyFix (tySub (↑σ⇒ (wfCtxTail (ty⇒wfCtx C)) (ty⇒wfCtx C 0) σ) C)
+tySub σ (tyFun C) = tyFun (tySub (↑σ⇒ (ty⇒wfCtx C 0) σ) C)
+tySub σ (tyFix C) = tyFix (tySub (↑σ⇒ (ty⇒wfCtx C 0) σ) C)
 tySub σ (tyApp C1 C2) = tyApp (tySub σ C1) (tySub σ C2)
-tySub σ (tyLocAbs Θ⊢Γ C) = tyLocAbs (wfCtx⇒ σ Θ⊢Γ) (tySub (↑Loc⇒ σ) C)
+tySub σ (tyLocAbs Θ⊢Γ C) = tyLocAbs (wfCtx⇒ σ) (tySub (↑Loc⇒ σ) C)
 tySub σ (tyLocApp C Θ⊢ℓ) = tyLocApp (tySub σ C) Θ⊢ℓ
 tySub σ (tyTellLet C1 Θ⊢ρ1 Θ⊢ρ2 Θ⊢τ C2) =
   tyTellLet (tySub σ C1) Θ⊢ρ1 Θ⊢ρ2 Θ⊢τ (tySub (↑Loc⇒ σ) C2)

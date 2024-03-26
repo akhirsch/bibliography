@@ -126,6 +126,16 @@ data _⊢ₜ_ : LocCtx → Typ → Set where
              (↑Θ⊢τ : ↑LocCtx Θ ⊢ₜ τ) →
              Θ ⊢ₜ AllLoc τ
 
+wfArrow₁ : ∀{Θ τ1 τ2} → Θ ⊢ₜ Arrow τ1 τ2 → Θ ⊢ₜ τ1
+wfArrow₁ (wfArrow τ1 τ2) = τ1
+
+wfArrow₂ : ∀{Θ τ1 τ2} → Θ ⊢ₜ Arrow τ1 τ2 → Θ ⊢ₜ τ2
+wfArrow₂ (wfArrow τ1 τ2) = τ2
+
+wfAllLocArg : ∀{Θ τ} → Θ ⊢ₜ AllLoc τ → ↑LocCtx Θ ⊢ₜ τ
+wfAllLocArg (wfAllLoc τ) = τ
+
+
 -- Type well-formedness has weakening
 wfWkₜ : ∀{Θ Θ' τ} ξ →
         Θ ≈ Θ' ∘ ξ →
@@ -163,3 +173,55 @@ wfTy↑ {Θ} Θ⊢τ = wfWkₜ suc Θ≈↑Θ∘suc Θ⊢τ
   Θ≈↑Θ∘suc : Θ ≈ ↑LocCtx Θ ∘ suc
   Θ≈↑Θ∘suc n = refl
 
+
+{-
+  A location substitution σ changes context Θ1 to context Θ2
+  if for every variable n in the scope of Θ1, σ assigns n
+  to a location which is well-formed under Θ2
+-}
+_∶_⇒ₗ_ : (σ : ℕ → Loc) (Θ1 Θ2 : ℕ → Set) → Set
+σ ∶ Θ1 ⇒ₗ Θ2 = ∀ n → Θ1 n → Θ2 ⊢ₗ σ n
+
+-- The identity location substitution changes any context to itself
+idSubₗ⇒ : ∀ Θ → idSubₗ ∶ Θ ⇒ₗ Θ
+idSubₗ⇒ Θ n Θn = wfVar Θn
+
+-- Adding a well-formed location preserves change in context
+▸ₗ⇒ : ∀{Θ1 Θ2 σ ℓ} →
+      σ ∶ Θ1 ⇒ₗ Θ2 →
+      Θ2 ⊢ₗ ℓ →
+      (σ ▸ₗ ℓ) ∶ ↑LocCtx Θ1 ⇒ₗ Θ2
+▸ₗ⇒ σ⇒ Θ2⊢ℓ zero tt = Θ2⊢ℓ
+▸ₗ⇒ σ⇒ Θ2⊢ℓ (suc n) Θ1n = σ⇒ n Θ1n
+
+-- ↑ preserves change in context
+↑σₗ⇒ : ∀{σ Θ1 Θ2} →
+       σ ∶ Θ1 ⇒ₗ Θ2 →
+       ↑σₗ σ ∶ ↑LocCtx Θ1 ⇒ₗ ↑LocCtx Θ2
+↑σₗ⇒ σ⇒ zero tt = wfVar tt
+↑σₗ⇒ {σ} {Θ1} {Θ2} σ⇒ (suc n) Θ1n =
+  subst (λ x → ↑LocCtx Θ2 ⊢ₗ x) (sym (subιₗ-Loc suc (σ n))) ↑Θ2⊢σn⟨suc⟩
+  where
+  Θ2≈↑Θ2∘suc : Θ2 ≈ ↑LocCtx Θ2 ∘ suc
+  Θ2≈↑Θ2∘suc zero = refl
+  Θ2≈↑Θ2∘suc (suc n) = refl
+
+  ↑Θ2⊢σn⟨suc⟩ : ↑LocCtx Θ2 ⊢ₗ renₗ-Loc (σ n) suc
+  ↑Θ2⊢σn⟨suc⟩ = wfWkₗ suc Θ2≈↑Θ2∘suc (σ⇒ n Θ1n)
+
+-- Location well-formedness is closed under context-changing substitutions
+wfSubₗ : ∀{σ Θ1 Θ2 ℓ} →
+         σ ∶ Θ1 ⇒ₗ Θ2 →
+         Θ1 ⊢ₗ ℓ →
+         Θ2 ⊢ₗ subₗ-Loc ℓ σ
+wfSubₗ σ⇒ (wfVar Θ1x) = σ⇒ _ Θ1x
+wfSubₗ σ⇒ (wfLit L) = wfLit L
+
+-- Type well-formedness is closed under context-changing substitutions
+wfSubₜ : ∀{σ Θ1 Θ2 τ} →
+         σ ∶ Θ1 ⇒ₗ Θ2 →
+         Θ1 ⊢ₜ τ →
+         Θ2 ⊢ₜ subₜ τ σ
+wfSubₜ σ⇒ (wfAt Θ⊢ℓ) = wfAt (wfSubₗ σ⇒ Θ⊢ℓ)
+wfSubₜ σ⇒ (wfArrow τ1 τ2) = wfArrow (wfSubₜ σ⇒ τ1) (wfSubₜ σ⇒ τ2)
+wfSubₜ σ⇒ (wfAllLoc τ) = wfAllLoc (wfSubₜ (↑σₗ⇒ σ⇒) τ)
