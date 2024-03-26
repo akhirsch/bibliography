@@ -95,6 +95,20 @@ idRenₗₑ ℓ = idRenₑ
 ↑Extₗₑ ξ1≈ξ2 (Var (suc x)) n = ξ1≈ξ2 (Var x) n
 ↑Extₗₑ ξ1≈ξ2 (Lit L) n = ξ1≈ξ2 (Lit L) n
 
+-- Choose a different renaming at a given location
+⟨_∣_∣_⟩ : Loc → (ℕ → ℕ) → LocalRen → LocalRen
+⟨ ℓ ∣ ξ1 ∣ ξ2 ⟩ ℓ' with ≡-dec-Loc ℓ ℓ'
+... | yes _ = ξ1
+... | no _ = ξ2 ℓ'
+
+-- Choosing respects extensionality
+chooseExt : ∀{ξ1 ξ1' ξ2 ξ2'} ℓ →
+            ξ1 ≈ ξ1' → ξ2 ≈₂ ξ2' →
+            ⟨ ℓ ∣ ξ1 ∣ ξ2 ⟩ ≈₂ ⟨ ℓ ∣ ξ1' ∣ ξ2' ⟩
+chooseExt ℓ ξ1≈ξ1' ξ2≈ξ2' ℓ' with ≡-dec-Loc ℓ ℓ'
+... | yes _ = ξ1≈ξ1'
+... | no  _ = ξ2≈ξ2' ℓ'
+
 -- Renaming local variables in a choreography
 renₗₑ : (c : Chor) (ξ : LocalRen) → Chor
 renₗₑ (Done ℓ e) ξ = Done ℓ (renₑ e (ξ ℓ))

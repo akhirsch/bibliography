@@ -28,6 +28,8 @@ module Substitutions
 
 open import Types L E LE TE
 open import Choreographies L E LE TE
+open import LocationRenamings L E LE TE
+open import LocalRenamings L E LE TE
 open import Renamings L E LE TE
 
 -- Identity substitution
@@ -65,13 +67,15 @@ sub (Var x) σ = σ x
 sub (Send ℓ1 c ℓ2) σ = Send ℓ1 (sub c σ) ℓ2
 sub (If ℓ c c₁ c₂) σ = If ℓ (sub c σ) (sub c₁ σ) (sub c₂ σ)
 sub (Sync ℓ1 d ℓ2 c) σ = Sync ℓ1 d ℓ2 (sub c σ)
-sub (DefLocal ℓ c c₁) σ = DefLocal ℓ (sub c σ) (sub c₁ σ)
+sub (DefLocal ℓ c1 c2) σ =
+  DefLocal ℓ (sub c1 σ) (sub c2 λ n → renₗₑ (σ n) ⟨ ℓ ∣ suc ∣ idRenₗₑ ⟩)
 sub (Fun τ c) σ = Fun τ (sub c (↑σ σ))
 sub (Fix τ c) σ = Fix τ (sub c (↑σ σ))
 sub (App c1 c2) σ = App (sub c1 σ) (sub c2 σ)
-sub (LocAbs c) σ = LocAbs (sub c σ)
+sub (LocAbs c) σ = LocAbs (sub c λ n → renₗ (σ n) suc)
 sub (LocApp c ℓ) σ = LocApp (sub c σ) ℓ
-sub (TellLet ℓ ρ1 c ρ2 c₁) σ = TellLet ℓ ρ1 (sub c σ) ρ2 (sub c₁ σ)
+sub (TellLet ℓ ρ1 c1 ρ2 c2) σ =
+  TellLet ℓ ρ1 (sub c1 σ) ρ2 (sub c2 λ n → renₗ (σ n) suc)
 
 -- Substituting global variables respects extensional equality
 subExt : ∀{σ1 σ2} →
@@ -82,13 +86,16 @@ subExt σ1≈σ2 (Var x) = σ1≈σ2 x
 subExt σ1≈σ2 (Send ℓ1 c ℓ2) = cong₃ Send refl (subExt σ1≈σ2 c) refl
 subExt σ1≈σ2 (If ℓ c c₁ c₂) = cong₄ If refl (subExt σ1≈σ2 c) (subExt σ1≈σ2 c₁) (subExt σ1≈σ2 c₂)
 subExt σ1≈σ2 (Sync ℓ1 d ℓ2 c) = cong₄ Sync refl refl refl (subExt σ1≈σ2 c)
-subExt σ1≈σ2 (DefLocal ℓ c c₁) = cong₃ DefLocal refl (subExt σ1≈σ2 c) (subExt σ1≈σ2 c₁)
+subExt σ1≈σ2 (DefLocal ℓ c1 c2) =
+  cong₃ DefLocal refl (subExt σ1≈σ2 c1)
+    (subExt (λ n → cong (flip renₗₑ ⟨ ℓ ∣ suc ∣ idRenₗₑ ⟩) (σ1≈σ2 n)) c2)
 subExt σ1≈σ2 (Fun τ c) = cong₂ Fun refl (subExt (↑σExt σ1≈σ2) c)
 subExt σ1≈σ2 (Fix τ c) = cong₂ Fix refl (subExt (↑σExt σ1≈σ2) c)
 subExt σ1≈σ2 (App c1 c2) = cong₂ App (subExt σ1≈σ2 c1) (subExt σ1≈σ2 c2)
-subExt σ1≈σ2 (LocAbs c) = cong LocAbs (subExt σ1≈σ2 c)
+subExt σ1≈σ2 (LocAbs c) = cong LocAbs (subExt (λ n → cong (flip renₗ suc) (σ1≈σ2 n)) c)
 subExt σ1≈σ2 (LocApp c ℓ) = cong₂ LocApp (subExt σ1≈σ2 c) refl
-subExt σ1≈σ2 (TellLet ℓ ρ1 c ρ2 c₁) = cong₅ TellLet refl refl (subExt σ1≈σ2 c) refl (subExt σ1≈σ2 c₁)
+subExt σ1≈σ2 (TellLet ℓ ρ1 c1 ρ2 c2) =
+  cong₅ TellLet refl refl (subExt σ1≈σ2 c1) refl (subExt (λ n → cong (flip renₗ suc) (σ1≈σ2 n)) c2)
 
 -- Substituting global variables respects the identity
 subId : ∀ c → sub c idSub ≡ c
@@ -136,9 +143,9 @@ subι : ∀ ξ c → sub c (ι ξ) ≡ ren c ξ
 subι ξ (Done ℓ e) = refl
 subι ξ (Var x) = refl
 subι ξ (Send ℓ1 c ℓ2) = cong₃ Send refl (subι ξ c) refl
-subι ξ (If ℓ c c₁ c₂) = cong₄ If refl (subι ξ c) (subι ξ c₁) (subι ξ c₂)
+subι ξ (If ℓ c c1 c2) = cong₄ If refl (subι ξ c) (subι ξ c1) (subι ξ c2)
 subι ξ (Sync ℓ1 d ℓ2 c) = cong₄ Sync refl refl refl (subι ξ c)
-subι ξ (DefLocal ℓ c c₁) = cong₃ DefLocal refl (subι ξ c) (subι ξ c₁)
+subι ξ (DefLocal ℓ c1 c2) = cong₃ DefLocal refl (subι ξ c1) (subι ξ c2)
 subι ξ (Fun τ c) = cong₂ Fun refl c⟨↑ιξ⟩≡c⟨↑ξ⟩
   where
   c⟨↑ιξ⟩≡c⟨↑ξ⟩ : sub c (↑σ (ι ξ)) ≡ ren c (↑ ξ)
@@ -156,4 +163,4 @@ subι ξ (Fix τ c) = cong₂ Fix refl c⟨↑ιξ⟩≡c⟨↑ξ⟩
 subι ξ (App c1 c2) = cong₂ App (subι ξ c1) (subι ξ c2)
 subι ξ (LocAbs c) = cong LocAbs (subι ξ c)
 subι ξ (LocApp c ℓ) = cong₂ LocApp (subι ξ c) refl
-subι ξ (TellLet ℓ ρ1 c ρ2 c₁) = cong₅ TellLet refl refl (subι ξ c) refl (subι ξ c₁)
+subι ξ (TellLet ℓ ρ1 c1 ρ2 c2) = cong₅ TellLet refl refl (subι ξ c1) refl (subι ξ c2)

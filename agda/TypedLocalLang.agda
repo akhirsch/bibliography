@@ -116,10 +116,10 @@ record TypedLocalLanguage
       The typing judgment should respect substitutions
       which change contexts.
     -}
-    tyChangesₑ : ∀{σ Γ Δ e t} →
-                σ ∶ Γ ⇒ₑ Δ →
-                Γ ⊢ₑ e ∶ t →
-                Δ ⊢ₑ subₑ e σ ∶ t
+    tySubₑ : ∀{σ Γ Δ e t} →
+             σ ∶ Γ ⇒ₑ Δ →
+             Γ ⊢ₑ e ∶ t →
+             Δ ⊢ₑ subₑ e σ ∶ t
 
   -- Deduced lemmas for convenience.
 
@@ -137,4 +137,4 @@ record TypedLocalLanguage
 
   -- The identity substitution respects typing
   tySubIdₑ : ∀{Γ e t} → Γ ⊢ₑ e ∶ t → Γ ⊢ₑ subₑ e idSubₑ ∶ t
-  tySubIdₑ Γ⊢e:t = tyChangesₑ (idSubChangesₑ _) Γ⊢e:t
+  tySubIdₑ Γ⊢e:t = tySubₑ (idSubChangesₑ _) Γ⊢e:t

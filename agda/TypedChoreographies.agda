@@ -23,12 +23,12 @@ module TypedChoreographies
   (TE : TypedLocalLanguage L E LE)
   where
 
+open import Types L E LE TE
 open import Choreographies L E LE TE
 open import LocalRenamings L E LE TE
 open import LocationRenamings L E LE TE
 open import Renamings L E LE TE
 open import Substitutions L E LE TE
-open import Types L E LE TE
 open import LocationContexts L E LE TE
 open import LocalContexts L E LE TE
 open import GlobalContexts L E LE TE
@@ -411,3 +411,74 @@ tyWk {Θ} {Δ} {Γ} {Γ'} ξ Γ≈Γ'∘ξ Θ⊢Γ' (tyTellLet C1∶Loc Θ⊢ρ1
     ↑Ctx Γ        ≈⟨ ↑CtxExt Γ≈Γ'∘ξ ⟩
     ↑Ctx (Γ' ∘ ξ) ≈⟨ ↑Ctx∘ Γ' ξ ⟩
     ↑Ctx Γ' ∘ ξ   ∎
+
+{-
+  A global substitution σ changes context Γ1 to context Γ2
+  if for every variable n, σ assigns n to an expression
+  which, under Γ2, has the same type that Γ1 assigns to n.
+-}
+_∶_⇒_ : LocCtx × LocalCtx × (ℕ → Chor) → (Γ1 Γ2 : ℕ → Typ) → Set
+(Θ , Δ , σ) ∶ Γ1 ⇒ Γ2 = ∀ n → (Θ , Δ , Γ2) ⊢ σ n ∶ Γ1 n
+
+-- If σ changes Γ1 to Γ2 and Γ1 is well-formed, then Γ2 is well-formed
+wfCtx⇒ : ∀{Θ Δ Γ1 Γ2 σ} →
+         (Θ , Δ , σ) ∶ Γ1 ⇒ Γ2 →
+         Θ ⊢ Γ1 →
+         Θ ⊢ Γ2
+wfCtx⇒ σ Θ⊢Γ1 = ty⇒wfCtx (σ 0)
+
+-- Adding to a local context preserves change in context
+,,[ℓ]⇒ : ∀{Θ Δ Γ1 Γ2 σ} →
+        (Θ , Δ , σ) ∶ Γ1 ⇒ Γ2 →
+        ∀ ℓ t →
+        (Θ , (Δ ,,[ ℓ ] t) , (λ n → renₗₑ (σ n) ⟨ ℓ ∣ suc ∣ idRenₗₑ ⟩)) ∶ Γ1 ⇒ Γ2
+,,[ℓ]⇒ {Θ} {Δ} {Γ1} {Γ2} {σ} σ⇒ ℓ t n = tyWkₗₑ ξ Δ≈Δ,,[ℓ]t∘ξ (σ⇒ n)
+  where
+  ξ : LocalRen
+  ξ = ⟨ ℓ ∣ suc ∣ idRenₗₑ ⟩
+
+  Δ≈Δ,,[ℓ]t∘ξ : Δ ≈₂ (Δ ,,[ ℓ ] t) ∘ₗₑ ξ
+  Δ≈Δ,,[ℓ]t∘ξ ℓ' with ≡-dec-Loc ℓ ℓ'
+  ... | yes refl = λ n → refl
+  ... | no _ = λ n → refl
+
+-- ↑ preserves change in context
+↑σ⇒ : ∀{Θ Δ Γ1 Γ2 σ τ} →
+      Θ ⊢ Γ1 → Θ ⊢ₜ τ →
+      (Θ , Δ , σ) ∶ Γ1 ⇒ Γ2 →
+      (Θ , Δ , ↑σ σ) ∶ Γ1 ,, τ ⇒ (Γ2 ,, τ)
+↑σ⇒ Θ⊢Γ1 Θ⊢τ σ⇒ zero = tyVar (wfCtx,, (wfCtx⇒ σ⇒ Θ⊢Γ1) Θ⊢τ) 0
+↑σ⇒ Θ⊢Γ1 Θ⊢τ σ⇒ (suc n) = tyWk suc (λ n → refl) (wfCtx,, (wfCtx⇒ σ⇒ Θ⊢Γ1) Θ⊢τ) (σ⇒ n)
+
+-- Adding to the location context preserves change in context
+↑Loc⇒ : ∀{Θ Δ Γ1 Γ2 σ} →
+        (Θ , Δ , σ) ∶ Γ1 ⇒ Γ2 →
+        (↑LocCtx Θ , ↑LocalCtx Δ , (λ n → renₗ (σ n) suc)) ∶ ↑Ctx Γ1 ⇒ ↑Ctx Γ2
+↑Loc⇒ {Θ} {Δ} {Γ1} {Γ2} {σ} σ⇒ n = tyWkₗ suc suc-injective Θ≈↑Θ∘suc Δ≈↑Δ∘suc (σ⇒ n)
+  where
+  Θ≈↑Θ∘suc : Θ ≈ ↑LocCtx Θ ∘ suc
+  Θ≈↑Θ∘suc n = refl
+
+  Δ≈↑Δ∘suc : Δ ≈₂ (↑LocalCtx Δ ∘ₗ suc)
+  Δ≈↑Δ∘suc (Var x) n = refl
+  Δ≈↑Δ∘suc (Lit L) n = refl
+
+-- Typing is closed under substitutions which change contexts
+tySub : ∀{Θ Δ Γ1 Γ2 C τ σ} →
+        (Θ , Δ , σ) ∶ Γ1 ⇒ Γ2 →
+        (Θ , Δ , Γ1) ⊢ C ∶ τ →
+        (Θ , Δ , Γ2) ⊢ sub C σ ∶ τ
+tySub σ (tyVar Θ⊢Γ x) = σ x
+tySub σ (tyDone Θ⊢Γ Θ⊢ℓ Δ[ℓ]⊢e∶t) = tyDone (wfCtx⇒ σ Θ⊢Γ) Θ⊢ℓ Δ[ℓ]⊢e∶t
+tySub σ (tySend C Θ⊢ℓ2) = tySend (tySub σ C) Θ⊢ℓ2
+tySub σ (tyIf C C1 C2) = tyIf (tySub σ C) (tySub σ C1) (tySub σ C2)
+tySub σ (tySync Θ⊢ℓ1 Θ⊢ℓ2 C) = tySync Θ⊢ℓ1 Θ⊢ℓ2 (tySub σ C)
+tySub σ (tyDefLocal {t1 = t1} {ℓ = ℓ} C1 C2) = 
+  tyDefLocal (tySub σ C1) (tySub (,,[ℓ]⇒ σ ℓ t1) C2)
+tySub σ (tyFun C) = tyFun (tySub (↑σ⇒ (wfCtxTail (ty⇒wfCtx C)) (ty⇒wfCtx C 0) σ) C)
+tySub σ (tyFix C) = tyFix (tySub (↑σ⇒ (wfCtxTail (ty⇒wfCtx C)) (ty⇒wfCtx C 0) σ) C)
+tySub σ (tyApp C1 C2) = tyApp (tySub σ C1) (tySub σ C2)
+tySub σ (tyLocAbs Θ⊢Γ C) = tyLocAbs (wfCtx⇒ σ Θ⊢Γ) (tySub (↑Loc⇒ σ) C)
+tySub σ (tyLocApp C Θ⊢ℓ) = tyLocApp (tySub σ C) Θ⊢ℓ
+tySub σ (tyTellLet C1 Θ⊢ρ1 Θ⊢ρ2 Θ⊢τ C2) =
+  tyTellLet (tySub σ C1) Θ⊢ρ1 Θ⊢ρ2 Θ⊢τ (tySub (↑Loc⇒ σ) C2)

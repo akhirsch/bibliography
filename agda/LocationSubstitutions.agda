@@ -87,7 +87,7 @@ subIdₗ (LocAbs c) = cong LocAbs c⟨↑id⟩≡c
   c⟨↑id⟩≡c = 
     subₗ c (↑σₗ idSubₗ) ≡⟨ subExtₗ ↑σIdₗ c ⟩
     subₗ c idSubₗ       ≡⟨ subIdₗ c ⟩
-    c                 ∎
+    c                   ∎
 subIdₗ (LocApp c ℓ) = cong₂ LocApp (subIdₗ c) (subIdₗ-Loc ℓ)
 subIdₗ (TellLet ℓ ρ1 c1 ρ2 c2) =
   cong₅ TellLet (subIdₗ-Loc ℓ) (subIdₗ-List ρ1) (subIdₗ c1)
@@ -125,5 +125,5 @@ subιₗ ξ (TellLet ℓ ρ1 c1 ρ2 c2) =
     c2⟨↑ιξ⟩≡c2⟨↑ξ⟩ : subₗ c2 (↑σₗ (ιₗ ξ)) ≡ renₗ c2 (↑ ξ)
     c2⟨↑ιξ⟩≡c2⟨↑ξ⟩ =
       subₗ c2 (↑σₗ (ιₗ ξ)) ≡⟨ subExtₗ (↑σιₗ ξ)  c2 ⟩
-      subₗ c2 (ιₗ (↑ ξ))  ≡⟨ subιₗ (↑ ξ) c2 ⟩
-      renₗ c2 (↑ ξ)       ∎
+      subₗ c2 (ιₗ (↑ ξ))   ≡⟨ subιₗ (↑ ξ) c2 ⟩
+      renₗ c2 (↑ ξ)        ∎
