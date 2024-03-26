@@ -416,6 +416,17 @@ Solution:
 	&\text{Alice}.e_3
 \end{align*}
 Send $X$ to $\{Alice, W_1, W_2\}$. If someone tries to use $X$ inside the body and we didn't sent it to them, the endpoint projection will fail.
+
+\paragraph{3/26/2024}
+\subparagraph{Local Substitution}
+Local substitution has to be defined to avoid capture of locations. For instance:
+\begin{align*}
+&(\Lambda \ell. \;\text{let}\; \ell.x = \ell.2 \;\text{in}\\
+&\;\text{let}\; L.x = L.3 \;\text{in}\\
+&\;\text{let}\; \ell.y = L.x \rightsquigarrow \ell \;\text{in}\\
+&\;\ell.(x + y))\; L
+\end{align*}
+When you substitute $L$ in for $\ell$ naively, you capture $\ell.x$ in the final expression and rebind it to $L.x$, and end up computing $L.6$ instead of $L.5$.
 \end{document}
 
 
