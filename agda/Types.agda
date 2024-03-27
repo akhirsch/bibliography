@@ -98,7 +98,7 @@ renₜ-pres-inj : ∀{ξ} →
                 renₜ τ1 ξ ≡ renₜ τ2 ξ →
                 τ1 ≡ τ2
 renₜ-pres-inj ξ-inj (At t ℓ) (At t' ℓ') eq =
-  cong₂ At (At-inj eq .fst) (renₗ-Loc-pres-inj ξ-inj ℓ ℓ' (At-inj eq .snd))
+  cong₂ At (At-inj eq .fst) (renInjₗ-Loc ξ-inj (At-inj eq .snd))
 renₜ-pres-inj ξ-inj (Arrow τ1 τ2) (Arrow τ1' τ2') eq =
   cong₂ Arrow (renₜ-pres-inj ξ-inj τ1 τ1' (Arrow-inj eq .fst))
     (renₜ-pres-inj ξ-inj τ2 τ2' (Arrow-inj eq .snd))

@@ -65,11 +65,11 @@ record TypedLocalLanguage
                     Δ ⊢ₑ e ∶ t
 
     -- Weakening should be allowed.
-    tyWkₑ : ∀{Γ Δ e t} →
-           (ξ : ℕ → ℕ) →
-           Γ ≈ Δ ∘ ξ →
-           Γ ⊢ₑ e ∶ t →
-           Δ ⊢ₑ renₑ e ξ ∶ t
+    tyWkₑ : ∀{Γ Γ' e t} →
+            (ξ : ℕ → ℕ) →
+            Γ ≈ Γ' ∘ ξ →
+            Γ ⊢ₑ e ∶ t →
+            Γ' ⊢ₑ renₑ e ξ ∶ t
 
     -- We have a type for booleans, and the appropriate judgments.
     Boolₑ : Typₑ

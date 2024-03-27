@@ -76,6 +76,16 @@ record Location : Set₁ where
   renFuseₗ-Loc ξ1 ξ2 (Var x) = refl
   renFuseₗ-Loc ξ1 ξ2 (Lit L) = refl
 
+  -- Renaming preserves injectivity
+  renInjₗ-Loc : ∀{ℓ ℓ' ξ} →
+                Injective _≡_ _≡_ ξ →
+                renₗ-Loc ℓ ξ ≡ renₗ-Loc ℓ' ξ →
+                ℓ ≡ ℓ'
+  renInjₗ-Loc {ℓ = Var x} {Var x'} ξ-inj Vξx≡Vξx' = cong Var (ξ-inj (Varₗ-inj Vξx≡Vξx'))
+  renInjₗ-Loc {ℓ = Var x} {Lit L'} ξ-inj ()
+  renInjₗ-Loc {ℓ = Lit L} {Var x'} ξ-inj ()
+  renInjₗ-Loc {ℓ = Lit L} {Lit .L} ξ-inj refl = refl
+
   -- Rename location variables in a location list
   renₗ-List : LocList → (ℕ → ℕ) → LocList
   renₗ-List ρ ξ = Data.List.map (λ ℓ → renₗ-Loc ℓ ξ) ρ
@@ -96,15 +106,6 @@ record Location : Set₁ where
   renFuseₗ-List : ∀ ξ1 ξ2 ρ → renₗ-List ρ (ξ2 ∘ ξ1) ≡ renₗ-List (renₗ-List ρ ξ1) ξ2
   renFuseₗ-List ξ1 ξ2 [] = refl
   renFuseₗ-List ξ1 ξ2 (ℓ ∷ ρ) = cong₂ _∷_ (renFuseₗ-Loc ξ1 ξ2 ℓ) (renFuseₗ-List ξ1 ξ2 ρ)
-
-  -- Renaming preserves injectivity
-  renₗ-Loc-pres-inj : ∀{ξ} →
-                      Injective _≡_ _≡_ ξ →
-                      ∀ ℓ1 ℓ2 →
-                      renₗ-Loc ℓ1 ξ ≡ renₗ-Loc ℓ2 ξ →
-                      ℓ1 ≡ ℓ2
-  renₗ-Loc-pres-inj ξ-inj (Var x) (Var x') eq = cong Var (ξ-inj (Varₗ-inj eq))
-  renₗ-Loc-pres-inj ξ-inj (Lit L) (Lit .L) refl = refl
 
   --------------------
   --- SUBSTITUTION ---

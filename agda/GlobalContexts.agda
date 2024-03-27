@@ -25,8 +25,11 @@ module GlobalContexts
 
 open import Choreographies L E
 open import LocationRenamings L E LE
+open import LocationSubstitutions L E LE
 open import Types L E LE TE
 open import LocationContexts L E LE TE
+open import LocalContexts L E LE TE
+
 
 open Location L
 open Language E
@@ -65,7 +68,7 @@ renCtx∘ : ∀ Γ ξ1 ξ2 →
           renCtx (Γ ∘ ξ1) ξ2 ≈ renCtx Γ ξ2 ∘ ξ1
 renCtx∘ Γ ξ1 ξ2 n = refl
 
--- ↑ on global contexts
+-- ↑ for location variables on global contexts
 ↑Ctx : Ctx → Ctx
 ↑Ctx Γ = renCtx Γ suc
 
@@ -136,3 +139,14 @@ wfCtxTail Θ⊢Γ,,τ n = Θ⊢Γ,,τ (suc n)
 -- If Γ is well-formed in Θ, then ↑Γ is well-formed in ↑Γ
 wfCtx↑ : ∀{Θ Γ} → Θ ⊢ Γ → ↑LocCtx Θ ⊢ ↑Ctx Γ
 wfCtx↑ Θ⊢Γ n = wfTy↑ (Θ⊢Γ n)
+
+-- Substitution of locations in global contexts
+subₗ-Ctx : Ctx → (ℕ → Loc) → Ctx
+subₗ-Ctx Γ σ n = subₜ (Γ n) σ
+
+-- Context well-formedness is closed under change of context
+wfCtxSub : ∀{Θ1 Θ2 Γ σ} →
+           σ ∶ Θ1 ⇒ₗ Θ2 →
+           Θ1 ⊢ Γ →
+           Θ2 ⊢ subₗ-Ctx Γ σ
+wfCtxSub σ⇒ Θ1⊢Γ n = wfSubₜ σ⇒ (Θ1⊢Γ n)

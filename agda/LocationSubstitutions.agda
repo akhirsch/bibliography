@@ -51,7 +51,7 @@ subₗ (TellLet ℓ ρ1 c1 ρ2 c2) σ =
   TellLet (subₗ-Loc ℓ σ) (subₗ-List ρ1 σ) (subₗ c1 σ)
     (subₗ-List ρ2 σ) (subₗ c2 (↑σₗ σ))
 
--- Substituting location variables respects extensional equality
+-- Substitution respects extensional equality
 subExtₗ : ∀{σ1 σ2} →
          σ1 ≈ σ2 →
          ∀ c → subₗ c σ1 ≡ subₗ c σ2
@@ -70,7 +70,7 @@ subExtₗ σ1≈σ2 (TellLet ℓ ρ1 c1 ρ2 c2) =
   cong₅ TellLet (subExtₗ-Loc σ1≈σ2 ℓ) (subExtₗ-List σ1≈σ2 ρ1) (subExtₗ σ1≈σ2 c1)
   (subExtₗ-List σ1≈σ2 ρ2) (subExtₗ (↑σExtₗ σ1≈σ2) c2)
 
--- Substituting location variables respects the identity
+-- Substitution respects the identity
 subIdₗ : ∀ c → subₗ c idSubₗ ≡ c
 subIdₗ (Done ℓ e) = cong₂ Done (subIdₗ-Loc ℓ) refl
 subIdₗ (Var x) = refl
@@ -99,7 +99,7 @@ subIdₗ (TellLet ℓ ρ1 c1 ρ2 c2) =
       subₗ c2 idSubₗ       ≡⟨ subIdₗ c2 ⟩
       c2                   ∎
 
--- Substitution along an inclusion is the same as a renaming
+-- Substitution respects the inclusion
 subιₗ : ∀ ξ c → subₗ c (ιₗ ξ) ≡ renₗ c ξ
 subιₗ ξ (Done ℓ e) = cong₂ Done (subιₗ-Loc ξ ℓ) refl
 subιₗ ξ (Var x) = refl

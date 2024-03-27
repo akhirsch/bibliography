@@ -68,7 +68,7 @@ sub (Send ℓ1 c ℓ2) σ = Send ℓ1 (sub c σ) ℓ2
 sub (If ℓ c c₁ c₂) σ = If ℓ (sub c σ) (sub c₁ σ) (sub c₂ σ)
 sub (Sync ℓ1 d ℓ2 c) σ = Sync ℓ1 d ℓ2 (sub c σ)
 sub (DefLocal ℓ c1 c2) σ =
-  DefLocal ℓ (sub c1 σ) (sub c2 λ n → renₗₑ (σ n) ⟨ ℓ ∣ suc ∣ idRenₗₑ ⟩)
+  DefLocal ℓ (sub c1 σ) (sub c2 λ n → renₗₑ (σ n) suc[ ℓ ])
 sub (Fun τ c) σ = Fun τ (sub c (↑σ σ))
 sub (Fix τ c) σ = Fix τ (sub c (↑σ σ))
 sub (App c1 c2) σ = App (sub c1 σ) (sub c2 σ)
@@ -164,3 +164,4 @@ subι ξ (App c1 c2) = cong₂ App (subι ξ c1) (subι ξ c2)
 subι ξ (LocAbs c) = cong LocAbs (subι ξ c)
 subι ξ (LocApp c ℓ) = cong₂ LocApp (subι ξ c) refl
 subι ξ (TellLet ℓ ρ1 c1 ρ2 c2) = cong₅ TellLet refl refl (subι ξ c1) refl (subι ξ c2)
+

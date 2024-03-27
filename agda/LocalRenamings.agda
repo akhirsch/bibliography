@@ -97,15 +97,19 @@ idRenₗₑ ℓ = idRenₑ
 
 -- Choose a different renaming at a given location
 ⟨_∣_∣_⟩ : Loc → (ℕ → ℕ) → LocalRen → LocalRen
-⟨ ℓ ∣ ξ1 ∣ ξ2 ⟩ ℓ' with ≡-dec-Loc ℓ ℓ'
+⟨ ℓ' ∣ ξ1 ∣ ξ2 ⟩ ℓ with ≡-dec-Loc ℓ ℓ'
 ... | yes _ = ξ1
-... | no _ = ξ2 ℓ'
+... | no _ = ξ2 ℓ
+
+-- suc[ℓ] raises the local variables of only ℓ by one
+suc[_] : Loc → LocalRen
+suc[ ℓ ] = ⟨ ℓ ∣ suc ∣ idRenₗₑ ⟩
 
 -- Choosing respects extensionality
 chooseExt : ∀{ξ1 ξ1' ξ2 ξ2'} ℓ →
             ξ1 ≈ ξ1' → ξ2 ≈₂ ξ2' →
             ⟨ ℓ ∣ ξ1 ∣ ξ2 ⟩ ≈₂ ⟨ ℓ ∣ ξ1' ∣ ξ2' ⟩
-chooseExt ℓ ξ1≈ξ1' ξ2≈ξ2' ℓ' with ≡-dec-Loc ℓ ℓ'
+chooseExt ℓ ξ1≈ξ1' ξ2≈ξ2' ℓ' with ≡-dec-Loc ℓ' ℓ
 ... | yes _ = ξ1≈ξ1'
 ... | no  _ = ξ2≈ξ2' ℓ'
 

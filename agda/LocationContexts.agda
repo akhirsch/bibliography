@@ -18,7 +18,7 @@ module LocationContexts
   (TE : TypedLocalLanguage L E LE)
   where
 
-open import Choreographies L E
+open import Choreographies L E LE TE
 open import LocalRenamings L E LE
 open import LocationRenamings L E LE
 open import Renamings L E LE
@@ -186,7 +186,7 @@ _∶_⇒ₗ_ : (σ : ℕ → Loc) (Θ1 Θ2 : ℕ → Set) → Set
 idSubₗ⇒ : ∀ Θ → idSubₗ ∶ Θ ⇒ₗ Θ
 idSubₗ⇒ Θ n Θn = wfVar Θn
 
--- Adding a well-formed location preserves change in context
+-- Instantiating a well-formed location preserves change in context
 ▸ₗ⇒ : ∀{Θ1 Θ2 σ ℓ} →
       σ ∶ Θ1 ⇒ₗ Θ2 →
       Θ2 ⊢ₗ ℓ →
@@ -216,6 +216,14 @@ wfSubₗ : ∀{σ Θ1 Θ2 ℓ} →
          Θ2 ⊢ₗ subₗ-Loc ℓ σ
 wfSubₗ σ⇒ (wfVar Θ1x) = σ⇒ _ Θ1x
 wfSubₗ σ⇒ (wfLit L) = wfLit L
+
+-- Location list well-formedness is closed under context-changing substitutions
+wfSubₗₗ : ∀{σ Θ1 Θ2 ρ} →
+         σ ∶ Θ1 ⇒ₗ Θ2 →
+         Θ1 ⊢ₗₗ ρ →
+         Θ2 ⊢ₗₗ subₗ-List ρ σ
+wfSubₗₗ σ⇒ wfNil = wfNil
+wfSubₗₗ σ⇒ (wfCons Θ⊢ℓ Θ⊢ρ) = wfCons (wfSubₗ σ⇒ Θ⊢ℓ) (wfSubₗₗ σ⇒ Θ⊢ρ)
 
 -- Type well-formedness is closed under context-changing substitutions
 wfSubₜ : ∀{σ Θ1 Θ2 τ} →

@@ -14,6 +14,12 @@ transport : ∀{a} {A B : Set a} →
             A ≡ B → A → B
 transport refl x = x
 
+-- Synonym for transitivity
+infixr 30 _∙_
+_∙_ : ∀{a} {A : Set a} {x y z : A} →
+      x ≡ y → y ≡ z → x ≡ z
+p ∙ q = trans p q
+
 -- Extensional function equality
 module FunExt {a b} {A : Set a} {B : A → Set b} where
   infix 4 _≈_
@@ -74,6 +80,12 @@ open FunExt₂ public
 ≈₂-Setoid′ : ∀{a b c} (A : Set a) (B : Set b) (C : Set c) → Setoid (a ⊔ b ⊔ c) (a ⊔ b ⊔ c)
 ≈₂-Setoid′ A B C = ≈₂-Setoid {A = A} {B = λ _ → B} {C = λ _ _ → C}
 
+-- Composition respects extensional equality
+∘Ext : ∀{a b c} {A : Set a} {B : Set b} {C : Set c}
+       (ξ1 ξ1' : B → C) (ξ2 ξ2' : A → B) →
+       ξ1 ≈ ξ1' → ξ2 ≈ ξ2' →
+       ξ1 ∘ ξ2 ≈ ξ1' ∘ ξ2'
+∘Ext ξ1 ξ1' ξ2 ξ2' ξ1≈ξ1' ξ2≈ξ2' x = ξ1≈ξ1' (ξ2 x) ∙ cong ξ1' (ξ2≈ξ2' x)
 
 -- Identity renaming
 idRen : ℕ → ℕ
