@@ -412,3 +412,90 @@ tyWk {Θ} {Δ} {Γ} {Γ'} ξ Γ≈Γ'∘ξ Θ⊢Γ' (tyTellLet C1∶Loc Θ⊢ρ1
     ↑Ctx Γ        ≈⟨ ↑CtxExt Γ≈Γ'∘ξ ⟩
     ↑Ctx (Γ' ∘ ξ) ≈⟨ ↑Ctx∘ Γ' ξ ⟩
     ↑Ctx Γ' ∘ ξ   ∎
+
+
+{-
+  A global substitution σ changes context Γ1 to context Γ2
+  if for every variable n, σ assigns n to an expression
+  which, under Γ2, has the same type that Γ1 assigns to n.
+-}
+_∶_⇒_ : LocCtx × LocalCtx × (ℕ → Chor) → (Γ1 Γ2 : ℕ → Typ) → Set
+(Θ , Δ , σ) ∶ Γ1 ⇒ Γ2 = ∀ n → (Θ , Δ , Γ2) ⊢ σ n ∶ Γ1 n
+
+-- The identity substitution changes any context to itself
+idSub⇒ : ∀ Θ Δ Γ → Θ ⊢ Γ → (Θ , Δ , idSub) ∶ Γ ⇒ Γ
+idSub⇒ Θ Δ Γ Θ⊢Γ n = tyVar Θ⊢Γ n
+
+-- Instantiating a well-typed term preserves change in context
+▸⇒ : ∀{Θ Δ Γ1 Γ2 σ C τ} →
+      (Θ , Δ , σ) ∶ Γ1 ⇒ Γ2 →
+      (Θ , Δ , Γ2) ⊢ C ∶ τ →
+      (Θ , Δ , σ ▸ C) ∶ Γ1 ,, τ ⇒ Γ2
+▸⇒ σ⇒ C∶τ zero = C∶τ
+▸⇒ σ⇒ C∶τ (suc n) = σ⇒ n
+
+-- If σ changes Γ1 to Γ2 then Γ2 is well-formed
+wfCtx⇒ : ∀{Θ Δ Γ1 Γ2 σ} →
+         (Θ , Δ , σ) ∶ Γ1 ⇒ Γ2 →
+         Θ ⊢ Γ2
+wfCtx⇒ σ = ty⇒wfCtx (σ 0)
+  
+-- ↑ preserves change in context
+↑σ⇒ : ∀{Θ Δ Γ1 Γ2 σ τ} →
+      Θ ⊢ₜ τ →
+      (Θ , Δ , σ) ∶ Γ1 ⇒ Γ2 →
+      (Θ , Δ , ↑σ σ) ∶ Γ1 ,, τ ⇒ (Γ2 ,, τ)
+↑σ⇒ Θ⊢τ σ⇒ zero = tyVar (wfCtx,, (wfCtx⇒ σ⇒) Θ⊢τ) 0
+↑σ⇒ Θ⊢τ σ⇒ (suc n) = tyWk suc (λ n → refl) (wfCtx,, (wfCtx⇒ σ⇒) Θ⊢τ) (σ⇒ n)
+
+-- Binding a location variable preserves change in context
+↑Loc⇒ : ∀{Θ Δ Γ1 Γ2 σ} →
+        (Θ , Δ , σ) ∶ Γ1 ⇒ Γ2 →
+        (↑LocCtx Θ , renₗ-LocalCtx Δ suc , (λ n → renₗ (σ n) suc)) ∶ ↑Ctx Γ1 ⇒ ↑Ctx Γ2
+↑Loc⇒ {Θ} {Δ} σ⇒ n = tyWkₗ suc suc-injective Θ≈↑Θ∘suc (σ⇒ n)
+  where
+  Θ≈↑Θ∘suc : Θ ≈ ↑LocCtx Θ ∘ suc
+  Θ≈↑Θ∘suc n = refl
+
+-- Binding a local variable preserves change in context
+,,[ℓ]⇒ : ∀{Θ Δ Γ1 Γ2 σ} →
+          (Θ , Δ , σ) ∶ Γ1 ⇒ Γ2 →
+          ∀ ℓ t →
+          (Θ , (Δ ,,[ ℓ ] t) , (λ n → renₗₑ (σ n) suc[ ℓ ])) ∶ Γ1 ⇒ Γ2
+,,[ℓ]⇒ {Θ} {Δ} {Γ1} {Γ2} {σ} σ⇒ ℓ t n = σ[n]⟨sucℓ⟩∶Γ1[n]
+  where
+  ⟦DropId⟧≈suc : renOPE (Drop (idOPE Δ) ℓ t) ≈₂ suc[ ℓ ]
+  ⟦DropId⟧≈suc ℓ' with ≡-dec-Loc ℓ' ℓ
+  ... | yes _ = λ n → cong suc (renIdOPE Δ ℓ' n)
+  ... | no  _ = λ n → renIdOPE Δ ℓ' n
+
+  σ[n]⟨↑Id⟩∶Γ1[n] : (Θ , (ℓ , t) ∷ Δ , Γ2) ⊢ renₗₑ (σ n) (renOPE (Drop (idOPE Δ) ℓ t)) ∶ Γ1 n
+  σ[n]⟨↑Id⟩∶Γ1[n] = tyWkₗₑ (Drop (idOPE Δ) ℓ t) (σ⇒ n)
+
+  σ[n]⟨↑ℓId⟩≡σ[n]⟨sucℓ⟩ : renₗₑ (σ n) (renOPE (Drop (idOPE Δ) ℓ t)) ≡ renₗₑ (σ n) suc[ ℓ ]
+  σ[n]⟨↑ℓId⟩≡σ[n]⟨sucℓ⟩ = renExtₗₑ ⟦DropId⟧≈suc (σ n)
+
+  σ[n]⟨sucℓ⟩∶Γ1[n] : (Θ , (ℓ , t) ∷ Δ , Γ2) ⊢ renₗₑ (σ n) suc[ ℓ ] ∶ Γ1 n
+  σ[n]⟨sucℓ⟩∶Γ1[n] =
+    subst (λ x → (Θ , (ℓ , t) ∷ Δ , Γ2) ⊢ x ∶ Γ1 n)
+      σ[n]⟨↑ℓId⟩≡σ[n]⟨sucℓ⟩ σ[n]⟨↑Id⟩∶Γ1[n]
+
+-- Typing is closed under context-changing substitutions
+tySub : ∀{Θ Δ Γ1 Γ2 C τ σ} →
+        (Θ , Δ , σ) ∶ Γ1 ⇒ Γ2 →
+        (Θ , Δ , Γ1) ⊢ C ∶ τ →
+        (Θ , Δ , Γ2) ⊢ sub C σ ∶ τ
+tySub σ (tyVar Θ⊢Γ x) = σ x
+tySub σ (tyDone Θ⊢Γ Θ⊢ℓ Δ[ℓ]⊢e∶t) = tyDone (wfCtx⇒ σ) Θ⊢ℓ Δ[ℓ]⊢e∶t
+tySub σ (tySend C Θ⊢ℓ2) = tySend (tySub σ C) Θ⊢ℓ2
+tySub σ (tyIf C C1 C2) = tyIf (tySub σ C) (tySub σ C1) (tySub σ C2)
+tySub σ (tySync Θ⊢ℓ1 Θ⊢ℓ2 C) = tySync Θ⊢ℓ1 Θ⊢ℓ2 (tySub σ C)
+tySub σ (tyDefLocal {t1 = t1} {ℓ = ℓ} C1 C2) = 
+  tyDefLocal (tySub σ C1) (tySub (,,[ℓ]⇒ σ ℓ t1) C2)
+tySub σ (tyFun C) = tyFun (tySub (↑σ⇒ (ty⇒wfCtx C 0) σ) C)
+tySub σ (tyFix C) = tyFix (tySub (↑σ⇒ (ty⇒wfCtx C 0) σ) C)
+tySub σ (tyApp C1 C2) = tyApp (tySub σ C1) (tySub σ C2)
+tySub σ (tyLocAbs Θ⊢Γ C) = tyLocAbs (wfCtx⇒ σ) (tySub (↑Loc⇒ σ) C)
+tySub σ (tyLocApp C Θ⊢ℓ) = tyLocApp (tySub σ C) Θ⊢ℓ
+tySub σ (tyTellLet C1 Θ⊢ρ1 Θ⊢ρ2 Θ⊢τ C2) =
+  tyTellLet (tySub σ C1) Θ⊢ρ1 Θ⊢ρ2 Θ⊢τ (tySub (↑Loc⇒ σ) C2)

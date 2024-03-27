@@ -5,7 +5,7 @@ open import Data.Unit
 open import Data.Nat renaming (_≟_ to ≡-dec-Nat) 
 open import Data.Nat.Properties
 open import Data.List
-open import Data.Product
+open import Data.Product renaming (proj₁ to fst; proj₂ to snd)
 open import Relation.Nullary
 open import Relation.Binary
 open import Relation.Binary.PropositionalEquality
@@ -184,12 +184,32 @@ subιₗ-LocalCtx : ∀ ξ Δ → subₗ-LocalCtx Δ (ιₗ ξ) ≡ renₗ-Local
 subιₗ-LocalCtx ξ [] = refl
 subιₗ-LocalCtx ξ ((ℓ , t) ∷ Δ) = cong₂ _∷_ (cong₂ _,_ (subιₗ-Loc ξ ℓ) refl) (subιₗ-LocalCtx ξ Δ)
 
+
 {-
   ξ changes Δ1 to Δ2 if for all locations ℓ,
   Δ1 ℓ ≈ Δ2 ℓ ∘ ξ ℓ
 -}
 _∶_⇒ₗₑ_ : LocalRen → LocalCtxFun → LocalCtxFun → Set
 ξ ∶ Δ1 ⇒ₗₑ Δ2 = ∀ ℓ → Δ1 ℓ ≈ Δ2 ℓ ∘ ξ ℓ
+
+{-
+  For any local context Δ, location substitution σ, and location ℓ,
+  there is a renaming ξ that changes the projection of Δ at ℓ
+  into the projection of Δ⟨σ⟩ at ℓ⟨σ⟩
+-}
+locSubProj : ∀ Δ σ ℓ →
+            Σ (ℕ → ℕ) λ ξ → 
+            proj Δ ℓ ≈ proj (subₗ-LocalCtx Δ σ) (subₗ-Loc ℓ σ) ∘ ξ
+locSubProj [] σ ℓ = idRen , λ n → refl
+locSubProj ((ℓ' , t) ∷ Δ) σ ℓ with ≡-dec-Loc ℓ ℓ' | ≡-dec-Loc (subₗ-Loc ℓ σ) (subₗ-Loc ℓ' σ)
+... | yes _ | yes _ = (λ{ zero → zero
+                       ; (suc n) → suc (locSubProj Δ σ ℓ .fst n) }) ,
+                      λ{ zero → refl
+                      ; (suc n) → locSubProj Δ σ ℓ .snd n }
+... | yes refl | no ¬q = ⊥-elim (¬q refl)
+... | no ¬p | yes q = (λ n → suc (locSubProj Δ σ ℓ .fst n)) ,
+                      λ n → locSubProj Δ σ ℓ .snd n
+... | no _ | no _ = locSubProj Δ σ ℓ
 
 -- Change of context respects extensional equality
 Ext⇒ₗₑ : ∀{ξ Δ1 Δ1' Δ2 Δ2'} →
@@ -264,7 +284,7 @@ projRenInj ξ ((ℓ' , t) ∷ Δ) ℓ ξ-inj with ≡-dec-Loc ℓ ℓ' | ≡-dec
 ... | no ¬p | yes q = ⊥-elim (¬p (renInjₗ-Loc ξ-inj q))
 ... | no _ | no _ = projRenInj ξ Δ ℓ ξ-inj
 
--- the projecting local renaming is unchanged by an injective location renaming
+-- The projecting local renaming is unchanged by an injective location renaming
 projRenInjₑ : ∀ ξ Δ ℓ →
              Injective _≡_ _≡_ ξ →
              projₑ Δ ℓ ≈ projₑ (renₗ-LocalCtx Δ ξ) (renₗ-Loc ℓ ξ)
@@ -318,6 +338,19 @@ renOPE⇒ (Keep ξ ℓ' t) ℓ with ≡-dec-Loc ℓ ℓ' | ≡-dec-Loc ℓ' ℓ
 renOPE⇒ (Drop ξ ℓ' t) ℓ with ≡-dec-Loc ℓ ℓ'
 ... | yes _ = renOPE⇒ ξ ℓ
 ... | no _ = renOPE⇒ ξ ℓ
+
+-- Identity embedding
+idOPE : (Δ : LocalCtx) → OPE Δ Δ
+idOPE [] = ε
+idOPE ((ℓ , t) ∷ Δ) = Keep (idOPE Δ) ℓ t
+
+-- The interpretation respects the identity
+renIdOPE : (Δ : LocalCtx) → renOPE (idOPE Δ) ≈₂ idRenₗₑ
+renIdOPE [] ℓ n = refl
+renIdOPE ((ℓ' , t) ∷ Δ) ℓ with ≡-dec-Loc ℓ' ℓ
+... | yes _ = λ{ zero → refl
+               ; (suc n) → cong suc (renIdOPE Δ ℓ n) }
+... | no  _ = λ n → renIdOPE Δ ℓ n
 
 open import Relation.Binary.Reasoning.Setoid (≈-Setoid′ ℕ ℕ)
 
