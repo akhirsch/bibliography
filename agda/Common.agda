@@ -1,8 +1,13 @@
 {-# OPTIONS --safe #-}
 
 open import Level hiding (zero; suc)
+open import Data.Empty
+open import Data.Unit
 open import Data.Nat hiding (_⊔_)
 open import Data.Nat.Properties
+open import Data.Maybe
+open import Data.Maybe.Properties
+open import Data.Product hiding (map)
 open import Relation.Binary
 open import Relation.Binary.PropositionalEquality
 open import Function
@@ -87,6 +92,7 @@ open FunExt₂ public
        ξ1 ∘ ξ2 ≈ ξ1' ∘ ξ2'
 ∘Ext ξ1 ξ1' ξ2 ξ2' ξ1≈ξ1' ξ2≈ξ2' x = ξ1≈ξ1' (ξ2 x) ∙ cong ξ1' (ξ2≈ξ2' x)
 
+
 -- Identity renaming
 idRen : ℕ → ℕ
 idRen n = n
@@ -144,3 +150,88 @@ cong₅ : ∀{a b c d e f} {A : Set a} {B : Set b} {C : Set c} {D : Set d} {E : 
         a1 ≡ a2 → b1 ≡ b2 → c1 ≡ c2 → d1 ≡ d2 → e1 ≡ e2 →
         α a1 b1 c1 d1 e1 ≡ α a2 b2 c2 d2 e2
 cong₅ α refl refl refl refl refl = refl
+
+-- Mapping over a maybe preserves injectivity
+Maybe-map-inj : ∀{a b} {A : Set a} {B : Set b} {f : A → B} →
+                Injective _≡_ _≡_ f →
+                Injective _≡_ _≡_ (map f)
+Maybe-map-inj f-inj {just x} {just y} eq = cong just (f-inj (just-injective eq))
+Maybe-map-inj f-inj {nothing} {nothing} eq = refl
+
+-- If the output of a map over a maybe is defined, the input must have been defined
+Maybe-map-just : ∀{a b} {A : Set a} {B : Set b} (f : A → B) (m : Maybe A) (y : B) →
+                 map f m ≡ just y → Σ[ x ∈ A ] (f x ≡ y × m ≡ just x)
+Maybe-map-just f (just x) .(f x) refl = x , refl , refl
+
+-- Mapping over a maybe enjoys fusion
+Maybe-map-fuse : ∀{a b c} {A : Set a} {B : Set b} {C : Set c} →
+                 (f : B → C) (g : A → B) →
+                 map (f ∘ g) ≈ map f ∘ map g
+Maybe-map-fuse f g (just x) = refl
+Maybe-map-fuse f g nothing = refl
+
+-- Mapping over a maybe respects extensional equality
+Maybe-map-ext : ∀{a b} {A : Set a} {B : Set b} {f1 f2 : A → B} →
+                 f1 ≈ f2 → map f1 ≈ map f2
+Maybe-map-ext f1≈f2 (just x) = cong just (f1≈f2 x)
+Maybe-map-ext f1≈f2 nothing = refl
+
+maybe-ext : ∀{a b} {A : Set a} {B : Set b} {f1 f2 : A → B} →
+            f1 ≈ f2 →
+            ∀ x y →
+            maybe′ f1 x y ≡ maybe′ f2 x y
+maybe-ext f1≈f2 y (just x) = f1≈f2 x
+maybe-ext f1≈f2 y nothing = refl
+
+-- "More defined than or equal to" poset on Maybe
+module _ {a} {A : Set a} where
+  _≲_ : Maybe A → Maybe A → Set a
+  just x  ≲ just y  = x ≡ y
+  just x  ≲ nothing = Lift _ ⊤
+  nothing ≲ just x  = Lift _ ⊥
+  nothing ≲ nothing = Lift _ ⊤
+
+  ≲-nothing : ∀{m} → m ≲ nothing
+  ≲-nothing {just x}  = lift tt
+  ≲-nothing {nothing} = lift tt
+
+  ≲-refl : ∀{x} → x ≲ x
+  ≲-refl {just x} = refl
+  ≲-refl {nothing} = lift tt
+
+  ≲-trans : ∀{x y z} → x ≲ y → y ≲ z → x ≲ z
+  ≲-trans {just x} {just .x} {just .x} refl refl = refl
+  ≲-trans {just x} {just .x} {nothing} refl (lift tt) = lift tt
+  ≲-trans {just x} {nothing} {nothing} (lift tt) (lift tt) = lift tt
+  ≲-trans {nothing} {nothing} {nothing} (lift tt) (lift tt) = lift tt
+
+  ≲-antisym : ∀{x y} → x ≲ y → y ≲ x → x ≡ y
+  ≲-antisym {just x} {just .x} refl refl = refl
+  ≲-antisym {nothing} {nothing} (lift tt) (lift tt) = refl
+
+↓_ : ∀{a} {A : Set a} → Maybe A → Set a
+↓ m = Σ[ x ∈ _ ] (m ≡ just x)
+
+-- If m ≲ n and n is defined, then m is equal to n
+≲↓⇒≡ : ∀{a} {A : Set a} {m n : Maybe A} →
+        m ≲ n → ↓ n → m ≡ n
+≲↓⇒≡ {m = just x} {just .x} refl _ = refl
+≲↓⇒≡ {m = nothing} {just x} ()
+≲↓⇒≡ {m = nothing} {nothing} _ ()
+
+-- If everywhere that g is defined f is equal to g, then f ≲ g
+↓≡⇒≲ : ∀{a b} {A : Set a} {B : Set b} {f g : A → Maybe B} →
+        (∀ x → ↓ (g x) → f x ≡ g x) →
+        ∀ x → f x ≲ g x
+↓≡⇒≲ {f = f} {g} p x with g x | inspect g x
+... | just y  | [ eq ] = subst (flip _≲_ (just y)) (sym (p x (y , eq) ∙ eq)) refl
+... | nothing | eq     = ≲-nothing
+
+-- If everywhere that g is defined map f ∘ g is equal to h, then h ≲ map f ∘ g
+map↓≡⇒≲ : ∀{a b c} {A : Set a} {B : Set b} {C : Set c}
+           (f : B → C) (g : A → Maybe B) (h : A → Maybe C) →
+           (∀ x → ↓ (g x) → map f (g x) ≡ h x) →
+           ∀ x → h x ≲ (map f ∘ g) x
+map↓≡⇒≲ f g h p x with g x | inspect g x
+... | just y  | [ eq ] = subst (flip _≲_ (just (f y))) (sym (cong (map f) eq) ∙ p x (y , eq)) refl
+... | nothing | eq     = ≲-nothing

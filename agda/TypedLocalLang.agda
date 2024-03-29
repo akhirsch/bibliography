@@ -2,6 +2,8 @@
 
 open import Data.Empty
 open import Data.Nat
+open import Data.Maybe
+open import Data.Maybe.Properties
 open import Data.Sum
 open import Data.Product
 open import Relation.Nullary
@@ -65,11 +67,11 @@ record TypedLocalLanguage
                     Δ ⊢ₑ e ∶ t
 
     -- Weakening should be allowed.
-    tyWkₑ : ∀{Γ Γ' e t} →
+    tyWkₑ : ∀{Γ1 Γ2 e t} →
             (ξ : ℕ → ℕ) →
-            Γ ≈ Γ' ∘ ξ →
-            Γ ⊢ₑ e ∶ t →
-            Γ' ⊢ₑ renₑ e ξ ∶ t
+            Γ1 ≈ Γ2 ∘ ξ →
+            Γ1 ⊢ₑ e ∶ t →
+            Γ2 ⊢ₑ renₑ e ξ ∶ t
 
     -- We have a type for booleans, and the appropriate judgments.
     Boolₑ : Typₑ
@@ -138,3 +140,33 @@ record TypedLocalLanguage
   -- The identity substitution respects typing
   tySubIdₑ : ∀{Γ e t} → Γ ⊢ₑ e ∶ t → Γ ⊢ₑ subₑ e idSubₑ ∶ t
   tySubIdₑ Γ⊢e:t = tySubₑ (idSubChangesₑ _) Γ⊢e:t
+
+  -- Convenience function for typing of a possibly undefined expression 
+  _⊢ₑ_?∶_ : (Γ : ℕ → Typₑ) → Maybe Expr → Typₑ → Set
+  Γ ⊢ₑ m ?∶ t = Σ[ e ∈ Expr ] (m ≡ just e × Γ ⊢ₑ e ∶ t)
+
+  -- Uniqueness of typing for possibly undefined expressions
+  tyUniq?ₑ : ∀{Γ m t1 t2} →
+             Γ ⊢ₑ m ?∶ t1 →
+             Γ ⊢ₑ m ?∶ t2 →
+             t1 ≡ t2
+  tyUniq?ₑ {Γ} {just e} {t1} {t2} (e , refl , Γ⊢e∶t1) (e' , eq' , Γ⊢e'∶t2) =
+    tyUniqₑ Γ⊢e∶t1 Γ⊢e∶t2
+    where
+    Γ⊢e∶t2 : Γ ⊢ₑ e ∶ t2
+    Γ⊢e∶t2 = subst (λ x → Γ ⊢ₑ x ∶ t2) (sym (just-injective eq')) Γ⊢e'∶t2
+
+  -- Extensionality of typing for possibly undefined expressions
+  tyExt?ₑ : ∀{Γ1 Γ2 m t} →
+            Γ1 ≈ Γ2 →
+            Γ1 ⊢ₑ m ?∶ t →
+            Γ2 ⊢ₑ m ?∶ t
+  tyExt?ₑ Γ1≈Γ2 (e , m≡e , Γ1⊢e∶t) = e , m≡e , tyExtₑ Γ1≈Γ2 Γ1⊢e∶t
+
+  -- Weakening is allowed for possibly undefined expressions
+  tyWk?ₑ : ∀{Γ1 Γ2 m t} →
+           (ξ : ℕ → ℕ) →
+           Γ1 ≈ Γ2 ∘ ξ →
+           Γ1 ⊢ₑ m ?∶ t →
+           Γ2 ⊢ₑ maybe′ (λ e → renMaybeₑ e (just ∘ ξ)) nothing m ?∶ t
+  tyWk?ₑ ξ Γ1≈Γ2∘ξ (e , refl , Γ1⊢e∶t) = renₑ e ξ , renMaybeJustₑ ξ e , tyWkₑ ξ Γ1≈Γ2∘ξ Γ1⊢e∶t

@@ -68,7 +68,7 @@ sub (Send ℓ1 c ℓ2) σ = Send ℓ1 (sub c σ) ℓ2
 sub (If ℓ c c₁ c₂) σ = If ℓ (sub c σ) (sub c₁ σ) (sub c₂ σ)
 sub (Sync ℓ1 d ℓ2 c) σ = Sync ℓ1 d ℓ2 (sub c σ)
 sub (DefLocal ℓ c1 c2) σ =
-  DefLocal ℓ (sub c1 σ) (sub c2 λ n → renₗₑ (σ n) suc[ ℓ ])
+  DefLocal ℓ (sub c1 σ) (sub c2 λ n → renₗₑ (σ n) suc)
 sub (Fun τ c) σ = Fun τ (sub c (↑σ σ))
 sub (Fix τ c) σ = Fix τ (sub c (↑σ σ))
 sub (App c1 c2) σ = App (sub c1 σ) (sub c2 σ)
@@ -87,8 +87,7 @@ subExt σ1≈σ2 (Send ℓ1 c ℓ2) = cong₃ Send refl (subExt σ1≈σ2 c) ref
 subExt σ1≈σ2 (If ℓ c c₁ c₂) = cong₄ If refl (subExt σ1≈σ2 c) (subExt σ1≈σ2 c₁) (subExt σ1≈σ2 c₂)
 subExt σ1≈σ2 (Sync ℓ1 d ℓ2 c) = cong₄ Sync refl refl refl (subExt σ1≈σ2 c)
 subExt σ1≈σ2 (DefLocal ℓ c1 c2) =
-  cong₃ DefLocal refl (subExt σ1≈σ2 c1)
-    (subExt (λ n → cong (flip renₗₑ ⟨ ℓ ∣ suc ∣ idRenₗₑ ⟩) (σ1≈σ2 n)) c2)
+  cong₃ DefLocal refl (subExt σ1≈σ2 c1) (subExt (λ n → cong (flip renₗₑ suc) (σ1≈σ2 n)) c2)
 subExt σ1≈σ2 (Fun τ c) = cong₂ Fun refl (subExt (↑σExt σ1≈σ2) c)
 subExt σ1≈σ2 (Fix τ c) = cong₂ Fix refl (subExt (↑σExt σ1≈σ2) c)
 subExt σ1≈σ2 (App c1 c2) = cong₂ App (subExt σ1≈σ2 c1) (subExt σ1≈σ2 c2)

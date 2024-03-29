@@ -83,11 +83,7 @@ renCtx∘ Γ ξ1 ξ2 n = refl
 
 -- ↑ distributes over renaming contexts
 renCtx↑ : ∀ Γ ξ → renCtx (↑Ctx Γ) (↑ ξ) ≈ ↑Ctx (renCtx Γ ξ)
-renCtx↑ Γ ξ n = eq
-  where
-  
-  eq : renₜ (renₜ (Γ n) suc) (↑ ξ) ≡ renₜ (renₜ (Γ n) ξ) suc
-  eq = 
+renCtx↑ Γ ξ n =
     renₜ (renₜ (Γ n) suc) (↑ ξ) ≡⟨ sym (renFuseₜ suc (↑ ξ) (Γ n)) ⟩
     renₜ (Γ n) (↑ ξ ∘ suc)      ≡⟨ renExtₜ (↑∘suc ξ) (Γ n) ⟩
     renₜ (Γ n) (suc ∘ ξ)        ≡⟨ renFuseₜ ξ suc (Γ n) ⟩

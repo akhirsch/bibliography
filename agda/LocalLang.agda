@@ -2,6 +2,7 @@
 
 open import Data.Empty
 open import Data.Nat
+open import Data.Maybe
 open import Relation.Nullary
 open import Relation.Binary.PropositionalEquality
 open ≡-Reasoning
@@ -29,13 +30,16 @@ record Language
     -- de Bruijn indices are represented as natural numbers
     varₑ : ℕ → Expr
   
-    -- Infinite variable renaming and substitution operators.
+    -- Infinite variable renaming and substitution operators
     renₑ : Expr → (ℕ → ℕ) → Expr
     subₑ : Expr → (ℕ → Expr) → Expr
+
+    -- Partial variable renaming operator
+    renMaybeₑ : Expr → (ℕ → Maybe ℕ) → Maybe Expr
       
     {-
       Expression closure predicate.
-      An expression is closed above `n` if no variables above `n` appear free.
+      An expression is closed above `n` if no variables above `n` appear free
     -}
     ClosedAboveₑ : ℕ → Expr → Set
   
@@ -57,21 +61,36 @@ record Language
   Closedₑ : Expr → Set
   Closedₑ e = ClosedAboveₑ 0 e
 
-  -- Identity variable renaming.
-  idRenₑ : ℕ → ℕ
-  idRenₑ n = n
-
   -- Identity substitution.
   idSubₑ : ℕ → Expr
   idSubₑ n = varₑ n
 
+  -- Substitution with the topmost variable instantiated
+  _▸ₑ_ : (ℕ → Expr) → Expr → ℕ → Expr
+  (σ ▸ₑ e) zero = e
+  (σ ▸ₑ e) (suc n) = σ n
+
+  -- Adding a topmost term respects extensional equality
+  ▸Extₑ : ∀{σ1 σ2} → σ1 ≈ σ2 →
+          ∀ e → σ1 ▸ₑ e ≈ σ2 ▸ₑ e
+  ▸Extₑ σ1≈σ2 e zero = refl
+  ▸Extₑ σ1≈σ2 e (suc n) = σ1≈σ2 n
+
   {-
     `up` construction on substitutions and variable renamings.
-    Used when going past a binder to ensure that counting is done correctly.
+    Used when going past a binder to ensure that index counting is done correctly.
   -}
   ↑σₑ : (ℕ → Expr) → ℕ → Expr
-  ↑σₑ σ zero = varₑ zero
-  ↑σₑ σ (suc n) = renₑ (σ n) suc
+  ↑σₑ σ = (λ n → renₑ (σ n) suc) ▸ₑ varₑ zero
+
+  -- ↑ respects extensional equality
+  ↑σExt : ∀{σ1 σ2} → σ1 ≈ σ2 → ↑σₑ σ1 ≈ ↑σₑ σ2
+  ↑σExt σ1≈σ2 = ▸Extₑ (λ n → cong₂ renₑ (σ1≈σ2 n) refl) (varₑ zero)
+
+  -- Inclusion from renamings to substitutions
+  ιₑ : (ℕ → ℕ) → ℕ → Expr
+  ιₑ ξ n = varₑ (ξ n)
+
 
 -- A local language that has extra "lawfulness" properties
 record LawfulLanguage
@@ -84,23 +103,38 @@ record LawfulLanguage
     -- Substitution should respect extensional equality.
     subExtₑ : ∀{σ₁ σ₂} → (∀ n → σ₁ n ≡ σ₂ n) → ∀ e → subₑ e σ₁ ≡ subₑ e σ₂
     
-    -- Substitution correctly replaces a variable
+    -- Substitution correctly replaces variables
     subVarₑ : ∀ n σ → subₑ (varₑ n) σ ≡ σ n
     
-    {-
-      Treating a renaming as a substitution should have the same
-      effect as using it directly as a renaming.
-    -}
+    -- Substitution respects the inclusion from renamings
     subRenₑ : ∀ ξ e → subₑ e (varₑ ∘ ξ) ≡ renₑ e ξ
     
     -- Renaming enjoys fusion
     renFuseₑ : ∀ ξ₁ ξ₂ e → renₑ e (ξ₂ ∘ ξ₁) ≡ renₑ (renₑ e ξ₁) ξ₂
     
     -- Renaming respects the identity
-    renIdₑ : ∀ e → renₑ e idRenₑ ≡ e
+    renIdₑ : ∀ e → renₑ e idRen ≡ e
     
     -- Substituting respects the identity
     subIdₑ : ∀ e → subₑ e idSubₑ ≡ e
+
+    -- Partial renaming correctly replaces variables
+    renMaybeVarₑ : ∀ n ξ → renMaybeₑ (varₑ n) ξ ≡ map varₑ (ξ n)
+
+    -- On fully-defined renamings, partial renaming should act as normal renaming
+    renMaybeJustₑ : ∀ ξ e → renMaybeₑ e (just ∘ ξ) ≡ just (renₑ e ξ)
+
+    -- Partial renaming respects extensional equality
+    renMaybeExtₑ : ∀{ξ1 ξ2} → ξ1 ≈ ξ2 → ∀ e → renMaybeₑ e ξ1 ≡ renMaybeₑ e ξ2
+
+    -- Partial renaming is monotone with respect to definedness
+    renMaybeMonoₑ : ∀{ξ1 ξ2} →
+                    (∀ x → ξ1 x ≲ ξ2 x) →
+                    ∀ e → renMaybeₑ e ξ1 ≲ renMaybeₑ e ξ2
+
+    -- Partial renaming enjoys fusion
+    renMaybeFuseₑ : ∀ ξ1 ξ2 e → renMaybeₑ e (λ x → maybe ξ2 nothing (ξ1 x)) ≡
+                                maybe (λ e' → renMaybeₑ e' ξ2) nothing (renMaybeₑ e ξ1)
 
     -- The property of being closed above should be monotonic
     closedAboveMonoₑ : ∀{m n e} → m < n → ClosedAboveₑ m e → ClosedAboveₑ n e
@@ -166,28 +200,11 @@ record LawfulLanguage
     subₑ (varₑ n) (varₑ ∘ ξ) ≡⟨ subVarₑ n (varₑ ∘ ξ) ⟩
     varₑ (ξ n)              ∎
 
-  -- The `up` construction should have no extensional effect on the identity substitution
-  ↑σIdₑ : ∀ n → ↑σₑ idSubₑ n ≡ varₑ n
+  -- ↑σ respects the identity
+  ↑σIdₑ : ↑σₑ idSubₑ ≈ idSubₑ
   ↑σIdₑ zero = refl
   ↑σIdₑ (suc n) = renVarₑ n suc
 
-  -- The `up` construction should respect extensional equality.
-  ↑Extₑ : ∀{ξ1 ξ2} →
-              (∀ n → ξ1 n ≡ ξ2 n) →
-              ∀ n → ↑ ξ1 n ≡ ↑ ξ2 n
-  ↑Extₑ ξ1≈ξ2 zero = refl
-  ↑Extₑ ξ1≈ξ2 (suc n) = cong suc (ξ1≈ξ2 n)
-
-  -- The `up` construction should have no extensional effect on the identity renaming.
-  ↑Idₑ : ∀ n → ↑ idRenₑ n ≡ n
-  ↑Idₑ zero = refl
-  ↑Idₑ (suc n) = refl
-
-  -- The `up` construction extensionally commutes with composition.
-  ↑Fuseₑ : ∀ ξ1 ξ2 n → ↑ (ξ2 ∘ ξ1) n ≡ ↑ ξ2 (↑ ξ1 n)
-  ↑Fuseₑ ξ1 ξ2 zero = refl
-  ↑Fuseₑ ξ1 ξ2 (suc n) = refl
-    
   -- Substituting a closed expression has no effect.
   subClosedIdₑ : ∀ e σ → Closedₑ e → subₑ e σ ≡ e
   subClosedIdₑ e σ closed = subClosedAboveIdₑ closed λ{ () }
@@ -195,3 +212,32 @@ record LawfulLanguage
   -- Stepping a closed expression remains closed.
   stepClosedₑ : ∀{e₁ e₂} → e₁ ⇒ₑ e₂ → Closedₑ e₁ → Closedₑ e₂
   stepClosedₑ e₁⇒e₂ closed = stepClosedAboveₑ e₁⇒e₂ closed
+
+  -- Fusion first with a total renaming and then a partial renaming
+  renMaybeRenFuseₑ : ∀ ξ1 ξ2 e →
+                     renMaybeₑ (renₑ e ξ1) ξ2 ≡
+                     renMaybeₑ e (ξ2 ∘ ξ1)
+  renMaybeRenFuseₑ ξ1 ξ2 e = 
+    renMaybeₑ (renₑ e ξ1) ξ2
+      ≡⟨ refl ⟩
+    maybe′ (λ x → renMaybeₑ x ξ2) nothing (just (renₑ e ξ1))
+      ≡⟨  cong (maybe′ (λ x → renMaybeₑ x ξ2) nothing) (sym (renMaybeJustₑ ξ1 e)) ⟩
+    maybe′ (λ x → renMaybeₑ x ξ2) nothing (renMaybeₑ e (just ∘ ξ1))
+      ≡⟨ sym (renMaybeFuseₑ (just ∘ ξ1) ξ2 e) ⟩
+    renMaybeₑ e (ξ2 ∘ ξ1)    ∎
+
+  -- Fusion first with a partial renaming and then a total renaming
+  renMaybeFuseRenₑ  : ∀ ξ1 ξ2 e →
+                      map (λ x → renₑ x ξ2) (renMaybeₑ e ξ1) ≡
+                      renMaybeₑ e (map ξ2 ∘ ξ1)
+  renMaybeFuseRenₑ ξ1 ξ2 e = 
+    map (λ x → renₑ x ξ2) (renMaybeₑ e ξ1)
+      ≡⟨ maybe-ext (λ x → sym (renMaybeJustₑ ξ2 x)) nothing (renMaybeₑ e ξ1) ⟩
+    maybe′ (λ x → renMaybeₑ x (just ∘ ξ2)) nothing (renMaybeₑ e ξ1)
+      ≡⟨ sym (renMaybeFuseₑ ξ1 (just ∘ ξ2) e) ⟩
+    renMaybeₑ e (map ξ2 ∘ ξ1) ∎
+
+  -- ↑ respects the inclusion
+  ↑σιₑ : ∀ ξ → ↑σₑ (ιₑ ξ) ≈ ιₑ (↑ ξ)
+  ↑σιₑ ξ zero = refl 
+  ↑σιₑ ξ (suc n) = renVarₑ (ξ n) suc
