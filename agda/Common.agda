@@ -209,6 +209,21 @@ module _ {a} {A : Set a} where
   ≲-antisym {just x} {just .x} refl refl = refl
   ≲-antisym {nothing} {nothing} (lift tt) (lift tt) = refl
 
+≲-cong : ∀{a b} {A : Set a} {B : Set b} {x1 x2 : Maybe A} →
+         (f : A → B) → x1 ≲ x2 → map f x1 ≲ map f x2
+≲-cong {x1 = just x} {just .x} f refl = refl
+≲-cong {x1 = just x} {nothing} f (lift tt) = lift tt
+≲-cong {x1 = nothing} {nothing} f (lift tt) = lift tt
+
+≲-cong-bind : ∀{a b} {A : Set a} {B : Set b} {x1 x2 : Maybe A} →
+              (f : A → Maybe B) →
+              x1 ≲ x2 →
+              maybe′ f nothing x1 ≲ maybe′ f nothing x2
+≲-cong-bind {x1 = just x} {just .x} f refl = ≲-refl
+≲-cong-bind {x1 = just x} {nothing} f (lift tt) = ≲-nothing
+≲-cong-bind {x1 = nothing} {nothing} f (lift tt) = lift tt
+
+-- Definedness
 ↓_ : ∀{a} {A : Set a} → Maybe A → Set a
 ↓ m = Σ[ x ∈ _ ] (m ≡ just x)
 
@@ -235,3 +250,16 @@ map↓≡⇒≲ : ∀{a b c} {A : Set a} {B : Set b} {C : Set c}
 map↓≡⇒≲ f g h p x with g x | inspect g x
 ... | just y  | [ eq ] = subst (flip _≲_ (just (f y))) (sym (cong (map f) eq) ∙ p x (y , eq)) refl
 ... | nothing | eq     = ≲-nothing
+
+-- Choose a different value for 0 or suc
+ifZeroElse : ∀{a} {A : Set a} →
+             A → (ℕ → A) → ℕ → A
+ifZeroElse x f zero = x
+ifZeroElse x f (suc n) = f n
+
+-- Composing ifZeroElse with suc just chooses the suc case
+ifZeroElse∘suc : ∀{a} {A : Set a}
+                 (x : A) (f : ℕ → A) →
+                 ifZeroElse x f ∘ suc ≈ f
+ifZeroElse∘suc x f zero = refl
+ifZeroElse∘suc x f (suc n) = refl

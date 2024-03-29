@@ -506,3 +506,78 @@ renOPE⦊⇒ (Keep ξ ℓ' t) ℓ with ≡-dec-Loc ℓ ℓ'
 renOPE⦊⇒ (Drop ξ ℓ' t) ℓ with ≡-dec-Loc ℓ ℓ'
 ... | yes _ = renOPE⦊⇒ ξ ℓ
 ... | no  _ = renOPE⦊⇒ ξ ℓ
+
+-- Typing of local expressions is closed under projected OPEs
+tyWkOPEₑ : ∀{Δ1 Δ2 e ℓ t} (ξ : OPE Δ1 Δ2) →
+           (Δ1 ∣ ℓ) ⊢ₑ e ∶ t →
+           (Δ2 ∣ ℓ) ⊢ₑ renₑ e (⟦ ξ ⟧⦊ ℓ) ∶ t
+tyWkOPEₑ {ℓ = ℓ} ξ e∶t = tyWkₑ (⟦ ξ ⟧⦊ ℓ) (renOPE⦊⇒ ξ ℓ) e∶t
+
+-- Typing of projected expressions is closed under projected OPEs
+tyWkOPE?ₑ : ∀{Δ1 Δ2 e ℓ t} (ξ : OPE Δ1 Δ2) →
+           (Δ1 ∣ ℓ) ⊢ₑ renMaybeₑ e (Δ1 ⦊ ℓ) ?∶ t →
+           (Δ2 ∣ ℓ) ⊢ₑ renMaybeₑ (renₑ e ⟦ ξ ⟧) (Δ2 ⦊ ℓ) ?∶ t
+tyWkOPE?ₑ {Δ1} {Δ2} {e} {ℓ} {t} ξ (e' , e⟨Δ1⦊ℓ⟩≡e' , e'∶t) =
+  renₑ e' (⟦ ξ ⟧⦊ ℓ) , e⟨⟦ξ⟧⟩⟨Δ2⦊ℓ⟩≡e'⟨⟦ξ⟧⦊ℓ⟩ , tyWkOPEₑ ξ e'∶t
+  where
+  e⟨⟦ξ⟧⟩⟨Δ2⦊ℓ⟩≡e'⟨⟦ξ⟧⦊ℓ⟩ : renMaybeₑ (renₑ e ⟦ ξ ⟧) (Δ2 ⦊ ℓ) ≡ just (renₑ e' (⟦ ξ ⟧⦊ ℓ))
+  e⟨⟦ξ⟧⟩⟨Δ2⦊ℓ⟩≡e'⟨⟦ξ⟧⦊ℓ⟩ =
+    renMaybeₑ (renₑ e ⟦ ξ ⟧) (Δ2 ⦊ ℓ)
+      ≡⟨ renMaybeRenFuseₑ ⟦ ξ ⟧ (Δ2 ⦊ ℓ) e ⟩
+    renMaybeₑ e ((Δ2 ⦊ ℓ) ∘ ⟦ ξ ⟧)
+      ≡⟨ renMaybeExtₑ (≈-sym (projNatural ξ ℓ)) e ⟩
+    renMaybeₑ e (map (⟦ ξ ⟧⦊ ℓ) ∘ (Δ1 ⦊ ℓ))
+      ≡⟨ sym (renMaybeFuseRenₑ (Δ1 ⦊ ℓ) (⟦ ξ ⟧⦊ ℓ) e) ⟩
+    map (λ x → renₑ x (⟦ ξ ⟧⦊ ℓ)) (renMaybeₑ e (Δ1 ⦊ ℓ))
+      ≡⟨ cong (map (λ x → renₑ x (⟦ ξ ⟧⦊ ℓ))) e⟨Δ1⦊ℓ⟩≡e' ⟩
+    just (renₑ e' (⟦ ξ ⟧⦊ ℓ)) ∎
+
+-- Substitutions between local contexts
+data LocalSub : (Δ1 Δ2 : LocalCtx) → Set where
+  ε : ∀{Δ2} → LocalSub [] Δ2
+  AddSub : ∀{Δ1 Δ2} (σ : LocalSub Δ1 Δ2) (e : Expr) (ℓ : Loc) (t : Typₑ) →
+          (Δ2∣ℓ⊢e⟨Δ2⦊ℓ⟩∶t : (Δ2 ∣ ℓ) ⊢ₑ renMaybeₑ e (Δ2 ⦊ ℓ) ?∶ t) →
+          LocalSub ((ℓ , t) ∷ Δ1) Δ2
+
+-- Interpret as a local substitution
+σ⟦_⟧ : ∀{Δ1 Δ2} → LocalSub Δ1 Δ2 → ℕ → Expr
+σ⟦ ε ⟧ n = ttₑ
+σ⟦ AddSub σ e ℓ t e⊢t ⟧ zero = e
+σ⟦ AddSub σ e ℓ t e⊢t ⟧ (suc n) = σ⟦ σ ⟧ n
+
+-- Interpret as a substitution under the projection to a location
+σ⟦_⟧⦊ : ∀{Δ1 Δ2} → LocalSub Δ1 Δ2 → Loc → ℕ → Expr
+σ⟦ ε ⟧⦊ ℓ n = ttₑ
+σ⟦ AddSub σ e ℓ' t (e' , _ , _) ⟧⦊ ℓ with ≡-dec-Loc ℓ ℓ'
+... | yes _ = ifZeroElse e' (σ⟦ σ ⟧⦊ ℓ)
+... | no  _ = σ⟦ σ ⟧⦊ ℓ
+
+-- Projecting a substitution to a location acts naturally
+projSubNatural : ∀{Δ1 Δ2} (σ : LocalSub Δ1 Δ2) (ℓ : Loc) →
+                 ∀ n → renMaybeₑ (σ⟦ σ ⟧ n) (Δ2 ⦊ ℓ) ≲ map (σ⟦ σ ⟧⦊ ℓ) ((Δ1 ⦊ ℓ) n)
+projSubNatural {Δ2 = Δ2} ε ℓ n = subst (flip _≲_ (just ttₑ)) (sym tt⟨Δ2⦊ℓ⟩≡tt) ≲-refl
+  where
+  tt⟨Δ2⦊ℓ⟩≡tt : renMaybeₑ ttₑ (Δ2 ⦊ ℓ) ≡ just ttₑ
+  tt⟨Δ2⦊ℓ⟩≡tt = renMaybeClosedₑ ttₑ (Δ2 ⦊ ℓ) ttClosedₑ
+projSubNatural (AddSub {Δ1} {Δ2} σ e ℓ' t (e' , e⟨Δ2⦊ℓ⟩≡e' , Δ2∣ℓ⊢e'∶t)) ℓ with ≡-dec-Loc ℓ ℓ'
+... | yes refl = λ{ zero → subst (flip _≲_ (just e')) (sym e⟨Δ2⦊ℓ⟩≡e') ≲-refl
+                 ; (suc n) →
+                      subst (_≲_ (renMaybeₑ (σ⟦ σ ⟧ n) (projVars Δ2 ℓ)))
+                        (sym (eq n)) (projSubNatural σ ℓ n) }
+  where
+  eq : ∀ n → map (ifZeroElse e' (σ⟦ σ ⟧⦊ ℓ)) (map suc ((Δ1 ⦊ ℓ) n)) ≡ map (σ⟦ σ ⟧⦊ ℓ) ((Δ1 ⦊ ℓ) n)
+  eq n =
+    map (ifZeroElse e' (σ⟦ σ ⟧⦊ ℓ)) (map suc ((Δ1 ⦊ ℓ) n))
+      ≡⟨ sym (Maybe-map-fuse (ifZeroElse e' (σ⟦ σ ⟧⦊ ℓ)) suc ((Δ1 ⦊ ℓ) n)) ⟩
+    map (ifZeroElse e' (σ⟦ σ ⟧⦊ ℓ) ∘ suc) ((Δ1 ⦊ ℓ) n)
+      ≡⟨ Maybe-map-ext (ifZeroElse∘suc e'(σ⟦ σ ⟧⦊ ℓ)) ((Δ1 ⦊ ℓ) n) ⟩
+    map (σ⟦ σ ⟧⦊ ℓ) ((Δ1 ⦊ ℓ) n) ∎
+... | no  _ = λ{ zero → ≲-nothing
+               ; (suc n) → projSubNatural σ ℓ n }
+
+-- Apply a renaming after a substitution
+renSub : ∀{Δ1 Δ2 Δ3} → OPE Δ2 Δ3 → LocalSub Δ1 Δ2 → LocalSub Δ1 Δ3
+renSub ξ ε = ε
+renSub {Δ2 = Δ2} {Δ3} ξ (AddSub σ e ℓ t e∶t) =
+  AddSub (renSub ξ σ) (renₑ e ⟦ ξ ⟧) ℓ t (tyWkOPE?ₑ ξ e∶t)
+

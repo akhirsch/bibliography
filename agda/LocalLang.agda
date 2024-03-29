@@ -3,6 +3,7 @@
 open import Data.Empty
 open import Data.Nat
 open import Data.Maybe
+open import Data.Product renaming (proj₁ to fst; proj₂ to snd) hiding (map)
 open import Relation.Nullary
 open import Relation.Binary.PropositionalEquality
 open ≡-Reasoning
@@ -36,6 +37,9 @@ record Language
 
     -- Partial variable renaming operator
     renMaybeₑ : Expr → (ℕ → Maybe ℕ) → Maybe Expr
+
+    -- Partial substitution operator
+    subMaybeₑ : Expr → (ℕ → Maybe Expr) → Maybe Expr
       
     {-
       Expression closure predicate.
@@ -118,11 +122,17 @@ record LawfulLanguage
     -- Substituting respects the identity
     subIdₑ : ∀ e → subₑ e idSubₑ ≡ e
 
+    -- Partial substitution respects the inclusion from renamings
+    subMaybeRenₑ : ∀ ξ e → subMaybeₑ e (map varₑ ∘ ξ) ≡ renMaybeₑ e ξ
+
     -- Partial renaming correctly replaces variables
     renMaybeVarₑ : ∀ n ξ → renMaybeₑ (varₑ n) ξ ≡ map varₑ (ξ n)
 
     -- On fully-defined renamings, partial renaming should act as normal renaming
     renMaybeJustₑ : ∀ ξ e → renMaybeₑ e (just ∘ ξ) ≡ just (renₑ e ξ)
+
+    -- On fully-defined substitutions, partial substitution should act as normal substitution
+    subMaybeJustₑ : ∀ σ e → subMaybeₑ e (just ∘ σ) ≡ just (subₑ e σ)
 
     -- Partial renaming respects extensional equality
     renMaybeExtₑ : ∀{ξ1 ξ2} → ξ1 ≈ ξ2 → ∀ e → renMaybeₑ e ξ1 ≡ renMaybeₑ e ξ2
@@ -139,27 +149,32 @@ record LawfulLanguage
     -- The property of being closed above should be monotonic
     closedAboveMonoₑ : ∀{m n e} → m < n → ClosedAboveₑ m e → ClosedAboveₑ n e
     
-    -- A de Bruijn index m is considered closed above n if n > m.
+    -- A de Bruijn index m is considered closed above n if n > m
     <⇒varClosedₑ : ∀{m n} → m < n → ClosedAboveₑ n (varₑ m)
     
-    -- If de Bruijn index m is closed above n then necessarily n > m.
+    -- If de Bruijn index m is closed above n then necessarily n > m
     varClosedₑ⇒< : ∀{m n} → ClosedAboveₑ n (varₑ m) → m < n
     
-    -- Values must have no free variables.
+    -- Values must have no free variables
     valClosedₑ : ∀{v} → Valₑ v → Closedₑ v
 
     {-
-      For an expression which is closed above `n`, substitution on σ
-      which acts as the identity below `n` should have no effect.
+      For an expression which is closed above `n`, substitution respects
+      extensional equality of substitutions which are equal below `n`.
     -}
-    subClosedAboveIdₑ : ∀{e σ n} →
-                     ClosedAboveₑ n e →
-                     (∀{m} → m < n → σ m ≡ varₑ m) →
-                     subₑ e σ ≡ e
+    subClosedAboveExtₑ : ∀{e σ1 σ2 n} →
+                         ClosedAboveₑ n e →
+                         (∀{m} → m < n → σ1 m ≡ σ2 m) →
+                         subₑ e σ1 ≡ subₑ e σ2
+
+    subMaybeClosedAboveExtₑ : ∀{e σ1 σ2 n} →
+                              ClosedAboveₑ n e →
+                              (∀{m} → m < n → σ1 m ≲ σ2 m) →
+                              subMaybeₑ e σ1 ≲ subMaybeₑ e σ2
 
     {- 
-      Substitution, renaming, and stepping should not change the fact that expressions are
-      closed above some level.
+      Substitution, renaming, and stepping should not change
+      the fact that expressions are closed above some level.
     -}
     subClosedAboveₑ : ∀{e σ m n} →
                      ClosedAboveₑ n e →
@@ -170,6 +185,20 @@ record LawfulLanguage
                      (∀{k} → k < n → ξ k < m) →
                      ClosedAboveₑ m (renₑ e ξ)
     stepClosedAboveₑ : ∀{e₁ e₂ n} → e₁ ⇒ₑ e₂ → ClosedAboveₑ n e₁ → ClosedAboveₑ n e₂
+
+    {-
+      If a partial operation is defined for all k < n,
+      then then applying it to an expression closed above
+      n must be defined.
+    -}
+    renMaybeClosedAboveₑ : ∀{e ξ n} →
+                           ClosedAboveₑ n e →
+                           (∀{k} → k < n → ↓ (ξ k)) →
+                           ↓ (renMaybeₑ e ξ)
+    subMaybeClosedAboveₑ : ∀{e σ n} →
+                          ClosedAboveₑ n e →
+                          (∀{k} → k < n → ↓ (σ k)) →
+                          ↓ (subMaybeₑ e σ)
 
     -- Values cannot step.
     valNoStepₑ : ∀{v e} → Valₑ v → ¬ (v ⇒ₑ e)
@@ -183,7 +212,14 @@ record LawfulLanguage
     locValₑ : (L : LocVal) → Valₑ (locₑ L)
     locₑ-inj : ∀{L1 L2} → locₑ L1 ≡ locₑ L2 → L1 ≡ L2
 
-  -- Deduced lemmas for convenience.
+  -- Deduced lemmas for convenience
+
+  -- True and false are closed
+  ttClosedₑ : Closedₑ ttₑ
+  ttClosedₑ = valClosedₑ ttValₑ
+
+  ffClosedₑ : Closedₑ ffₑ
+  ffClosedₑ = valClosedₑ ffValₑ
 
   -- Renaming respects extensional equality.
   renExtₑ : ∀{ξ1 ξ2} → (∀ n → ξ1 n ≡ ξ2 n) → ∀ e → renₑ e ξ1 ≡ renₑ e ξ2
@@ -198,16 +234,93 @@ record LawfulLanguage
   renVarₑ n ξ =
     renₑ (varₑ n) ξ          ≡⟨ sym (subRenₑ ξ (varₑ n)) ⟩
     subₑ (varₑ n) (varₑ ∘ ξ) ≡⟨ subVarₑ n (varₑ ∘ ξ) ⟩
-    varₑ (ξ n)              ∎
+    varₑ (ξ n)               ∎
 
   -- ↑σ respects the identity
   ↑σIdₑ : ↑σₑ idSubₑ ≈ idSubₑ
   ↑σIdₑ zero = refl
   ↑σIdₑ (suc n) = renVarₑ n suc
 
-  -- Substituting a closed expression has no effect.
+  renClosedAboveExtₑ : ∀{e ξ1 ξ2 n} →
+                      ClosedAboveₑ n e →
+                      (∀{m} → m < n → ξ1 m ≡ ξ2 m) →
+                      renₑ e ξ1 ≡ renₑ e ξ2
+  renClosedAboveExtₑ {e} {ξ1} {ξ2} closed ξ1≈ξ2 =
+    renₑ e ξ1          ≡⟨ sym (subRenₑ ξ1 e) ⟩
+    subₑ e (varₑ ∘ ξ1) ≡⟨ subClosedAboveExtₑ closed (λ m<n → cong varₑ (ξ1≈ξ2 m<n)) ⟩
+    subₑ e (varₑ ∘ ξ2) ≡⟨ subRenₑ ξ2 e ⟩
+    renₑ e ξ2 ∎
+
+  renMaybeClosedAboveExtₑ : ∀{e ξ1 ξ2 n} →
+                            ClosedAboveₑ n e →
+                            (∀{m} → m < n → ξ1 m ≲ ξ2 m) →
+                            renMaybeₑ e ξ1 ≲ renMaybeₑ e ξ2
+  renMaybeClosedAboveExtₑ {e} {ξ1} {ξ2} {n} closed ξ1≲ξ2 = e⟨ξ1⟩≲e⟨ξ2⟩
+    where
+    varₑ∘ξ1≲varₑ∘ξ2 : ∀{m} → m < n → map varₑ (ξ1 m) ≲ map varₑ (ξ2 m)
+    varₑ∘ξ1≲varₑ∘ξ2 m<n = ≲-cong varₑ (ξ1≲ξ2 m<n)
+
+    e⟨var∘ξ1⟩≲e⟨var∘ξ2⟩ : subMaybeₑ e (map varₑ ∘ ξ1) ≲ subMaybeₑ e (map varₑ ∘ ξ2)
+    e⟨var∘ξ1⟩≲e⟨var∘ξ2⟩ = subMaybeClosedAboveExtₑ closed varₑ∘ξ1≲varₑ∘ξ2
+
+    e⟨ξ1⟩≲e⟨ξ2⟩ : renMaybeₑ e ξ1 ≲ renMaybeₑ e ξ2
+    e⟨ξ1⟩≲e⟨ξ2⟩ = subst₂ _≲_ (subMaybeRenₑ ξ1 e) (subMaybeRenₑ ξ2 e) e⟨var∘ξ1⟩≲e⟨var∘ξ2⟩
+
+  subClosedAboveIdₑ : ∀{e σ n} →
+                      ClosedAboveₑ n e →
+                      (∀{m} → m < n → σ m ≡ varₑ m) →
+                      subₑ e σ ≡ e
+  subClosedAboveIdₑ {e} {σ} closed σ≈var =
+    subₑ e σ    ≡⟨ subClosedAboveExtₑ closed σ≈var ⟩
+    subₑ e varₑ ≡⟨ subIdₑ e ⟩
+    e           ∎
+
+  renClosedAboveIdₑ : ∀{e ξ n} →
+                      ClosedAboveₑ n e →
+                      (∀{m} → m < n → ξ m ≡ m) →
+                      renₑ e ξ ≡ e
+  renClosedAboveIdₑ {e} {ξ} closed ξ≈Id =
+    renₑ e ξ     ≡⟨ renClosedAboveExtₑ closed ξ≈Id ⟩
+    renₑ e idRen ≡⟨ renIdₑ e ⟩
+    e            ∎
+
+  -- Substituting a closed expression has no effect
   subClosedIdₑ : ∀ e σ → Closedₑ e → subₑ e σ ≡ e
-  subClosedIdₑ e σ closed = subClosedAboveIdₑ closed λ{ () }
+  subClosedIdₑ e σ closed = subClosedAboveIdₑ closed (λ ())
+
+  -- Partial renaming of a closed expression has no effect
+  renMaybeClosedₑ : ∀ e ξ  → Closedₑ e → renMaybeₑ e ξ ≡ just e
+  renMaybeClosedₑ e ξ closed =
+    renMaybeₑ e ξ              ≡⟨ sym (e⟨id⟩≡e⟨ξ⟩) ⟩
+    renMaybeₑ e (just ∘ idRen) ≡⟨ renMaybeJustₑ idRen e ⟩
+    just (renₑ e idRen)        ≡⟨ cong just (renIdₑ e) ⟩
+    just e                     ∎
+    where
+    e⟨id⟩≲e⟨ξ⟩ : renMaybeₑ e (just ∘ idRen) ≲ renMaybeₑ e ξ
+    e⟨id⟩≲e⟨ξ⟩ = renMaybeClosedAboveExtₑ closed (λ ())
+
+    ↓e⟨ξ⟩ : ↓ (renMaybeₑ e ξ)
+    ↓e⟨ξ⟩ = renMaybeClosedAboveₑ {ξ = ξ} closed (λ ())
+
+    e⟨id⟩≡e⟨ξ⟩ : renMaybeₑ e (just ∘ idRen) ≡ renMaybeₑ e ξ
+    e⟨id⟩≡e⟨ξ⟩ = ≲↓⇒≡ e⟨id⟩≲e⟨ξ⟩ ↓e⟨ξ⟩
+  
+  -- Partial substitution of a closed expression has no effect
+  subMaybeClosedₑ : ∀ e σ → Closedₑ e → subMaybeₑ e σ ≡ just e
+  subMaybeClosedₑ e σ closed =
+    subMaybeₑ e σ              ≡⟨ sym (e⟨id⟩≡e⟨σ⟩) ⟩
+    subMaybeₑ e (just ∘ varₑ)  ≡⟨ subMaybeJustₑ varₑ e ⟩
+    just (subₑ e varₑ)         ≡⟨ cong just (subIdₑ e) ⟩
+    just e                     ∎
+    where
+    e⟨id⟩≲e⟨σ⟩ : subMaybeₑ e (just ∘ varₑ) ≲ subMaybeₑ e σ
+    e⟨id⟩≲e⟨σ⟩ = subMaybeClosedAboveExtₑ closed (λ ())
+
+    ↓e⟨σ⟩ : ↓ (subMaybeₑ e σ)
+    ↓e⟨σ⟩ = subMaybeClosedAboveₑ {σ = σ} closed (λ ())
+
+    e⟨id⟩≡e⟨σ⟩ : subMaybeₑ e (just ∘ varₑ) ≡ subMaybeₑ e σ
+    e⟨id⟩≡e⟨σ⟩ = ≲↓⇒≡ e⟨id⟩≲e⟨σ⟩ ↓e⟨σ⟩
 
   -- Stepping a closed expression remains closed.
   stepClosedₑ : ∀{e₁ e₂} → e₁ ⇒ₑ e₂ → Closedₑ e₁ → Closedₑ e₂

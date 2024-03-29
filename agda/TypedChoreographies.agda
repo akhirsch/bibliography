@@ -265,27 +265,7 @@ tyWkₗₑ : ∀{Θ Δ1 Δ2 Γ C τ}
          (Θ , Δ1 , Γ) ⊢ C ∶ τ →
          (Θ , Δ2 , Γ) ⊢ renₗₑ C ⟦ ξ ⟧ ∶ τ
 tyWkₗₑ ξ (tyVar Θ⊢Γ x) = tyVar Θ⊢Γ x
-tyWkₗₑ {Δ1 = Δ1} {Δ2} ξ (tyDone {e = e} {t} {ℓ} Θ⊢Γ Θ⊢ℓ (e' , e⟨Δ1⦊ℓ⟩≡e' , Δ1∣ℓ⊢e'∶t)) =
-  tyDone Θ⊢Γ Θ⊢ℓ (renₑ e' (⟦ ξ ⟧⦊ ℓ) , e⟨Δ1⦊ℓ⟩⟨⟦ξ⟧⦊ℓ⟩≡e'⟨⟦ξ⟧⦊ℓ⟩ , Δ2∣ℓ⊢e'⟨⟦ξ⟧⦊ℓ⟩∶t)
-    where
-    open ≡-Reasoning
-
-    Δ2∣ℓ⊢e'⟨⟦ξ⟧⦊ℓ⟩∶t : (Δ2 ∣ ℓ) ⊢ₑ renₑ e' (⟦ ξ ⟧⦊ ℓ) ∶ t
-    Δ2∣ℓ⊢e'⟨⟦ξ⟧⦊ℓ⟩∶t = tyWkₑ {Δ1 ∣ ℓ} {Δ2 ∣ ℓ} {e'} {t} (⟦ ξ ⟧⦊ ℓ) (renOPE⦊⇒ ξ ℓ) Δ1∣ℓ⊢e'∶t
-
-    e⟨Δ1⦊ℓ⟩⟨⟦ξ⟧⦊ℓ⟩≡e'⟨⟦ξ⟧⦊ℓ⟩ : renMaybeₑ (renₑ e ⟦ ξ ⟧) (Δ2 ⦊ ℓ) ≡ just (renₑ e' (⟦ ξ ⟧⦊ ℓ))
-    e⟨Δ1⦊ℓ⟩⟨⟦ξ⟧⦊ℓ⟩≡e'⟨⟦ξ⟧⦊ℓ⟩ = 
-      renMaybeₑ (renₑ e ⟦ ξ ⟧) (Δ2 ⦊ ℓ)
-        ≡⟨ renMaybeRenFuseₑ ⟦ ξ ⟧ (Δ2 ⦊ ℓ) e ⟩
-      renMaybeₑ e ((Δ2 ⦊ ℓ) ∘ ⟦ ξ ⟧)
-        ≡⟨ renMaybeExtₑ (≈-sym (projNatural ξ ℓ)) e ⟩
-      renMaybeₑ e (map (⟦ ξ ⟧⦊ ℓ) ∘ (Δ1 ⦊ ℓ))
-        ≡⟨ renMaybeFuseₑ (Δ1 ⦊ ℓ) (just ∘ ⟦ ξ ⟧⦊ ℓ) e ⟩
-      maybe′ (λ x → renMaybeₑ x (just ∘ ⟦ ξ ⟧⦊ ℓ)) nothing (renMaybeₑ e (Δ1 ⦊ ℓ))
-        ≡⟨ cong (maybe′ (λ x → renMaybeₑ x (just ∘ ⟦ ξ ⟧⦊ ℓ)) nothing) e⟨Δ1⦊ℓ⟩≡e' ⟩
-      renMaybeₑ e' (just ∘ ⟦ ξ ⟧⦊ ℓ)
-        ≡⟨ renMaybeJustₑ (⟦ ξ ⟧⦊ ℓ) e' ⟩
-      just (renₑ e' (⟦ ξ ⟧⦊ ℓ)) ∎
+tyWkₗₑ ξ (tyDone Θ⊢Γ Θ⊢ℓ Δ1∣ℓ⊢e⟨Δ1⦊ℓ⟩∶t) = tyDone Θ⊢Γ Θ⊢ℓ (tyWkOPE?ₑ ξ Δ1∣ℓ⊢e⟨Δ1⦊ℓ⟩∶t)
 tyWkₗₑ ξ (tySend C∶t Θ⊢ℓ2) = tySend (tyWkₗₑ ξ C∶t) Θ⊢ℓ2
 tyWkₗₑ ξ (tyIf C∶bool C1∶τ C2∶τ) = tyIf (tyWkₗₑ ξ C∶bool) (tyWkₗₑ ξ C1∶τ) (tyWkₗₑ ξ C2∶τ)
 tyWkₗₑ ξ (tySync Θ⊢ℓ1 Θ⊢ℓ2 C∶τ) = tySync Θ⊢ℓ1 Θ⊢ℓ2 (tyWkₗₑ ξ C∶τ)
