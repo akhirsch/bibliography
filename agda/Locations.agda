@@ -72,7 +72,7 @@ record Location : Set₁ where
   renIdₗ-Loc (Lit L) = refl
 
   -- Renaming location variables in a location enjoys fusion
-  renFuseₗ-Loc : ∀ ξ1 ξ2 ℓ → renₗ-Loc ℓ (ξ2 ∘ ξ1) ≡ renₗ-Loc (renₗ-Loc ℓ ξ1) ξ2
+  renFuseₗ-Loc : ∀ ξ1 ξ2 ℓ → renₗ-Loc ℓ (ξ1 ∘ ξ2) ≡ renₗ-Loc (renₗ-Loc ℓ ξ2) ξ1
   renFuseₗ-Loc ξ1 ξ2 (Var x) = refl
   renFuseₗ-Loc ξ1 ξ2 (Lit L) = refl
 
@@ -103,7 +103,7 @@ record Location : Set₁ where
   renIdₗ-List (ℓ ∷ ρ) = cong₂ _∷_ (renIdₗ-Loc ℓ) (renIdₗ-List ρ)
 
   -- Renaming location variables in a location list enjoys fusion
-  renFuseₗ-List : ∀ ξ1 ξ2 ρ → renₗ-List ρ (ξ2 ∘ ξ1) ≡ renₗ-List (renₗ-List ρ ξ1) ξ2
+  renFuseₗ-List : ∀ ξ1 ξ2 ρ → renₗ-List ρ (ξ1 ∘ ξ2) ≡ renₗ-List (renₗ-List ρ ξ2) ξ1
   renFuseₗ-List ξ1 ξ2 [] = refl
   renFuseₗ-List ξ1 ξ2 (ℓ ∷ ρ) = cong₂ _∷_ (renFuseₗ-Loc ξ1 ξ2 ℓ) (renFuseₗ-List ξ1 ξ2 ρ)
 

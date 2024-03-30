@@ -36,7 +36,7 @@ open ≡-Reasoning
 
 -- Substitute local variables in a choreography
 subₗₑ : (c : Chor) (σ : ℕ → Expr) → Chor
-subₗₑ (Done ℓ e) σ = Done ℓ (subₑ e σ)
+subₗₑ (Done ℓ e) σ = Done ℓ (subₑ σ e)
 subₗₑ (Var x) σ = Var x
 subₗₑ (Send ℓ1 c ℓ2) σ = Send ℓ1 (subₗₑ c σ) ℓ2
 subₗₑ (If ℓ c c1 c2) σ = If ℓ (subₗₑ c σ) (subₗₑ c1 σ) (subₗₑ c2 σ)

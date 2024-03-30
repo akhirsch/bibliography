@@ -85,27 +85,27 @@ renId (LocApp c ℓ) = cong₂ LocApp (renId c) refl
 renId (TellLet ℓ ρ1 c ρ2 c₁) = cong₅ TellLet refl refl (renId c) refl (renId c₁)
 
 -- Renaming global variables enjoys fusion
-renFuse : ∀ ξ1 ξ2 c → ren c (ξ2 ∘ ξ1) ≡ ren (ren c ξ1) ξ2
+renFuse : ∀ ξ1 ξ2 c → ren c (ξ1 ∘ ξ2) ≡ ren (ren c ξ2) ξ1
 renFuse ξ1 ξ2 (Done ℓ e) = refl
 renFuse ξ1 ξ2 (Var x) = cong Var refl
 renFuse ξ1 ξ2 (Send ℓ1 c ℓ2) = cong₃ Send refl (renFuse ξ1 ξ2 c) refl
 renFuse ξ1 ξ2 (If ℓ c c₁ c₂) = cong₄ If refl (renFuse ξ1 ξ2 c) (renFuse ξ1 ξ2 c₁) (renFuse ξ1 ξ2 c₂)
 renFuse ξ1 ξ2 (Sync ℓ1 d ℓ2 c) = cong₄ Sync refl refl refl (renFuse ξ1 ξ2 c)
 renFuse ξ1 ξ2 (DefLocal ℓ c c₁) = cong₃ DefLocal refl (renFuse ξ1 ξ2 c) (renFuse ξ1 ξ2 c₁)
-renFuse ξ1 ξ2 (Fun τ c) = cong₂ Fun refl c⟨↑[ξ2∘ξ1]⟩≡c⟨↑ξ1⟩⟨↑ξ2⟩
+renFuse ξ1 ξ2 (Fun τ c) = cong₂ Fun refl c⟨↑[ξ1∘ξ2]⟩≡c⟨↑ξ2⟩⟨↑ξ1⟩
   where
-  c⟨↑[ξ2∘ξ1]⟩≡c⟨↑ξ1⟩⟨↑ξ2⟩ : ren c (↑ (ξ2 ∘ ξ1)) ≡ ren (ren c (↑ ξ1)) (↑ ξ2)
-  c⟨↑[ξ2∘ξ1]⟩≡c⟨↑ξ1⟩⟨↑ξ2⟩ = 
-    ren c (↑ (ξ2 ∘ ξ1))       ≡⟨ renExt (↑Fuse ξ1 ξ2) c ⟩
-    ren c (↑ ξ2 ∘ ↑ ξ1)       ≡⟨ renFuse (↑ ξ1) (↑ ξ2) c ⟩
-    ren (ren c (↑ ξ1)) (↑ ξ2) ∎
-renFuse ξ1 ξ2 (Fix τ c) = cong₂ Fix refl c⟨↑[ξ2∘ξ1]⟩≡c⟨↑ξ1⟩⟨↑ξ2⟩
+  c⟨↑[ξ1∘ξ2]⟩≡c⟨↑ξ2⟩⟨↑ξ1⟩ : ren c (↑ (ξ1 ∘ ξ2)) ≡ ren (ren c (↑ ξ2)) (↑ ξ1)
+  c⟨↑[ξ1∘ξ2]⟩≡c⟨↑ξ2⟩⟨↑ξ1⟩ = 
+    ren c (↑ (ξ1 ∘ ξ2))       ≡⟨ renExt (↑Fuse ξ1 ξ2) c ⟩
+    ren c (↑ ξ1 ∘ ↑ ξ2)       ≡⟨ renFuse (↑ ξ1) (↑ ξ2) c ⟩
+    ren (ren c (↑ ξ2)) (↑ ξ1) ∎
+renFuse ξ1 ξ2 (Fix τ c) = cong₂ Fix refl c⟨↑[ξ1∘ξ2]⟩≡c⟨↑ξ2⟩⟨↑ξ1⟩
   where
-  c⟨↑[ξ2∘ξ1]⟩≡c⟨↑ξ1⟩⟨↑ξ2⟩ : ren c (↑ (ξ2 ∘ ξ1)) ≡ ren (ren c (↑ ξ1)) (↑ ξ2)
-  c⟨↑[ξ2∘ξ1]⟩≡c⟨↑ξ1⟩⟨↑ξ2⟩ = 
-    ren c (↑ (ξ2 ∘ ξ1))       ≡⟨ renExt (↑Fuse ξ1 ξ2) c ⟩
-    ren c (↑ ξ2 ∘ ↑ ξ1)       ≡⟨ renFuse (↑ ξ1) (↑ ξ2) c ⟩
-    ren (ren c (↑ ξ1)) (↑ ξ2) ∎
+  c⟨↑[ξ1∘ξ2]⟩≡c⟨↑ξ2⟩⟨↑ξ1⟩ : ren c (↑ (ξ1 ∘ ξ2)) ≡ ren (ren c (↑ ξ2)) (↑ ξ1)
+  c⟨↑[ξ1∘ξ2]⟩≡c⟨↑ξ2⟩⟨↑ξ1⟩ = 
+    ren c (↑ (ξ1 ∘ ξ2))       ≡⟨ renExt (↑Fuse ξ1 ξ2) c ⟩
+    ren c (↑ ξ1 ∘ ↑ ξ2)       ≡⟨ renFuse (↑ ξ1) (↑ ξ2) c ⟩
+    ren (ren c (↑ ξ2)) (↑ ξ1) ∎
 renFuse ξ1 ξ2 (App c c₁) = cong₂ App (renFuse ξ1 ξ2 c) (renFuse ξ1 ξ2 c₁)
 renFuse ξ1 ξ2 (LocAbs c) = cong LocAbs (renFuse ξ1 ξ2 c)
 renFuse ξ1 ξ2 (LocApp c ℓ) = cong₂ LocApp (renFuse ξ1 ξ2 c) refl

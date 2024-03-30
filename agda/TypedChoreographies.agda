@@ -58,7 +58,7 @@ data _⊢_∶_ : LocCtx × LocalCtx × Ctx → Chor → Typ → Set where
   tyDone : ∀{Θ Δ Γ e t ℓ}
            (Θ⊢Γ : Θ ⊢ Γ) →
            (Θ⊢ℓ : Θ ⊢ₗ ℓ) →
-           (Δ∣ℓ⊢e⟨Δ⦊ℓ⟩∶t : (Δ ∣ ℓ) ⊢ₑ renMaybeₑ e (Δ ⦊ ℓ) ?∶ t) →
+           (Δ∣ℓ⊢e⟨Δ⦊ℓ⟩∶t : (Δ ∣ ℓ) ⊢ₑ renMaybeₑ (Δ ⦊ ℓ) e ?∶ t) →
            (Θ , Δ , Γ) ⊢ Done ℓ e ∶ At t ℓ
   tySend : ∀{Θ Δ Γ C t ℓ1 ℓ2}
            (Θ；Δ；Γ⊢C:ℓ1_t : (Θ , Δ , Γ) ⊢ C ∶ At t ℓ1)
@@ -251,9 +251,9 @@ tyWkₗ {Θ} {Θ'} {Δ} {Γ} ξ ξ-inj Θ≈Θ'∘ξ (tyTellLet {C2 = C2} {τ = 
 
     ↑τ⟨↑ξ⟩≡↑τ⟨ξ⟩ : renₜ (↑ₜ τ) (↑ ξ) ≡ ↑ₜ (renₜ τ ξ)
     ↑τ⟨↑ξ⟩≡↑τ⟨ξ⟩ =
-      renₜ (renₜ τ suc) (↑ ξ) ≡⟨ sym (renFuseₜ suc (↑ ξ) τ) ⟩
+      renₜ (renₜ τ suc) (↑ ξ) ≡⟨ sym (renFuseₜ (↑ ξ) suc τ) ⟩
       renₜ τ (↑ ξ ∘ suc)      ≡⟨ renExtₜ (↑∘suc ξ) τ ⟩
-      renₜ τ (suc ∘ ξ)        ≡⟨ renFuseₜ ξ suc τ ⟩
+      renₜ τ (suc ∘ ξ)        ≡⟨ renFuseₜ suc ξ τ ⟩
       renₜ (renₜ τ ξ) suc     ∎
 
     ↑Θ'；Δ'；Γ'⊢C⟨↑ξ⟩∶↑τ⟨ξ⟩ : (↑LocCtx Θ' , ↑LocalCtx (renₗ-LocalCtx Δ ξ) , ↑Ctx (renCtx Γ ξ)) ⊢ renₗ C2 (↑ ξ) ∶ ↑ₜ (renₜ τ ξ)
@@ -529,30 +529,30 @@ tySubₗ : ∀{Θ1 Θ2 Δ Γ C τ σ} →
          (Θ2 , subₗ-LocalCtx Δ σ , subₗ-Ctx Γ σ) ⊢ subₗ C σ ∶ subₜ τ σ
 tySubₗ σ⇒ (tyVar Θ⊢Γ x) = tyVar (wfCtxSub σ⇒ Θ⊢Γ) x
 tySubₗ {Δ = Δ} {σ = σ} σ⇒ (tyDone {e = e} {t} {ℓ} Θ⊢Γ Θ⊢ℓ (e' , e⟨Δ⦊ℓ⟩≡e' , Δ∣ℓ⊢e'∶t)) =
-  tyDone (wfCtxSub σ⇒ Θ⊢Γ) (wfSubₗ σ⇒ Θ⊢ℓ) (renₑ e' ξ , e⟨Δ⟨σ⟩⦊ℓ⟨σ⟩⟩≡e'⟨ξ⟩ , Δ⟨σ⟩∣ℓ⟨σ⟩⊢e'⟨ξ⟩∶t)
+  tyDone (wfCtxSub σ⇒ Θ⊢Γ) (wfSubₗ σ⇒ Θ⊢ℓ) (renₑ ξ e' , e⟨Δ⟨σ⟩⦊ℓ⟨σ⟩⟩≡e'⟨ξ⟩ , Δ⟨σ⟩∣ℓ⟨σ⟩⊢e'⟨ξ⟩∶t)
   where
   open ≡-Reasoning
   ξ : ℕ → ℕ
   ξ = locSubProj Δ σ ℓ
 
-  Δ⟨σ⟩∣ℓ⟨σ⟩⊢e'⟨ξ⟩∶t : (subₗ-LocalCtx Δ σ ∣ subₗ-Loc ℓ σ) ⊢ₑ renₑ e' ξ ∶ t
+  Δ⟨σ⟩∣ℓ⟨σ⟩⊢e'⟨ξ⟩∶t : (subₗ-LocalCtx Δ σ ∣ subₗ-Loc ℓ σ) ⊢ₑ renₑ ξ e' ∶ t
   Δ⟨σ⟩∣ℓ⟨σ⟩⊢e'⟨ξ⟩∶t = tyWkₑ ξ (locSubProj⇒ Δ σ ℓ) Δ∣ℓ⊢e'∶t
 
-  e⟨ξ∘Δ⦊ℓ⟩≡e'⟨ξ⟩ : renMaybeₑ e (map ξ ∘ (Δ ⦊ ℓ)) ≡ just (renₑ e' ξ)
+  e⟨ξ∘Δ⦊ℓ⟩≡e'⟨ξ⟩ : renMaybeₑ (map ξ ∘ (Δ ⦊ ℓ)) e ≡ just (renₑ ξ e')
   e⟨ξ∘Δ⦊ℓ⟩≡e'⟨ξ⟩ = 
-    renMaybeₑ e (map ξ ∘ (Δ ⦊ ℓ))
-      ≡⟨ sym (renMaybeFuseRenₑ (Δ ⦊ ℓ) ξ e) ⟩
-    map (λ x → renₑ x ξ) (renMaybeₑ e (Δ ⦊ ℓ))
-      ≡⟨ cong (map (λ x → renₑ x ξ)) e⟨Δ⦊ℓ⟩≡e' ⟩
-    just (renₑ e' ξ) ∎
+    renMaybeₑ (map ξ ∘ (Δ ⦊ ℓ)) e
+      ≡⟨ sym (renMaybeFuseRenₑ ξ (Δ ⦊ ℓ) e) ⟩
+    map (renₑ ξ) (renMaybeₑ (Δ ⦊ ℓ) e)
+      ≡⟨ cong (map (renₑ ξ)) e⟨Δ⦊ℓ⟩≡e' ⟩
+    just (renₑ ξ e') ∎
 
-  e⟨Δ⟨σ⟩⦊ℓ⟨σ⟩⟩≡e'⟨ξ⟩ : renMaybeₑ e (subₗ-LocalCtx Δ σ ⦊ subₗ-Loc ℓ σ) ≡ just (renₑ e' ξ)
+  e⟨Δ⟨σ⟩⦊ℓ⟨σ⟩⟩≡e'⟨ξ⟩ : renMaybeₑ (subₗ-LocalCtx Δ σ ⦊ subₗ-Loc ℓ σ) e ≡ just (renₑ ξ e')
   e⟨Δ⟨σ⟩⦊ℓ⟨σ⟩⟩≡e'⟨ξ⟩ = 
-    renMaybeₑ e (subₗ-LocalCtx Δ σ ⦊ subₗ-Loc ℓ σ)
-      ≡⟨ ≲↓⇒≡ (renMaybeMonoₑ (locSubProjVars≲ Δ σ ℓ) e) (renₑ e' ξ , e⟨ξ∘Δ⦊ℓ⟩≡e'⟨ξ⟩) ⟩
-    renMaybeₑ e (map ξ ∘ (Δ ⦊ ℓ))
+    renMaybeₑ (subₗ-LocalCtx Δ σ ⦊ subₗ-Loc ℓ σ) e
+      ≡⟨ ≲↓⇒≡ (renMaybeMonoₑ (locSubProjVars≲ Δ σ ℓ) e) (renₑ ξ e' , e⟨ξ∘Δ⦊ℓ⟩≡e'⟨ξ⟩) ⟩
+    renMaybeₑ (map ξ ∘ (Δ ⦊ ℓ)) e
       ≡⟨ e⟨ξ∘Δ⦊ℓ⟩≡e'⟨ξ⟩ ⟩
-    just (renₑ e' ξ) ∎
+    just (renₑ ξ e') ∎
 tySubₗ σ⇒ (tySend C∶t Θ⊢ℓ2) = tySend (tySubₗ σ⇒ C∶t) (wfSubₗ σ⇒ Θ⊢ℓ2)
 tySubₗ σ⇒ (tyIf C∶bool C1∶τ C2∶τ) = tyIf (tySubₗ σ⇒ C∶bool) (tySubₗ σ⇒ C1∶τ) (tySubₗ σ⇒ C2∶τ)
 tySubₗ σ⇒ (tySync Θ⊢ℓ1 Θ⊢ℓ2 C∶τ) = tySync (wfSubₗ σ⇒ Θ⊢ℓ1) (wfSubₗ σ⇒ Θ⊢ℓ2) (tySubₗ σ⇒ C∶τ)

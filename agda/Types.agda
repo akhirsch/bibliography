@@ -78,18 +78,18 @@ renIdₜ (AllLoc τ) = cong AllLoc τ⟨↑id⟩≡τ
     τ                ∎
 
 -- Renaming enjoys fusion
-renFuseₜ : ∀ ξ1 ξ2 τ → renₜ τ (ξ2 ∘ ξ1) ≡ renₜ (renₜ τ ξ1) ξ2
+renFuseₜ : ∀ ξ1 ξ2 τ → renₜ τ (ξ1 ∘ ξ2) ≡ renₜ (renₜ τ ξ2) ξ1
 renFuseₜ ξ1 ξ2 (At t ℓ) = cong₂ At refl (renFuseₗ-Loc ξ1 ξ2 ℓ)
 renFuseₜ ξ1 ξ2 (Arrow τ1 τ2) =
   cong₂ Arrow (renFuseₜ ξ1 ξ2 τ1) (renFuseₜ ξ1 ξ2 τ2)
-renFuseₜ ξ1 ξ2 (AllLoc τ) = cong AllLoc τ⟨↑[ξ2∘ξ1]⟩≡τ⟨↑ξ1⟩⟨↑ξ2⟩
+renFuseₜ ξ1 ξ2 (AllLoc τ) = cong AllLoc τ⟨↑[ξ1∘ξ2]⟩≡τ⟨↑ξ2⟩⟨↑ξ1⟩
   where
 
-  τ⟨↑[ξ2∘ξ1]⟩≡τ⟨↑ξ1⟩⟨↑ξ2⟩ : renₜ τ (↑ (ξ2 ∘ ξ1)) ≡ renₜ (renₜ τ (↑ ξ1)) (↑ ξ2)
-  τ⟨↑[ξ2∘ξ1]⟩≡τ⟨↑ξ1⟩⟨↑ξ2⟩ = 
-    renₜ τ (↑ (ξ2 ∘ ξ1))        ≡⟨ renExtₜ (↑Fuse ξ1 ξ2) τ ⟩
-    renₜ τ (↑ ξ2 ∘ ↑ ξ1)        ≡⟨ renFuseₜ (↑ ξ1) (↑ ξ2) τ ⟩
-    renₜ (renₜ τ (↑ ξ1)) (↑ ξ2) ∎
+  τ⟨↑[ξ1∘ξ2]⟩≡τ⟨↑ξ2⟩⟨↑ξ1⟩ : renₜ τ (↑ (ξ1 ∘ ξ2)) ≡ renₜ (renₜ τ (↑ ξ2)) (↑ ξ1)
+  τ⟨↑[ξ1∘ξ2]⟩≡τ⟨↑ξ2⟩⟨↑ξ1⟩ = 
+    renₜ τ (↑ (ξ1 ∘ ξ2))        ≡⟨ renExtₜ (↑Fuse ξ1 ξ2) τ ⟩
+    renₜ τ (↑ ξ1 ∘ ↑ ξ2)        ≡⟨ renFuseₜ (↑ ξ1) (↑ ξ2) τ ⟩
+    renₜ (renₜ τ (↑ ξ2)) (↑ ξ1) ∎
 
 -- Renaming preserves injectivity
 renₜ-pres-inj : ∀{ξ} →
@@ -165,4 +165,4 @@ subFuseₜ σ1 σ2 (AllLoc τ) = cong AllLoc τ⟨↑[σ1•σ2]⟩≡τ⟨↑σ
   τ⟨↑[σ1•σ2]⟩≡τ⟨↑σ2⟩⟨↑σ1⟩ =
     subₜ τ (↑σₗ (σ1 •ₗ σ2))         ≡⟨ subExtₜ (↑σ•ₗ σ1 σ2) τ ⟩
     subₜ τ (↑σₗ σ1 •ₗ ↑σₗ σ2)       ≡⟨ subFuseₜ (↑σₗ σ1) (↑σₗ σ2) τ ⟩
-    subₜ (subₜ τ (↑σₗ σ2)) (↑σₗ σ1) ∎
+    subₜ (subₜ τ (↑σₗ σ2)) (↑σₗ σ1) ∎ 

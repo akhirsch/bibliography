@@ -113,7 +113,7 @@ idRen n = n
 ↑Ext ξ1≈ξ2 (suc n) = cong suc (ξ1≈ξ2 n)
 
 -- ↑ distributes over composition
-↑Fuse : ∀ ξ1 ξ2 → ↑ (ξ2 ∘ ξ1) ≈ ↑ ξ2 ∘ ↑ ξ1
+↑Fuse : ∀ ξ1 ξ2 → ↑ (ξ1 ∘ ξ2) ≈ ↑ ξ1 ∘ ↑ ξ2
 ↑Fuse ξ1 ξ2 zero = refl
 ↑Fuse ξ1 ξ2 (suc n) = refl
 
@@ -150,6 +150,30 @@ cong₅ : ∀{a b c d e f} {A : Set a} {B : Set b} {C : Set c} {D : Set d} {E : 
         a1 ≡ a2 → b1 ≡ b2 → c1 ≡ c2 → d1 ≡ d2 → e1 ≡ e2 →
         α a1 b1 c1 d1 e1 ≡ α a2 b2 c2 d2 e2
 cong₅ α refl refl refl refl refl = refl
+
+
+-- Composition operator for partial functions
+infixr 9 _<=<_
+_<=<_ : ∀{a b c} {A : Set a} {B : Set b} {C : Set c} →
+        (B → Maybe C) → (A → Maybe B) → A → Maybe C
+f <=< g = maybe′ f nothing ∘ g
+
+open ≡-Reasoning
+
+<=<-ext : ∀{a b c} {A : Set a} {B : Set b} {C : Set c} →
+          {f1 f2 : B → Maybe C} {g1 g2 : A → Maybe B} →
+          f1 ≈ f2 → g1 ≈ g2 →
+          (f1 <=< g1) ≈ (f2 <=< g2)
+<=<-ext {f1 = f1} {f2} {g1} {g2} f1≈f2 g1≈g2 x with g1 x | inspect g1 x
+... | just y | [ eq ] =
+        f1 y                     ≡⟨ f1≈f2 y ⟩
+        f2 y                     ≡⟨ sym (cong (maybe′ f2 nothing) eq) ⟩
+        maybe′ f2 nothing (g1 x) ≡⟨ cong (maybe′ f2 nothing) (g1≈g2 x) ⟩
+        maybe′ f2 nothing (g2 x) ∎
+... | nothing | [ eq ] =
+        nothing                  ≡⟨ sym (cong (maybe′ f2 nothing) eq) ⟩
+        maybe′ f2 nothing (g1 x) ≡⟨ cong (maybe′ f2 nothing) (g1≈g2 x) ⟩
+        maybe′ f2 nothing (g2 x) ∎
 
 -- Mapping over a maybe preserves injectivity
 Maybe-map-inj : ∀{a b} {A : Set a} {B : Set b} {f : A → B} →
@@ -227,6 +251,18 @@ module _ {a} {A : Set a} where
 ↓_ : ∀{a} {A : Set a} → Maybe A → Set a
 ↓ m = Σ[ x ∈ _ ] (m ≡ just x)
 
+-- "If-defined" implication
+↓[_]⇒ : ∀{a ℓ} {A : Set a} →
+        (m : Maybe A) (P : A → Set ℓ) → Set ℓ
+↓[ just x ]⇒ P = P x
+↓[ nothing ]⇒ P = Lift _ ⊤
+
+-- "If-defined" conjunction
+↓[_]× : ∀{a ℓ} {A : Set a} →
+        (m : Maybe A) (P : A → Set ℓ) → Set ℓ
+↓[ just x ]× P = P x
+↓[ nothing ]× P = Lift _ ⊥
+
 -- If m ≲ n and n is defined, then m is equal to n
 ≲↓⇒≡ : ∀{a} {A : Set a} {m n : Maybe A} →
         m ≲ n → ↓ n → m ≡ n
@@ -263,3 +299,29 @@ ifZeroElse∘suc : ∀{a} {A : Set a}
                  ifZeroElse x f ∘ suc ≈ f
 ifZeroElse∘suc x f zero = refl
 ifZeroElse∘suc x f (suc n) = refl
+
+ifZeroElse<=<suc : ∀{a b} {A : Set a} {B : Set b}
+                   (m : Maybe B)
+                   (f : ℕ → Maybe B)
+                   (g : A → Maybe ℕ) →
+                   (ifZeroElse m f <=< (map suc ∘ g)) ≈ (f <=< g)
+ifZeroElse<=<suc m f g x with g x | inspect g x
+... | just n  | eq = refl
+... | nothing | eq = refl
+
+-- Syntax for definedness poset reasoning
+module ≲-Reasoning {a} {A : Set a} where
+  infix  3 _≲∎
+  infixr 2 step-≲ step-≲≡
+
+  step-≲ : ∀ (x {y z} : Maybe A) → y ≲ z → x ≲ y → x ≲ z
+  step-≲ _ y≲z x≲y = ≲-trans x≲y y≲z
+  
+  step-≲≡ : ∀ (x {y z} : Maybe A) → y ≲ z → x ≡ y → x ≲ z
+  step-≲≡ _ {y} {z} y≲z x≡y = subst (flip _≲_ z) (sym x≡y) y≲z
+
+  _≲∎ : ∀ (x : Maybe A) → x ≲ x
+  _≲∎ _ = ≲-refl
+
+  syntax step-≲  x y≲z x≲y = x ≲⟨  x≲y ⟩ y≲z
+  syntax step-≲≡ x y≲z x≡y = x ≲≡⟨  x≡y ⟩ y≲z

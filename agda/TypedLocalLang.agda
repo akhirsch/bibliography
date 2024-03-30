@@ -5,7 +5,7 @@ open import Data.Nat
 open import Data.Maybe
 open import Data.Maybe.Properties
 open import Data.Sum
-open import Data.Product
+open import Data.Product renaming (proj₁ to fst; proj₂ to snd) hiding (map)
 open import Relation.Nullary
 open import Relation.Binary.PropositionalEquality
 open import Function
@@ -47,7 +47,7 @@ record TypedLocalLanguage
             Δ ⊢ₑ e ∶ t
 
     -- Variables have the type they are assigned by the context.
-    tyExprₑ : ∀ Γ n → Γ ⊢ₑ varₑ n ∶ Γ n
+    tyVarₑ : ∀ Γ n → Γ ⊢ₑ varₑ n ∶ Γ n
 
     -- Expressions have a unique type.
     tyUniqₑ : ∀{Γ e t₁ t₂} →
@@ -71,12 +71,12 @@ record TypedLocalLanguage
             (ξ : ℕ → ℕ) →
             Γ1 ≈ Γ2 ∘ ξ →
             Γ1 ⊢ₑ e ∶ t →
-            Γ2 ⊢ₑ renₑ e ξ ∶ t
+            Γ2 ⊢ₑ renₑ ξ e ∶ t
 
     -- We have a type for booleans, and the appropriate judgments.
     Boolₑ : Typₑ
-    ty-ttₑ : ∀{Γ} → Γ ⊢ₑ ttₑ ∶ Boolₑ
-    ty-ffₑ : ∀{Γ} → Γ ⊢ₑ ffₑ ∶ Boolₑ
+    tyTrueₑ : ∀{Γ} → Γ ⊢ₑ ttₑ ∶ Boolₑ
+    tyFalseₑ : ∀{Γ} → Γ ⊢ₑ ffₑ ∶ Boolₑ
 
     -- Each boolean value is either true or false.
     boolValₑ : ∀{Γ v} →
@@ -121,7 +121,7 @@ record TypedLocalLanguage
     tySubₑ : ∀{σ Γ Δ e t} →
              σ ∶ Γ ⇒ₑ Δ →
              Γ ⊢ₑ e ∶ t →
-             Δ ⊢ₑ subₑ e σ ∶ t
+             Δ ⊢ₑ subₑ σ e ∶ t
 
   -- Deduced lemmas for convenience.
 
@@ -135,10 +135,10 @@ record TypedLocalLanguage
 
   -- The identity substitution changes any context to itself
   idSubChangesₑ : (Γ : ℕ → Typₑ) → idSubₑ ∶ Γ ⇒ₑ Γ
-  idSubChangesₑ Γ n = tyExprₑ Γ n
+  idSubChangesₑ Γ n = tyVarₑ Γ n
 
   -- The identity substitution respects typing
-  tySubIdₑ : ∀{Γ e t} → Γ ⊢ₑ e ∶ t → Γ ⊢ₑ subₑ e idSubₑ ∶ t
+  tySubIdₑ : ∀{Γ e t} → Γ ⊢ₑ e ∶ t → Γ ⊢ₑ subₑ idSubₑ e ∶ t
   tySubIdₑ Γ⊢e:t = tySubₑ (idSubChangesₑ _) Γ⊢e:t
 
   -- Convenience function for typing of a possibly undefined expression 
@@ -168,5 +168,5 @@ record TypedLocalLanguage
            (ξ : ℕ → ℕ) →
            Γ1 ≈ Γ2 ∘ ξ →
            Γ1 ⊢ₑ m ?∶ t →
-           Γ2 ⊢ₑ maybe′ (λ e → renMaybeₑ e (just ∘ ξ)) nothing m ?∶ t
-  tyWk?ₑ ξ Γ1≈Γ2∘ξ (e , refl , Γ1⊢e∶t) = renₑ e ξ , renMaybeJustₑ ξ e , tyWkₑ ξ Γ1≈Γ2∘ξ Γ1⊢e∶t
+           Γ2 ⊢ₑ maybe′ (λ e → renMaybeₑ (just ∘ ξ) e) nothing m ?∶ t
+  tyWk?ₑ ξ Γ1≈Γ2∘ξ (e , refl , Γ1⊢e∶t) = renₑ ξ e , renMaybeJustₑ ξ e .snd , tyWkₑ ξ Γ1≈Γ2∘ξ Γ1⊢e∶t

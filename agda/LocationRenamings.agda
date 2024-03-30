@@ -96,7 +96,7 @@ renIdₗ (TellLet ℓ ρ1 c1 ρ2 c2) =
       c2                ∎
 
 -- Renaming the location variables in a choreography enjoys fusion
-renFuseₗ :  ∀ ξ1 ξ2 c → renₗ c (ξ2 ∘ ξ1) ≡ renₗ (renₗ c ξ1) ξ2
+renFuseₗ :  ∀ ξ1 ξ2 c → renₗ c (ξ1 ∘ ξ2) ≡ renₗ (renₗ c ξ2) ξ1
 renFuseₗ ξ1 ξ2 (Done ℓ e) = cong₂ Done (renFuseₗ-Loc ξ1 ξ2 ℓ) refl
 renFuseₗ ξ1 ξ2 (Var x) = refl
 renFuseₗ ξ1 ξ2 (Send ℓ1 c ℓ2) = cong₃ Send (renFuseₗ-Loc ξ1 ξ2 ℓ1) (renFuseₗ ξ1 ξ2 c) (renFuseₗ-Loc ξ1 ξ2 ℓ2)
@@ -106,20 +106,21 @@ renFuseₗ ξ1 ξ2 (DefLocal ℓ c c₁) = cong₃ DefLocal (renFuseₗ-Loc ξ1 
 renFuseₗ ξ1 ξ2 (Fun τ c) = cong₂ Fun (renFuseₜ ξ1 ξ2 τ)  (renFuseₗ ξ1 ξ2 c)
 renFuseₗ ξ1 ξ2 (Fix τ c) = cong₂ Fix (renFuseₜ ξ1 ξ2 τ) (renFuseₗ ξ1 ξ2 c)
 renFuseₗ ξ1 ξ2 (App c1 c2) = cong₂ App (renFuseₗ ξ1 ξ2 c1) (renFuseₗ ξ1 ξ2 c2)
-renFuseₗ ξ1 ξ2 (LocAbs c) = cong LocAbs c⟨↑[ξ2∘ξ1]⟩≡c⟨↑ξ1⟩⟨↑ξ2⟩
+renFuseₗ ξ1 ξ2 (LocAbs c) = cong LocAbs c⟨↑[ξ1∘ξ2]⟩≡c⟨↑ξ2⟩⟨↑ξ1⟩
     where
-    c⟨↑[ξ2∘ξ1]⟩≡c⟨↑ξ1⟩⟨↑ξ2⟩ : renₗ c (↑ (ξ2 ∘ ξ1)) ≡ renₗ (renₗ c (↑ ξ1)) (↑ ξ2)
-    c⟨↑[ξ2∘ξ1]⟩≡c⟨↑ξ1⟩⟨↑ξ2⟩ =
-        renₗ c (↑ (ξ2 ∘ ξ1))        ≡⟨ renExtₗ (↑Fuse ξ1 ξ2) c ⟩
-        renₗ c (↑ ξ2 ∘ ↑ ξ1)        ≡⟨ renFuseₗ (↑ ξ1) (↑ ξ2) c ⟩
-        renₗ (renₗ c (↑ ξ1)) (↑ ξ2) ∎
+    c⟨↑[ξ1∘ξ2]⟩≡c⟨↑ξ2⟩⟨↑ξ1⟩ : renₗ c (↑ (ξ1 ∘ ξ2)) ≡ renₗ (renₗ c (↑ ξ2)) (↑ ξ1)
+    c⟨↑[ξ1∘ξ2]⟩≡c⟨↑ξ2⟩⟨↑ξ1⟩ =
+        renₗ c (↑ (ξ1 ∘ ξ2))        ≡⟨ renExtₗ (↑Fuse ξ1 ξ2) c ⟩
+        renₗ c (↑ ξ1 ∘ ↑ ξ2)        ≡⟨ renFuseₗ (↑ ξ1) (↑ ξ2) c ⟩
+        renₗ (renₗ c (↑ ξ2)) (↑ ξ1) ∎
 renFuseₗ ξ1 ξ2 (LocApp c ℓ) = cong₂ LocApp (renFuseₗ ξ1 ξ2 c) (renFuseₗ-Loc ξ1 ξ2 ℓ)
 renFuseₗ ξ1 ξ2 (TellLet ℓ ρ1 c1 ρ2 c2) =
   cong₅ TellLet (renFuseₗ-Loc ξ1 ξ2 ℓ) (renFuseₗ-List ξ1 ξ2 ρ1)
-  (renFuseₗ ξ1 ξ2 c1) (renFuseₗ-List ξ1 ξ2 ρ2) c2⟨↑[ξ2∘ξ1]⟩≡c⟨↑ξ1⟩⟨↑ξ2⟩
+  (renFuseₗ ξ1 ξ2 c1) (renFuseₗ-List ξ1 ξ2 ρ2) c2⟨↑[ξ1∘ξ2]⟩≡c⟨↑ξ2⟩⟨↑ξ1⟩
   where
-    c2⟨↑[ξ2∘ξ1]⟩≡c⟨↑ξ1⟩⟨↑ξ2⟩ : renₗ c2 (↑ (ξ2 ∘ ξ1)) ≡ renₗ (renₗ c2 (↑ ξ1)) (↑ ξ2)
-    c2⟨↑[ξ2∘ξ1]⟩≡c⟨↑ξ1⟩⟨↑ξ2⟩ =
-        renₗ c2 (↑ (ξ2 ∘ ξ1))        ≡⟨ renExtₗ (↑Fuse ξ1 ξ2) c2 ⟩
-        renₗ c2 (↑ ξ2 ∘ ↑ ξ1)        ≡⟨ renFuseₗ (↑ ξ1) (↑ ξ2) c2 ⟩
-        renₗ (renₗ c2 (↑ ξ1)) (↑ ξ2) ∎
+    c2⟨↑[ξ1∘ξ2]⟩≡c⟨↑ξ2⟩⟨↑ξ1⟩ : renₗ c2 (↑ (ξ1 ∘ ξ2)) ≡ renₗ (renₗ c2 (↑ ξ2)) (↑ ξ1)
+    c2⟨↑[ξ1∘ξ2]⟩≡c⟨↑ξ2⟩⟨↑ξ1⟩ =
+        renₗ c2 (↑ (ξ1 ∘ ξ2))        ≡⟨ renExtₗ (↑Fuse ξ1 ξ2) c2 ⟩
+        renₗ c2 (↑ ξ1 ∘ ↑ ξ2)        ≡⟨ renFuseₗ (↑ ξ1) (↑ ξ2) c2 ⟩
+        renₗ (renₗ c2 (↑ ξ2)) (↑ ξ1) ∎
+

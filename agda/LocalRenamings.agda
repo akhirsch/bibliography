@@ -33,7 +33,7 @@ open Location L
 
 -- Renaming local variables in a choreography
 renₗₑ : (c : Chor) (ξ : ℕ → ℕ) → Chor
-renₗₑ (Done ℓ e) ξ = Done ℓ (renₑ e ξ)
+renₗₑ (Done ℓ e) ξ = Done ℓ (renₑ ξ e)
 renₗₑ (Var x) ξ = Var x
 renₗₑ (Send ℓ1 c ℓ2) ξ = Send ℓ1 (renₗₑ c ξ) ℓ2
 renₗₑ (If ℓ c c₁ c₂) ξ = If ℓ (renₗₑ c ξ) (renₗₑ c₁ ξ) (renₗₑ c₂ ξ)
@@ -89,7 +89,7 @@ renIdₗₑ (TellLet ℓ ρ1 c1 ρ2 c2) =
   cong₅ TellLet refl refl (renIdₗₑ c1) refl (renIdₗₑ c2)
 
 -- Renaming local variables enjoys fusion
-renFuseₗₑ : ∀ ξ1 ξ2 c → renₗₑ c (ξ2 ∘ ξ1) ≡ renₗₑ (renₗₑ c ξ1) ξ2
+renFuseₗₑ : ∀ ξ1 ξ2 c → renₗₑ c (ξ1 ∘ ξ2) ≡ renₗₑ (renₗₑ c ξ2) ξ1
 renFuseₗₑ ξ1 ξ2 (Done ℓ e) = cong (Done ℓ) (renFuseₑ ξ1 ξ2 e)
 renFuseₗₑ ξ1 ξ2 (Var x) = refl
 renFuseₗₑ ξ1 ξ2 (Send ℓ1 c ℓ2) = cong (λ x → Send ℓ1 x ℓ2) (renFuseₗₑ ξ1 ξ2 c)
@@ -97,11 +97,11 @@ renFuseₗₑ ξ1 ξ2 (If ℓ c c₁ c₂) = cong₃ (If ℓ) (renFuseₗₑ ξ1
 renFuseₗₑ ξ1 ξ2 (Sync ℓ1 d ℓ2 c) = cong (Sync ℓ1 d ℓ2) (renFuseₗₑ ξ1 ξ2 c)
 renFuseₗₑ ξ1 ξ2 (DefLocal ℓ c1 c2) = cong₂ (DefLocal ℓ) (renFuseₗₑ ξ1 ξ2 c1) c2⟨↑[ξ2∘ξ1]⟩≡c2⟨↑ξ1⟩⟨↑ξ2⟩
   where
-  c2⟨↑[ξ2∘ξ1]⟩≡c2⟨↑ξ1⟩⟨↑ξ2⟩ : renₗₑ c2 (↑ (ξ2 ∘ ξ1)) ≡ renₗₑ (renₗₑ c2 (↑ ξ1)) (↑ ξ2)
+  c2⟨↑[ξ2∘ξ1]⟩≡c2⟨↑ξ1⟩⟨↑ξ2⟩ : renₗₑ c2 (↑ (ξ1 ∘ ξ2)) ≡ renₗₑ (renₗₑ c2 (↑ ξ2)) (↑ ξ1)
   c2⟨↑[ξ2∘ξ1]⟩≡c2⟨↑ξ1⟩⟨↑ξ2⟩ =
-    renₗₑ c2 (↑ (ξ2 ∘ ξ1))         ≡⟨ renExtₗₑ (↑Fuse ξ1 ξ2) c2 ⟩
-    renₗₑ c2 (↑ ξ2 ∘ ↑ ξ1)         ≡⟨ renFuseₗₑ (↑ ξ1) (↑ ξ2) c2 ⟩
-    renₗₑ (renₗₑ c2 (↑ ξ1)) (↑ ξ2) ∎
+    renₗₑ c2 (↑ (ξ1 ∘ ξ2))         ≡⟨ renExtₗₑ (↑Fuse ξ1 ξ2) c2 ⟩
+    renₗₑ c2 (↑ ξ1 ∘ ↑ ξ2)         ≡⟨ renFuseₗₑ (↑ ξ1) (↑ ξ2) c2 ⟩
+    renₗₑ (renₗₑ c2 (↑ ξ2)) (↑ ξ1) ∎
 renFuseₗₑ ξ1 ξ2 (Fun τ c) = cong₂ Fun refl (renFuseₗₑ ξ1 ξ2 c)
 renFuseₗₑ ξ1 ξ2 (Fix τ c) = cong₂ Fix refl (renFuseₗₑ ξ1 ξ2 c)
 renFuseₗₑ ξ1 ξ2 (App c c₁) = cong₂ App (renFuseₗₑ ξ1 ξ2 c) (renFuseₗₑ ξ1 ξ2 c₁)
