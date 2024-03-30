@@ -72,7 +72,7 @@ data _⊢ₗ_ : LocCtx → Loc → Set where
 wfWkₗ : ∀{Θ Θ' ℓ} ξ →
         Θ ≈ Θ' ∘ ξ →
         Θ ⊢ₗ ℓ →
-        Θ' ⊢ₗ renₗ-Loc ℓ ξ
+        Θ' ⊢ₗ renₗ-Loc ξ ℓ
 wfWkₗ {Θ' = Θ'} ξ Θ'≈Θ∘ξ (wfVar {x = x} Θx) = wfVar (transport (Θ'≈Θ∘ξ x) Θx)
 wfWkₗ ξ Θ'≈Θ∘ξ (wfLit L) = wfLit L
 
@@ -104,7 +104,7 @@ data _⊢ₗₗ_ : LocCtx → LocList → Set where
 wfWkₗₗ : ∀{Θ Θ' ρ} ξ →
         Θ ≈ Θ' ∘ ξ →
         Θ ⊢ₗₗ ρ →
-        Θ' ⊢ₗₗ renₗ-List ρ ξ
+        Θ' ⊢ₗₗ renₗ-List ξ ρ
 wfWkₗₗ ξ Θ≈Θ'∘ξ wfNil = wfNil
 wfWkₗₗ ξ Θ≈Θ'∘ξ (wfCons Θ⊢ℓ Θ⊢ρ) = wfCons (wfWkₗ ξ Θ≈Θ'∘ξ Θ⊢ℓ) (wfWkₗₗ ξ Θ≈Θ'∘ξ Θ⊢ρ)
 
@@ -140,7 +140,7 @@ wfAllLocArg (wfAllLoc τ) = τ
 wfWkₜ : ∀{Θ Θ' τ} ξ →
         Θ ≈ Θ' ∘ ξ →
         Θ ⊢ₜ τ →
-        Θ' ⊢ₜ renₜ τ ξ
+        Θ' ⊢ₜ renₜ ξ τ
 wfWkₜ ξ Θ≈Θ'∘ξ (wfAt Θ⊢ℓ) = wfAt (wfWkₗ ξ Θ≈Θ'∘ξ Θ⊢ℓ)
 wfWkₜ ξ Θ≈Θ'∘ξ (wfArrow Θ⊢τ1 Θ⊢τ2) = wfArrow (wfWkₜ ξ Θ≈Θ'∘ξ Θ⊢τ1) (wfWkₜ ξ Θ≈Θ'∘ξ Θ⊢τ2)
 wfWkₜ {Θ} {Θ'} ξ Θ≈Θ'∘ξ (wfAllLoc ↑Θ⊢τ) = wfAllLoc (wfWkₜ (↑ ξ) ↑Θ≈↑Θ'∘↑ξ ↑Θ⊢τ)
@@ -206,14 +206,14 @@ idSubₗ⇒ Θ n Θn = wfVar Θn
   Θ2≈↑Θ2∘suc zero = refl
   Θ2≈↑Θ2∘suc (suc n) = refl
 
-  ↑Θ2⊢σn⟨suc⟩ : ↑LocCtx Θ2 ⊢ₗ renₗ-Loc (σ n) suc
+  ↑Θ2⊢σn⟨suc⟩ : ↑LocCtx Θ2 ⊢ₗ renₗ-Loc suc (σ n)
   ↑Θ2⊢σn⟨suc⟩ = wfWkₗ suc Θ2≈↑Θ2∘suc (σ⇒ n Θ1n)
 
 -- Location well-formedness is closed under context-changing substitutions
 wfSubₗ : ∀{σ Θ1 Θ2 ℓ} →
          σ ∶ Θ1 ⇒ₗ Θ2 →
          Θ1 ⊢ₗ ℓ →
-         Θ2 ⊢ₗ subₗ-Loc ℓ σ
+         Θ2 ⊢ₗ subₗ-Loc σ ℓ
 wfSubₗ σ⇒ (wfVar Θ1x) = σ⇒ _ Θ1x
 wfSubₗ σ⇒ (wfLit L) = wfLit L
 
@@ -221,7 +221,7 @@ wfSubₗ σ⇒ (wfLit L) = wfLit L
 wfSubₗₗ : ∀{σ Θ1 Θ2 ρ} →
          σ ∶ Θ1 ⇒ₗ Θ2 →
          Θ1 ⊢ₗₗ ρ →
-         Θ2 ⊢ₗₗ subₗ-List ρ σ
+         Θ2 ⊢ₗₗ subₗ-List σ ρ
 wfSubₗₗ σ⇒ wfNil = wfNil
 wfSubₗₗ σ⇒ (wfCons Θ⊢ℓ Θ⊢ρ) = wfCons (wfSubₗ σ⇒ Θ⊢ℓ) (wfSubₗₗ σ⇒ Θ⊢ρ)
 
@@ -229,7 +229,7 @@ wfSubₗₗ σ⇒ (wfCons Θ⊢ℓ Θ⊢ρ) = wfCons (wfSubₗ σ⇒ Θ⊢ℓ) (
 wfSubₜ : ∀{σ Θ1 Θ2 τ} →
          σ ∶ Θ1 ⇒ₗ Θ2 →
          Θ1 ⊢ₜ τ →
-         Θ2 ⊢ₜ subₜ τ σ
+         Θ2 ⊢ₜ subₜ σ τ
 wfSubₜ σ⇒ (wfAt Θ⊢ℓ) = wfAt (wfSubₗ σ⇒ Θ⊢ℓ)
 wfSubₜ σ⇒ (wfArrow τ1 τ2) = wfArrow (wfSubₜ σ⇒ τ1) (wfSubₜ σ⇒ τ2)
 wfSubₜ σ⇒ (wfAllLoc τ) = wfAllLoc (wfSubₜ (↑σₗ⇒ σ⇒) τ)

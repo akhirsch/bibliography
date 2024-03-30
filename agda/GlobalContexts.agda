@@ -55,11 +55,11 @@ addCtxExt Γ≈Γ' (suc n) = Γ≈Γ' n
 
 -- Renaming locations on global contexts
 renCtx : Ctx → (ℕ → ℕ) → Ctx
-renCtx Γ ξ n = renₜ (Γ n) ξ
+renCtx Γ ξ n = renₜ ξ (Γ n)
 
 -- Renaming distributes over adding a type
 renCtx,, : ∀ Γ τ ξ →
-           renCtx (Γ ,, τ) ξ ≈ renCtx Γ ξ ,, renₜ τ ξ
+           renCtx (Γ ,, τ) ξ ≈ renCtx Γ ξ ,, renₜ ξ τ
 renCtx,, Γ τ ξ zero = refl
 renCtx,, Γ τ ξ (suc n) = refl
 
@@ -74,7 +74,7 @@ renCtx∘ Γ ξ1 ξ2 n = refl
 
 -- ↑ respects extensional equality
 ↑CtxExt : ∀{Γ1 Γ2} → Γ1 ≈ Γ2 → ↑Ctx Γ1 ≈ ↑Ctx Γ2
-↑CtxExt Γ1≈Γ2 n = cong₂ renₜ (Γ1≈Γ2 n) refl
+↑CtxExt Γ1≈Γ2 n = cong₂ renₜ refl (Γ1≈Γ2 n)
 
 -- ↑ distributes over composition
 ↑Ctx∘ : ∀ Γ ξ →
@@ -84,10 +84,10 @@ renCtx∘ Γ ξ1 ξ2 n = refl
 -- ↑ distributes over renaming contexts
 renCtx↑ : ∀ Γ ξ → renCtx (↑Ctx Γ) (↑ ξ) ≈ ↑Ctx (renCtx Γ ξ)
 renCtx↑ Γ ξ n =
-    renₜ (renₜ (Γ n) suc) (↑ ξ) ≡⟨ sym (renFuseₜ (↑ ξ) suc (Γ n)) ⟩
-    renₜ (Γ n) (↑ ξ ∘ suc)      ≡⟨ renExtₜ (↑∘suc ξ) (Γ n) ⟩
-    renₜ (Γ n) (suc ∘ ξ)        ≡⟨ renFuseₜ suc ξ (Γ n) ⟩
-    renₜ (renₜ (Γ n) ξ) suc     ∎
+    renₜ (↑ ξ) (renₜ suc (Γ n)) ≡⟨ sym (renFuseₜ (↑ ξ) suc (Γ n)) ⟩
+    renₜ (↑ ξ ∘ suc) (Γ n)      ≡⟨ renExtₜ (↑∘suc ξ) (Γ n) ⟩
+    renₜ (suc ∘ ξ) (Γ n)        ≡⟨ renFuseₜ suc ξ (Γ n) ⟩
+    renₜ suc (renₜ ξ (Γ n))     ∎
 
 {-
   A global context is well-formed if
@@ -138,7 +138,7 @@ wfCtx↑ Θ⊢Γ n = wfTy↑ (Θ⊢Γ n)
 
 -- Substitution of locations in global contexts
 subₗ-Ctx : Ctx → (ℕ → Loc) → Ctx
-subₗ-Ctx Γ σ n = subₜ (Γ n) σ
+subₗ-Ctx Γ σ n = subₜ σ (Γ n)
 
 -- Context well-formedness is closed under change of context
 wfCtxSub : ∀{Θ1 Θ2 Γ σ} →

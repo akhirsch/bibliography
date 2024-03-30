@@ -32,24 +32,24 @@ open LawfulLanguage LE
 open Location L
 
 -- Renaming local variables in a choreography
-renₗₑ : (c : Chor) (ξ : ℕ → ℕ) → Chor
-renₗₑ (Done ℓ e) ξ = Done ℓ (renₑ ξ e)
-renₗₑ (Var x) ξ = Var x
-renₗₑ (Send ℓ1 c ℓ2) ξ = Send ℓ1 (renₗₑ c ξ) ℓ2
-renₗₑ (If ℓ c c₁ c₂) ξ = If ℓ (renₗₑ c ξ) (renₗₑ c₁ ξ) (renₗₑ c₂ ξ)
-renₗₑ (Sync ℓ1 d ℓ2 c) ξ = Sync ℓ1 d ℓ2 (renₗₑ c ξ)
-renₗₑ (DefLocal ℓ c1 c2) ξ = DefLocal ℓ (renₗₑ c1 ξ) (renₗₑ c2 (↑ ξ))
-renₗₑ (Fun τ c) ξ = Fun τ (renₗₑ c ξ)
-renₗₑ (Fix τ c) ξ = Fix τ (renₗₑ c ξ)
-renₗₑ (App c c₁) ξ = App (renₗₑ c ξ) (renₗₑ c₁ ξ)
-renₗₑ (LocAbs c) ξ = LocAbs (renₗₑ c ξ)
-renₗₑ (LocApp c ℓ) ξ = LocApp (renₗₑ c ξ) ℓ
-renₗₑ (TellLet ℓ ρ1 c1 ρ2 c2) ξ = TellLet ℓ ρ1 (renₗₑ c1 ξ) ρ2 (renₗₑ c2 ξ)
+renₗₑ : (ξ : ℕ → ℕ) (c : Chor) → Chor
+renₗₑ ξ (Done ℓ e) = Done ℓ (renₑ ξ e)
+renₗₑ ξ (Var x) = Var x
+renₗₑ ξ (Send ℓ1 c ℓ2) = Send ℓ1 (renₗₑ ξ c) ℓ2
+renₗₑ ξ (If ℓ c c₁ c₂) = If ℓ (renₗₑ ξ c) (renₗₑ ξ c₁) (renₗₑ ξ c₂)
+renₗₑ ξ (Sync ℓ1 d ℓ2 c) = Sync ℓ1 d ℓ2 (renₗₑ ξ c)
+renₗₑ ξ (DefLocal ℓ c1 c2) = DefLocal ℓ (renₗₑ ξ c1) (renₗₑ (↑ ξ) c2)
+renₗₑ ξ (Fun τ c) = Fun τ (renₗₑ ξ c)
+renₗₑ ξ (Fix τ c) = Fix τ (renₗₑ ξ c)
+renₗₑ ξ (App c c₁) = App (renₗₑ ξ c) (renₗₑ ξ c₁)
+renₗₑ ξ (LocAbs c) = LocAbs (renₗₑ ξ c)
+renₗₑ ξ (LocApp c ℓ) = LocApp (renₗₑ ξ c) ℓ
+renₗₑ ξ (TellLet ℓ ρ1 c1 ρ2 c2) = TellLet ℓ ρ1 (renₗₑ ξ c1) ρ2 (renₗₑ ξ c2)
 
 -- Renaming local variables respects extensional equality
 renExtₗₑ : ∀{ξ1 ξ2} →
           ξ1 ≈ ξ2 →
-          ∀ C → renₗₑ C ξ1 ≡ renₗₑ C ξ2
+          renₗₑ ξ1 ≈ renₗₑ ξ2
 renExtₗₑ ξ1≈ξ2 (Done ℓ e) = cong (Done ℓ) (renExtₑ ξ1≈ξ2 e)
 renExtₗₑ ξ1≈ξ2 (Var x) = refl
 renExtₗₑ ξ1≈ξ2 (Send ℓ1 c ℓ2) = cong₃ Send refl (renExtₗₑ ξ1≈ξ2 c) refl
@@ -67,7 +67,7 @@ renExtₗₑ ξ1≈ξ2 (TellLet ℓ ρ1 c1 ρ2 c2) =
   cong₅ TellLet refl refl (renExtₗₑ ξ1≈ξ2 c1) refl (renExtₗₑ ξ1≈ξ2 c2)
 
 -- Renaming local variables respects the identity
-renIdₗₑ : ∀ c → renₗₑ c idRen ≡ c
+renIdₗₑ : ∀ c → renₗₑ idRen c ≡ c
 renIdₗₑ (Done ℓ e) = cong (Done ℓ) (renIdₑ e)
 renIdₗₑ (Var x) = refl
 renIdₗₑ (Send ℓ1 c ℓ2) = cong₃ Send refl (renIdₗₑ c) refl
@@ -75,11 +75,11 @@ renIdₗₑ (If ℓ c c₁ c₂) = cong₄ If refl (renIdₗₑ c) (renIdₗₑ 
 renIdₗₑ (Sync ℓ1 d ℓ2 c) = cong (Sync ℓ1 d ℓ2) (renIdₗₑ c)
 renIdₗₑ (DefLocal ℓ c1 c2) = cong₂ (DefLocal ℓ) (renIdₗₑ c1) c2⟨↑id⟩≡c2
   where
-  c2⟨↑id⟩≡c2 : renₗₑ c2 (↑ idRen) ≡ c2
+  c2⟨↑id⟩≡c2 : renₗₑ (↑ idRen) c2 ≡ c2
   c2⟨↑id⟩≡c2 = 
-    renₗₑ c2 (↑ idRen) ≡⟨ renExtₗₑ ↑Id c2 ⟩
-    renₗₑ c2 idRen     ≡⟨ renIdₗₑ c2 ⟩
-    c2                ∎
+    renₗₑ (↑ idRen) c2 ≡⟨ renExtₗₑ ↑Id c2 ⟩
+    renₗₑ idRen c2     ≡⟨ renIdₗₑ c2 ⟩
+    c2                 ∎
 renIdₗₑ (Fun τ c) = cong₂ Fun refl (renIdₗₑ c)
 renIdₗₑ (Fix τ c) = cong₂ Fix refl (renIdₗₑ c)
 renIdₗₑ (App c c₁) = cong₂ App (renIdₗₑ c) (renIdₗₑ c₁)
@@ -89,7 +89,7 @@ renIdₗₑ (TellLet ℓ ρ1 c1 ρ2 c2) =
   cong₅ TellLet refl refl (renIdₗₑ c1) refl (renIdₗₑ c2)
 
 -- Renaming local variables enjoys fusion
-renFuseₗₑ : ∀ ξ1 ξ2 c → renₗₑ c (ξ1 ∘ ξ2) ≡ renₗₑ (renₗₑ c ξ2) ξ1
+renFuseₗₑ : ∀ ξ1 ξ2 → renₗₑ (ξ1 ∘ ξ2) ≈ renₗₑ ξ1 ∘ renₗₑ ξ2
 renFuseₗₑ ξ1 ξ2 (Done ℓ e) = cong (Done ℓ) (renFuseₑ ξ1 ξ2 e)
 renFuseₗₑ ξ1 ξ2 (Var x) = refl
 renFuseₗₑ ξ1 ξ2 (Send ℓ1 c ℓ2) = cong (λ x → Send ℓ1 x ℓ2) (renFuseₗₑ ξ1 ξ2 c)
@@ -97,11 +97,11 @@ renFuseₗₑ ξ1 ξ2 (If ℓ c c₁ c₂) = cong₃ (If ℓ) (renFuseₗₑ ξ1
 renFuseₗₑ ξ1 ξ2 (Sync ℓ1 d ℓ2 c) = cong (Sync ℓ1 d ℓ2) (renFuseₗₑ ξ1 ξ2 c)
 renFuseₗₑ ξ1 ξ2 (DefLocal ℓ c1 c2) = cong₂ (DefLocal ℓ) (renFuseₗₑ ξ1 ξ2 c1) c2⟨↑[ξ2∘ξ1]⟩≡c2⟨↑ξ1⟩⟨↑ξ2⟩
   where
-  c2⟨↑[ξ2∘ξ1]⟩≡c2⟨↑ξ1⟩⟨↑ξ2⟩ : renₗₑ c2 (↑ (ξ1 ∘ ξ2)) ≡ renₗₑ (renₗₑ c2 (↑ ξ2)) (↑ ξ1)
+  c2⟨↑[ξ2∘ξ1]⟩≡c2⟨↑ξ1⟩⟨↑ξ2⟩ : renₗₑ (↑ (ξ1 ∘ ξ2)) c2 ≡ renₗₑ (↑ ξ1) (renₗₑ (↑ ξ2) c2)
   c2⟨↑[ξ2∘ξ1]⟩≡c2⟨↑ξ1⟩⟨↑ξ2⟩ =
-    renₗₑ c2 (↑ (ξ1 ∘ ξ2))         ≡⟨ renExtₗₑ (↑Fuse ξ1 ξ2) c2 ⟩
-    renₗₑ c2 (↑ ξ1 ∘ ↑ ξ2)         ≡⟨ renFuseₗₑ (↑ ξ1) (↑ ξ2) c2 ⟩
-    renₗₑ (renₗₑ c2 (↑ ξ2)) (↑ ξ1) ∎
+    renₗₑ (↑ (ξ1 ∘ ξ2)) c2         ≡⟨ renExtₗₑ (↑Fuse ξ1 ξ2) c2 ⟩
+    renₗₑ (↑ ξ1 ∘ ↑ ξ2) c2         ≡⟨ renFuseₗₑ (↑ ξ1) (↑ ξ2) c2 ⟩
+    renₗₑ (↑ ξ1) (renₗₑ (↑ ξ2) c2) ∎
 renFuseₗₑ ξ1 ξ2 (Fun τ c) = cong₂ Fun refl (renFuseₗₑ ξ1 ξ2 c)
 renFuseₗₑ ξ1 ξ2 (Fix τ c) = cong₂ Fix refl (renFuseₗₑ ξ1 ξ2 c)
 renFuseₗₑ ξ1 ξ2 (App c c₁) = cong₂ App (renFuseₗₑ ξ1 ξ2 c) (renFuseₗₑ ξ1 ξ2 c₁)

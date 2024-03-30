@@ -94,7 +94,7 @@ data _⊢_∶_ : LocCtx × LocalCtx × Ctx → Chor → Typ → Set where
   tyLocApp : ∀{Θ Δ Γ C τ ℓ}
              (Θ；Δ；Γ⊢C:∀τ : (Θ , Δ , Γ)  ⊢ C ∶ AllLoc τ) →
              (Θ⊢ℓ : Θ ⊢ₗ ℓ) →
-             (Θ , Δ , Γ) ⊢ LocApp C ℓ ∶ subₜ τ (idSubₗ ▸ₗ ℓ)
+             (Θ , Δ , Γ) ⊢ LocApp C ℓ ∶ subₜ (idSubₗ ▸ₗ ℓ) τ
   tyTellLet : ∀{Θ Δ Γ C1 C2 ρ1 ρ2 ℓ τ} →
               (Θ；Δ；Γ⊢C1:ℓ_t : (Θ , Δ , Γ) ⊢ C1 ∶ At Locₑ ℓ)
               (Θ⊢ρ1 : Θ ⊢ₗₗ ρ1) (Θ⊢ρ2 : Θ ⊢ₗₗ ρ2)
@@ -120,7 +120,7 @@ tyUniq (tyFun C) (tyFun C') = cong₂ Arrow refl (tyUniq C C')
 tyUniq (tyFix C) (tyFix C') = tyUniq C C'
 tyUniq (tyApp C1 C2) (tyApp C1' C2') = Arrow-inj (tyUniq C1 C1') .snd
 tyUniq (tyLocAbs _ C) (tyLocAbs _ C') = cong AllLoc (tyUniq C C')
-tyUniq (tyLocApp {τ = τ} {ℓ = ℓ} C Θ⊢ℓ) (tyLocApp {τ = τ'} C' Θ⊢ℓ') = cong₂ subₜ τ≡τ' refl
+tyUniq (tyLocApp {τ = τ} {ℓ = ℓ} C Θ⊢ℓ) (tyLocApp {τ = τ'} C' Θ⊢ℓ') = cong₂ subₜ refl τ≡τ'
   where
   τ≡τ' : τ ≡ τ'
   τ≡τ' = AllLoc-inj (tyUniq C C')
@@ -160,7 +160,7 @@ tyWkₗ : ∀{Θ Θ' Δ Γ C τ} ξ →
         Injective _≡_ _≡_ ξ →
         Θ ≈ Θ' ∘ ξ →
         (Θ , Δ , Γ) ⊢ C ∶ τ →
-        (Θ' , renₗ-LocalCtx Δ ξ , renCtx Γ ξ) ⊢ renₗ C ξ ∶ renₜ τ ξ
+        (Θ' , renₗ-LocalCtx Δ ξ , renCtx Γ ξ) ⊢ renₗ ξ C ∶ renₜ ξ τ
 tyWkₗ ξ ξ-inj Θ≈Θ'∘ξ (tyVar Θ⊢Γ x) = tyVar (wfCtxWk ξ Θ≈Θ'∘ξ Θ⊢Γ) x
 tyWkₗ {Δ = Δ} ξ ξ-inj Θ≈Θ'∘ξ (tyDone {e = e} {t = t} {ℓ = ℓ} Θ⊢Γ Θ⊢ℓ Δ∣ℓ⊢e⟨Δ⦊ℓ⟩:t) =
   tyDone (wfCtxWk ξ Θ≈Θ'∘ξ Θ⊢Γ) (wfWkₗ ξ Θ≈Θ'∘ξ Θ⊢ℓ) (tyProjRen ξ Δ ℓ e ξ-inj Δ∣ℓ⊢e⟨Δ⦊ℓ⟩:t)
@@ -189,41 +189,41 @@ tyWkₗ {Θ} {Θ'} {Δ} {Γ} ξ ξ-inj Θ≈Θ'∘ξ (tyLocAbs {C = C} {τ = τ}
       ↑LocCtx (Θ' ∘ ξ) ≈⟨ ↑-distr-∘ Θ' ξ ⟩
       ↑LocCtx Θ' ∘ ↑ ξ ∎
 
-    ↑Θ'；↑Δ⟨↑ξ⟩；[↑Γ]⟨↑ξ⟩⊢C⟨↑ξ⟩∶τ⟨↑ξ⟩ : (↑LocCtx Θ' , renₗ-LocalCtx (↑LocalCtx Δ) ( ↑ ξ) , renCtx (↑Ctx Γ) (↑ ξ)) ⊢ renₗ C (↑ ξ) ∶ renₜ τ (↑ ξ)
+    ↑Θ'；↑Δ⟨↑ξ⟩；[↑Γ]⟨↑ξ⟩⊢C⟨↑ξ⟩∶τ⟨↑ξ⟩ : (↑LocCtx Θ' , renₗ-LocalCtx (↑LocalCtx Δ) ( ↑ ξ) , renCtx (↑Ctx Γ) (↑ ξ)) ⊢ renₗ (↑ ξ) C ∶ renₜ (↑ ξ) τ
     ↑Θ'；↑Δ⟨↑ξ⟩；[↑Γ]⟨↑ξ⟩⊢C⟨↑ξ⟩∶τ⟨↑ξ⟩ = tyWkₗ (↑ ξ) (↑-pres-inj ξ-inj) ↑Θ≈↑Θ'∘↑ξ C∶τ
 
-    ↑Θ'；↑Δ'；[↑Γ]⟨↑ξ⟩⊢C⟨↑ξ⟩∶τ⟨↑ξ⟩ : (↑LocCtx Θ' , ↑LocalCtx (renₗ-LocalCtx Δ ξ) , renCtx (↑Ctx Γ) (↑ ξ)) ⊢ renₗ C (↑ ξ) ∶ renₜ τ (↑ ξ)
+    ↑Θ'；↑Δ'；[↑Γ]⟨↑ξ⟩⊢C⟨↑ξ⟩∶τ⟨↑ξ⟩ : (↑LocCtx Θ' , ↑LocalCtx (renₗ-LocalCtx Δ ξ) , renCtx (↑Ctx Γ) (↑ ξ)) ⊢ renₗ (↑ ξ) C ∶ renₜ (↑ ξ) τ
     ↑Θ'；↑Δ'；[↑Γ]⟨↑ξ⟩⊢C⟨↑ξ⟩∶τ⟨↑ξ⟩ = subst (λ x → (_ , x , _) ⊢ _ ∶ _) (sym (↑renₗ-LocalCtx Δ ξ)) ↑Θ'；↑Δ⟨↑ξ⟩；[↑Γ]⟨↑ξ⟩⊢C⟨↑ξ⟩∶τ⟨↑ξ⟩
 
-    ↑Θ'；↑Δ'；↑Γ'⊢C⟨↑ξ⟩∶τ⟨↑ξ⟩ : (↑LocCtx Θ' , ↑LocalCtx (renₗ-LocalCtx Δ ξ) , ↑Ctx (renCtx Γ ξ)) ⊢ renₗ C (↑ ξ) ∶ renₜ τ (↑ ξ)
+    ↑Θ'；↑Δ'；↑Γ'⊢C⟨↑ξ⟩∶τ⟨↑ξ⟩ : (↑LocCtx Θ' , ↑LocalCtx (renₗ-LocalCtx Δ ξ) , ↑Ctx (renCtx Γ ξ)) ⊢ renₗ (↑ ξ) C ∶ renₜ (↑ ξ) τ
     ↑Θ'；↑Δ'；↑Γ'⊢C⟨↑ξ⟩∶τ⟨↑ξ⟩ = tyExt ≈-refl (renCtx↑ Γ ξ) ↑Θ'；↑Δ'；[↑Γ]⟨↑ξ⟩⊢C⟨↑ξ⟩∶τ⟨↑ξ⟩
 tyWkₗ {Θ} {Θ'} {Δ} {Γ} ξ ξ-inj Θ≈Θ'∘ξ (tyLocApp {C = C} {τ = τ} {ℓ = ℓ} C∶τ Θ⊢ℓ) = Θ'；Δ'；Γ'⊢Cℓ
   where
   open ≡-Reasoning
 
-  Θ'；Δ'；Γ'⊢C : (Θ' , renₗ-LocalCtx Δ ξ , renCtx Γ ξ) ⊢ renₗ C ξ ∶ AllLoc (renₜ τ (↑ ξ))
+  Θ'；Δ'；Γ'⊢C : (Θ' , renₗ-LocalCtx Δ ξ , renCtx Γ ξ) ⊢ renₗ ξ C ∶ AllLoc (renₜ (↑ ξ) τ)
   Θ'；Δ'；Γ'⊢C = tyWkₗ ξ ξ-inj Θ≈Θ'∘ξ C∶τ
 
-  Θ'⊢ℓ : Θ' ⊢ₗ renₗ-Loc ℓ ξ
+  Θ'⊢ℓ : Θ' ⊢ₗ renₗ-Loc ξ ℓ
   Θ'⊢ℓ = wfWkₗ ξ Θ≈Θ'∘ξ Θ⊢ℓ
 
-  Θ'；Δ'；Γ'⊢Cℓ' : (Θ' , renₗ-LocalCtx Δ ξ , renCtx Γ ξ) ⊢ LocApp (renₗ C ξ) (renₗ-Loc ℓ ξ) ∶ subₜ (renₜ τ (↑ ξ)) (idSubₗ ▸ₗ renₗ-Loc ℓ ξ)
+  Θ'；Δ'；Γ'⊢Cℓ' : (Θ' , renₗ-LocalCtx Δ ξ , renCtx Γ ξ) ⊢ LocApp (renₗ ξ C) (renₗ-Loc ξ ℓ) ∶ subₜ (idSubₗ ▸ₗ renₗ-Loc ξ ℓ) (renₜ (↑ ξ) τ)
   Θ'；Δ'；Γ'⊢Cℓ' = tyLocApp Θ'；Δ'；Γ'⊢C Θ'⊢ℓ
 
-  sub-eq : (idSubₗ ▸ₗ renₗ-Loc ℓ ξ) •ₗ ιₗ (↑ ξ) ≈ ιₗ ξ •ₗ (idSubₗ ▸ₗ ℓ)
+  sub-eq : (idSubₗ ▸ₗ renₗ-Loc ξ ℓ) •ₗ ιₗ (↑ ξ) ≈ ιₗ ξ •ₗ (idSubₗ ▸ₗ ℓ)
   sub-eq zero = sym (subιₗ-Loc ξ ℓ)
   sub-eq (suc n) = refl
 
-  ty-eq : subₜ (renₜ τ (↑ ξ)) (idSubₗ ▸ₗ renₗ-Loc ℓ ξ) ≡ renₜ (subₜ τ (idSubₗ ▸ₗ ℓ)) ξ
+  ty-eq : subₜ (idSubₗ ▸ₗ renₗ-Loc ξ ℓ) (renₜ (↑ ξ) τ) ≡ renₜ ξ (subₜ (idSubₗ ▸ₗ ℓ) τ)
   ty-eq =
-    subₜ (renₜ τ (↑ ξ)) (idSubₗ ▸ₗ renₗ-Loc ℓ ξ)      ≡⟨ cong₂ subₜ (sym (subιₜ (↑ ξ) τ)) refl ⟩
-    subₜ (subₜ τ (ιₗ (↑ ξ))) (idSubₗ ▸ₗ renₗ-Loc ℓ ξ) ≡⟨ sym (subFuseₜ (idSubₗ ▸ₗ renₗ-Loc ℓ ξ) (ιₗ (↑ ξ)) τ) ⟩
-    subₜ τ ((idSubₗ ▸ₗ renₗ-Loc ℓ ξ) •ₗ ιₗ (↑ ξ))     ≡⟨ subExtₜ sub-eq τ ⟩
-    subₜ τ (ιₗ ξ •ₗ (idSubₗ ▸ₗ ℓ))                    ≡⟨ subFuseₜ (ιₗ ξ) (idSubₗ ▸ₗ ℓ) τ ⟩
-    subₜ (subₜ τ (idSubₗ ▸ₗ ℓ)) (ιₗ ξ)                ≡⟨ subιₜ ξ (subₜ τ (idSubₗ ▸ₗ ℓ)) ⟩
-    renₜ (subₜ τ (idSubₗ ▸ₗ ℓ)) ξ                     ∎
+    subₜ (idSubₗ ▸ₗ renₗ-Loc ξ ℓ) (renₜ (↑ ξ) τ)      ≡⟨ cong₂ subₜ refl (sym (subιₜ (↑ ξ) τ)) ⟩
+    subₜ (idSubₗ ▸ₗ renₗ-Loc ξ ℓ) (subₜ (ιₗ (↑ ξ)) τ) ≡⟨ sym (subFuseₜ (idSubₗ ▸ₗ renₗ-Loc ξ ℓ) (ιₗ (↑ ξ)) τ) ⟩
+    subₜ ((idSubₗ ▸ₗ renₗ-Loc ξ ℓ) •ₗ ιₗ (↑ ξ)) τ     ≡⟨ subExtₜ sub-eq τ ⟩
+    subₜ (ιₗ ξ •ₗ (idSubₗ ▸ₗ ℓ)) τ                    ≡⟨ subFuseₜ (ιₗ ξ) (idSubₗ ▸ₗ ℓ) τ ⟩
+    subₜ (ιₗ ξ) (subₜ (idSubₗ ▸ₗ ℓ) τ)                ≡⟨ subιₜ ξ (subₜ (idSubₗ ▸ₗ ℓ) τ) ⟩
+    renₜ ξ (subₜ (idSubₗ ▸ₗ ℓ) τ)                     ∎
 
-  Θ'；Δ'；Γ'⊢Cℓ : (Θ' , renₗ-LocalCtx Δ ξ , renCtx Γ ξ) ⊢ LocApp (renₗ C ξ) (renₗ-Loc ℓ ξ) ∶ renₜ (subₜ τ (idSubₗ ▸ₗ ℓ)) ξ
+  Θ'；Δ'；Γ'⊢Cℓ : (Θ' , renₗ-LocalCtx Δ ξ , renCtx Γ ξ) ⊢ LocApp (renₗ ξ C) (renₗ-Loc ξ ℓ) ∶ renₜ ξ (subₜ (idSubₗ ▸ₗ ℓ) τ)
   Θ'；Δ'；Γ'⊢Cℓ = subst (λ x → _ ⊢ _ ∶ x) ty-eq Θ'；Δ'；Γ'⊢Cℓ'
 tyWkₗ {Θ} {Θ'} {Δ} {Γ} ξ ξ-inj Θ≈Θ'∘ξ (tyTellLet {C2 = C2} {τ = τ} C1∶Loc Θ⊢ρ1 Θ⊢ρ2 Θ⊢τ C2∶↑τ) =
   tyTellLet (tyWkₗ ξ ξ-inj Θ≈Θ'∘ξ C1∶Loc) (wfWkₗₗ ξ Θ≈Θ'∘ξ Θ⊢ρ1) (wfWkₗₗ ξ Θ≈Θ'∘ξ Θ⊢ρ2)
@@ -238,32 +238,32 @@ tyWkₗ {Θ} {Θ'} {Δ} {Γ} ξ ξ-inj Θ≈Θ'∘ξ (tyTellLet {C2 = C2} {τ = 
         ↑LocCtx (Θ' ∘ ξ) ≈⟨ ↑-distr-∘ Θ' ξ ⟩
         ↑LocCtx Θ' ∘ ↑ ξ ∎
 
-    ↑Θ'；[↑Δ]⟨↑ξ⟩；[↑Γ]⟨↑ξ⟩⊢C2⟨↑ξ⟩∶↑τ⟨↑ξ⟩ : (↑LocCtx Θ' , renₗ-LocalCtx (↑LocalCtx Δ) (↑ ξ) , renCtx (↑Ctx Γ) (↑ ξ)) ⊢ renₗ C2 (↑ ξ) ∶ renₜ (↑ₜ τ) (↑ ξ)
+    ↑Θ'；[↑Δ]⟨↑ξ⟩；[↑Γ]⟨↑ξ⟩⊢C2⟨↑ξ⟩∶↑τ⟨↑ξ⟩ : (↑LocCtx Θ' , renₗ-LocalCtx (↑LocalCtx Δ) (↑ ξ) , renCtx (↑Ctx Γ) (↑ ξ)) ⊢ renₗ (↑ ξ) C2 ∶ renₜ (↑ ξ) (↑ₜ τ)
     ↑Θ'；[↑Δ]⟨↑ξ⟩；[↑Γ]⟨↑ξ⟩⊢C2⟨↑ξ⟩∶↑τ⟨↑ξ⟩ = tyWkₗ (↑ ξ) (↑-pres-inj ξ-inj) ↑Θ≈↑Θ'∘↑ξ C2∶↑τ
 
-    ↑Θ'；Δ'；[↑Γ]⟨↑ξ⟩⊢C2⟨↑ξ⟩∶↑τ⟨↑ξ⟩ : (↑LocCtx Θ' , ↑LocalCtx (renₗ-LocalCtx Δ ξ) , renCtx (↑Ctx Γ) (↑ ξ)) ⊢ renₗ C2 (↑ ξ) ∶ renₜ (↑ₜ τ) (↑ ξ)
+    ↑Θ'；Δ'；[↑Γ]⟨↑ξ⟩⊢C2⟨↑ξ⟩∶↑τ⟨↑ξ⟩ : (↑LocCtx Θ' , ↑LocalCtx (renₗ-LocalCtx Δ ξ) , renCtx (↑Ctx Γ) (↑ ξ)) ⊢ renₗ (↑ ξ) C2 ∶ renₜ (↑ ξ) (↑ₜ τ)
     ↑Θ'；Δ'；[↑Γ]⟨↑ξ⟩⊢C2⟨↑ξ⟩∶↑τ⟨↑ξ⟩ = subst (λ x → (_ , x , _) ⊢ _ ∶ _) (sym (↑renₗ-LocalCtx Δ ξ)) ↑Θ'；[↑Δ]⟨↑ξ⟩；[↑Γ]⟨↑ξ⟩⊢C2⟨↑ξ⟩∶↑τ⟨↑ξ⟩
 
-    ↑Θ'；Δ'；Γ'⊢C⟨↑ξ⟩∶↑τ⟨↑ξ⟩ : (↑LocCtx Θ' , ↑LocalCtx (renₗ-LocalCtx Δ ξ) , ↑Ctx (renCtx Γ ξ)) ⊢ renₗ C2 (↑ ξ) ∶ renₜ (↑ₜ τ) (↑ ξ)
+    ↑Θ'；Δ'；Γ'⊢C⟨↑ξ⟩∶↑τ⟨↑ξ⟩ : (↑LocCtx Θ' , ↑LocalCtx (renₗ-LocalCtx Δ ξ) , ↑Ctx (renCtx Γ ξ)) ⊢ renₗ (↑ ξ) C2 ∶ renₜ (↑ ξ) (↑ₜ τ)
     ↑Θ'；Δ'；Γ'⊢C⟨↑ξ⟩∶↑τ⟨↑ξ⟩ = tyExt ≈-refl (renCtx↑ Γ ξ) ↑Θ'；Δ'；[↑Γ]⟨↑ξ⟩⊢C2⟨↑ξ⟩∶↑τ⟨↑ξ⟩
 
     open ≡-Reasoning
 
-    ↑τ⟨↑ξ⟩≡↑τ⟨ξ⟩ : renₜ (↑ₜ τ) (↑ ξ) ≡ ↑ₜ (renₜ τ ξ)
+    ↑τ⟨↑ξ⟩≡↑τ⟨ξ⟩ : renₜ (↑ ξ) (↑ₜ τ) ≡ ↑ₜ (renₜ ξ τ)
     ↑τ⟨↑ξ⟩≡↑τ⟨ξ⟩ =
-      renₜ (renₜ τ suc) (↑ ξ) ≡⟨ sym (renFuseₜ (↑ ξ) suc τ) ⟩
-      renₜ τ (↑ ξ ∘ suc)      ≡⟨ renExtₜ (↑∘suc ξ) τ ⟩
-      renₜ τ (suc ∘ ξ)        ≡⟨ renFuseₜ suc ξ τ ⟩
-      renₜ (renₜ τ ξ) suc     ∎
+      renₜ (↑ ξ) (renₜ suc τ) ≡⟨ sym (renFuseₜ (↑ ξ) suc τ) ⟩
+      renₜ (↑ ξ ∘ suc) τ      ≡⟨ renExtₜ (↑∘suc ξ) τ ⟩
+      renₜ (suc ∘ ξ) τ        ≡⟨ renFuseₜ suc ξ τ ⟩
+      renₜ suc (renₜ ξ τ)     ∎
 
-    ↑Θ'；Δ'；Γ'⊢C⟨↑ξ⟩∶↑τ⟨ξ⟩ : (↑LocCtx Θ' , ↑LocalCtx (renₗ-LocalCtx Δ ξ) , ↑Ctx (renCtx Γ ξ)) ⊢ renₗ C2 (↑ ξ) ∶ ↑ₜ (renₜ τ ξ)
+    ↑Θ'；Δ'；Γ'⊢C⟨↑ξ⟩∶↑τ⟨ξ⟩ : (↑LocCtx Θ' , ↑LocalCtx (renₗ-LocalCtx Δ ξ) , ↑Ctx (renCtx Γ ξ)) ⊢ renₗ (↑ ξ) C2 ∶ ↑ₜ (renₜ ξ τ)
     ↑Θ'；Δ'；Γ'⊢C⟨↑ξ⟩∶↑τ⟨ξ⟩ = subst (λ x → _ ⊢ _ ∶ x) ↑τ⟨↑ξ⟩≡↑τ⟨ξ⟩ ↑Θ'；Δ'；Γ'⊢C⟨↑ξ⟩∶↑τ⟨↑ξ⟩
 
 -- The typing relation has weakening on OPEs of local variables
 tyWkₗₑ : ∀{Θ Δ1 Δ2 Γ C τ}
          (ξ : OPE Δ1 Δ2) →
          (Θ , Δ1 , Γ) ⊢ C ∶ τ →
-         (Θ , Δ2 , Γ) ⊢ renₗₑ C ⟦ ξ ⟧ ∶ τ
+         (Θ , Δ2 , Γ) ⊢ renₗₑ ⟦ ξ ⟧ C ∶ τ
 tyWkₗₑ ξ (tyVar Θ⊢Γ x) = tyVar Θ⊢Γ x
 tyWkₗₑ ξ (tyDone Θ⊢Γ Θ⊢ℓ Δ1∣ℓ⊢e⟨Δ1⦊ℓ⟩∶t) = tyDone Θ⊢Γ Θ⊢ℓ (tyWkOPE?ₑ ξ Δ1∣ℓ⊢e⟨Δ1⦊ℓ⟩∶t)
 tyWkₗₑ ξ (tySend C∶t Θ⊢ℓ2) = tySend (tyWkₗₑ ξ C∶t) Θ⊢ℓ2
@@ -276,25 +276,25 @@ tyWkₗₑ ξ (tyFix C) = tyFix (tyWkₗₑ ξ C)
 tyWkₗₑ ξ (tyApp C1 C2) = tyApp (tyWkₗₑ ξ C1) (tyWkₗₑ ξ C2)
 tyWkₗₑ {Θ} {Δ} {Δ'} {Γ} ξ (tyLocAbs {C = C} {τ = τ} Θ⊢Γ C∶τ) = tyLocAbs Θ⊢Γ C⟨⟦ξ⟧⟩∶τ
   where
-  C⟨⟦↑ξ⟧⟩∶τ : (↑LocCtx Θ , ↑LocalCtx Δ' , ↑Ctx Γ) ⊢ renₗₑ C ⟦ ↑OPE ξ ⟧ ∶ τ
+  C⟨⟦↑ξ⟧⟩∶τ : (↑LocCtx Θ , ↑LocalCtx Δ' , ↑Ctx Γ) ⊢ renₗₑ ⟦ ↑OPE ξ ⟧ C ∶ τ
   C⟨⟦↑ξ⟧⟩∶τ = tyWkₗₑ (↑OPE ξ) C∶τ
 
-  C⟨⟦↑ξ⟧⟩≡C⟨⟦ξ⟧⟩ : renₗₑ C ⟦ ↑OPE ξ ⟧ ≡ renₗₑ C ⟦ ξ ⟧
+  C⟨⟦↑ξ⟧⟩≡C⟨⟦ξ⟧⟩ : renₗₑ ⟦ ↑OPE ξ ⟧ C ≡ renₗₑ ⟦ ξ ⟧ C
   C⟨⟦↑ξ⟧⟩≡C⟨⟦ξ⟧⟩ = renExtₗₑ (↑renOPE ξ) C
 
-  C⟨⟦ξ⟧⟩∶τ : (↑LocCtx Θ , ↑LocalCtx Δ' , ↑Ctx Γ) ⊢ renₗₑ C ⟦ ξ ⟧ ∶ τ
+  C⟨⟦ξ⟧⟩∶τ : (↑LocCtx Θ , ↑LocalCtx Δ' , ↑Ctx Γ) ⊢ renₗₑ ⟦ ξ ⟧ C ∶ τ
   C⟨⟦ξ⟧⟩∶τ = subst (λ x → (↑LocCtx Θ , ↑LocalCtx Δ' , ↑Ctx Γ) ⊢ x ∶ τ) C⟨⟦↑ξ⟧⟩≡C⟨⟦ξ⟧⟩ C⟨⟦↑ξ⟧⟩∶τ
 tyWkₗₑ ξ (tyLocApp {C = C} {ℓ = ℓ} C∶τ Θ⊢ℓ) = tyLocApp (tyWkₗₑ ξ C∶τ) Θ⊢ℓ
 tyWkₗₑ {Θ} {Δ} {Δ'} {Γ} ξ (tyTellLet {C2 = C2} {τ = τ} C1∶Loc Θ⊢ρ1 Θ⊢ρ2 Θ⊢τ C2∶↑τ) = 
   tyTellLet (tyWkₗₑ ξ C1∶Loc) Θ⊢ρ1 Θ⊢ρ2 Θ⊢τ C2⟨⟦ξ⟧⟩∶↑τ
   where
-  C2⟨⟦↑ξ⟧⟩∶↑τ : (↑LocCtx Θ , ↑LocalCtx Δ' , ↑Ctx Γ) ⊢ renₗₑ C2 ⟦ ↑OPE ξ ⟧ ∶ ↑ₜ τ
+  C2⟨⟦↑ξ⟧⟩∶↑τ : (↑LocCtx Θ , ↑LocalCtx Δ' , ↑Ctx Γ) ⊢ renₗₑ ⟦ ↑OPE ξ ⟧ C2 ∶ ↑ₜ τ
   C2⟨⟦↑ξ⟧⟩∶↑τ = tyWkₗₑ (↑OPE ξ) C2∶↑τ
 
-  C2⟨⟦↑ξ⟧⟩≡C2⟨⟦ξ⟧⟩ : renₗₑ C2 ⟦ ↑OPE ξ ⟧ ≡ renₗₑ C2 ⟦ ξ ⟧
+  C2⟨⟦↑ξ⟧⟩≡C2⟨⟦ξ⟧⟩ : renₗₑ ⟦ ↑OPE ξ ⟧ C2 ≡ renₗₑ ⟦ ξ ⟧ C2
   C2⟨⟦↑ξ⟧⟩≡C2⟨⟦ξ⟧⟩ = renExtₗₑ (↑renOPE ξ) C2
 
-  C2⟨⟦ξ⟧⟩∶↑τ : (↑LocCtx Θ , ↑LocalCtx Δ' , ↑Ctx Γ) ⊢ renₗₑ C2 ⟦ ξ ⟧ ∶ ↑ₜ τ
+  C2⟨⟦ξ⟧⟩∶↑τ : (↑LocCtx Θ , ↑LocalCtx Δ' , ↑Ctx Γ) ⊢ renₗₑ ⟦ ξ ⟧ C2 ∶ ↑ₜ τ
   C2⟨⟦ξ⟧⟩∶↑τ = subst (λ x → (↑LocCtx Θ , ↑LocalCtx Δ' , ↑Ctx Γ) ⊢ x ∶ ↑ₜ τ) C2⟨⟦↑ξ⟧⟩≡C2⟨⟦ξ⟧⟩ C2⟨⟦↑ξ⟧⟩∶↑τ
 
 {-
@@ -343,7 +343,7 @@ tyWk : ∀{Θ Δ Γ Γ' C τ} ξ →
        Γ ≈ Γ' ∘ ξ →
        Θ ⊢ Γ' →
        (Θ , Δ , Γ) ⊢ C ∶ τ →
-       (Θ , Δ , Γ') ⊢ ren C ξ ∶ τ
+       (Θ , Δ , Γ') ⊢ ren ξ C ∶ τ
 tyWk {Θ} {Δ} {Γ} {Γ'} ξ Γ≈Γ'∘ξ Θ⊢Γ' (tyVar Θ⊢Γ x) = ξx∶Γx
   where
   ξx∶Γ'[ξx] : (Θ , Δ , Γ') ⊢ Var (ξ x) ∶ Γ' (ξ x)
@@ -364,7 +364,7 @@ tyWk {Θ} {Δ} {Γ} {Γ'} ξ Γ≈Γ'∘ξ Θ⊢Γ' (tyFun {C = C} {τ1 = τ1} {
   Γ,,τ1≈[Γ',,τ1]∘↑ξ zero = refl
   Γ,,τ1≈[Γ',,τ1]∘↑ξ (suc n) = Γ≈Γ'∘ξ n
 
-  C⟨↑ξ⟩∶τ2 : (Θ , Δ , (Γ' ,, τ1)) ⊢ ren C (↑ ξ) ∶ τ2
+  C⟨↑ξ⟩∶τ2 : (Θ , Δ , (Γ' ,, τ1)) ⊢ ren (↑ ξ) C ∶ τ2
   C⟨↑ξ⟩∶τ2 = tyWk (↑ ξ) Γ,,τ1≈[Γ',,τ1]∘↑ξ (wfCtx,, Θ⊢Γ' (ty⇒wfCtx C∶τ2 0)) C∶τ2
 tyWk {Θ} {Δ} {Γ} {Γ'} ξ Γ≈Γ'∘ξ Θ⊢Γ' (tyFix {C = C} {τ = τ} C∶τ) = tyFix C⟨↑ξ⟩∶τ
   where
@@ -372,7 +372,7 @@ tyWk {Θ} {Δ} {Γ} {Γ'} ξ Γ≈Γ'∘ξ Θ⊢Γ' (tyFix {C = C} {τ = τ} C�
   Γ,,τ≈[Γ',,τ]∘↑ξ zero = refl
   Γ,,τ≈[Γ',,τ]∘↑ξ (suc n) = Γ≈Γ'∘ξ n
 
-  C⟨↑ξ⟩∶τ : (Θ , Δ , (Γ' ,, τ)) ⊢ ren C (↑ ξ) ∶ τ
+  C⟨↑ξ⟩∶τ : (Θ , Δ , (Γ' ,, τ)) ⊢ ren (↑ ξ) C ∶ τ
   C⟨↑ξ⟩∶τ = tyWk (↑ ξ) Γ,,τ≈[Γ',,τ]∘↑ξ (wfCtx,, Θ⊢Γ' (ty⇒wfCtx C∶τ 0)) C∶τ
 tyWk ξ Γ≈Γ'∘ξ Θ⊢Γ' (tyApp C1∶τ1⇒τ2 C2∶τ1) =
   tyApp (tyWk ξ Γ≈Γ'∘ξ Θ⊢Γ' C1∶τ1⇒τ2) (tyWk ξ Γ≈Γ'∘ξ Θ⊢Γ' C2∶τ1)
@@ -436,7 +436,7 @@ wfCtx⇒ σ = ty⇒wfCtx (σ 0)
 -- Binding a location variable preserves change in context
 ↑Loc⇒ : ∀{Θ Δ Γ1 Γ2 σ} →
         (Θ , Δ , σ) ∶ Γ1 ⇒ Γ2 →
-        (↑LocCtx Θ , renₗ-LocalCtx Δ suc , (λ n → renₗ (σ n) suc)) ∶ ↑Ctx Γ1 ⇒ ↑Ctx Γ2
+        (↑LocCtx Θ , renₗ-LocalCtx Δ suc , (λ n → renₗ suc (σ n))) ∶ ↑Ctx Γ1 ⇒ ↑Ctx Γ2
 ↑Loc⇒ {Θ} {Δ} σ⇒ n = tyWkₗ suc suc-injective Θ≈↑Θ∘suc (σ⇒ n)
   where
   Θ≈↑Θ∘suc : Θ ≈ ↑LocCtx Θ ∘ suc
@@ -446,20 +446,20 @@ wfCtx⇒ σ = ty⇒wfCtx (σ 0)
 ,,[ℓ]⇒ : ∀{Θ Δ Γ1 Γ2 σ} →
           (Θ , Δ , σ) ∶ Γ1 ⇒ Γ2 →
           ∀ ℓ t →
-          (Θ , ((ℓ , t) ∷ Δ) , λ x → renₗₑ (σ x) suc) ∶ Γ1 ⇒ Γ2
+          (Θ , ((ℓ , t) ∷ Δ) , λ x → renₗₑ suc (σ x)) ∶ Γ1 ⇒ Γ2
 ,,[ℓ]⇒ {Θ} {Δ} {Γ1} {Γ2} {σ} σ⇒ ℓ t n = σ[n]⟨suc⟩∶Γ1[n]
   where
   open ≡-Reasoning
-  σ[n]⟨DropId⟩∶Γ1[n] : (Θ , (ℓ , t) ∷ Δ , Γ2) ⊢ renₗₑ (σ n) ⟦ Drop (idOPE Δ) ℓ t ⟧ ∶ Γ1 n
+  σ[n]⟨DropId⟩∶Γ1[n] : (Θ , (ℓ , t) ∷ Δ , Γ2) ⊢ renₗₑ ⟦ Drop (idOPE Δ) ℓ t ⟧ (σ n) ∶ Γ1 n
   σ[n]⟨DropId⟩∶Γ1[n] = tyWkₗₑ (Drop (idOPE Δ) ℓ t) (σ⇒ n)
 
   DropId≈suc : ⟦ Drop (idOPE Δ) ℓ t ⟧ ≈ suc
   DropId≈suc n = cong suc (renIdOPE Δ n)
 
-  σ[n]⟨DropId⟩≡σ[n]⟨suc⟩ : renₗₑ (σ n) ⟦ Drop (idOPE Δ) ℓ t ⟧ ≡ renₗₑ (σ n) suc
+  σ[n]⟨DropId⟩≡σ[n]⟨suc⟩ : renₗₑ ⟦ Drop (idOPE Δ) ℓ t ⟧ (σ n) ≡ renₗₑ suc (σ n)
   σ[n]⟨DropId⟩≡σ[n]⟨suc⟩ = renExtₗₑ DropId≈suc (σ n)
 
-  σ[n]⟨suc⟩∶Γ1[n] : (Θ , (ℓ , t) ∷ Δ , Γ2) ⊢ renₗₑ (σ n) suc ∶ Γ1 n
+  σ[n]⟨suc⟩∶Γ1[n] : (Θ , (ℓ , t) ∷ Δ , Γ2) ⊢ renₗₑ suc (σ n) ∶ Γ1 n
   σ[n]⟨suc⟩∶Γ1[n] =
     subst (λ x → (Θ , (ℓ , t) ∷ Δ , Γ2) ⊢ x ∶ Γ1 n)
       σ[n]⟨DropId⟩≡σ[n]⟨suc⟩ σ[n]⟨DropId⟩∶Γ1[n]
@@ -469,7 +469,7 @@ wfCtx⇒ σ = ty⇒wfCtx (σ 0)
 tySub : ∀{Θ Δ Γ1 Γ2 C τ σ} →
         (Θ , Δ , σ) ∶ Γ1 ⇒ Γ2 →
         (Θ , Δ , Γ1) ⊢ C ∶ τ →
-        (Θ , Δ , Γ2) ⊢ sub C σ ∶ τ
+        (Θ , Δ , Γ2) ⊢ sub σ C ∶ τ
 tySub σ (tyVar Θ⊢Γ x) = σ x
 tySub σ (tyDone Θ⊢Γ Θ⊢ℓ Δ∣ℓ⊢e⟨Δ⦊ℓ⟩∶t) = tyDone (wfCtx⇒ σ) Θ⊢ℓ Δ∣ℓ⊢e⟨Δ⦊ℓ⟩∶t
 tySub σ (tySend C Θ⊢ℓ2) = tySend (tySub σ C) Θ⊢ℓ2
@@ -485,7 +485,7 @@ tySub σ (tyLocApp C Θ⊢ℓ) = tyLocApp (tySub σ C) Θ⊢ℓ
 tySub σ (tyTellLet C1 Θ⊢ρ1 Θ⊢ρ2 Θ⊢τ C2) =
   tyTellLet (tySub σ C1) Θ⊢ρ1 Θ⊢ρ2 Θ⊢τ (tySub (↑Loc⇒ σ) C2)
 
-subₗ-Ctx,, : ∀ Γ τ σ → subₗ-Ctx (Γ ,, τ) σ ≈ subₗ-Ctx Γ σ ,, subₜ τ σ
+subₗ-Ctx,, : ∀ Γ τ σ → subₗ-Ctx (Γ ,, τ) σ ≈ subₗ-Ctx Γ σ ,, subₜ σ τ
 subₗ-Ctx,, Γ τ σ zero = refl
 subₗ-Ctx,, Γ τ σ (suc n) = refl
 
@@ -493,40 +493,40 @@ open ≡-Reasoning
 
 subₗ-Ctx↑ : ∀ Γ σ → subₗ-Ctx (↑Ctx Γ) (↑σₗ σ) ≈ ↑Ctx (subₗ-Ctx Γ σ)
 subₗ-Ctx↑ Γ σ n = 
-  subₜ (renₜ (Γ n) suc) (↑σₗ σ)     ≡⟨ cong (λ x → subₜ x (↑σₗ σ)) (sym (subιₜ suc (Γ n))) ⟩
-  subₜ (subₜ (Γ n) (ιₗ suc)) (↑σₗ σ) ≡⟨ sym (subFuseₜ (↑σₗ σ) (ιₗ suc) (Γ n)) ⟩
-  subₜ (Γ n) (↑σₗ σ •ₗ ιₗ suc)       ≡⟨ subExtₜ (λ{ zero → refl ; (suc n) → refl }) (Γ n) ⟩
-  subₜ (Γ n) (ιₗ suc •ₗ σ)          ≡⟨ subFuseₜ (ιₗ suc) σ (Γ n) ⟩
-  subₜ (subₜ (Γ n) σ) (ιₗ suc)      ≡⟨ subιₜ suc (subₜ (Γ n) σ) ⟩
-  renₜ (subₗ-Ctx Γ σ n) suc         ∎
+  subₜ (↑σₗ σ) (renₜ suc (Γ n))      ≡⟨ cong (λ x → subₜ (↑σₗ σ) x) (sym (subιₜ suc (Γ n))) ⟩
+  subₜ (↑σₗ σ) (subₜ (ιₗ suc) (Γ n)) ≡⟨ sym (subFuseₜ (↑σₗ σ) (ιₗ suc) (Γ n)) ⟩
+  subₜ (↑σₗ σ •ₗ ιₗ suc) (Γ n)       ≡⟨ subExtₜ (λ{ zero → refl ; (suc n) → refl }) (Γ n) ⟩
+  subₜ (ιₗ suc •ₗ σ) (Γ n)          ≡⟨ subFuseₜ (ιₗ suc) σ (Γ n) ⟩
+  subₜ (ιₗ suc) (subₜ σ (Γ n))      ≡⟨ subιₜ suc (subₜ σ (Γ n)) ⟩
+  renₜ suc (subₗ-Ctx Γ σ n)         ∎
 
-subₗ-Loc↑ : ∀ ℓ σ → subₗ-Loc (renₗ-Loc ℓ suc) (↑σₗ σ) ≡ renₗ-Loc (subₗ-Loc ℓ σ) suc
+subₗ-Loc↑ : ∀ ℓ σ → subₗ-Loc (↑σₗ σ) (renₗ-Loc suc ℓ) ≡ renₗ-Loc suc (subₗ-Loc σ ℓ)
 subₗ-Loc↑ ℓ σ = 
-  subₗ-Loc (renₗ-Loc ℓ suc) (↑σₗ σ)     ≡⟨ cong (λ x → subₗ-Loc x (↑σₗ σ)) (sym (subιₗ-Loc suc ℓ)) ⟩
-  subₗ-Loc (subₗ-Loc ℓ (ιₗ suc)) (↑σₗ σ) ≡⟨ sym (subFuseₗ-Loc (↑σₗ σ) (ιₗ suc) ℓ) ⟩
-  subₗ-Loc ℓ (↑σₗ σ •ₗ ιₗ suc)           ≡⟨ subExtₗ-Loc (λ{ zero → refl ; (suc n) → refl }) ℓ ⟩
-  subₗ-Loc ℓ (ιₗ suc •ₗ σ)              ≡⟨ subFuseₗ-Loc (ιₗ suc) σ ℓ ⟩
-  subₗ-Loc (subₗ-Loc ℓ σ) (ιₗ suc)      ≡⟨ subιₗ-Loc suc (subₗ-Loc ℓ σ) ⟩
-  renₗ-Loc (subₗ-Loc ℓ σ) suc           ∎
+  subₗ-Loc (↑σₗ σ) (renₗ-Loc suc ℓ)      ≡⟨ cong (λ x → subₗ-Loc (↑σₗ σ) x) (sym (subιₗ-Loc suc ℓ)) ⟩
+  subₗ-Loc (↑σₗ σ) (subₗ-Loc (ιₗ suc) ℓ) ≡⟨ sym (subFuseₗ-Loc (↑σₗ σ) (ιₗ suc) ℓ) ⟩
+  subₗ-Loc (↑σₗ σ •ₗ ιₗ suc) ℓ           ≡⟨ subExtₗ-Loc (λ{ zero → refl ; (suc n) → refl }) ℓ ⟩
+  subₗ-Loc (ιₗ suc •ₗ σ) ℓ               ≡⟨ subFuseₗ-Loc (ιₗ suc) σ ℓ ⟩
+  subₗ-Loc (ιₗ suc) (subₗ-Loc σ ℓ)       ≡⟨ subιₗ-Loc suc (subₗ-Loc σ ℓ) ⟩
+  renₗ-Loc suc (subₗ-Loc σ ℓ)            ∎
 
 subₗ-LocalCtx↑ : ∀ Δ σ → subₗ-LocalCtx (↑LocalCtx Δ) (↑σₗ σ) ≡ ↑LocalCtx (subₗ-LocalCtx Δ σ)
 subₗ-LocalCtx↑ [] σ = refl
 subₗ-LocalCtx↑ ((ℓ , t) ∷ Δ) σ = cong₂ _∷_ (cong₂ _,_ (subₗ-Loc↑ ℓ σ) refl) (subₗ-LocalCtx↑ Δ σ)
 
-subₜ↑ : ∀ τ σ → subₜ (↑ₜ τ) (↑σₗ σ) ≡ ↑ₜ (subₜ τ σ)
+subₜ↑ : ∀ τ σ → subₜ (↑σₗ σ) (↑ₜ τ) ≡ ↑ₜ (subₜ σ τ)
 subₜ↑ τ σ =
-  subₜ (renₜ τ suc) (↑σₗ σ)      ≡⟨ cong (λ x → subₜ x (↑σₗ σ)) (sym (subιₜ suc τ)) ⟩
-  subₜ (subₜ τ (ιₗ suc)) (↑σₗ σ) ≡⟨ sym (subFuseₜ (↑σₗ σ) (ιₗ suc) τ) ⟩
-  subₜ τ (↑σₗ σ •ₗ ιₗ suc)       ≡⟨ subExtₜ (λ{ zero → refl ; (suc n) → refl }) τ ⟩
-  subₜ τ (ιₗ suc •ₗ σ)          ≡⟨ subFuseₜ (ιₗ suc) σ τ ⟩
-  subₜ (subₜ τ σ) (ιₗ suc)      ≡⟨ subιₜ suc (subₜ τ σ) ⟩
-  renₜ (subₜ τ σ) suc           ∎
+  subₜ (↑σₗ σ) (renₜ suc τ)      ≡⟨ cong (λ x → subₜ (↑σₗ σ) x) (sym (subιₜ suc τ)) ⟩
+  subₜ (↑σₗ σ) (subₜ (ιₗ suc) τ) ≡⟨ sym (subFuseₜ (↑σₗ σ) (ιₗ suc) τ) ⟩
+  subₜ (↑σₗ σ •ₗ ιₗ suc) τ       ≡⟨ subExtₜ (λ{ zero → refl ; (suc n) → refl }) τ ⟩
+  subₜ (ιₗ suc •ₗ σ) τ           ≡⟨ subFuseₜ (ιₗ suc) σ τ ⟩
+  subₜ (ιₗ suc) (subₜ σ τ)       ≡⟨ subιₜ suc (subₜ σ τ) ⟩
+  renₜ suc (subₜ σ τ)            ∎
 
 -- Typing is closed under context-changing location substitutions
 tySubₗ : ∀{Θ1 Θ2 Δ Γ C τ σ} →
          σ ∶ Θ1 ⇒ₗ Θ2 →
          (Θ1 , Δ , Γ) ⊢ C ∶ τ →
-         (Θ2 , subₗ-LocalCtx Δ σ , subₗ-Ctx Γ σ) ⊢ subₗ C σ ∶ subₜ τ σ
+         (Θ2 , subₗ-LocalCtx Δ σ , subₗ-Ctx Γ σ) ⊢ subₗ σ C ∶ subₜ σ τ
 tySubₗ σ⇒ (tyVar Θ⊢Γ x) = tyVar (wfCtxSub σ⇒ Θ⊢Γ) x
 tySubₗ {Δ = Δ} {σ = σ} σ⇒ (tyDone {e = e} {t} {ℓ} Θ⊢Γ Θ⊢ℓ (e' , e⟨Δ⦊ℓ⟩≡e' , Δ∣ℓ⊢e'∶t)) =
   tyDone (wfCtxSub σ⇒ Θ⊢Γ) (wfSubₗ σ⇒ Θ⊢ℓ) (renₑ ξ e' , e⟨Δ⟨σ⟩⦊ℓ⟨σ⟩⟩≡e'⟨ξ⟩ , Δ⟨σ⟩∣ℓ⟨σ⟩⊢e'⟨ξ⟩∶t)
@@ -535,7 +535,7 @@ tySubₗ {Δ = Δ} {σ = σ} σ⇒ (tyDone {e = e} {t} {ℓ} Θ⊢Γ Θ⊢ℓ (e
   ξ : ℕ → ℕ
   ξ = locSubProj Δ σ ℓ
 
-  Δ⟨σ⟩∣ℓ⟨σ⟩⊢e'⟨ξ⟩∶t : (subₗ-LocalCtx Δ σ ∣ subₗ-Loc ℓ σ) ⊢ₑ renₑ ξ e' ∶ t
+  Δ⟨σ⟩∣ℓ⟨σ⟩⊢e'⟨ξ⟩∶t : (subₗ-LocalCtx Δ σ ∣ subₗ-Loc σ ℓ) ⊢ₑ renₑ ξ e' ∶ t
   Δ⟨σ⟩∣ℓ⟨σ⟩⊢e'⟨ξ⟩∶t = tyWkₑ ξ (locSubProj⇒ Δ σ ℓ) Δ∣ℓ⊢e'∶t
 
   e⟨ξ∘Δ⦊ℓ⟩≡e'⟨ξ⟩ : renMaybeₑ (map ξ ∘ (Δ ⦊ ℓ)) e ≡ just (renₑ ξ e')
@@ -546,9 +546,9 @@ tySubₗ {Δ = Δ} {σ = σ} σ⇒ (tyDone {e = e} {t} {ℓ} Θ⊢Γ Θ⊢ℓ (e
       ≡⟨ cong (map (renₑ ξ)) e⟨Δ⦊ℓ⟩≡e' ⟩
     just (renₑ ξ e') ∎
 
-  e⟨Δ⟨σ⟩⦊ℓ⟨σ⟩⟩≡e'⟨ξ⟩ : renMaybeₑ (subₗ-LocalCtx Δ σ ⦊ subₗ-Loc ℓ σ) e ≡ just (renₑ ξ e')
+  e⟨Δ⟨σ⟩⦊ℓ⟨σ⟩⟩≡e'⟨ξ⟩ : renMaybeₑ (subₗ-LocalCtx Δ σ ⦊ subₗ-Loc σ ℓ) e ≡ just (renₑ ξ e')
   e⟨Δ⟨σ⟩⦊ℓ⟨σ⟩⟩≡e'⟨ξ⟩ = 
-    renMaybeₑ (subₗ-LocalCtx Δ σ ⦊ subₗ-Loc ℓ σ) e
+    renMaybeₑ (subₗ-LocalCtx Δ σ ⦊ subₗ-Loc σ ℓ) e
       ≡⟨ ≲↓⇒≡ (renMaybeMonoₑ (locSubProjVars≲ Δ σ ℓ) e) (renₑ ξ e' , e⟨ξ∘Δ⦊ℓ⟩≡e'⟨ξ⟩) ⟩
     renMaybeₑ (map ξ ∘ (Δ ⦊ ℓ)) e
       ≡⟨ e⟨ξ∘Δ⦊ℓ⟩≡e'⟨ξ⟩ ⟩
@@ -560,66 +560,67 @@ tySubₗ {Δ = Δ} {Δ'} {σ = σ} σ⇒ (tyDefLocal {t1 = t1} {ℓ} C1∶t1 C2�
   tyDefLocal (tySubₗ σ⇒ C1∶t1) (tySubₗ σ⇒ C2∶τ2)
 tySubₗ {Θ1} {Θ2} {Δ} {Γ} {σ = σ} σ⇒ (tyFun {C = C} {τ1} {τ2} C∶τ2) = tyFun Γ⊢C⟨σ⟩∶τ2⟨σ⟩
   where
-  Γ'⊢C⟨σ⟩∶τ2⟨σ⟩ : (Θ2 , subₗ-LocalCtx Δ σ , subₗ-Ctx (Γ ,, τ1) σ) ⊢ subₗ C σ ∶ subₜ τ2 σ
+  Γ'⊢C⟨σ⟩∶τ2⟨σ⟩ : (Θ2 , subₗ-LocalCtx Δ σ , subₗ-Ctx (Γ ,, τ1) σ) ⊢ subₗ σ C ∶ subₜ σ τ2
   Γ'⊢C⟨σ⟩∶τ2⟨σ⟩ = tySubₗ σ⇒ C∶τ2
 
-  Γ⊢C⟨σ⟩∶τ2⟨σ⟩ : (Θ2 , subₗ-LocalCtx Δ σ , (subₗ-Ctx Γ σ ,, subₜ τ1 σ)) ⊢ subₗ C σ ∶ subₜ τ2 σ
+  Γ⊢C⟨σ⟩∶τ2⟨σ⟩ : (Θ2 , subₗ-LocalCtx Δ σ , (subₗ-Ctx Γ σ ,, subₜ σ τ1)) ⊢ subₗ σ C ∶ subₜ σ τ2
   Γ⊢C⟨σ⟩∶τ2⟨σ⟩ = tyExt ≈-refl (subₗ-Ctx,, Γ τ1 σ) Γ'⊢C⟨σ⟩∶τ2⟨σ⟩
 tySubₗ {Θ1} {Θ2} {Δ} {Γ} {σ = σ} σ⇒ (tyFix {C = C} {τ} C∶τ) = tyFix Γ⊢C⟨σ⟩∶τ⟨σ⟩
   where
-  Γ'⊢C⟨σ⟩∶τ⟨σ⟩ : (Θ2 , subₗ-LocalCtx Δ σ , subₗ-Ctx (Γ ,, τ) σ) ⊢ subₗ C σ ∶ subₜ τ σ
+  Γ'⊢C⟨σ⟩∶τ⟨σ⟩ : (Θ2 , subₗ-LocalCtx Δ σ , subₗ-Ctx (Γ ,, τ) σ) ⊢ subₗ σ C ∶ subₜ σ τ
   Γ'⊢C⟨σ⟩∶τ⟨σ⟩ = tySubₗ σ⇒ C∶τ
 
-  Γ⊢C⟨σ⟩∶τ⟨σ⟩ : (Θ2 , subₗ-LocalCtx Δ σ , (subₗ-Ctx Γ σ ,, subₜ τ σ)) ⊢ subₗ C σ ∶ subₜ τ σ
+  Γ⊢C⟨σ⟩∶τ⟨σ⟩ : (Θ2 , subₗ-LocalCtx Δ σ , (subₗ-Ctx Γ σ ,, subₜ σ τ)) ⊢ subₗ σ C ∶ subₜ σ τ
   Γ⊢C⟨σ⟩∶τ⟨σ⟩ = tyExt ≈-refl (subₗ-Ctx,, Γ τ σ) Γ'⊢C⟨σ⟩∶τ⟨σ⟩
 tySubₗ σ⇒ (tyApp C1∶τ1⇒τ2 C2∶τ1) = tyApp (tySubₗ σ⇒ C1∶τ1⇒τ2) (tySubₗ σ⇒ C2∶τ1)
 tySubₗ {Θ1} {Θ2} {Δ} {Γ} {σ = σ} σ⇒ (tyLocAbs {C = C} {τ = τ} Θ⊢Γ C∶τ) = tyLocAbs (wfCtxSub σ⇒ Θ⊢Γ) ↑Δ⟨σ⟩⊢C⟨↑σ⟩∶τ⟨↑σ⟩
   where
-  ↑Δ⟨↑σ⟩⊢C⟨↑σ⟩∶τ⟨↑σ⟩ : (↑LocCtx Θ2 , subₗ-LocalCtx (↑LocalCtx Δ) (↑σₗ σ) , ↑Ctx (subₗ-Ctx Γ σ)) ⊢ subₗ C (↑σₗ σ) ∶ subₜ τ (↑σₗ σ)
+  ↑Δ⟨↑σ⟩⊢C⟨↑σ⟩∶τ⟨↑σ⟩ : (↑LocCtx Θ2 , subₗ-LocalCtx (↑LocalCtx Δ) (↑σₗ σ) , ↑Ctx (subₗ-Ctx Γ σ)) ⊢ subₗ (↑σₗ σ) C ∶ subₜ (↑σₗ σ) τ
   ↑Δ⟨↑σ⟩⊢C⟨↑σ⟩∶τ⟨↑σ⟩ = tyExt ≈-refl (subₗ-Ctx↑ Γ σ) (tySubₗ (↑σₗ⇒ σ⇒) C∶τ)
 
-  ↑Δ⟨σ⟩⊢C⟨↑σ⟩∶τ⟨↑σ⟩ : (↑LocCtx Θ2 , ↑LocalCtx (subₗ-LocalCtx Δ σ) , ↑Ctx (subₗ-Ctx Γ σ)) ⊢ subₗ C (↑σₗ σ) ∶ subₜ τ (↑σₗ σ)
+  ↑Δ⟨σ⟩⊢C⟨↑σ⟩∶τ⟨↑σ⟩ : (↑LocCtx Θ2 , ↑LocalCtx (subₗ-LocalCtx Δ σ) , ↑Ctx (subₗ-Ctx Γ σ)) ⊢ subₗ (↑σₗ σ) C ∶ subₜ (↑σₗ σ) τ
   ↑Δ⟨σ⟩⊢C⟨↑σ⟩∶τ⟨↑σ⟩ =
-    subst (λ x → (↑LocCtx Θ2 , x , ↑Ctx (subₗ-Ctx Γ σ)) ⊢ subₗ C (↑σₗ σ) ∶ subₜ τ (↑σₗ σ))
+    subst (λ x → (↑LocCtx Θ2 , x , ↑Ctx (subₗ-Ctx Γ σ)) ⊢ subₗ (↑σₗ σ) C ∶ subₜ (↑σₗ σ) τ)
       (subₗ-LocalCtx↑ Δ σ) ↑Δ⟨↑σ⟩⊢C⟨↑σ⟩∶τ⟨↑σ⟩
 tySubₗ {Θ1} {Θ2} {Δ} {Γ} {σ = σ} σ⇒ (tyLocApp {C = C} {τ = τ} {ℓ = ℓ} C∶τ Θ⊢ℓ) = Cℓ∶τ⟨id▸ℓ⟩⟨σ⟩
   where
   Cℓ∶τ⟨↑σ⟩⟨id▸ℓ⟨σ⟩⟩ : (Θ2 , subₗ-LocalCtx Δ σ , subₗ-Ctx Γ σ)
-                     ⊢ LocApp (subₗ C σ) (subₗ-Loc ℓ σ)
-                     ∶ subₜ (subₜ τ (↑σₗ σ)) (idSubₗ ▸ₗ subₗ-Loc ℓ σ)
+                     ⊢ LocApp (subₗ σ C) (subₗ-Loc σ ℓ)
+                     ∶ subₜ (idSubₗ ▸ₗ subₗ-Loc σ ℓ) (subₜ (↑σₗ σ) τ)
   Cℓ∶τ⟨↑σ⟩⟨id▸ℓ⟨σ⟩⟩ = tyLocApp (tySubₗ σ⇒ C∶τ) (wfSubₗ σ⇒ Θ⊢ℓ)
 
-  τ⟨↑σ⟩⟨id▸ℓ⟨σ⟩⟩≡τ⟨id▸ℓ⟩⟨σ⟩ : subₜ (subₜ τ (↑σₗ σ)) (idSubₗ ▸ₗ subₗ-Loc ℓ σ) ≡ subₜ (subₜ τ (idSubₗ ▸ₗ ℓ)) σ
+  τ⟨↑σ⟩⟨id▸ℓ⟨σ⟩⟩≡τ⟨id▸ℓ⟩⟨σ⟩ : subₜ (idSubₗ ▸ₗ subₗ-Loc σ ℓ) (subₜ (↑σₗ σ) τ) ≡ subₜ σ (subₜ (idSubₗ ▸ₗ ℓ) τ)
   τ⟨↑σ⟩⟨id▸ℓ⟨σ⟩⟩≡τ⟨id▸ℓ⟩⟨σ⟩ = 
-    subₜ (subₜ τ (↑σₗ σ)) (idSubₗ ▸ₗ subₗ-Loc ℓ σ)
-      ≡⟨ sym (subFuseₜ (idSubₗ ▸ₗ subₗ-Loc ℓ σ) (↑σₗ σ) τ) ⟩
-    subₜ τ ((idSubₗ ▸ₗ subₗ-Loc ℓ σ) •ₗ ↑σₗ σ)
+    subₜ (idSubₗ ▸ₗ subₗ-Loc σ ℓ) (subₜ (↑σₗ σ) τ)
+      ≡⟨ sym (subFuseₜ (idSubₗ ▸ₗ subₗ-Loc σ ℓ) (↑σₗ σ) τ) ⟩
+    subₜ ((idSubₗ ▸ₗ subₗ-Loc σ ℓ) •ₗ ↑σₗ σ) τ
       ≡⟨ subExtₜ (λ{ zero → refl ; (suc n) → 
-        subₗ-Loc (subₗ-Loc (σ n) (Var ∘′ suc)) (Var ▸ₗ subₗ-Loc ℓ σ)
-          ≡⟨ sym (subFuseₗ-Loc (Var ▸ₗ subₗ-Loc ℓ σ) (Var ∘′ suc) (σ n)) ⟩
-        subₗ-Loc (σ n) Var
+        subₗ-Loc (Var ▸ₗ subₗ-Loc σ ℓ) (subₗ-Loc (Var ∘′ suc) (σ n))
+          ≡⟨ sym (subFuseₗ-Loc (Var ▸ₗ subₗ-Loc σ ℓ) (Var ∘′ suc) (σ n)) ⟩
+        subₗ-Loc Var (σ n)
           ≡⟨ subIdₗ-Loc (σ n) ⟩
         σ n ∎ }) τ ⟩
-    subₜ τ (σ •ₗ (idSubₗ ▸ₗ ℓ))
+    subₜ (σ •ₗ (idSubₗ ▸ₗ ℓ)) τ
       ≡⟨ subFuseₜ σ (idSubₗ ▸ₗ ℓ) τ ⟩
-    subₜ (subₜ τ (idSubₗ ▸ₗ ℓ)) σ ∎
+    subₜ σ (subₜ (idSubₗ ▸ₗ ℓ) τ) ∎
 
   Cℓ∶τ⟨id▸ℓ⟩⟨σ⟩ : (Θ2 , subₗ-LocalCtx Δ σ , subₗ-Ctx Γ σ)
-                  ⊢ LocApp (subₗ C σ) (subₗ-Loc ℓ σ)
-                  ∶ subₜ (subₜ τ (idSubₗ ▸ₗ ℓ)) σ
+                  ⊢ LocApp (subₗ σ C) (subₗ-Loc σ ℓ)
+                  ∶ subₜ σ (subₜ (idSubₗ ▸ₗ ℓ) τ)
   Cℓ∶τ⟨id▸ℓ⟩⟨σ⟩ = subst (λ x → _ ⊢ _ ∶ x) τ⟨↑σ⟩⟨id▸ℓ⟨σ⟩⟩≡τ⟨id▸ℓ⟩⟨σ⟩ Cℓ∶τ⟨↑σ⟩⟨id▸ℓ⟨σ⟩⟩
 tySubₗ {Θ1} {Θ2} {Δ} {Γ} {σ = σ} σ⇒ (tyTellLet {C2 = C2} {τ = τ} C1∶Loc Θ⊢ρ1 Θ⊢ρ2 Θ⊢τ C2∶↑τ) =
   tyTellLet (tySubₗ σ⇒ C1∶Loc) (wfSubₗₗ σ⇒ Θ⊢ρ1) (wfSubₗₗ σ⇒ Θ⊢ρ2) (wfSubₜ σ⇒ Θ⊢τ) ↑Δ⟨σ⟩⊢C⟨↑σ⟩∶↑τ⟨σ⟩
   where
-  ↑Δ⟨↑σ⟩⊢C⟨↑σ⟩∶τ⟨↑σ⟩ : (↑LocCtx Θ2 , subₗ-LocalCtx (↑LocalCtx Δ) (↑σₗ σ) , ↑Ctx (subₗ-Ctx Γ σ)) ⊢ subₗ C2 (↑σₗ σ) ∶ subₜ (↑ₜ τ) (↑σₗ σ)
+  ↑Δ⟨↑σ⟩⊢C⟨↑σ⟩∶τ⟨↑σ⟩ : (↑LocCtx Θ2 , subₗ-LocalCtx (↑LocalCtx Δ) (↑σₗ σ) , ↑Ctx (subₗ-Ctx Γ σ)) ⊢ subₗ (↑σₗ σ) C2 ∶ subₜ (↑σₗ σ) (↑ₜ τ)
   ↑Δ⟨↑σ⟩⊢C⟨↑σ⟩∶τ⟨↑σ⟩ = tyExt ≈-refl (subₗ-Ctx↑ Γ σ) (tySubₗ (↑σₗ⇒ σ⇒) C2∶↑τ)
 
-  ↑Δ⟨σ⟩⊢C⟨↑σ⟩∶↑τ⟨↑σ⟩ : (↑LocCtx Θ2 , ↑LocalCtx (subₗ-LocalCtx Δ σ) , ↑Ctx (subₗ-Ctx Γ σ)) ⊢ subₗ C2 (↑σₗ σ) ∶ subₜ (↑ₜ τ) (↑σₗ σ)
+  ↑Δ⟨σ⟩⊢C⟨↑σ⟩∶↑τ⟨↑σ⟩ : (↑LocCtx Θ2 , ↑LocalCtx (subₗ-LocalCtx Δ σ) , ↑Ctx (subₗ-Ctx Γ σ)) ⊢ subₗ (↑σₗ σ) C2 ∶ subₜ (↑σₗ σ) (↑ₜ τ)
   ↑Δ⟨σ⟩⊢C⟨↑σ⟩∶↑τ⟨↑σ⟩ =
-    subst (λ x → (↑LocCtx Θ2 , x , ↑Ctx (subₗ-Ctx Γ σ)) ⊢ subₗ C2 (↑σₗ σ) ∶ subₜ (↑ₜ τ) (↑σₗ σ))
+    subst (λ x → (↑LocCtx Θ2 , x , ↑Ctx (subₗ-Ctx Γ σ)) ⊢ subₗ (↑σₗ σ) C2 ∶ subₜ (↑σₗ σ) (↑ₜ τ))
       (subₗ-LocalCtx↑ Δ σ) ↑Δ⟨↑σ⟩⊢C⟨↑σ⟩∶τ⟨↑σ⟩
 
-  ↑Δ⟨σ⟩⊢C⟨↑σ⟩∶↑τ⟨σ⟩ : (↑LocCtx Θ2 , ↑LocalCtx (subₗ-LocalCtx Δ σ) , ↑Ctx (subₗ-Ctx Γ σ)) ⊢ subₗ C2 (↑σₗ σ) ∶ ↑ₜ (subₜ τ σ)
+  ↑Δ⟨σ⟩⊢C⟨↑σ⟩∶↑τ⟨σ⟩ : (↑LocCtx Θ2 , ↑LocalCtx (subₗ-LocalCtx Δ σ) , ↑Ctx (subₗ-Ctx Γ σ)) ⊢ subₗ (↑σₗ σ) C2 ∶ ↑ₜ (subₜ σ τ)
   ↑Δ⟨σ⟩⊢C⟨↑σ⟩∶↑τ⟨σ⟩ = 
-    subst (λ x → (↑LocCtx Θ2 , ↑LocalCtx (subₗ-LocalCtx Δ σ) , ↑Ctx (subₗ-Ctx Γ σ)) ⊢ subₗ C2 (↑σₗ σ) ∶ x)
+    subst (λ x → (↑LocCtx Θ2 , ↑LocalCtx (subₗ-LocalCtx Δ σ) , ↑Ctx (subₗ-Ctx Γ σ)) ⊢ subₗ (↑σₗ σ) C2 ∶ x)
       (subₜ↑ τ σ) ↑Δ⟨σ⟩⊢C⟨↑σ⟩∶↑τ⟨↑σ⟩
+  

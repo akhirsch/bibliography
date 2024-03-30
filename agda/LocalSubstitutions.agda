@@ -35,24 +35,24 @@ open Location L
 open ≡-Reasoning
 
 -- Substitute local variables in a choreography
-subₗₑ : (c : Chor) (σ : ℕ → Expr) → Chor
-subₗₑ (Done ℓ e) σ = Done ℓ (subₑ σ e)
-subₗₑ (Var x) σ = Var x
-subₗₑ (Send ℓ1 c ℓ2) σ = Send ℓ1 (subₗₑ c σ) ℓ2
-subₗₑ (If ℓ c c1 c2) σ = If ℓ (subₗₑ c σ) (subₗₑ c1 σ) (subₗₑ c2 σ)
-subₗₑ (Sync ℓ1 d ℓ2 c) σ = Sync ℓ1 d ℓ2 (subₗₑ c σ)
-subₗₑ (DefLocal ℓ c1 c2) σ = DefLocal ℓ (subₗₑ c1 σ) (subₗₑ c2 (↑σₑ σ))
-subₗₑ (Fun τ c) σ = Fun τ (subₗₑ c σ)
-subₗₑ (Fix τ c) σ = Fix τ (subₗₑ c σ)
-subₗₑ (App c1 c2) σ = App (subₗₑ c1 σ) (subₗₑ c2 σ)
-subₗₑ (LocAbs c) σ = LocAbs (subₗₑ c σ)
-subₗₑ (LocApp c ℓ) σ = LocApp (subₗₑ c σ) ℓ
-subₗₑ (TellLet ℓ ρ1 c1 ρ2 c2) σ = TellLet ℓ ρ1 (subₗₑ c1 σ) ρ2 (subₗₑ c2 σ)
+subₗₑ : (σ : ℕ → Expr) (c : Chor) → Chor
+subₗₑ σ (Done ℓ e) = Done ℓ (subₑ σ e)
+subₗₑ σ (Var x) = Var x
+subₗₑ σ (Send ℓ1 c ℓ2) = Send ℓ1 (subₗₑ σ c) ℓ2
+subₗₑ σ (If ℓ c c1 c2) = If ℓ (subₗₑ σ c) (subₗₑ σ c1) (subₗₑ σ c2)
+subₗₑ σ (Sync ℓ1 d ℓ2 c) = Sync ℓ1 d ℓ2 (subₗₑ σ c)
+subₗₑ σ (DefLocal ℓ c1 c2) = DefLocal ℓ (subₗₑ σ c1) (subₗₑ (↑σₑ σ) c2)
+subₗₑ σ (Fun τ c) = Fun τ (subₗₑ σ c)
+subₗₑ σ (Fix τ c) = Fix τ (subₗₑ σ c)
+subₗₑ σ (App c1 c2) = App (subₗₑ σ c1) (subₗₑ σ c2)
+subₗₑ σ (LocAbs c) = LocAbs (subₗₑ σ c)
+subₗₑ σ (LocApp c ℓ) = LocApp (subₗₑ σ c) ℓ
+subₗₑ σ (TellLet ℓ ρ1 c1 ρ2 c2) = TellLet ℓ ρ1 (subₗₑ σ c1) ρ2 (subₗₑ σ c2)
 
 -- Substituting local variables respects extensional equality
 subExtₗₑ : ∀{σ1 σ2} →
-          σ1 ≈ σ2 →
-          ∀ c → subₗₑ c σ1 ≡ subₗₑ c σ2
+           σ1 ≈ σ2 →
+           subₗₑ σ1 ≈ subₗₑ σ2
 subExtₗₑ σ1≈σ2 (Done ℓ e) = cong₂ Done refl (subExtₑ σ1≈σ2 e)
 subExtₗₑ σ1≈σ2 (Var x) = refl
 subExtₗₑ σ1≈σ2 (Send ℓ1 c ℓ2) = cong₃ Send refl (subExtₗₑ σ1≈σ2 c) refl
@@ -70,7 +70,7 @@ subExtₗₑ σ1≈σ2 (TellLet ℓ ρ1 c1 ρ2 c2) =
   cong₅ TellLet refl refl (subExtₗₑ σ1≈σ2 c1) refl (subExtₗₑ σ1≈σ2 c2)
 
 -- Substituting local variables respects the identity
-subIdₗₑ : ∀ c → subₗₑ c idSubₑ ≡ c
+subIdₗₑ : ∀ c → subₗₑ idSubₑ c ≡ c
 subIdₗₑ (Done ℓ e) = cong₂ Done refl (subIdₑ e)
 subIdₗₑ (Var x) = refl
 subIdₗₑ (Send ℓ1 c ℓ2) = cong₃ Send refl (subIdₗₑ c) refl
@@ -85,7 +85,7 @@ subIdₗₑ (LocApp c ℓ) = cong₂ LocApp (subIdₗₑ c) refl
 subIdₗₑ (TellLet ℓ ρ1 c1 ρ2 c2) = cong₅ TellLet refl refl (subIdₗₑ c1) refl (subIdₗₑ c2)
 
 -- Substitution respects the inclusion
-subιₗₑ : ∀ ξ c → subₗₑ c (ιₑ ξ) ≡ renₗₑ c ξ
+subιₗₑ : ∀ ξ → subₗₑ (ιₑ ξ) ≈ renₗₑ ξ
 subιₗₑ ξ (Done ℓ e) = cong₂ Done refl (subRenₑ ξ e)
 subιₗₑ ξ (Var x) = refl
 subιₗₑ ξ (Send ℓ1 c ℓ2) = cong₃ Send refl (subιₗₑ ξ c) refl
@@ -99,3 +99,4 @@ subιₗₑ ξ (LocAbs c) = cong LocAbs (subιₗₑ ξ c)
 subιₗₑ ξ (LocApp c ℓ) = cong₂ LocApp (subιₗₑ ξ c) refl
 subιₗₑ ξ (TellLet ℓ ρ1 c1 ρ2 c2) =
   cong₅ TellLet refl refl (subιₗₑ ξ c1) refl (subιₗₑ ξ c2)
+ 

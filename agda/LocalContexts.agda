@@ -53,7 +53,7 @@ LocalCtxFun = Loc → ℕ → Typₑ
 -- Renaming of locations in local contexts
 renₗ-LocalCtx : LocalCtx → (ℕ → ℕ) → LocalCtx
 renₗ-LocalCtx [] ξ = []
-renₗ-LocalCtx ((ℓ , t) ∷ Δ) ξ = (renₗ-Loc ℓ ξ , t) ∷ (renₗ-LocalCtx Δ ξ)
+renₗ-LocalCtx ((ℓ , t) ∷ Δ) ξ = (renₗ-Loc ξ ℓ , t) ∷ (renₗ-LocalCtx Δ ξ)
 
 {-
   The projection Δ ∣ ℓ of a local context Δ at a given location ℓ,
@@ -155,9 +155,9 @@ _,,[_]_ : LocalCtxFun → Loc → Typₑ → LocalCtxFun
 -- The projection of a context is unchanged by injective location renaming
 projInj : ∀ ξ Δ ℓ →
              Injective _≡_ _≡_ ξ →
-             Δ ∣ ℓ ≈ renₗ-LocalCtx Δ ξ ∣ renₗ-Loc ℓ ξ
+             Δ ∣ ℓ ≈ renₗ-LocalCtx Δ ξ ∣ renₗ-Loc ξ ℓ
 projInj ξ [] ℓ ξ-inj n = refl
-projInj ξ ((ℓ' , t) ∷ Δ) ℓ ξ-inj with ≡-dec-Loc ℓ ℓ' | ≡-dec-Loc (renₗ-Loc ℓ ξ) (renₗ-Loc ℓ' ξ)
+projInj ξ ((ℓ' , t) ∷ Δ) ℓ ξ-inj with ≡-dec-Loc ℓ ℓ' | ≡-dec-Loc (renₗ-Loc ξ ℓ) (renₗ-Loc ξ ℓ')
 ... | yes _ | yes _ =  λ{ zero → refl
                        ; (suc n) → projInj ξ Δ ℓ ξ-inj n }
 ... | yes refl | no ¬q = ⊥-elim (¬q refl)
@@ -167,9 +167,9 @@ projInj ξ ((ℓ' , t) ∷ Δ) ℓ ξ-inj with ≡-dec-Loc ℓ ℓ' | ≡-dec-Lo
 -- The projecting renaming is unchanged by an injective location renaming
 projVarsInj : ∀ ξ Δ ℓ →
              Injective _≡_ _≡_ ξ →
-             Δ ⦊ ℓ ≈ renₗ-LocalCtx Δ ξ ⦊ renₗ-Loc ℓ ξ
+             Δ ⦊ ℓ ≈ renₗ-LocalCtx Δ ξ ⦊ renₗ-Loc ξ ℓ
 projVarsInj ξ [] ℓ ξ-inj n = refl
-projVarsInj ξ ((ℓ' , t) ∷ Δ) ℓ ξ-inj with ≡-dec-Loc ℓ ℓ' | ≡-dec-Loc (renₗ-Loc ℓ ξ) (renₗ-Loc ℓ' ξ)
+projVarsInj ξ ((ℓ' , t) ∷ Δ) ℓ ξ-inj with ≡-dec-Loc ℓ ℓ' | ≡-dec-Loc (renₗ-Loc ξ ℓ) (renₗ-Loc ξ ℓ')
 ... | yes _ | yes _ = λ{ zero → refl
                        ; (suc n) → cong (map suc) (projVarsInj ξ Δ ℓ ξ-inj n) }
 ... | yes refl | no ¬q = ⊥-elim (¬q refl)
@@ -182,9 +182,9 @@ projVarsDefInj : ∀{ξ} (Δ : LocalCtx) (ℓ : Loc) →
           Injective _≡_ _≡_ ξ →
           (n : ℕ) →
           (Δ ⦊↓ ℓ) n →
-          (renₗ-LocalCtx Δ ξ ⦊↓ renₗ-Loc ℓ ξ) n
+          (renₗ-LocalCtx Δ ξ ⦊↓ renₗ-Loc ξ ℓ) n
 projVarsDefInj [] ℓ ξ-inj n tt = tt
-projVarsDefInj {ξ} ((ℓ' , t) ∷ Δ) ℓ ξ-inj with ≡-dec-Loc ℓ ℓ' | ≡-dec-Loc (renₗ-Loc ℓ ξ) (renₗ-Loc ℓ' ξ)
+projVarsDefInj {ξ} ((ℓ' , t) ∷ Δ) ℓ ξ-inj with ≡-dec-Loc ℓ ℓ' | ≡-dec-Loc (renₗ-Loc ξ ℓ) (renₗ-Loc ξ ℓ')
 ... | yes _    | yes _ = λ{ zero tt → tt ; (suc n) ⦊↓n → projVarsDefInj Δ ℓ ξ-inj n ⦊↓n }
 ... | yes refl | no ¬q = ⊥-elim (¬q refl)
 ... | no ¬p    | yes q = ⊥-elim (¬p (renInjₗ-Loc ξ-inj q))
@@ -194,10 +194,10 @@ projVarsDefInj {ξ} ((ℓ' , t) ∷ Δ) ℓ ξ-inj with ≡-dec-Loc ℓ ℓ' | �
 projVarsDefInj⁻ : ∀{ξ} (Δ : LocalCtx) (ℓ : Loc) →
           Injective _≡_ _≡_ ξ →
           (n : ℕ) →
-          (renₗ-LocalCtx Δ ξ ⦊↓ renₗ-Loc ℓ ξ) n →
+          (renₗ-LocalCtx Δ ξ ⦊↓ renₗ-Loc ξ ℓ) n →
           (Δ ⦊↓ ℓ) n
 projVarsDefInj⁻ [] ℓ ξ-inj n tt = tt
-projVarsDefInj⁻ {ξ} ((ℓ' , t) ∷ Δ) ℓ ξ-inj with ≡-dec-Loc ℓ ℓ' | ≡-dec-Loc (renₗ-Loc ℓ ξ) (renₗ-Loc ℓ' ξ)
+projVarsDefInj⁻ {ξ} ((ℓ' , t) ∷ Δ) ℓ ξ-inj with ≡-dec-Loc ℓ ℓ' | ≡-dec-Loc (renₗ-Loc ξ ℓ) (renₗ-Loc ξ ℓ')
 ... | yes _    | yes _ = λ{ zero tt → tt ; (suc n) ⦊↓n → projVarsDefInj⁻ Δ ℓ ξ-inj n ⦊↓n }
 ... | yes refl | no ¬q = ⊥-elim (¬q refl)
 ... | no ¬p    | yes q = ⊥-elim (¬p (renInjₗ-Loc ξ-inj q))
@@ -207,14 +207,14 @@ projVarsDefInj⁻ {ξ} ((ℓ' , t) ∷ Δ) ℓ ξ-inj with ≡-dec-Loc ℓ ℓ' 
 tyProjRen : ∀{t} ξ Δ ℓ e →
             Injective _≡_ _≡_ ξ →
             (Δ ∣ ℓ) ⊢ₑ renMaybeₑ (Δ ⦊ ℓ) e ?∶ t →
-            (renₗ-LocalCtx Δ ξ ∣ renₗ-Loc ℓ ξ)
-              ⊢ₑ renMaybeₑ (renₗ-LocalCtx Δ ξ ⦊ renₗ-Loc ℓ ξ) e ?∶ t
+            (renₗ-LocalCtx Δ ξ ∣ renₗ-Loc ξ ℓ)
+              ⊢ₑ renMaybeₑ (renₗ-LocalCtx Δ ξ ⦊ renₗ-Loc ξ ℓ) e ?∶ t
 tyProjRen {t} ξ Δ ℓ e ξ-inj (e' , e⟨Δ⦊ℓ⟩≡e' , e'∶t) = e' , sym e⟨Δ⦊ℓ⟩≡e⟨Δ⟨ξ⟩⦊ℓ⟨ξ⟩⟩ ∙ e⟨Δ⦊ℓ⟩≡e' , Δ⟨ξ⟩∣ℓ⟨ξ⟩⊢e'∶t
   where
-  Δ⟨ξ⟩∣ℓ⟨ξ⟩⊢e'∶t : (renₗ-LocalCtx Δ ξ ∣ renₗ-Loc ℓ ξ) ⊢ₑ e' ∶ t
+  Δ⟨ξ⟩∣ℓ⟨ξ⟩⊢e'∶t : (renₗ-LocalCtx Δ ξ ∣ renₗ-Loc ξ ℓ) ⊢ₑ e' ∶ t
   Δ⟨ξ⟩∣ℓ⟨ξ⟩⊢e'∶t = tyExtₑ (projInj ξ Δ ℓ ξ-inj) e'∶t
   
-  e⟨Δ⦊ℓ⟩≡e⟨Δ⟨ξ⟩⦊ℓ⟨ξ⟩⟩ : renMaybeₑ (Δ ⦊ ℓ) e ≡ renMaybeₑ (renₗ-LocalCtx Δ ξ ⦊ renₗ-Loc ℓ ξ) e
+  e⟨Δ⦊ℓ⟩≡e⟨Δ⟨ξ⟩⦊ℓ⟨ξ⟩⟩ : renMaybeₑ (Δ ⦊ ℓ) e ≡ renMaybeₑ (renₗ-LocalCtx Δ ξ ⦊ renₗ-Loc ξ ℓ) e
   e⟨Δ⦊ℓ⟩≡e⟨Δ⟨ξ⟩⦊ℓ⟨ξ⟩⟩ = renMaybeExtₑ (projVarsInj ξ Δ ℓ ξ-inj) e
 
 -- Renaming locations respects extensional equality
@@ -272,7 +272,7 @@ renFuseₗ-LocalCtx ξ1 ξ2 ((ℓ , t) ∷ Δ) = cong₂ _∷_ (cong₂ _,_ (ren
 -- Substitution of locations in local contexts
 subₗ-LocalCtx : LocalCtx → (ℕ → Loc) → LocalCtx
 subₗ-LocalCtx [] σ = []
-subₗ-LocalCtx ((ℓ , t) ∷ Δ) σ = (subₗ-Loc ℓ σ , t) ∷ (subₗ-LocalCtx Δ σ)
+subₗ-LocalCtx ((ℓ , t) ∷ Δ) σ = (subₗ-Loc σ ℓ , t) ∷ (subₗ-LocalCtx Δ σ)
 
 -- Substitution respects extensional equality
 subExtₗ-LocalCtx : ∀{σ1 σ2} → σ1 ≈ σ2 → ∀ Δ → subₗ-LocalCtx Δ σ1 ≡ subₗ-LocalCtx Δ σ2
@@ -309,7 +309,7 @@ subιₗ-LocalCtx ξ ((ℓ , t) ∷ Δ) = cong₂ _∷_ (cong₂ _,_ (subιₗ-L
 -}
 locSubProj : (Δ : LocalCtx) (σ : ℕ → Loc) (ℓ : Loc) → ℕ → ℕ
 locSubProj [] σ ℓ = idRen
-locSubProj ((ℓ' , t) ∷ Δ) σ ℓ with ≡-dec-Loc ℓ ℓ' | ≡-dec-Loc (subₗ-Loc ℓ σ) (subₗ-Loc ℓ' σ)
+locSubProj ((ℓ' , t) ∷ Δ) σ ℓ with ≡-dec-Loc ℓ ℓ' | ≡-dec-Loc (subₗ-Loc σ ℓ) (subₗ-Loc σ ℓ')
 ... | yes _    | yes _ = ↑ (locSubProj Δ σ ℓ)
 ... | yes refl | no ¬q = ⊥-elim (¬q refl)
 ... | no ¬p    | yes q = suc ∘ locSubProj Δ σ ℓ
@@ -317,9 +317,9 @@ locSubProj ((ℓ' , t) ∷ Δ) σ ℓ with ≡-dec-Loc ℓ ℓ' | ≡-dec-Loc (s
 
 -- The substitution renaming changes Δ ∣ ℓ into Δ⟨σ⟩ ∣ ℓ⟨σ⟩
 locSubProj⇒ : ∀ Δ σ ℓ →
-              Δ ∣ ℓ ≈ (subₗ-LocalCtx Δ σ ∣ subₗ-Loc ℓ σ) ∘ locSubProj Δ σ ℓ
+              Δ ∣ ℓ ≈ (subₗ-LocalCtx Δ σ ∣ subₗ-Loc σ ℓ) ∘ locSubProj Δ σ ℓ
 locSubProj⇒ [] σ ℓ n = refl
-locSubProj⇒ ((ℓ' , t) ∷ Δ) σ ℓ with ≡-dec-Loc ℓ ℓ' | ≡-dec-Loc (subₗ-Loc ℓ σ) (subₗ-Loc ℓ' σ)
+locSubProj⇒ ((ℓ' , t) ∷ Δ) σ ℓ with ≡-dec-Loc ℓ ℓ' | ≡-dec-Loc (subₗ-Loc σ ℓ) (subₗ-Loc σ ℓ')
 ... | yes _    | yes _ = λ{ zero → refl
                          ; (suc n) → locSubProj⇒ Δ σ ℓ n }
 ... | yes refl | no ¬q = ⊥-elim (¬q refl)
@@ -329,7 +329,7 @@ locSubProj⇒ ((ℓ' , t) ∷ Δ) σ ℓ with ≡-dec-Loc ℓ ℓ' | ≡-dec-Loc
 -- The substitution renaming is injective
 locSubProjInj' : ∀ Δ σ ℓ x y → locSubProj Δ σ ℓ x ≡ locSubProj Δ σ ℓ y → x ≡ y
 locSubProjInj' [] σ ℓ x y x≡y = x≡y
-locSubProjInj' ((ℓ' , t) ∷ Δ) σ ℓ with ≡-dec-Loc ℓ ℓ' | ≡-dec-Loc (subₗ-Loc ℓ σ) (subₗ-Loc ℓ' σ)
+locSubProjInj' ((ℓ' , t) ∷ Δ) σ ℓ with ≡-dec-Loc ℓ ℓ' | ≡-dec-Loc (subₗ-Loc σ ℓ) (subₗ-Loc σ ℓ')
 ... | yes _    | yes _ = λ{ zero    zero    z≡z → z≡z
                           ; zero    (suc y) z≡s → ⊥-elim (1+n≢0 (sym z≡s))
                           ; (suc x) zero    s≡z → ⊥-elim (1+n≢0 s≡z)
@@ -363,12 +363,12 @@ open ≡-Reasoning
 -}
 locSubProjVars : ∀ Δ σ ℓ n →
                  (Δ ⦊↓ ℓ) n →
-                 (subₗ-LocalCtx Δ σ ⦊ subₗ-Loc ℓ σ) n ≡ map (locSubProj Δ σ ℓ) ((Δ ⦊ ℓ) n)
+                 (subₗ-LocalCtx Δ σ ⦊ subₗ-Loc σ ℓ) n ≡ map (locSubProj Δ σ ℓ) ((Δ ⦊ ℓ) n)
 locSubProjVars [] σ ℓ n tt = refl
-locSubProjVars ((ℓ' , t) ∷ Δ) σ ℓ with ≡-dec-Loc ℓ ℓ' | ≡-dec-Loc (subₗ-Loc ℓ σ) (subₗ-Loc ℓ' σ)
+locSubProjVars ((ℓ' , t) ∷ Δ) σ ℓ with ≡-dec-Loc ℓ ℓ' | ≡-dec-Loc (subₗ-Loc σ ℓ) (subₗ-Loc σ ℓ')
 ... | yes _    | yes _ = λ{ zero tt → refl
                          ; (suc n) Δ⦊↓ℓn → 
-    map suc ((subₗ-LocalCtx Δ σ ⦊ subₗ-Loc ℓ σ) n)
+    map suc ((subₗ-LocalCtx Δ σ ⦊ subₗ-Loc σ ℓ) n)
       ≡⟨ cong (map suc) (locSubProjVars Δ σ ℓ n Δ⦊↓ℓn) ⟩
     map suc (map (locSubProj Δ σ ℓ) ((Δ ⦊ ℓ) n))
       ≡⟨ sym (Maybe-map-fuse suc (locSubProj Δ σ ℓ) (projVars Δ ℓ n)) ⟩
@@ -380,7 +380,7 @@ locSubProjVars ((ℓ' , t) ∷ Δ) σ ℓ with ≡-dec-Loc ℓ ℓ' | ≡-dec-Lo
 ... | yes refl | no ¬q = ⊥-elim (¬q refl)
 ... | no ¬p    | yes q = λ{ zero ()
                          ; (suc n) Δ⦊↓ℓn → 
-    map suc ((subₗ-LocalCtx Δ σ ⦊ subₗ-Loc ℓ σ) n)
+    map suc ((subₗ-LocalCtx Δ σ ⦊ subₗ-Loc σ ℓ) n)
       ≡⟨ cong (map suc) (locSubProjVars Δ σ ℓ n Δ⦊↓ℓn) ⟩
     map suc (map (locSubProj Δ σ ℓ) ((Δ ⦊ ℓ) n))
       ≡⟨ sym (Maybe-map-fuse suc (locSubProj Δ σ ℓ) (projVars Δ ℓ n)) ⟩
@@ -392,9 +392,9 @@ locSubProjVars ((ℓ' , t) ∷ Δ) σ ℓ with ≡-dec-Loc ℓ ℓ' | ≡-dec-Lo
   The substitution renaming after the projection renaming is
   less-defined-than or equal to the substituted projection renaming.
 -}
-locSubProjVars≲ : ∀ Δ σ ℓ n → (subₗ-LocalCtx Δ σ ⦊ subₗ-Loc ℓ σ) n ≲ map (locSubProj Δ σ ℓ) ((Δ ⦊ ℓ) n)
+locSubProjVars≲ : ∀ Δ σ ℓ n → (subₗ-LocalCtx Δ σ ⦊ subₗ-Loc σ ℓ) n ≲ map (locSubProj Δ σ ℓ) ((Δ ⦊ ℓ) n)
 locSubProjVars≲ Δ σ ℓ =
-  map↓≡⇒≲ (locSubProj Δ σ ℓ) (Δ ⦊ ℓ) (subₗ-LocalCtx Δ σ ⦊ subₗ-Loc ℓ σ)
+  map↓≡⇒≲ (locSubProj Δ σ ℓ) (Δ ⦊ ℓ) (subₗ-LocalCtx Δ σ ⦊ subₗ-Loc σ ℓ)
     λ{ n ↓Δ⦊ℓ → sym (locSubProjVars Δ σ ℓ n (justProjVars Δ ℓ n ↓Δ⦊ℓ)) }
 
 -- Order preserving embeddings between local contexts
@@ -471,8 +471,8 @@ renIdOPE⦊ ((ℓ' , t) ∷ Δ) ℓ with ≡-dec-Loc ℓ ℓ'
 -- Bind a location in an OPE
 ↑OPE : ∀{Δ1 Δ2} → OPE Δ1 Δ2 → OPE (↑LocalCtx Δ1) (↑LocalCtx Δ2)
 ↑OPE ε = ε
-↑OPE (Keep ξ ℓ t) = Keep (↑OPE ξ) (renₗ-Loc ℓ suc) t 
-↑OPE (Drop ξ ℓ t) = Drop (↑OPE ξ) (renₗ-Loc ℓ suc) t
+↑OPE (Keep ξ ℓ t) = Keep (↑OPE ξ) (renₗ-Loc suc ℓ) t 
+↑OPE (Drop ξ ℓ t) = Drop (↑OPE ξ) (renₗ-Loc suc ℓ) t
 
 -- The interpretation respects binding a location variable
 ↑renOPE : ∀{Δ1 Δ2} (ξ : OPE Δ1 Δ2) → ⟦ ↑OPE ξ ⟧ ≈ ⟦ ξ ⟧
@@ -482,14 +482,14 @@ renIdOPE⦊ ((ℓ' , t) ∷ Δ) ℓ with ≡-dec-Loc ℓ ℓ'
 
 -- The projected interpretation respects binding a location variable
 ↑renOPE⦊ : ∀{Δ1 Δ2} (ξ : OPE Δ1 Δ2) (ℓ : Loc) →
-          ⟦ ↑OPE ξ ⟧⦊ (renₗ-Loc ℓ suc) ≈ ⟦ ξ ⟧⦊ ℓ
+          ⟦ ↑OPE ξ ⟧⦊ (renₗ-Loc suc ℓ) ≈ ⟦ ξ ⟧⦊ ℓ
 ↑renOPE⦊ ε ℓ n = refl
-↑renOPE⦊ (Keep ξ ℓ' t) ℓ with ≡-dec-Loc ℓ ℓ' | ≡-dec-Loc (renₗ-Loc ℓ suc) (renₗ-Loc ℓ' suc)
+↑renOPE⦊ (Keep ξ ℓ' t) ℓ with ≡-dec-Loc ℓ ℓ' | ≡-dec-Loc (renₗ-Loc suc ℓ) (renₗ-Loc suc ℓ')
 ... | yes refl | yes _ = λ{ zero → refl ; (suc n) → cong suc (↑renOPE⦊ ξ ℓ n) }
 ... | yes refl | no ¬q = ⊥-elim (¬q refl)
 ... | no ¬p    | yes q = ⊥-elim (¬p (renInjₗ-Loc suc-injective q))
 ... | no _     | no  _ = ↑renOPE⦊ ξ ℓ
-↑renOPE⦊ (Drop ξ ℓ' t) ℓ with ≡-dec-Loc ℓ ℓ' | ≡-dec-Loc (renₗ-Loc ℓ suc) (renₗ-Loc ℓ' suc)
+↑renOPE⦊ (Drop ξ ℓ' t) ℓ with ≡-dec-Loc ℓ ℓ' | ≡-dec-Loc (renₗ-Loc suc ℓ) (renₗ-Loc suc ℓ')
 ... | yes refl | yes _ = λ n → cong suc (↑renOPE⦊ ξ ℓ n)
 ... | yes refl | no ¬q = ⊥-elim (¬q refl)
 ... | no ¬p    | yes q = ⊥-elim (¬p (renInjₗ-Loc suc-injective q))
