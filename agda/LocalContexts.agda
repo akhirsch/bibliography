@@ -551,7 +551,6 @@ data LocalSub : (Δ1 Δ2 : LocalCtx) → Set where
 ... | yes _ = ifZeroElse (just e') (σ⟦ σ ⟧⦊ ℓ)
 ... | no  _ = σ⟦ σ ⟧⦊ ℓ
 
-
 -- Projecting a substitution to a location acts naturally
 projSubNatural : ∀{Δ1 Δ2} (σ : LocalSub Δ1 Δ2) (ℓ : Loc) →
                  ∀ n → ((renMaybeₑ (Δ2 ⦊ ℓ)) <=< σ⟦ σ ⟧) n ≲ (σ⟦ σ ⟧⦊ ℓ <=< Δ1 ⦊ ℓ) n
@@ -580,9 +579,11 @@ renSubInterp ξ ε n = refl
 renSubInterp ξ (AddSub σ e ℓ t Δ2∣ℓ⊢e⟨Δ2⦊ℓ⟩∶t) zero = refl
 renSubInterp ξ (AddSub σ e ℓ t Δ2∣ℓ⊢e⟨Δ2⦊ℓ⟩∶t) (suc n) = renSubInterp ξ σ n
 
+-- Move a local substitution under a non-local variable binder
 dropSub : ∀{Δ1 Δ2} (σ : LocalSub Δ1 Δ2) (ℓ : Loc) (t : Typₑ) → LocalSub Δ1 ((ℓ , t) ∷ Δ2)
 dropSub {Δ2 = Δ2} σ ℓ t = renSub (Drop (idOPE Δ2) ℓ t) σ
 
+-- Move a local substitution under a local variable binder
 keepSub : ∀{Δ1 Δ2} (σ : LocalSub Δ1 Δ2) (ℓ : Loc) (t : Typₑ) → LocalSub ((ℓ , t) ∷ Δ1) ((ℓ , t) ∷ Δ2)
 keepSub {Δ1} {Δ2} σ ℓ t = AddSub (dropSub σ ℓ t) (varₑ zero) ℓ t
     (varₑ zero , 0⟨ℓ∷Δ2⦊ℓ⟩≡0 , ℓ∷Δ2∣ℓ⊢∶t)
@@ -602,25 +603,24 @@ idLocalSub : (Δ : LocalCtx) → LocalSub Δ Δ
 idLocalSub [] = ε
 idLocalSub ((ℓ , t) ∷ Δ) = keepSub (idLocalSub Δ) ℓ t
 
+open ≲-Reasoning
+
 -- The interpretation respects the identity
 idLocalSubInterp : (Δ : LocalCtx) (n : ℕ) → just (varₑ n) ≲ σ⟦ idLocalSub Δ ⟧ n
 idLocalSubInterp [] n = lift tt
 idLocalSubInterp ((ℓ , t) ∷ Δ) zero = refl
-idLocalSubInterp ((ℓ , t) ∷ Δ) (suc n) = subst₂ _≲_ n⟨suc∘id⟩≡suc-n Drop⟦Id⟧≡⟦DropId⟧ n⟨suc∘id⟩≲⟦DropId⟧
-  where
-  Drop⟦Id⟧≡⟦DropId⟧ : map (renₑ (suc ∘ ⟦ idOPE Δ ⟧)) (σ⟦ idLocalSub Δ ⟧ n) ≡ σ⟦ renSub (Drop (idOPE Δ) ℓ t) (idLocalSub Δ) ⟧ n
-  Drop⟦Id⟧≡⟦DropId⟧ = renSubInterp (Drop (idOPE Δ) ℓ t) (idLocalSub Δ) n
+idLocalSubInterp ((ℓ , t) ∷ Δ) (suc n) =
+  just (varₑ (suc n))
+    ≲≡⟨ sym (cong (just ∘ varₑ ∘ suc) (renIdOPE Δ n)) ⟩
+  just (varₑ (suc (⟦ idOPE Δ ⟧ n)))
+    ≲≡⟨ sym (cong just (renVarₑ (suc ∘ ⟦ idOPE Δ ⟧) n)) ⟩
+  just (renₑ (suc ∘ ⟦ idOPE Δ ⟧) (varₑ n))
+    ≲⟨ ≲-cong (renₑ (suc ∘ ⟦ idOPE Δ ⟧)) (idLocalSubInterp Δ n) ⟩
+  map (renₑ (suc ∘ ⟦ idOPE Δ ⟧)) (σ⟦ idLocalSub Δ ⟧ n)
+    ≲≡⟨ renSubInterp (Drop (idOPE Δ) ℓ t) (idLocalSub Δ) n ⟩
+  σ⟦ renSub (Drop (idOPE Δ) ℓ t) (idLocalSub Δ) ⟧ n ≲∎
 
-  n⟨suc∘id⟩≡suc-n : just (renₑ(suc ∘ ⟦ idOPE Δ ⟧) (varₑ n) ) ≡ just (varₑ (suc n))
-  n⟨suc∘id⟩≡suc-n = cong just (
-    renₑ (suc ∘ ⟦ idOPE Δ ⟧) (varₑ n) ≡⟨ renVarₑ (suc ∘ ⟦ idOPE Δ ⟧) n ⟩
-    varₑ (suc (⟦ idOPE Δ ⟧ n))        ≡⟨ cong (varₑ ∘ suc) (renIdOPE Δ n) ⟩
-    varₑ (suc n)                      ∎)
-
-  n⟨suc∘id⟩≲⟦DropId⟧ : just (renₑ (suc ∘ ⟦ idOPE Δ ⟧) (varₑ n)) ≲
-                      map (renₑ (suc ∘ ⟦ idOPE Δ ⟧)) (σ⟦ idLocalSub Δ ⟧ n)
-  n⟨suc∘id⟩≲⟦DropId⟧ = ≲-cong (renₑ (suc ∘ ⟦ idOPE Δ ⟧)) (idLocalSubInterp Δ n)
-
+-- Length of the projection of a local context
 projLen : LocalCtx → Loc → ℕ
 projLen [] ℓ = 0
 projLen ((ℓ' , t) ∷ Δ) ℓ with ≡-dec-Loc ℓ ℓ'
@@ -629,7 +629,8 @@ projLen ((ℓ' , t) ∷ Δ) ℓ with ≡-dec-Loc ℓ ℓ'
 
 -- The projected interpretation of a substitution from Δ1 to Δ2 changes Δ1 ∣ ℓ to Δ2 ∣ ℓ
 locSub⦊⇒ : ∀{Δ1 Δ2} (σ : LocalSub Δ1 Δ2) (ℓ : Loc) →
-            (n : ℕ) → n < projLen Δ1 ℓ → (Δ2 ∣ ℓ) ⊢ₑ σ⟦ σ ⟧⦊ ℓ n ?∶ (Δ1 ∣ ℓ) n
+          (n : ℕ) → n < projLen Δ1 ℓ →
+          (Δ2 ∣ ℓ) ⊢ₑ σ⟦ σ ⟧⦊ ℓ n ?∶ (Δ1 ∣ ℓ) n
 locSub⦊⇒ ε ℓ n ()
 locSub⦊⇒ (AddSub σ e ℓ' t (e' , e⟨Δ2⦊ℓ⟩≡e' , Δ2∣ℓ⊢e'∶t)) ℓ with ≡-dec-Loc ℓ ℓ'
 ... | yes refl = λ{ zero p → e' , refl , Δ2∣ℓ⊢e'∶t
@@ -641,5 +642,5 @@ locSub⦊⇒ (AddSub σ e ℓ' t (e' , e⟨Δ2⦊ℓ⟩≡e' , Δ2∣ℓ⊢e'∶
 tyLocalSubₑ : ∀{Δ1 Δ2 e ℓ t} (σ : LocalSub Δ1 Δ2) →
               (Δ1 ∣ ℓ) ⊢ₑ e ∶ t →
               (Δ2 ∣ ℓ) ⊢ₑ subMaybeₑ (σ⟦ σ ⟧⦊ ℓ) e ?∶ t
-tyLocalSubₑ {ℓ = ℓ} σ Δ1∣ℓ⊢e∶t = {!!}
+tyLocalSubₑ {Δ1} {Δ2} {e} {ℓ} {t} σ Δ1∣ℓ⊢e∶t = {!  !}
 -}
