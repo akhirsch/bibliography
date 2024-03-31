@@ -146,13 +146,21 @@ record TypedLocalLanguage
           Γ2 ⊢ₑ renₑ ξ e ∶ t
   tyWkₑ ξ Γ1≈Γ2∘ξ = tyMaybeWkₑ ξ λ x → cong just (Γ1≈Γ2∘ξ x)
 
+  -- Convenience relation for typing of a possibly undefined expression
+  _?⊢ₑ_?∶_ : (Γ : ℕ → Maybe Typₑ) → Maybe Expr → Typₑ → Set
+  Γ ?⊢ₑ m ?∶ t = Σ[ e ∈ Expr ] (m ≡ just e × Γ ?⊢ₑ e ∶ t)
+
+  _⊢ₑ_?∶_ : (Γ : ℕ → Typₑ) → Maybe Expr → Typₑ → Set
+  Γ ⊢ₑ m ?∶ t = (just ∘ Γ) ?⊢ₑ m ?∶ t
+
   {-
     A substitution σ changes context Γ to context Δ
-    if for every typed variable n, σ assigns n to an expression
-    which, under Δ, has the same type that Γ assigns to n.
+    if for every variable n that is well-typed under Γ,
+    σ assigns n to an expression which, under Δ, has the
+    same type that Γ assigns to n.
   -}
-  _∶_?⇒ₑ_ : (σ : ℕ → Expr) (Γ Δ : ℕ → Maybe Typₑ) → Set
-  σ ∶ Γ ?⇒ₑ Δ = ∀ n t → Γ n ≡ just t → Δ ?⊢ₑ σ n ∶ t
+  _∶_?⇒ₑ_ : (σ : ℕ → Maybe Expr) (Γ Δ : ℕ → Maybe Typₑ) → Set
+  σ ∶ Γ ?⇒ₑ Δ = ∀ n t → Γ n ≡ just t → Δ ?⊢ₑ σ n ?∶ t
 
   _∶_⇒ₑ_ : (σ : ℕ → Expr) (Γ Δ : ℕ → Typₑ) → Set
   σ ∶ Γ ⇒ₑ Δ = ∀ n → Δ ⊢ₑ σ n ∶ Γ n
@@ -162,17 +170,23 @@ record TypedLocalLanguage
     tyMaybeSubₑ : ∀{σ Γ Δ e t} →
                   σ ∶ Γ ?⇒ₑ Δ →
                   Γ ?⊢ₑ e ∶ t →
-                  Δ ?⊢ₑ subₑ σ e ∶ t
+                  Δ ?⊢ₑ subMaybeₑ σ e ?∶ t
 
   -- Deduced lemmas for convenience.
+  changes⇒?changes : ∀{σ Γ Δ} →
+                     σ ∶ Γ ⇒ₑ Δ →
+                     (just ∘ σ) ∶ (just ∘ Γ) ?⇒ₑ (just ∘ Δ)
+  changes⇒?changes {σ} {Γ} {Δ} σ⇒ n t Γn≡t =
+    σ n , refl , subst (λ x → (just ∘ Δ) ?⊢ₑ σ n ∶ x) (just-injective Γn≡t) (σ⇒ n)
 
   tySubₑ : ∀{σ Γ Δ e t} →
            σ ∶ Γ ⇒ₑ Δ →
            Γ ⊢ₑ e ∶ t →
            Δ ⊢ₑ subₑ σ e ∶ t
-  tySubₑ {σ} {Γ} {Δ} σ⇒ =
-    tyMaybeSubₑ λ n t eq →
-      subst (λ x → Δ ⊢ₑ σ n ∶ x) (just-injective eq) (σ⇒ n)
+  tySubₑ {σ} {Γ} {Δ} {e} {t} σ⇒ Γ⊢e∶t with tyMaybeSubₑ (changes⇒?changes σ⇒) Γ⊢e∶t
+  ... | (e' , e⟨σ⟩≡e' , Δ⊢e'∶t) =
+    subst (λ x → Δ ⊢ₑ x ∶ t)
+      (just-injective (sym e⟨σ⟩≡e' ∙ subMaybeJustₑ σ e .snd)) Δ⊢e'∶t
 
   -- The context is irrelevant when typing closed expressions
   tyMaybeClosedₑ : ∀{Γ Δ e t} → Closedₑ e → Γ ?⊢ₑ e ∶ t → Δ ?⊢ₑ e ∶ t
@@ -189,25 +203,21 @@ record TypedLocalLanguage
   tyValₑ val Γ⊢v:t = tyMaybeClosedₑ (valClosedₑ val) Γ⊢v:t
 
   -- The identity substitution changes any context to itself
-  idSubMaybeChangesₑ : (Γ : ℕ → Maybe Typₑ) → idSubₑ ∶ Γ ?⇒ₑ Γ
-  idSubMaybeChangesₑ = tyMaybeVarₑ
+  idSubMaybeChangesₑ : (Γ : ℕ → Maybe Typₑ) → (just ∘ idSubₑ) ∶ Γ ?⇒ₑ Γ
+  idSubMaybeChangesₑ Γ n t Γn≡t = varₑ n , refl , tyMaybeVarₑ Γ n t Γn≡t
 
   idSubChangesₑ : (Γ : ℕ → Typₑ) → idSubₑ ∶ Γ ⇒ₑ Γ
   idSubChangesₑ = tyVarₑ
 
   -- The identity substitution respects typing
   tyMaybeSubIdₑ : ∀{Γ e t} → Γ ?⊢ₑ e ∶ t → Γ ?⊢ₑ subₑ idSubₑ e ∶ t
-  tyMaybeSubIdₑ Γ⊢e:t = tyMaybeSubₑ (idSubMaybeChangesₑ _) Γ⊢e:t
+  tyMaybeSubIdₑ {Γ} {e} {t} Γ⊢e:t with tyMaybeSubₑ (idSubMaybeChangesₑ Γ) Γ⊢e:t
+  ... | (e' , e⟨id⟩≡e' , Γ⊢e'∶t) =
+    subst (λ x → Γ ?⊢ₑ x ∶ t)
+      (just-injective (sym e⟨id⟩≡e' ∙ subMaybeJustₑ varₑ e .snd)) Γ⊢e'∶t
   
   tySubIdₑ : ∀{Γ e t} → Γ ⊢ₑ e ∶ t → Γ ⊢ₑ subₑ idSubₑ e ∶ t
   tySubIdₑ Γ⊢e:t = tySubₑ (idSubChangesₑ _) Γ⊢e:t
-
-  -- Convenience function for typing of a possibly undefined expression
-  _?⊢ₑ_?∶_ : (Γ : ℕ → Maybe Typₑ) → Maybe Expr → Typₑ → Set
-  Γ ?⊢ₑ m ?∶ t = Σ[ e ∈ Expr ] (m ≡ just e × Γ ?⊢ₑ e ∶ t)
-
-  _⊢ₑ_?∶_ : (Γ : ℕ → Typₑ) → Maybe Expr → Typₑ → Set
-  Γ ⊢ₑ m ?∶ t = (just ∘ Γ) ?⊢ₑ m ?∶ t
 
   -- Uniqueness of typing for possibly undefined expressions
   tyUniq?ₑ : ∀{Γ m t1 t2} →
