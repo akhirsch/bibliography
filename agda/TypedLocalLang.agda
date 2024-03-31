@@ -220,6 +220,17 @@ record TypedLocalLanguage
   tySubIdₑ Γ⊢e:t = tySubₑ (idSubChangesₑ _) Γ⊢e:t
 
   -- Uniqueness of typing for possibly undefined expressions
+  tyUniq??ₑ : ∀{Γ m t1 t2} →
+             Γ ?⊢ₑ m ?∶ t1 →
+             Γ ?⊢ₑ m ?∶ t2 →
+             t1 ≡ t2
+  tyUniq??ₑ {Γ} {just e} {t1} {t2} (e , refl , Γ⊢e∶t1) (e' , eq' , Γ⊢e'∶t2) =
+    tyMaybeUniqₑ Γ⊢e∶t1 Γ⊢e∶t2
+    where
+    Γ⊢e∶t2 : Γ ?⊢ₑ e ∶ t2
+    Γ⊢e∶t2 = subst (λ x → Γ ?⊢ₑ x ∶ t2) (sym (just-injective eq')) Γ⊢e'∶t2
+
+
   tyUniq?ₑ : ∀{Γ m t1 t2} →
              Γ ⊢ₑ m ?∶ t1 →
              Γ ⊢ₑ m ?∶ t2 →
@@ -231,6 +242,12 @@ record TypedLocalLanguage
     Γ⊢e∶t2 = subst (λ x → Γ ⊢ₑ x ∶ t2) (sym (just-injective eq')) Γ⊢e'∶t2
 
   -- Extensionality of typing for possibly undefined expressions
+  tyExt??ₑ : ∀{Γ1 Γ2 m t} →
+             Γ1 ≈ Γ2 →
+             Γ1 ?⊢ₑ m ?∶ t →
+             Γ2 ?⊢ₑ m ?∶ t
+  tyExt??ₑ Γ1≈Γ2 (e , m≡e , Γ1⊢e∶t) = e , m≡e , tyMaybeExtₑ Γ1≈Γ2 Γ1⊢e∶t
+
   tyExt?ₑ : ∀{Γ1 Γ2 m t} →
             Γ1 ≈ Γ2 →
             Γ1 ⊢ₑ m ?∶ t →

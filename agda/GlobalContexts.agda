@@ -54,23 +54,23 @@ addCtxExt Γ≈Γ' zero = refl
 addCtxExt Γ≈Γ' (suc n) = Γ≈Γ' n
 
 -- Renaming locations on global contexts
-renCtx : Ctx → (ℕ → ℕ) → Ctx
-renCtx Γ ξ n = renₜ ξ (Γ n)
+renCtx : (ℕ → ℕ) → Ctx → Ctx
+renCtx ξ Γ n = renₜ ξ (Γ n)
 
 -- Renaming distributes over adding a type
 renCtx,, : ∀ Γ τ ξ →
-           renCtx (Γ ,, τ) ξ ≈ renCtx Γ ξ ,, renₜ ξ τ
+           renCtx ξ (Γ ,, τ) ≈ renCtx ξ Γ ,, renₜ ξ τ
 renCtx,, Γ τ ξ zero = refl
 renCtx,, Γ τ ξ (suc n) = refl
 
 -- Renaming distributes over composition
 renCtx∘ : ∀ Γ ξ1 ξ2 →
-          renCtx (Γ ∘ ξ1) ξ2 ≈ renCtx Γ ξ2 ∘ ξ1
+          renCtx ξ2 (Γ ∘ ξ1) ≈ renCtx ξ2 Γ ∘ ξ1
 renCtx∘ Γ ξ1 ξ2 n = refl
 
 -- ↑ for location variables on global contexts
 ↑Ctx : Ctx → Ctx
-↑Ctx Γ = renCtx Γ suc
+↑Ctx Γ = renCtx suc Γ
 
 -- ↑ respects extensional equality
 ↑CtxExt : ∀{Γ1 Γ2} → Γ1 ≈ Γ2 → ↑Ctx Γ1 ≈ ↑Ctx Γ2
@@ -82,7 +82,7 @@ renCtx∘ Γ ξ1 ξ2 n = refl
 ↑Ctx∘ Γ ξ = renCtx∘ Γ ξ suc
 
 -- ↑ distributes over renaming contexts
-renCtx↑ : ∀ Γ ξ → renCtx (↑Ctx Γ) (↑ ξ) ≈ ↑Ctx (renCtx Γ ξ)
+renCtx↑ : ∀ Γ ξ → renCtx (↑ ξ) (↑Ctx Γ) ≈ ↑Ctx (renCtx ξ Γ)
 renCtx↑ Γ ξ n =
     renₜ (↑ ξ) (renₜ suc (Γ n)) ≡⟨ sym (renFuseₜ (↑ ξ) suc (Γ n)) ⟩
     renₜ (↑ ξ ∘ suc) (Γ n)      ≡⟨ renExtₜ (↑∘suc ξ) (Γ n) ⟩
@@ -100,7 +100,7 @@ _⊢_ : LocCtx → Ctx → Set
 wfCtxWk : ∀{Θ Θ' Γ} ξ →
           Θ ≈ Θ' ∘ ξ →
           Θ ⊢ Γ →
-          Θ' ⊢ renCtx Γ ξ
+          Θ' ⊢ renCtx ξ Γ
 wfCtxWk ξ Θ≈Θ'∘ξ Θ⊢Γ n = wfWkₜ ξ Θ≈Θ'∘ξ (Θ⊢Γ n)
 
 -- Context well-formedness respects extensional equality
