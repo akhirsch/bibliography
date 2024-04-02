@@ -16,14 +16,18 @@ open import Function
 
 open import Common
 open import LocalLang
+open import TypedLocalLang
 open import Locations
+
 
 module DecEq
   (L : Location)
   (E : Language L)
+  (LE : LawfulLanguage L E)
+  (TE : TypedLocalLanguage L E LE)
   where
 
-open import Choreographies L E
+open import Choreographies L E LE TE
 
 open Location L
 open Language E

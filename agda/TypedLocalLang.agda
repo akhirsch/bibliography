@@ -46,7 +46,7 @@ record TypedLocalLanguage
               Δ ⊢ₑ e ∶ t
 
     -- Variables have the type they are assigned by the context.
-    tyExprₑ : ∀ Γ n t → Γ n ≡ just t → Γ ⊢ₑ varₑ n ∶ t
+    tyVarₑ : ∀ Γ n t → Γ n ≡ just t → Γ ⊢ₑ varₑ n ∶ t
 
     -- Expressions have a unique type.
     tyUniqₑ : ∀{Γ e t₁ t₂} →
@@ -134,7 +134,7 @@ record TypedLocalLanguage
 
   -- The identity substitution changes any context to itself
   idSubChangesₑ : (Γ : ℕ → Maybe Typₑ) → idSubₑ ∶ Γ ⇒ₑ Γ
-  idSubChangesₑ Γ n = tyExprₑ Γ n
+  idSubChangesₑ Γ n = tyVarₑ Γ n
 
   -- The identity substitution respects typing
   tySubIdₑ : ∀{Γ e t} → Γ ⊢ₑ e ∶ t → Γ ⊢ₑ subₑ idSubₑ e ∶ t

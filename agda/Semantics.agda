@@ -3,6 +3,7 @@
 open import Data.Nat renaming (_≟_ to ≡-dec-ℕ)
 open import Data.Bool renaming (_≟_ to ≡-dec-Bool)
 open import Data.List
+open import Data.Product renaming (proj₁ to fst; proj₂ to snd) hiding (map)
 open import Relation.Nullary
 open import Relation.Binary
 open import Relation.Binary.PropositionalEquality
@@ -21,6 +22,7 @@ module Semantics
   where
 
 open import Choreographies L E LE TE
+open import TypedChoreographies L E LE TE
 open import LocalRenamings L E LE TE
 open import LocationRenamings L E LE TE
 open import Renamings L E LE TE
@@ -62,7 +64,7 @@ data _⇒[_]_ : Chor → TraceElem → Chor → Set where
              Done (Lit L) e1 ⇒[ LocStep L ] Done (Lit L) e2
              
   stepSend : ∀{C C' L1 L2 T}
-             (C⇒C' : C ⇒[ T ] C) →
+             (C⇒C' : C ⇒[ T ] C') →
              Send L1 C L2 ⇒[ T ] Send L1 C' L2
   stepSendV : ∀{v L1 L2}
               (v-Val : Valₑ v) →
@@ -97,8 +99,8 @@ data _⇒[_]_ : Chor → TraceElem → Chor → Set where
                App V C ⇒[ T ] App V C'
   stepApp : ∀{V C τ}
             (V-Val : Val V) →
-            App (Fun τ C) V ⇒[ • ] sub C (idSub ▸ V)
-  stepFix : ∀{C τ} → Fix τ C ⇒[ • ] sub C (idSub ▸ Fix τ C)
+            App (Fun τ C) V ⇒[ • ] sub (idSub ▸ V) C
+  stepFix : ∀{C τ} → Fix τ C ⇒[ • ] sub (idSub ▸ Fix τ C) C
 
   stepLocAppFun : ∀{C C' L T}
                   (C⇒C' : C ⇒[ T ] C') →
@@ -119,4 +121,41 @@ data _⇒[_]_ : Chor → TraceElem → Chor → Set where
 
 -- Values cannot step
 valNoStep : ∀{V C T} → Val V → ¬ (V ⇒[ T ] C)
-valNoStep (DoneVal L v v-val) (stepDone v⇒e) = valNoStepₑ v-val v⇒e 
+valNoStep (DoneVal L v v-val) (stepDone v⇒e) = valNoStepₑ v-val v⇒e
+
+-- Type preservation
+preservation : ∀{Θ Δ Γ C1 C2 τ T} →
+               (Θ , Δ , Γ) ⊢ C1 ∶ τ →
+               C1 ⇒[ T ] C2 →
+               (Θ , Δ , Γ) ⊢ C2 ∶ τ
+preservation (tyDone Θ⊢Γ Θ⊢ℓ Δ[ℓ]⊢e∶t) (stepDone e1⇒e2) =
+  tyDone Θ⊢Γ Θ⊢ℓ (preservationₑ Δ[ℓ]⊢e∶t e1⇒e2)
+preservation (tySend C1 Θ⊢ℓ2) (stepSend C1⇒C2) =
+  tySend (preservation C1 C1⇒C2) Θ⊢ℓ2
+preservation (tySend (tyDone Θ⊢Γ Θ⊢ℓ Δ[ℓ]⊢e∶t) Θ⊢ℓ2) (stepSendV v-Val) =
+  tyDone Θ⊢Γ (wfLit _) (tyValₑ v-Val Δ[ℓ]⊢e∶t)
+preservation (tyIf C C1 C2) (stepIf C⇒C') = tyIf (preservation C C⇒C') C1 C2
+preservation (tyIf C C1 C2) stepIfT = C1
+preservation (tyIf C C1 C2) stepIfF = C2
+preservation (tySync Θ⊢ℓ1 Θ⊢ℓ2 C) stepSync = C
+preservation (tyDefLocal C1 C2) (stepDefLocal C1⇒C1') =
+  tyDefLocal (preservation C1 C1⇒C1') C2
+preservation (tyDefLocal {Θ} {Δ} {Γ} {C1} {C2} {t1} {.(Lit L)} {τ2} V∶t1 C∶τ2) (stepDefLocalV {v = v} {L = L} V-Val) =
+  {! C∶τ2 !}
+{-
+? : (Θ , Δ , Γ) ⊢ subₗₑ C2 (idSubₗₑ ▸[ Lit L ] v) ∶ τ2
+V∶t1 : (Θ , Δ , Γ) ⊢ Done (Lit L) v ∶ At t1 (Lit L)
+C∶τ2 : (Θ , (Δ ,,[ Lit L ] t1) , Γ) ⊢ C2 ∶ τ2
+-}
+preservation (tyFix C∶τ) stepFix =
+  tySub (▸⇒ (idSub⇒ _ _ _ (wfCtxTail (ty⇒wfCtx C∶τ))) (tyFix C∶τ)) C∶τ
+preservation (tyApp C1 C2) (stepAppFun C1⇒C1') = tyApp (preservation C1 C1⇒C1') C2
+preservation (tyApp C1 C2) (stepAppArg V-Val C2⇒C2') = tyApp C1 (preservation C2 C2⇒C2')
+preservation (tyApp (tyFun C∶τ2) V∶τ1) (stepApp {V = V} {C = C} V-Val) =
+  tySub {!   !} C∶τ2 
+preservation (tyLocApp C Θ⊢ℓ) (stepLocAppFun C⇒C') = tyLocApp (preservation C C⇒C') Θ⊢ℓ
+preservation (tyLocApp C Θ⊢ℓ) stepLocApp =
+  {!   !} 
+preservation (tyTellLet C1 Θ⊢ρ1 Θ⊢ρ2 Θ⊢τ C2) (stepTellLet C1⇒C1') =
+  tyTellLet (preservation C1 C1⇒C1') Θ⊢ρ1 Θ⊢ρ2 Θ⊢τ C2
+preservation (tyTellLet C1 Θ⊢ρ1 Θ⊢ρ2 Θ⊢τ C2) stepTellLetV = {!   !}

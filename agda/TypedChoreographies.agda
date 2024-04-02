@@ -30,7 +30,7 @@ open import Choreographies L E LE TE
 open import LocationRenamings L E LE TE
 open import Renamings L E LE TE
 open import LocationSubstitutions L E LE TE
--- open import LocalSubstitutions L E LE TE
+open import LocalSubstitutions L E LE TE
 open import Substitutions L E LE TE
 open import LocationContexts L E LE TE
 open import LocalContexts L E LE TE
@@ -566,3 +566,24 @@ tySubₗ {Θ1} {Θ2} {Δ} {Γ} {σ = σ} σ⇒ (tyTellLet {C2 = C2} {τ = τ} C1
   ↑Δ⟨σ⟩⊢C⟨↑σ⟩∶↑τ⟨σ⟩ = 
     subst (λ x → (↑LocCtx Θ2 , ↑LocalCtx (subₗ-LocalCtx σ Δ) , ↑Ctx (subₗ-Ctx σ Γ)) ⊢ subₗ (↑LocalCtx Δ) (↑σₗ σ) C2 ∶ x)
       (subₜ↑ τ σ) ↑Δ⟨σ⟩⊢C⟨↑σ⟩∶↑τ⟨↑σ⟩
+
+-- Typing is closed under context-changing local substitutions
+tySubₗₑ : ∀{Θ Δ1 Δ2 Γ C τ σ} →
+          SUB σ Δ1 Δ2 →
+          (Θ , Δ1 , Γ) ⊢ C ∶ τ →
+          (Θ , Δ2 , Γ) ⊢ subₗₑ σ C ∶ τ
+tySubₗₑ σ (tyVar Θ⊢Γ x) = tyVar Θ⊢Γ x
+tySubₗₑ σ (tyDone Θ⊢Γ Θ⊢ℓ e) = tyDone Θ⊢Γ Θ⊢ℓ  (tySUBₑ σ e)
+tySubₗₑ σ (tySend C Θ⊢ℓ2) = tySend (tySubₗₑ σ C) Θ⊢ℓ2
+tySubₗₑ σ (tyIf C C1 C2) =
+  tyIf (tySubₗₑ σ C) (tySubₗₑ σ C1) (tySubₗₑ σ C2)
+tySubₗₑ σ (tySync Θ⊢ℓ1 Θ⊢ℓ2 C) = tySync Θ⊢ℓ1 Θ⊢ℓ2 (tySubₗₑ σ C)
+tySubₗₑ σ (tyDefLocal {t1 = t1} {ℓ = ℓ} C1 C2) = 
+  tyDefLocal (tySubₗₑ σ C1) (tySubₗₑ (keepLocalSUB σ ℓ t1) C2)
+tySubₗₑ σ (tyFun C) = tyFun (tySubₗₑ σ C)
+tySubₗₑ σ (tyFix C) = tyFix (tySubₗₑ σ C)
+tySubₗₑ σ (tyApp C1 C2) = tyApp (tySubₗₑ σ C1) (tySubₗₑ σ C2)
+tySubₗₑ σ (tyLocAbs Θ⊢Γ C) = tyLocAbs Θ⊢Γ (tySubₗₑ (renₗ-SUB suc-injective σ) C)
+tySubₗₑ σ (tyLocApp C Θ⊢ℓ) = tyLocApp (tySubₗₑ σ C) Θ⊢ℓ
+tySubₗₑ σ (tyTellLet C1 Θ⊢ρ1 Θ⊢ρ2 Θ⊢τ C2) =
+  tyTellLet (tySubₗₑ σ C1) Θ⊢ρ1 Θ⊢ρ2 Θ⊢τ (tySubₗₑ (renₗ-SUB suc-injective σ) C2) 
