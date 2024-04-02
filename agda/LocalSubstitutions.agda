@@ -30,6 +30,7 @@ open import Types L E LE TE
 open import Choreographies L E LE TE
 open import LocalRenamings L E LE TE
 open import LocalContexts L E LE TE
+open import LocalContexts L E LE TE
 open Language E
 open LawfulLanguage LE
 open TypedLocalLanguage TE
