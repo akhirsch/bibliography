@@ -100,7 +100,6 @@ proj ((ℓ' , t) ∷ Δ) ℓ with ≡-dec-Loc ℓ ℓ'
 
 _∣_ = proj
 
-
 -- ↑LocalCtx respects projection
 ↑LocalCtxProj : ∀ Δ → proj (↑LocalCtx Δ) ≈₂ ↑LocalCtxFun (proj Δ)
 ↑LocalCtxProj [] (Var zero) n = refl
@@ -275,11 +274,6 @@ data LocalRen : Set where
   Keep : LocalRen → Loc → Typₑ → LocalRen
   Drop : LocalRen → Loc → Typₑ → LocalRen
 
-renₗ-LocalRen : (ℕ → ℕ) → LocalRen → LocalRen
-renₗ-LocalRen ξ1 Id = Id
-renₗ-LocalRen ξ1 (Keep ξ2 ℓ t) = Keep (renₗ-LocalRen ξ1 ξ2) (renₗ-Loc ξ1 ℓ) t
-renₗ-LocalRen ξ1 (Drop ξ2 ℓ t) = Drop (renₗ-LocalRen ξ1 ξ2) (renₗ-Loc ξ1 ℓ) t
-
 _⦊_ : LocalRen → Loc → ℕ → ℕ
 Id ⦊ ℓ = λ n → n
 Keep ξ ℓ' t ⦊ ℓ with ≡-dec-Loc ℓ ℓ'
@@ -288,6 +282,11 @@ Keep ξ ℓ' t ⦊ ℓ with ≡-dec-Loc ℓ ℓ'
 Drop ξ ℓ' t ⦊ ℓ with ≡-dec-Loc ℓ ℓ'
 ... | yes _ = suc ∘ ξ ⦊ ℓ
 ... | no  _ = ξ ⦊ ℓ
+
+renₗ-LocalRen : (ℕ → ℕ) → LocalRen → LocalRen
+renₗ-LocalRen ξ1 Id = Id
+renₗ-LocalRen ξ1 (Keep ξ2 ℓ t) = Keep (renₗ-LocalRen ξ1 ξ2) (renₗ-Loc ξ1 ℓ) t
+renₗ-LocalRen ξ1 (Drop ξ2 ℓ t) = Drop (renₗ-LocalRen ξ1 ξ2) (renₗ-Loc ξ1 ℓ) t
 
 renₗₑ : LocalRen → Chor → Chor
 renₗₑ ξ (Done ℓ e) = Done ℓ (renₑ (ξ ⦊ ℓ) e)
