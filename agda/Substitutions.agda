@@ -31,6 +31,7 @@ open import Choreographies L E LE TE
 open import LocationRenamings L E LE TE
 open import LocalRenamings L E LE TE
 open import Renamings L E LE TE
+open import LocalContexts L E LE TE
 
 -- Identity substitution
 idSub : ℕ → Chor
@@ -67,8 +68,8 @@ sub σ (Var x) = σ x
 sub σ (Send ℓ1 c ℓ2) = Send ℓ1 (sub σ c) ℓ2
 sub σ (If ℓ c c₁ c₂) = If ℓ (sub σ c) (sub σ c₁) (sub σ c₂)
 sub σ (Sync ℓ1 d ℓ2 c) = Sync ℓ1 d ℓ2 (sub σ c)
-sub σ (DefLocal ℓ c1 c2) =
-  DefLocal ℓ (sub σ c1) (sub (renₗₑ suc ∘ σ) c2)
+sub σ (DefLocal ℓ t c1 c2) =
+  DefLocal ℓ t (sub σ c1) (sub (renₗₑ (Drop Id ℓ t) ∘ σ) c2)
 sub σ (Fun τ c) = Fun τ (sub (↑σ σ) c)
 sub σ (Fix τ c) = Fix τ (sub (↑σ σ) c)
 sub σ (App c1 c2) = App (sub σ c1) (sub σ c2)
@@ -86,8 +87,9 @@ subExt σ1≈σ2 (Var x) = σ1≈σ2 x
 subExt σ1≈σ2 (Send ℓ1 c ℓ2) = cong₃ Send refl (subExt σ1≈σ2 c) refl
 subExt σ1≈σ2 (If ℓ c c₁ c₂) = cong₄ If refl (subExt σ1≈σ2 c) (subExt σ1≈σ2 c₁) (subExt σ1≈σ2 c₂)
 subExt σ1≈σ2 (Sync ℓ1 d ℓ2 c) = cong₄ Sync refl refl refl (subExt σ1≈σ2 c)
-subExt σ1≈σ2 (DefLocal ℓ c1 c2) =
-  cong₃ DefLocal refl (subExt σ1≈σ2 c1) (subExt (λ n → cong (renₗₑ suc) (σ1≈σ2 n)) c2)
+subExt σ1≈σ2 (DefLocal ℓ t c1 c2) =
+  cong₄ DefLocal refl refl (subExt σ1≈σ2 c1)
+    (subExt (λ n → cong (renₗₑ (Drop Id ℓ t)) (σ1≈σ2 n)) c2)
 subExt σ1≈σ2 (Fun τ c) = cong₂ Fun refl (subExt (↑σExt σ1≈σ2) c)
 subExt σ1≈σ2 (Fix τ c) = cong₂ Fix refl (subExt (↑σExt σ1≈σ2) c)
 subExt σ1≈σ2 (App c1 c2) = cong₂ App (subExt σ1≈σ2 c1) (subExt σ1≈σ2 c2)
@@ -103,7 +105,7 @@ subId (Var x) = refl
 subId (Send ℓ1 c ℓ2) = cong₃ Send refl (subId c) refl
 subId (If ℓ c c₁ c₂) = cong₄ If refl (subId c) (subId c₁) (subId c₂)
 subId (Sync ℓ1 d ℓ2 c) = cong₄ Sync refl refl refl (subId c)
-subId (DefLocal ℓ c c₁) = cong₃ DefLocal refl (subId c) (subId c₁)
+subId (DefLocal ℓ t C1 C2) = cong₄ DefLocal refl refl (subId C1) (subId C2)
 subId (Fun τ c) = cong₂ Fun refl c⟨↑id⟩≡c
   where
   c⟨↑id⟩≡c : sub (↑σ idSub) c ≡ c
@@ -144,7 +146,7 @@ subι ξ (Var x) = refl
 subι ξ (Send ℓ1 c ℓ2) = cong₃ Send refl (subι ξ c) refl
 subι ξ (If ℓ c c1 c2) = cong₄ If refl (subι ξ c) (subι ξ c1) (subι ξ c2)
 subι ξ (Sync ℓ1 d ℓ2 c) = cong₄ Sync refl refl refl (subι ξ c)
-subι ξ (DefLocal ℓ c1 c2) = cong₃ DefLocal refl (subι ξ c1) (subι ξ c2)
+subι ξ (DefLocal ℓ t C1 C2) = cong₄ DefLocal refl refl (subι ξ C1) (subι ξ C2)
 subι ξ (Fun τ c) = cong₂ Fun refl c⟨↑ιξ⟩≡c⟨↑ξ⟩
   where
   c⟨↑ιξ⟩≡c⟨↑ξ⟩ : sub (↑σ (ι ξ)) c ≡ ren (↑ ξ) c

@@ -32,7 +32,7 @@ ren ξ (Var x) = Var (ξ x)
 ren ξ (Send ℓ1 c ℓ2) = Send ℓ1 (ren ξ c) ℓ2
 ren ξ (If ℓ c c₁ c₂) = If ℓ (ren ξ c) (ren ξ c₁) (ren ξ c₂)
 ren ξ (Sync ℓ1 d ℓ2 c) = Sync ℓ1 d ℓ2 (ren ξ c)
-ren ξ (DefLocal ℓ c c₁) = DefLocal ℓ (ren ξ c) (ren ξ c₁)
+ren ξ (DefLocal ℓ t c c₁) = DefLocal ℓ t (ren ξ c) (ren ξ c₁)
 ren ξ (Fun τ c) = Fun τ (ren (↑ ξ) c)
 ren ξ (Fix τ c) = Fix τ (ren (↑ ξ) c)
 ren ξ (App c c₁) = App (ren ξ c) (ren ξ c₁)
@@ -49,7 +49,7 @@ renExt ξ1≈ξ2 (Var x) = cong Var (ξ1≈ξ2 x)
 renExt ξ1≈ξ2 (Send ℓ1 c ℓ2) = cong₃ Send refl (renExt ξ1≈ξ2 c) refl
 renExt ξ1≈ξ2 (If ℓ c c₁ c₂) = cong₄ If refl (renExt ξ1≈ξ2 c) (renExt ξ1≈ξ2 c₁) (renExt ξ1≈ξ2 c₂)
 renExt ξ1≈ξ2 (Sync ℓ1 d ℓ2 c) = cong₄ Sync refl refl refl (renExt ξ1≈ξ2 c)
-renExt ξ1≈ξ2 (DefLocal ℓ c c₁) = cong₃ DefLocal refl (renExt ξ1≈ξ2 c) (renExt ξ1≈ξ2 c₁)
+renExt ξ1≈ξ2 (DefLocal ℓ t c c₁) = cong₄ DefLocal refl refl (renExt ξ1≈ξ2 c) (renExt ξ1≈ξ2 c₁)
 renExt ξ1≈ξ2 (Fun τ c) = cong₂ Fun refl (renExt (↑Ext ξ1≈ξ2) c)
 renExt ξ1≈ξ2 (Fix τ c) = cong₂ Fix refl (renExt (↑Ext ξ1≈ξ2) c)
 renExt ξ1≈ξ2 (App c c₁) = cong₂ App (renExt ξ1≈ξ2 c) (renExt ξ1≈ξ2 c₁)
@@ -64,7 +64,7 @@ renId (Var x) = refl
 renId (Send ℓ1 c ℓ2) = cong₃ Send refl (renId c) refl
 renId (If ℓ c c₁ c₂) = cong₄ If refl (renId c) (renId c₁) (renId c₂)
 renId (Sync ℓ1 d ℓ2 c) = cong₄ Sync refl refl refl (renId c)
-renId (DefLocal ℓ c c₁) = cong₃ DefLocal refl (renId c) (renId c₁)
+renId (DefLocal ℓ t c c₁) = cong₄ DefLocal refl refl (renId c) (renId c₁)
 renId (Fun τ c) = cong₂ Fun refl c⟨↑id⟩≡c
   where
   c⟨↑id⟩≡c : ren (↑ idRen) c ≡ c
@@ -91,7 +91,7 @@ renFuse ξ1 ξ2 (Var x) = cong Var refl
 renFuse ξ1 ξ2 (Send ℓ1 c ℓ2) = cong₃ Send refl (renFuse ξ1 ξ2 c) refl
 renFuse ξ1 ξ2 (If ℓ c c₁ c₂) = cong₄ If refl (renFuse ξ1 ξ2 c) (renFuse ξ1 ξ2 c₁) (renFuse ξ1 ξ2 c₂)
 renFuse ξ1 ξ2 (Sync ℓ1 d ℓ2 c) = cong₄ Sync refl refl refl (renFuse ξ1 ξ2 c)
-renFuse ξ1 ξ2 (DefLocal ℓ c c₁) = cong₃ DefLocal refl (renFuse ξ1 ξ2 c) (renFuse ξ1 ξ2 c₁)
+renFuse ξ1 ξ2 (DefLocal ℓ t c c₁) = cong₄ DefLocal refl refl (renFuse ξ1 ξ2 c) (renFuse ξ1 ξ2 c₁)
 renFuse ξ1 ξ2 (Fun τ c) = cong₂ Fun refl c⟨↑[ξ1∘ξ2]⟩≡c⟨↑ξ2⟩⟨↑ξ1⟩
   where
   c⟨↑[ξ1∘ξ2]⟩≡c⟨↑ξ2⟩⟨↑ξ1⟩ : ren (↑ (ξ1 ∘ ξ2)) c ≡ ren (↑ ξ1) (ren (↑ ξ2) c)

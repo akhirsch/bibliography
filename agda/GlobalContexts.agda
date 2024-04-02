@@ -137,12 +137,12 @@ wfCtx↑ : ∀{Θ Γ} → Θ ⊢ Γ → ↑LocCtx Θ ⊢ ↑Ctx Γ
 wfCtx↑ Θ⊢Γ n = wfTy↑ (Θ⊢Γ n)
 
 -- Substitution of locations in global contexts
-subₗ-Ctx : Ctx → (ℕ → Loc) → Ctx
-subₗ-Ctx Γ σ n = subₜ σ (Γ n)
+subₗ-Ctx : (ℕ → Loc) → Ctx → Ctx
+subₗ-Ctx σ Γ n = subₜ σ (Γ n)
 
 -- Context well-formedness is closed under change of context
 wfCtxSub : ∀{Θ1 Θ2 Γ σ} →
            σ ∶ Θ1 ⇒ₗ Θ2 →
            Θ1 ⊢ Γ →
-           Θ2 ⊢ subₗ-Ctx Γ σ
+           Θ2 ⊢ subₗ-Ctx σ Γ
 wfCtxSub σ⇒ Θ1⊢Γ n = wfSubₜ σ⇒ (Θ1⊢Γ n)

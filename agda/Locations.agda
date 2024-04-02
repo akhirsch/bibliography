@@ -115,7 +115,7 @@ record Location : Set₁ where
   subₗ-Loc : (ℕ → Loc) → Loc → Loc
   subₗ-Loc σ (Var x) = σ x
   subₗ-Loc σ (Lit L) = Lit L
-
+  
   subₗ-List : (ℕ → Loc) → LocList → LocList
   subₗ-List σ = Data.List.map (subₗ-Loc σ)
 
@@ -209,6 +209,20 @@ record Location : Set₁ where
   subιₗ-List : ∀ ξ → subₗ-List (ιₗ ξ) ≈ renₗ-List ξ
   subιₗ-List ξ [] = refl
   subιₗ-List ξ (ℓ ∷ ρ) = cong₂ _∷_ (subιₗ-Loc ξ ℓ) (subιₗ-List ξ ρ)
+
+  -- Substituting over the inclusion preserves injectivity
+  subInjₗ-Loc : ∀{ℓ ℓ' ξ} →
+                Injective _≡_ _≡_ ξ →
+                subₗ-Loc (ιₗ ξ) ℓ ≡ subₗ-Loc (ιₗ ξ) ℓ' →
+                ℓ ≡ ℓ'
+  subInjₗ-Loc {ℓ} {ℓ'} {ξ} ξ-inj p = renInjₗ-Loc ξ-inj ℓ⟨ξ⟩≡ℓ'⟨ξ⟩
+    where
+    ℓ⟨ξ⟩≡ℓ'⟨ξ⟩ : renₗ-Loc ξ ℓ ≡ renₗ-Loc ξ ℓ'
+    ℓ⟨ξ⟩≡ℓ'⟨ξ⟩ =
+      renₗ-Loc ξ ℓ       ≡⟨ sym (subιₗ-Loc ξ ℓ) ⟩
+      subₗ-Loc (ιₗ ξ) ℓ  ≡⟨ p ⟩
+      subₗ-Loc (ιₗ ξ) ℓ' ≡⟨ subιₗ-Loc ξ ℓ' ⟩
+      renₗ-Loc ξ ℓ'      ∎
 
   -- The `up` construction on location substitutions
   ↑σₗ :  (ℕ → Loc) → ℕ → Loc
