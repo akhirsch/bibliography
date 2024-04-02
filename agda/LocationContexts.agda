@@ -19,7 +19,6 @@ module LocationContexts
   where
 
 open import Choreographies L E LE TE
-open import LocalRenamings L E LE
 open import LocationRenamings L E LE
 open import Renamings L E LE
 open import Types L E LE TE

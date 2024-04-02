@@ -26,7 +26,7 @@ module TypedChoreographies
 
 open import Types L E LE TE
 open import Choreographies L E LE TE
--- open import LocalRenamings L E LE TE
+open import LocalRenamings L E LE TE
 open import LocationRenamings L E LE TE
 open import Renamings L E LE TE
 open import LocationSubstitutions L E LE TE
