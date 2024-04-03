@@ -52,6 +52,6 @@ data Chor : Set where
   global functions, or location abstractions
 -}
 data Val : Chor → Set where
-  DoneVal : (L : LocVal) (v : Expr) → Valₑ v → Val (Done (Lit L) v)
+  DoneVal : (L : LocVal) (v : Expr) (v-Val : Valₑ v) → Val (Done (Lit L) v)
   FunVal : (τ : Typ) (C : Chor) → Val (Fun τ C)
   LocAbsVal : (C : Chor) → Val (LocAbs C)

@@ -101,7 +101,6 @@ record TypedLocalLanguage
 
     progressₑ : ∀{e1 t} →
                 (λ _ → nothing) ⊢ₑ e1 ∶ t →
-                Closedₑ e1 →
                 (Valₑ e1) ⊎ Σ[ e2 ∈ _ ] e1 ⇒ₑ e2
 
   {-
