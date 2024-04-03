@@ -78,8 +78,8 @@ record TypedLocalLanguage
     ty-ffₑ : ∀{Γ} → Γ ⊢ₑ ffₑ ∶ Boolₑ
 
     -- Each boolean value is either true or false.
-    boolValₑ : ∀{Γ v} →
-               Γ ⊢ₑ v ∶ Boolₑ →
+    boolValₑ : ∀{v} →
+               (λ _ → nothing) ⊢ₑ v ∶ Boolₑ →
                Valₑ v →
                (v ≡ ttₑ) ⊎ (v ≡ ffₑ)
     
@@ -88,21 +88,21 @@ record TypedLocalLanguage
     ty-locₑ : ∀{Γ ℓ} → Γ ⊢ₑ locₑ ℓ ∶ Locₑ
 
     -- Each location value corresponds to an actual location.
-    locValₑ : ∀{Γ v} →
-              Γ ⊢ₑ v ∶ Locₑ →
+    locValₑ : ∀{v} →
+              (λ _ → nothing) ⊢ₑ v ∶ Locₑ →
               Valₑ v →
-              Σ[ ℓ ∈ LocVal ] (v ≡ locₑ ℓ)
+              Σ[ L ∈ LocVal ] (v ≡ locₑ L)
  
     -- Progress and preservation must hold.
-    preservationₑ : ∀{Γ e₁ e₂ t} →
-                   Γ ⊢ₑ e₁ ∶ t →
-                   e₁ ⇒ₑ e₂ →
-                   Γ ⊢ₑ e₂ ∶ t
+    preservationₑ : ∀{e1 e2 t} →
+                    (λ _ → nothing) ⊢ₑ e1 ∶ t →
+                    e1 ⇒ₑ e2 →
+                    (λ _ → nothing) ⊢ₑ e2 ∶ t
 
-    progressₑ : ∀{Γ e₁ t} →
-               Γ ⊢ₑ e₁ ∶ t →
-               Closedₑ e₁ →
-               (Valₑ e₁) ⊎ Σ[ e₂ ∈ _ ] e₁ ⇒ₑ e₂
+    progressₑ : ∀{e1 t} →
+                (λ _ → nothing) ⊢ₑ e1 ∶ t →
+                Closedₑ e1 →
+                (Valₑ e1) ⊎ Σ[ e2 ∈ _ ] e1 ⇒ₑ e2
 
   {-
     A substitution σ changes context Γ to context Δ

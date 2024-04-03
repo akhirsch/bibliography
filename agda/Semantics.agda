@@ -1,8 +1,11 @@
 {-# OPTIONS --safe #-}
 
+open import Data.Empty
+open import Data.Unit
 open import Data.Nat renaming (_≟_ to ≡-dec-ℕ)
 open import Data.Bool renaming (_≟_ to ≡-dec-Bool)
 open import Data.List
+open import Data.Maybe hiding (map)
 open import Data.Product renaming (proj₁ to fst; proj₂ to snd) hiding (map)
 open import Relation.Nullary
 open import Relation.Binary
@@ -58,6 +61,7 @@ data TraceElem : Set where
 Trace : Set
 Trace = List TraceElem
 
+-- Small-step operations semantics for ground terms
 data _⇒[_]_ : Chor → TraceElem → Chor → Set where
   stepDone : ∀{e1 e2 L}
              (e1⇒e2 : e1 ⇒ₑ e2) →
@@ -81,15 +85,19 @@ data _⇒[_]_ : Chor → TraceElem → Chor → Set where
             If (Lit L) (Done (Lit L) ttₑ) C1 C2 ⇒[ LocStep L ] C1
   stepIfF : ∀{C1 C2 L} →
             If (Lit L) (Done (Lit L) ffₑ) C1 C2 ⇒[ LocStep L ] C2
-            
-  stepDefLocal : ∀{C1 C1' C2 L T}
+
+  stepDefLocal : ∀{C1 C1' C2 L t T}
                  (C1⇒C1' : C1 ⇒[ T ] C1') →
-                 DefLocal (Lit L) C1 C2 ⇒[ T ] DefLocal (Lit L) C1' C2
-  stepDefLocalV : ∀{v C L}
+                 DefLocal (Lit L) t C1 C2
+                 ⇒[ T ]
+                 DefLocal (Lit L) t C1' C2
+
+  stepDefLocalV : ∀{v C L t}
                   (v-Val : Valₑ v) →
-                  DefLocal (Lit L) (Done (Lit L) v) C ⇒[ • ]
-                  subₗₑ C (idSubₗₑ ▸[ Lit L ] v)
-                  
+                  DefLocal (Lit L) t (Done (Lit L) v) C
+                  ⇒[ • ]
+                  subₗₑ (AddSub ε (Lit L) t v) C
+
   stepAppFun : ∀{C1 C1' C2 T}
                (C1⇒C1' : C1 ⇒[ T ] C1') →
                App C1 C2 ⇒[ T ] App C1' C2
@@ -108,54 +116,75 @@ data _⇒[_]_ : Chor → TraceElem → Chor → Set where
   stepLocApp : ∀{C L} →
                (LocApp (LocAbs C) (Lit L))
                ⇒[ • ]
-               subₗ C (idSubₗ ▸ₗ Lit L)
+               subₗ [] (idSubₗ ▸ₗ Lit L) C
 
   stepTellLet : ∀{C1 C1' C2 T ρ1 ρ2 L} →
                 (C1⇒C1' : C1 ⇒[ T ] C1') →
-                TellLet (Lit L) (map Lit ρ1) C1 (map Lit ρ2) C2 ⇒[ T ]
+                TellLet (Lit L) (map Lit ρ1) C1 (map Lit ρ2) C2
+                ⇒[ T ]
                 TellLet (Lit L) (map Lit ρ1) C1' (map Lit ρ2) C2
   stepTellLetV : ∀{L1 L2 C ρ1 ρ2} →
                  TellLet (Lit L1) (map Lit ρ1) (Done (Lit L1) (locₑ L2)) (map Lit ρ2) C
                  ⇒[ TellLoc L1 L2 ρ1 ρ2 ]
-                 subₗ C (idSubₗ ▸ₗ Lit L2)
+                 subₗ [] (idSubₗ ▸ₗ Lit L2) C
 
 -- Values cannot step
 valNoStep : ∀{V C T} → Val V → ¬ (V ⇒[ T ] C)
 valNoStep (DoneVal L v v-val) (stepDone v⇒e) = valNoStepₑ v-val v⇒e
 
--- Type preservation
-preservation : ∀{Θ Δ Γ C1 C2 τ T} →
-               (Θ , Δ , Γ) ⊢ C1 ∶ τ →
+-- Types are preserved under the operational semantics
+preservation : ∀{τ T C1 C2} →
+               ((λ _ → ⊥) , [] , λ _ → nothing) ⊢ C1 ∶ τ →
                C1 ⇒[ T ] C2 →
-               (Θ , Δ , Γ) ⊢ C2 ∶ τ
-preservation (tyDone Θ⊢Γ Θ⊢ℓ Δ[ℓ]⊢e∶t) (stepDone e1⇒e2) =
-  tyDone Θ⊢Γ Θ⊢ℓ (preservationₑ Δ[ℓ]⊢e∶t e1⇒e2)
+               ((λ _ → ⊥) , [] , λ _ → nothing) ⊢ C2 ∶ τ
+preservation (tyDone Θ⊢Γ Θ⊢ℓ e∶t) (stepDone e1⇒e2) =
+  tyDone Θ⊢Γ Θ⊢ℓ (preservationₑ e∶t e1⇒e2)
 preservation (tySend C1 Θ⊢ℓ2) (stepSend C1⇒C2) =
   tySend (preservation C1 C1⇒C2) Θ⊢ℓ2
-preservation (tySend (tyDone Θ⊢Γ Θ⊢ℓ Δ[ℓ]⊢e∶t) Θ⊢ℓ2) (stepSendV v-Val) =
-  tyDone Θ⊢Γ (wfLit _) (tyValₑ v-Val Δ[ℓ]⊢e∶t)
+preservation (tySend (tyDone Θ⊢Γ Θ⊢ℓ e∶t) Θ⊢ℓ2) (stepSendV v-Val) =
+  tyDone Θ⊢Γ (wfLit _) (tyValₑ v-Val e∶t)
 preservation (tyIf C C1 C2) (stepIf C⇒C') = tyIf (preservation C C⇒C') C1 C2
 preservation (tyIf C C1 C2) stepIfT = C1
 preservation (tyIf C C1 C2) stepIfF = C2
 preservation (tySync Θ⊢ℓ1 Θ⊢ℓ2 C) stepSync = C
 preservation (tyDefLocal C1 C2) (stepDefLocal C1⇒C1') =
   tyDefLocal (preservation C1 C1⇒C1') C2
-preservation (tyDefLocal {Θ} {Δ} {Γ} {C1} {C2} {t1} {.(Lit L)} {τ2} V∶t1 C∶τ2) (stepDefLocalV {v = v} {L = L} V-Val) =
-  {! C∶τ2 !}
-{-
-? : (Θ , Δ , Γ) ⊢ subₗₑ C2 (idSubₗₑ ▸[ Lit L ] v) ∶ τ2
-V∶t1 : (Θ , Δ , Γ) ⊢ Done (Lit L) v ∶ At t1 (Lit L)
-C∶τ2 : (Θ , (Δ ,,[ Lit L ] t1) , Γ) ⊢ C2 ∶ τ2
--}
-preservation (tyFix C∶τ) stepFix =
-  tySub (▸⇒ (idSub⇒ _ _ _ (wfCtxTail (ty⇒wfCtx C∶τ))) (tyFix C∶τ)) C∶τ
+preservation (tyDefLocal {t1 = t1} (tyDone Θ⊢Γ Θ⊢ℓ v∶t1) C∶τ2) (stepDefLocalV {L = L} V-Val) =
+  tySubₗₑ (AddSUB εSUB (Lit L) t1 v∶t1) C∶τ2
+preservation (tyFix {C = C} {τ = τ} C∶τ) stepFix =
+  tySub (λ{ n τ () }) (λ{ zero .τ refl → tyFix C∶τ ; (suc n) τ () }) C∶τ
 preservation (tyApp C1 C2) (stepAppFun C1⇒C1') = tyApp (preservation C1 C1⇒C1') C2
 preservation (tyApp C1 C2) (stepAppArg V-Val C2⇒C2') = tyApp C1 (preservation C2 C2⇒C2')
 preservation (tyApp (tyFun C∶τ2) V∶τ1) (stepApp {V = V} {C = C} V-Val) =
-  tySub {!   !} C∶τ2 
+  tySub (λ{ n τ () }) (λ{ zero τ refl → V∶τ1 ; (suc n) τ () }) C∶τ2
 preservation (tyLocApp C Θ⊢ℓ) (stepLocAppFun C⇒C') = tyLocApp (preservation C C⇒C') Θ⊢ℓ
-preservation (tyLocApp C Θ⊢ℓ) stepLocApp =
-  {!   !} 
+preservation (tyLocApp (tyLocAbs Θ⊢Γ C∶τ) Θ⊢ℓ) (stepLocApp {L = L}) =
+  tySubₗ (λ{ zero tt → wfLit L ; (suc n) () }) C∶τ
 preservation (tyTellLet C1 Θ⊢ρ1 Θ⊢ρ2 Θ⊢τ C2) (stepTellLet C1⇒C1') =
   tyTellLet (preservation C1 C1⇒C1') Θ⊢ρ1 Θ⊢ρ2 Θ⊢τ C2
-preservation (tyTellLet C1 Θ⊢ρ1 Θ⊢ρ2 Θ⊢τ C2) stepTellLetV = {!   !}
+preservation (tyTellLet {C2 = C2} {τ = τ} (tyDone Θ⊢Γ Θ⊢ℓ L2∶t) Θ⊢ρ1 Θ⊢ρ2 Θ⊢τ C2:↑τ) (stepTellLetV {L2 = L2}) =
+  C2⟨L2⟩:τ
+  where
+  open ≡-Reasoning
+
+  C2⟨L2⟩:↑τ⟨id▸L2⟩ : ((λ _ → ⊥) , [] , (λ _ → nothing))
+                    ⊢ subₗ [] (idSubₗ ▸ₗ Lit L2) C2
+                    ∶ subₜ (idSubₗ ▸ₗ Lit L2) (↑ₜ τ)
+  C2⟨L2⟩:↑τ⟨id▸L2⟩ = tySubₗ (λ{ zero tt → wfLit L2 ; (suc n) ()}) C2:↑τ 
+
+  ↑τ⟨id▸L2⟩≡τ : subₜ (idSubₗ ▸ₗ Lit L2) (↑ₜ τ) ≡ τ
+  ↑τ⟨id▸L2⟩≡τ =
+    subₜ (idSubₗ ▸ₗ Lit L2) (renₜ suc τ)
+      ≡⟨ cong (subₜ (idSubₗ ▸ₗ Lit L2)) (sym (subιₜ suc τ)) ⟩
+    subₜ (idSubₗ ▸ₗ Lit L2) (subₜ (ιₗ suc) τ)
+      ≡⟨ sym (subFuseₜ (idSubₗ ▸ₗ Lit L2) (ιₗ suc) τ) ⟩
+    subₜ idSubₗ τ
+      ≡⟨ subIdₜ τ ⟩
+    τ ∎
+
+  C2⟨L2⟩:τ : ((λ _ → ⊥) , [] , (λ _ → nothing))
+               ⊢ subₗ [] (idSubₗ ▸ₗ Lit L2) C2
+               ∶ τ
+  C2⟨L2⟩:τ =
+    subst (λ x → ((λ _ → ⊥) , [] , (λ _ → nothing)) ⊢ subₗ [] (idSubₗ ▸ₗ Lit L2) C2 ∶ x)
+      ↑τ⟨id▸L2⟩≡τ C2⟨L2⟩:↑τ⟨id▸L2⟩
