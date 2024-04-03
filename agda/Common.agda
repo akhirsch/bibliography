@@ -131,6 +131,23 @@ idRen n = n
 ↑∘suc ξ zero = refl
 ↑∘suc ξ (suc n) = refl
 
+mapExt : ∀{a b} {A : Set a} {B : Set b} {f g : A → B} →
+         f ≈ g → map f ≈ map g
+mapExt f≈g (just x) = cong just (f≈g x)
+mapExt f≈g nothing = refl
+
+map∘ : ∀{a b c} {A : Set a} {B : Set b} {C : Set c}
+       (f : B → C) (g : A → B) →
+       map (f ∘ g) ≈ map f ∘ map g
+map∘ f g (just x) = refl
+map∘ f g nothing = refl
+
+map≡just⇒just : ∀{a b} {A : Set a} {B : Set b}
+                (f : A → B) (m : Maybe A) (y : B) →
+                map f m ≡ just y →
+                Σ[ x ∈ A ] (f x ≡ y)
+map≡just⇒just f (just x) .(f x) refl = x , refl
+
 -- Extended congruence methods as the standard library only goes up to cong₂
 cong₃ : ∀{a b c d} {A : Set a} {B : Set b} {C : Set c} {D : Set d}
         (f : A → B → C → D) {a1 a2 : A} {b1 b2 : B} {c1 c2 : C} →

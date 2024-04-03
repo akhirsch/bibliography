@@ -64,6 +64,10 @@ dropLocalSub σ ℓ t = renLocalSub (Drop Id ℓ t) σ
 keepLocalSub : LocalSub → Loc → Typₑ → LocalSub
 keepLocalSub σ ℓ t = AddSub (dropLocalSub σ ℓ t) ℓ t (varₑ zero)
 
+idLocalSub : LocalCtx → LocalSub
+idLocalSub [] = ε
+idLocalSub ((ℓ , t) ∷ Δ) = keepLocalSub (idLocalSub Δ) ℓ t
+
 -- Substitute local variables in a choreography
 subₗₑ : (σ : LocalSub) (C : Chor) → Chor
 subₗₑ σ (Done ℓ e) = Done ℓ (subₑ (σ σ⦊ ℓ) e)
