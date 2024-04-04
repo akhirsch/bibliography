@@ -77,20 +77,20 @@ record TypedLocalLanguage (L : Location) : Set₁ where
     ty-ffₑ : ∀{Γ} → Γ ⊢ₑ ffₑ ∶ Boolₑ
 
     -- Each boolean value is either true or false.
-    boolValₑ : ∀{v} →
-               (λ _ → nothing) ⊢ₑ v ∶ Boolₑ →
-               Valₑ v →
-               (v ≡ ttₑ) ⊎ (v ≡ ffₑ)
+    boolInvertₑ : ∀{v} →
+                  (λ _ → nothing) ⊢ₑ v ∶ Boolₑ →
+                  Valₑ v →
+                  (v ≡ ttₑ) ⊎ (v ≡ ffₑ)
     
     -- We have a type for locations, and the appropriate judgments.
     Locₑ : Typₑ
     ty-locₑ : ∀{Γ ℓ} → Γ ⊢ₑ locₑ ℓ ∶ Locₑ
 
     -- Each location value corresponds to an actual location.
-    locValₑ : ∀{v} →
-              (λ _ → nothing) ⊢ₑ v ∶ Locₑ →
-              Valₑ v →
-              Σ[ L ∈ LocVal ] (v ≡ locₑ L)
+    locInvertₑ : ∀{v} →
+                 (λ _ → nothing) ⊢ₑ v ∶ Locₑ →
+                 Valₑ v →
+                 Σ[ L ∈ LocVal ] (v ≡ locₑ L)
  
     -- Progress and preservation must hold.
     preservationₑ : ∀{e1 e2 t} →

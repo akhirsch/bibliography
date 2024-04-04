@@ -233,7 +233,7 @@ progress (tySend {ℓ1 = Lit L1} {Lit L2} (tyDone Θ⊢Γ Θ⊢ℓ e∶t) Θ⊢�
 progress (tyIf {ℓ = Var x} C∶bool C1∶τ C2∶τ) with ty⇒wfTy C∶bool
 ... | wfAt (wfVar ())
 progress (tyIf {C1 = C1} {C2} {ℓ = Lit L} C∶bool C1∶τ C2∶τ) with progress C∶bool
-progress (tyIf {C1 = C1} {C2} {ℓ = Lit L} (tyDone Θ⊢Γ Θ⊢ℓ v∶bool) C1∶τ C2∶τ) | inl (DoneVal L v v-Val) with boolValₑ v∶bool v-Val
+progress (tyIf {C1 = C1} {C2} {ℓ = Lit L} (tyDone Θ⊢Γ Θ⊢ℓ v∶bool) C1∶τ C2∶τ) | inl (DoneVal L v v-Val) with boolInvertₑ v∶bool v-Val
 ... | inl refl = inr (LocStep L , C1 , stepIfT)
 ... | inr refl = inr (LocStep L , C2 , stepIfF)
 progress (tyIf {C1 = C1} {C2} {ℓ = Lit L} C∶bool C1∶τ C2∶τ) | inr (T , C' , C⇒[T]C') = inr (T , If (Lit L) C' C1 C2 , stepIf C⇒[T]C')
@@ -264,6 +264,6 @@ progress (tyTellLet {C1 = C1} {C2} {ρ1} {ρ2} {ℓ} C1∶Loc Θ⊢ρ1 Θ⊢ρ2 
 ... | (LS1 , refl) | (LS2 , refl) | (L , refl) with progress C1∶Loc
 ... | inr (T , C1' , C1⇒[T]C1') = inr (T , TellLet (Lit L) (map Lit LS1) C1' (map Lit LS2) C2 , stepTellLet C1⇒[T]C1')
 progress (tyTellLet {C2 = C2} (tyDone Θ⊢Γ Θ⊢ℓ v∶Loc) Θ⊢ρ1 Θ⊢ρ2 Θ⊢τ C2∶↑τ)
-    | LS1 , refl | LS2 , refl | L1 , refl | inl (DoneVal L v v-Val) with locValₑ TE v∶Loc v-Val
+    | LS1 , refl | LS2 , refl | L1 , refl | inl (DoneVal L v v-Val) with locInvertₑ v∶Loc v-Val
 ... | (L2 , refl) =
   inr (TellLoc L1 L2 LS1 LS2 , subₗ [] (idSubₗ ▸ₗ Lit L2) C2 , stepTellLetV)
