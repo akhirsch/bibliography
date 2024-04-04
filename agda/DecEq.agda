@@ -22,15 +22,13 @@ open import Locations
 
 module DecEq
   (L : Location)
-  (E : Language L)
-  (LE : LawfulLanguage L E)
-  (TE : TypedLocalLanguage L E LE)
+  (E : TypedLocalLanguage L)
   where
 
-open import Choreographies L E LE TE
+open import Choreographies L E
 
 open Location L
-open Language E
+open TypedLocalLanguage E
 
 {-
   A `view` of two elements of a recursive data type

@@ -13,19 +13,15 @@ open import Locations
 
 module LocationContexts
   (L : Location)
-  (E : Language L)
-  (LE : LawfulLanguage L E)
-  (TE : TypedLocalLanguage L E LE)
+  (E : TypedLocalLanguage L)
   where
 
-open import Choreographies L E LE TE
-open import LocationRenamings L E LE
-open import Renamings L E LE
-open import Types L E LE TE
+open import Choreographies L E
+open import LocationRenamings L E
+open import Renamings L E
+open import Types L E
 open Location L
-open Language E
-open LawfulLanguage LE
-open TypedLocalLanguage TE
+open TypedLocalLanguage E
 
 {-
   Location contexts are an infinite map which

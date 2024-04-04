@@ -14,8 +14,7 @@ open import Locations
 module LocalLang where
 
 -- Syntax and semantics of a local language
-record Language
-  (L : Location) : Set₁ where
+record Language (L : Location) : Set₁ where
   open Location L
 
   infixr 6 _⇒ₑ_
@@ -74,11 +73,13 @@ record Language
   ↑σₑ σ (suc n) = renₑ suc (σ n)
 
 -- A local language that has extra "lawfulness" properties
-record LawfulLanguage
-  (L : Location)
-  (E : Language L) : Set₁ where
+record LawfulLanguage (L : Location) : Set₁ where
   open Location L
-  open Language E
+
+  field
+    {{LL}} : Language L
+
+  open Language LL public
 
   field
     -- Substitution should respect extensional equality.

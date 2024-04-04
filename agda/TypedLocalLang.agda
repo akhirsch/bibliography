@@ -17,14 +17,13 @@ open import Locations
 module TypedLocalLang where
 
 -- Type theory for a local language
-record TypedLocalLanguage
-       (L : Location)
-       (E : Language L)
-       (LE : LawfulLanguage L E)
-       : Set₁ where
+record TypedLocalLanguage (L : Location) : Set₁ where
   open Location L
-  open Language E
-  open LawfulLanguage LE
+
+  field
+    {{LL}} : LawfulLanguage L
+
+  open LawfulLanguage LL public
 
   field
     -- Local types

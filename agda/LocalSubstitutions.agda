@@ -21,18 +21,14 @@ open import Locations
 
 module LocalSubstitutions
   (L : Location)
-  (E : Language L)
-  (LE : LawfulLanguage L E)
-  (TE : TypedLocalLanguage L E LE)
+  (E : TypedLocalLanguage L)
   where
 
-open import Types L E LE TE
-open import Choreographies L E LE TE
-open import LocalRenamings L E LE TE
-open import LocalContexts L E LE TE
-open Language E
-open LawfulLanguage LE
-open TypedLocalLanguage TE
+open import Types L E
+open import Choreographies L E
+open import LocalRenamings L E
+open import LocalContexts L E
+open TypedLocalLanguage E
 open Location L
 open ≡-Reasoning
 

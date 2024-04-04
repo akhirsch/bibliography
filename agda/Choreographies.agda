@@ -16,17 +16,13 @@ open import Locations
 
 module Choreographies
   (L : Location)
-  (E : Language L)
-  (LE : LawfulLanguage L E)
-  (TE : TypedLocalLanguage L E LE)
+  (E : TypedLocalLanguage L)
   where
 
-open import Types L E LE TE
+open import Types L E
 
 open Location L
-open Language E
-open LawfulLanguage LE
-open TypedLocalLanguage TE
+open TypedLocalLanguage E
 open ≡-Reasoning
 
 -- Synchronization labels are represented by booleans

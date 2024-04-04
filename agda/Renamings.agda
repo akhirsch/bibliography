@@ -14,16 +14,12 @@ open import Locations
 
 module Renamings
   (L : Location)
-  (E : Language L)
-  (LE : LawfulLanguage L E)
-  (TE : TypedLocalLanguage L E LE)
+  (E : TypedLocalLanguage L)
   where
 
-open import Types L E LE TE
-open import Choreographies L E LE TE
-open Location L
-open Language E
-open LawfulLanguage LE
+open import Types L E
+open import Choreographies L E
+open TypedLocalLanguage E
 
 -- Renaming global variables
 ren : (ℕ → ℕ) → Chor → Chor

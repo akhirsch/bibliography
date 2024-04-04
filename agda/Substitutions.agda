@@ -21,17 +21,15 @@ open import Locations
 
 module Substitutions
   (L : Location)
-  (E : Language L)
-  (LE : LawfulLanguage L E)
-  (TE : TypedLocalLanguage L E LE)
+  (E : TypedLocalLanguage L)
   where
 
-open import Types L E LE TE
-open import Choreographies L E LE TE
-open import LocationRenamings L E LE TE
-open import LocalRenamings L E LE TE
-open import Renamings L E LE TE
-open import LocalContexts L E LE TE
+open import Types L E
+open import Choreographies L E
+open import LocationRenamings L E
+open import LocalRenamings L E
+open import Renamings L E
+open import LocalContexts L E
 
 -- Identity substitution
 idSub : ℕ → Chor

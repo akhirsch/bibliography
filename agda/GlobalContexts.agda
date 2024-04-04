@@ -19,23 +19,19 @@ open import Locations
 
 module GlobalContexts
   (L : Location)
-  (E : Language L)
-  (LE : LawfulLanguage L E)
-  (TE : TypedLocalLanguage L E LE)
+  (E : TypedLocalLanguage L)
   where
 
 open import Choreographies L E
-open import LocationRenamings L E LE
-open import LocationSubstitutions L E LE
-open import Types L E LE TE
-open import LocationContexts L E LE TE
-open import LocalContexts L E LE TE
+open import LocationRenamings L E
+open import LocationSubstitutions L E
+open import Types L E
+open import LocationContexts L E
+open import LocalContexts L E
 
 
 open Location L
-open Language E
-open LawfulLanguage LE
-open TypedLocalLanguage TE
+open TypedLocalLanguage E
 open ≡-Reasoning
 
 -- Choreographic/global contexts
