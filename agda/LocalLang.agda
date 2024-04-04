@@ -167,28 +167,16 @@ record LawfulLanguage (L : Location) : Set₁ where
     subₑ (varₑ ∘ ξ) (varₑ n) ≡⟨ subVarₑ (varₑ ∘ ξ) n ⟩
     varₑ (ξ n)               ∎
 
-  -- The `up` construction should have no extensional effect on the identity substitution
-  ↑σIdₑ : ∀ n → ↑σₑ idSubₑ n ≡ varₑ n
+  -- ↑ respects extensional equality
+  ↑σExtₑ : ∀{σ1 σ2} → σ1 ≈ σ2 → ↑σₑ σ1 ≈ ↑σₑ σ2
+  ↑σExtₑ σ1≈σ2 zero = refl
+  ↑σExtₑ σ1≈σ2 (suc n) = cong (renₑ suc) (σ1≈σ2 n)
+
+  -- ↑ respects the identity
+  ↑σIdₑ : ↑σₑ idSubₑ ≈ idSubₑ
   ↑σIdₑ zero = refl
   ↑σIdₑ (suc n) = renVarₑ suc n
 
-  -- The `up` construction should respect extensional equality.
-  ↑Extₑ : ∀{ξ1 ξ2} →
-              (∀ n → ξ1 n ≡ ξ2 n) →
-              ∀ n → ↑ ξ1 n ≡ ↑ ξ2 n
-  ↑Extₑ ξ1≈ξ2 zero = refl
-  ↑Extₑ ξ1≈ξ2 (suc n) = cong suc (ξ1≈ξ2 n)
-
-  -- The `up` construction should have no extensional effect on the identity renaming.
-  ↑Idₑ : ∀ n → ↑ idRenₑ n ≡ n
-  ↑Idₑ zero = refl
-  ↑Idₑ (suc n) = refl
-
-  -- The `up` construction extensionally commutes with composition.
-  ↑Fuseₑ : ∀ ξ1 ξ2 n → ↑ (ξ2 ∘ ξ1) n ≡ ↑ ξ2 (↑ ξ1 n)
-  ↑Fuseₑ ξ1 ξ2 zero = refl
-  ↑Fuseₑ ξ1 ξ2 (suc n) = refl
-    
   -- Substituting a closed expression has no effect.
   subClosedIdₑ : ∀ σ e → Closedₑ e → subₑ σ e ≡ e
   subClosedIdₑ e σ closed = subClosedAboveIdₑ closed λ{ () }

@@ -34,7 +34,7 @@ data Chor : Set where
   Done : (ℓ : Loc) (e : Expr) → Chor
   Var : (x : ℕ) → Chor
   Send : (ℓ1 : Loc) (C : Chor) (ℓ2 : Loc) → Chor
-  If : (ℓ : Loc) (C : Chor) (C1 : Chor) (C2 : Chor) → Chor
+  If : (ℓ : Loc) (C C1 C2 : Chor) → Chor
   Sync : (ℓ1 : Loc) (d : SyncLabel) (ℓ2 : Loc) (C : Chor) → Chor
   DefLocal : (ℓ : Loc) (t : Typₑ) (C1 : Chor) (C2 : Chor) → Chor
   Fun Fix : (τ : Typ) (C : Chor) → Chor
