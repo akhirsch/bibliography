@@ -131,7 +131,7 @@ data MergeChoice where
 -- Endpoint projection
 data ⟦_⊢_∣_⟧≡_ : LocalCtx → Chor → LocVal → Ctrl → Set where
   ProjDoneYes : ∀{Δ L e} → ⟦ Δ ⊢ Done (Lit L) e ∣ L ⟧≡ Return e
-  ProjDoneNo : ∀{Δ L ℓ e} → L ≢ ℓ → ⟦ Δ ⊢ Done (Lit ℓ) e ∣ L ⟧≡ End
+  ProjDoneNo : ∀{Δ L ℓ e} → Lit L ≢ ℓ → ⟦ Δ ⊢ Done ℓ e ∣ L ⟧≡ End
 
   ProjVar : ∀{Δ L x} → ⟦ Δ ⊢ Var x ∣ L ⟧≡ Var x
 
