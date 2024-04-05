@@ -5,14 +5,33 @@ open import Data.Empty
 open import Data.Unit
 open import Data.Nat hiding (_⊔_)
 open import Data.Nat.Properties
+open import Data.List hiding (map)
+open import Data.Fin
 open import Data.Maybe
 open import Data.Maybe.Properties
 open import Data.Product hiding (map)
+open import Relation.Nullary
+open import Relation.Unary hiding (_∈_; _∉_)
 open import Relation.Binary
 open import Relation.Binary.PropositionalEquality
 open import Function
 
 module Common where
+
+_∈_ : ∀{a} {A : Set a} → A → List A → Set a
+a ∈ xs = Σ[ i ∈ Fin (length xs) ] lookup xs i ≡ a
+
+_∉_ : ∀{a} {A : Set a} → A → List A → Set a
+a ∉ xs = ¬ (a ∈ xs)
+
+module DecInList {a} {A : Set a} (≡-dec-A : DecidableEquality A) where
+  _?∈_ : (a : A) (xs : List A) → Dec (a ∈ xs)
+  a ?∈ [] = no λ{ (() , _) }
+  a ?∈ (x ∷ xs) with ≡-dec-A x a | a ?∈ xs
+  ... | yes refl | _            = yes (zero , refl)
+  ... | no  ¬p   | yes (i , eq) = yes (suc i , eq)
+  ... | no  ¬p   | no ¬q        = no λ{ (zero , eq) → ¬p eq
+                                      ; (suc i , eq) → ¬q (i , eq) }
 
 -- Transporting across equal types
 transport : ∀{a} {A B : Set a} →
@@ -179,3 +198,4 @@ ifZeroElse∘suc : ∀{a} {A : Set a}
                  ifZeroElse x f ∘ suc ≈ f
 ifZeroElse∘suc x f zero = refl
 ifZeroElse∘suc x f (suc n) = refl
+ 

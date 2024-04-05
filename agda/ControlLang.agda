@@ -11,17 +11,16 @@ open import Function
 
 open import Common
 open import Locations
-open import LocalLang
+open import TypedLocalLang
 
 module ControlLang
   (L : Location)
-  (E : LawfulLanguage L)
+  (E : TypedLocalLanguage L)
   where
 
 open Location L
-open LawfulLanguage E
+open TypedLocalLanguage E
 open ≡-Reasoning
-
 
 data Ctrl : Set
 data Choices : Set
@@ -37,7 +36,7 @@ data Ctrl where
   DefLocal : (E1 E2 : Ctrl) → Ctrl
   LocAbs : (E : Ctrl) → Ctrl
   LocApp : (E : Ctrl) (ℓ : Loc) → Ctrl
-  Send : (E : Ctrl) (ℓ : Loc)  → Ctrl
+  Send : (E : Ctrl) (ℓ : Loc) → Ctrl
   Receive : (ℓ : Loc) → Ctrl
   If : (E E1 E2 : Ctrl) → Ctrl
   ChooseFor : (d : Bool) (ℓ : Loc) (E : Ctrl) → Ctrl
