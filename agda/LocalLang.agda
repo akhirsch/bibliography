@@ -72,6 +72,11 @@ record Language (L : Location) : Set₁ where
   ↑σₑ σ zero = varₑ zero
   ↑σₑ σ (suc n) = renₑ suc (σ n)
 
+  -- Add a top-most expression to a substitution
+  _▸ₑ_ : (ℕ → Expr) → Expr → ℕ → Expr
+  (σ ▸ₑ e) zero = e
+  (σ ▸ₑ e) (suc n) = σ n
+
 -- A local language that has extra "lawfulness" properties
 record LawfulLanguage (L : Location) : Set₁ where
   open Location L

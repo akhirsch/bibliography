@@ -29,7 +29,7 @@ data Choices : Set
 data Ctrl where
   Return : (e : Expr) → Ctrl
   Var : (x : ℕ) → Ctrl
-  Fail : Ctrl
+  End : Ctrl
   Then : (E1 E2 : Ctrl) → Ctrl
   App : (E1 E2 : Ctrl) → Ctrl
   Fun : (E : Ctrl) → Ctrl
@@ -37,7 +37,7 @@ data Ctrl where
   DefLocal : (E1 E2 : Ctrl) → Ctrl
   LocAbs : (E : Ctrl) → Ctrl
   LocApp : (E : Ctrl) (ℓ : Loc) → Ctrl
-  Send : (E : Ctrl) (ℓ : Loc) → Ctrl
+  Send : (E : Ctrl) (ℓ : Loc)  → Ctrl
   Receive : (ℓ : Loc) → Ctrl
   If : (E E1 E2 : Ctrl) → Ctrl
   ChooseFor : (d : Bool) (ℓ : Loc) (E : Ctrl) → Ctrl
@@ -52,13 +52,24 @@ data Choices where
   FChoice : (EF : Ctrl) → Choices
   TFChoice : (ET EF : Ctrl) → Choices
 
+{-
+  Values of the language are either a return, an end,
+  a function, or a location abstraction
+-}
+data ValE : Ctrl → Set where
+  ReturnVal : (v : Expr) (v-Val : Valₑ v) → ValE (Return v)
+  EndVal : ValE End
+  FunVal : (E : Ctrl) → ValE (Fun E)
+  LocAbsVal : (E : Ctrl) → ValE (LocAbs E)
+
+
 -- Rename the location variables in a control expression
 renCtrlₗ : (ℕ → ℕ) → Ctrl → Ctrl
 renChoicesₗ : (ℕ → ℕ) → Choices → Choices
 
 renCtrlₗ ξ (Return e) = Return e
 renCtrlₗ ξ (Var x) = Var x
-renCtrlₗ ξ Fail = Fail
+renCtrlₗ ξ End = End
 renCtrlₗ ξ (Then E1 E2) = Then (renCtrlₗ ξ E1) (renCtrlₗ ξ E2)
 renCtrlₗ ξ (App E1 E2) = App (renCtrlₗ ξ E1) (renCtrlₗ ξ E2)
 renCtrlₗ ξ (Fun E) = Fun (renCtrlₗ ξ E)
@@ -86,7 +97,7 @@ renChoicesExtₗ : ∀{ξ1 ξ2} → ξ1 ≈ ξ2 → renChoicesₗ ξ1 ≈ renCho
 
 renCtrlExtₗ ξ1≈ξ2 (Return e) = refl
 renCtrlExtₗ ξ1≈ξ2 (Var x) = refl
-renCtrlExtₗ ξ1≈ξ2 Fail = refl
+renCtrlExtₗ ξ1≈ξ2 End = refl
 renCtrlExtₗ ξ1≈ξ2 (Then E1 E2) = cong₂ Then (renCtrlExtₗ ξ1≈ξ2 E1) (renCtrlExtₗ ξ1≈ξ2 E2)
 renCtrlExtₗ ξ1≈ξ2 (App E1 E2) = cong₂ App (renCtrlExtₗ ξ1≈ξ2 E1) (renCtrlExtₗ ξ1≈ξ2 E2)
 renCtrlExtₗ ξ1≈ξ2 (Fun E) = cong Fun (renCtrlExtₗ ξ1≈ξ2 E)
@@ -121,7 +132,7 @@ renChoicesIdₗ : (C : Choices) → renChoicesₗ idRen C ≡ C
 
 renCtrlIdₗ (Return e) = refl
 renCtrlIdₗ (Var x) = refl
-renCtrlIdₗ Fail = refl
+renCtrlIdₗ End = refl
 renCtrlIdₗ (Then E1 E2) = cong₂ Then (renCtrlIdₗ E1) (renCtrlIdₗ E2)
 renCtrlIdₗ (App E1 E2) = cong₂ App (renCtrlIdₗ E1) (renCtrlIdₗ E2)
 renCtrlIdₗ (Fun E) = cong Fun (renCtrlIdₗ E)
@@ -156,7 +167,7 @@ renChoicesFuseₗ : (ξ1 ξ2 : ℕ → ℕ) → renChoicesₗ (ξ1 ∘ ξ2) ≈ 
 
 renCtrlFuseₗ ξ1 ξ2 (Return e) = refl
 renCtrlFuseₗ ξ1 ξ2 (Var x) = refl
-renCtrlFuseₗ ξ1 ξ2 Fail = refl
+renCtrlFuseₗ ξ1 ξ2 End = refl
 renCtrlFuseₗ ξ1 ξ2 (Then E1 E2) = cong₂ Then (renCtrlFuseₗ ξ1 ξ2 E1) (renCtrlFuseₗ ξ1 ξ2 E2)
 renCtrlFuseₗ ξ1 ξ2 (App E1 E2) = cong₂ App (renCtrlFuseₗ ξ1 ξ2 E1) (renCtrlFuseₗ ξ1 ξ2 E2)
 renCtrlFuseₗ ξ1 ξ2 (Fun E) = cong Fun (renCtrlFuseₗ ξ1 ξ2 E)
@@ -192,7 +203,7 @@ subChoicesₗ : (ℕ → Loc) → Choices → Choices
 
 subCtrlₗ σ (Return e) = Return e
 subCtrlₗ σ (Var x) = Var x
-subCtrlₗ σ Fail = Fail
+subCtrlₗ σ End = End
 subCtrlₗ σ (Then E1 E2) = Then (subCtrlₗ σ E1) (subCtrlₗ σ E2)
 subCtrlₗ σ (App E1 E2) = App (subCtrlₗ σ E1) (subCtrlₗ σ E2)
 subCtrlₗ σ (Fun E) = Fun (subCtrlₗ σ E)
@@ -220,7 +231,7 @@ subChoicesExtₗ : ∀{σ1 σ2} → σ1 ≈ σ2 → subChoicesₗ σ1 ≈ subCho
 
 subCtrlExtₗ σ1≈σ2 (Return e) = refl
 subCtrlExtₗ σ1≈σ2 (Var x) = refl
-subCtrlExtₗ σ1≈σ2 Fail = refl
+subCtrlExtₗ σ1≈σ2 End = refl
 subCtrlExtₗ σ1≈σ2 (Then E1 E2) = cong₂ Then (subCtrlExtₗ σ1≈σ2 E1) (subCtrlExtₗ σ1≈σ2 E2)
 subCtrlExtₗ σ1≈σ2 (App E1 E2) = cong₂ App (subCtrlExtₗ σ1≈σ2 E1) (subCtrlExtₗ σ1≈σ2 E2)
 subCtrlExtₗ σ1≈σ2 (Fun E) = cong Fun (subCtrlExtₗ σ1≈σ2 E)
@@ -255,7 +266,7 @@ subChoicesIdₗ : (C : Choices) → subChoicesₗ idSubₗ C ≡ C
 
 subCtrlIdₗ (Return e) = refl
 subCtrlIdₗ (Var x) = refl
-subCtrlIdₗ Fail = refl
+subCtrlIdₗ End = refl
 subCtrlIdₗ (Then E1 E2) = cong₂ Then (subCtrlIdₗ E1) (subCtrlIdₗ E2)
 subCtrlIdₗ (App E1 E2) = cong₂ App (subCtrlIdₗ E1) (subCtrlIdₗ E2)
 subCtrlIdₗ (Fun E) = cong Fun (subCtrlIdₗ E)
@@ -290,7 +301,7 @@ renChoices : (ℕ → ℕ) → Choices → Choices
 
 renCtrl ξ (Return e) = Return e
 renCtrl ξ (Var x) = Var (ξ x)
-renCtrl ξ Fail = Fail
+renCtrl ξ End = End
 renCtrl ξ (Then E1 E2) = Then (renCtrl ξ E1) (renCtrl ξ E2)
 renCtrl ξ (App E1 E2) = App (renCtrl ξ E1) (renCtrl ξ E2)
 renCtrl ξ (Fun E) = Fun (renCtrl (↑ ξ) E)
@@ -318,7 +329,7 @@ renChoicesExt : ∀{ξ1 ξ2} → ξ1 ≈ ξ2 → renChoices ξ1 ≈ renChoices �
 
 renCtrlExt ξ1≈ξ2 (Return e) = refl
 renCtrlExt ξ1≈ξ2 (Var x) = cong Var (ξ1≈ξ2 x)
-renCtrlExt ξ1≈ξ2 Fail = refl
+renCtrlExt ξ1≈ξ2 End = refl
 renCtrlExt ξ1≈ξ2 (Then E1 E2) = cong₂ Then (renCtrlExt ξ1≈ξ2 E1) (renCtrlExt ξ1≈ξ2 E2)
 renCtrlExt ξ1≈ξ2 (App E1 E2) = cong₂ App (renCtrlExt ξ1≈ξ2 E1) (renCtrlExt ξ1≈ξ2 E2)
 renCtrlExt ξ1≈ξ2 (Fun E) = cong Fun (renCtrlExt (↑Ext ξ1≈ξ2) E)
@@ -346,7 +357,7 @@ renChoicesId : (C : Choices) → renChoices idRen C ≡ C
 
 renCtrlId (Return e) = refl
 renCtrlId (Var x) = refl
-renCtrlId Fail = refl
+renCtrlId End = refl
 renCtrlId (Then E1 E2) = cong₂ Then (renCtrlId E1) (renCtrlId E2)
 renCtrlId (App E1 E2) = cong₂ App (renCtrlId E1) (renCtrlId E2)
 renCtrlId (Fun E) = cong Fun (renCtrlExt ↑Id E ∙ renCtrlId E)
@@ -374,7 +385,7 @@ renChoicesFuse : (ξ1 ξ2 : ℕ → ℕ) → renChoices (ξ1 ∘ ξ2) ≈ renCho
 
 renCtrlFuse ξ1 ξ2 (Return e) = refl
 renCtrlFuse ξ1 ξ2 (Var x) = refl
-renCtrlFuse ξ1 ξ2 Fail = refl
+renCtrlFuse ξ1 ξ2 End = refl
 renCtrlFuse ξ1 ξ2 (Then E1 E2) = cong₂ Then (renCtrlFuse ξ1 ξ2 E1) (renCtrlFuse ξ1 ξ2 E2)
 renCtrlFuse ξ1 ξ2 (App E1 E2) = cong₂ App (renCtrlFuse ξ1 ξ2 E1) (renCtrlFuse ξ1 ξ2 E2)
 renCtrlFuse ξ1 ξ2 (Fun E) = cong Fun (renCtrlExt (↑Fuse ξ1 ξ2) E ∙ renCtrlFuse (↑ ξ1) (↑ ξ2) E)
@@ -412,13 +423,24 @@ idSubCtrl = Var
 ↑σCtrlId zero = refl
 ↑σCtrlId (suc n) = cong (renCtrl suc) (↑σCtrlId n)
 
+-- Substitution with the topmost variable instantiated 
+_▸Ctrl_ : (ℕ → Ctrl) → Ctrl → ℕ → Ctrl
+(σ ▸Ctrl E) zero = E
+(σ ▸Ctrl E) (suc n) = σ n
+
+-- Adding a topmost term respects extensional equality
+▸CtrlExt : ∀{σ1 σ2} → σ1 ≈ σ2 → ∀ E → σ1 ▸Ctrl E ≈ σ2 ▸Ctrl E
+▸CtrlExt σ1≈σ2 E zero = refl
+▸CtrlExt σ1≈σ2 E (suc n) = σ1≈σ2 n
+
+
 -- Substitute the variables in a control expression
 subCtrl : (ℕ → Ctrl) → Ctrl → Ctrl
 subChoices : (ℕ → Ctrl) → Choices → Choices
 
 subCtrl σ (Return e) = Return e
 subCtrl σ (Var x) = σ x
-subCtrl σ Fail = Fail
+subCtrl σ End = End
 subCtrl σ (Then E1 E2) = Then (subCtrl σ E1) (subCtrl σ E2)
 subCtrl σ (App E1 E2) = App (subCtrl σ E1) (subCtrl σ E2)
 subCtrl σ (Fun E) = Fun (subCtrl (↑σCtrl σ) E)
@@ -446,7 +468,7 @@ subChoicesExt : ∀{σ1 σ2} → σ1 ≈ σ2 → subChoices σ1 ≈ subChoices �
 
 subCtrlExt σ1≈σ2 (Return e) = refl
 subCtrlExt σ1≈σ2 (Var x) = σ1≈σ2 x
-subCtrlExt σ1≈σ2 Fail = refl
+subCtrlExt σ1≈σ2 End = refl
 subCtrlExt σ1≈σ2 (Then E1 E2) = cong₂ Then (subCtrlExt σ1≈σ2 E1) (subCtrlExt σ1≈σ2 E2)
 subCtrlExt σ1≈σ2 (App E1 E2) = cong₂ App (subCtrlExt σ1≈σ2 E1) (subCtrlExt σ1≈σ2 E2)
 subCtrlExt σ1≈σ2 (Fun E) = cong Fun (subCtrlExt (↑σCtrlExt σ1≈σ2) E)
@@ -474,7 +496,7 @@ subChoicesId : (C : Choices) → subChoices idSubCtrl C ≡ C
 
 subCtrlId (Return e) = refl
 subCtrlId (Var x) = refl
-subCtrlId Fail = refl
+subCtrlId End = refl
 subCtrlId (Then E1 E2) = cong₂ Then (subCtrlId E1) (subCtrlId E2)
 subCtrlId (App E1 E2) = cong₂ App (subCtrlId E1) (subCtrlId E2)
 subCtrlId (Fun E) = cong Fun (subCtrlExt ↑σCtrlId E ∙ subCtrlId E)
@@ -503,7 +525,7 @@ renChoicesₗₑ : (ℕ → ℕ) → Choices → Choices
 
 renCtrlₗₑ ξ (Return e) = Return (renₑ ξ e)
 renCtrlₗₑ ξ (Var x) = Var x
-renCtrlₗₑ ξ Fail = Fail
+renCtrlₗₑ ξ End = End
 renCtrlₗₑ ξ (Then E1 E2) = Then (renCtrlₗₑ ξ E1) (renCtrlₗₑ ξ E2)
 renCtrlₗₑ ξ (App E1 E2) = App (renCtrlₗₑ ξ E1) (renCtrlₗₑ ξ E2)
 renCtrlₗₑ ξ (Fun E) = Fun (renCtrlₗₑ ξ E)
@@ -531,7 +553,7 @@ renChoicesExtₗₑ : ∀{ξ1 ξ2} → ξ1 ≈ ξ2 → renChoicesₗₑ ξ1 ≈ 
 
 renCtrlExtₗₑ ξ1≈ξ2 (Return e) = cong Return (renExtₑ ξ1≈ξ2 e)
 renCtrlExtₗₑ ξ1≈ξ2 (Var x) = refl
-renCtrlExtₗₑ ξ1≈ξ2 Fail = refl
+renCtrlExtₗₑ ξ1≈ξ2 End = refl
 renCtrlExtₗₑ ξ1≈ξ2 (Then E1 E2) = cong₂ Then (renCtrlExtₗₑ ξ1≈ξ2 E1) (renCtrlExtₗₑ ξ1≈ξ2 E2)
 renCtrlExtₗₑ ξ1≈ξ2 (App E1 E2) = cong₂ App (renCtrlExtₗₑ ξ1≈ξ2 E1) (renCtrlExtₗₑ ξ1≈ξ2 E2)
 renCtrlExtₗₑ ξ1≈ξ2 (Fun E) = cong Fun (renCtrlExtₗₑ ξ1≈ξ2 E)
@@ -559,7 +581,7 @@ renChoicesIdₗₑ : (C : Choices) → renChoicesₗₑ idRen C ≡ C
 
 renCtrlIdₗₑ (Return e) = cong Return (renIdₑ e)
 renCtrlIdₗₑ (Var x) = refl
-renCtrlIdₗₑ Fail = refl
+renCtrlIdₗₑ End = refl
 renCtrlIdₗₑ (Then E1 E2) = cong₂ Then (renCtrlIdₗₑ E1) (renCtrlIdₗₑ E2)
 renCtrlIdₗₑ (App E1 E2) = cong₂ App (renCtrlIdₗₑ E1) (renCtrlIdₗₑ E2)
 renCtrlIdₗₑ (Fun E) = cong Fun (renCtrlIdₗₑ E)
@@ -587,7 +609,7 @@ renChoicesFuseₗₑ : (ξ1 ξ2 : ℕ → ℕ) → renChoicesₗₑ (ξ1 ∘ ξ2
 
 renCtrlFuseₗₑ ξ1 ξ2 (Return e) = cong Return (renFuseₑ ξ1 ξ2 e)
 renCtrlFuseₗₑ ξ1 ξ2 (Var x) = refl
-renCtrlFuseₗₑ ξ1 ξ2 Fail = refl
+renCtrlFuseₗₑ ξ1 ξ2 End = refl
 renCtrlFuseₗₑ ξ1 ξ2 (Then E1 E2) = cong₂ Then (renCtrlFuseₗₑ ξ1 ξ2 E1) (renCtrlFuseₗₑ ξ1 ξ2 E2)
 renCtrlFuseₗₑ ξ1 ξ2 (App E1 E2) = cong₂ App (renCtrlFuseₗₑ ξ1 ξ2 E1) (renCtrlFuseₗₑ ξ1 ξ2 E2)
 renCtrlFuseₗₑ ξ1 ξ2 (Fun E) = cong Fun (renCtrlFuseₗₑ ξ1 ξ2 E)
@@ -616,7 +638,7 @@ subChoicesₗₑ : (ℕ → Expr) → Choices → Choices
 
 subCtrlₗₑ σ (Return e) = Return (subₑ σ e)
 subCtrlₗₑ σ (Var x) = Var x
-subCtrlₗₑ σ Fail = Fail
+subCtrlₗₑ σ End = End
 subCtrlₗₑ σ (Then E1 E2) = Then (subCtrlₗₑ σ E1) (subCtrlₗₑ σ E2)
 subCtrlₗₑ σ (App E1 E2) = App (subCtrlₗₑ σ E1) (subCtrlₗₑ σ E2)
 subCtrlₗₑ σ (Fun E) = Fun (subCtrlₗₑ σ E)
@@ -644,7 +666,7 @@ subChoicesExtₗₑ : ∀{σ1 σ2} → σ1 ≈ σ2 → subChoicesₗₑ σ1 ≈ 
 
 subCtrlExtₗₑ σ1≈σ2 (Return e) = cong Return (subExtₑ σ1≈σ2 e)
 subCtrlExtₗₑ σ1≈σ2 (Var x) = refl
-subCtrlExtₗₑ σ1≈σ2 Fail = refl
+subCtrlExtₗₑ σ1≈σ2 End = refl
 subCtrlExtₗₑ σ1≈σ2 (Then E1 E2) = cong₂ Then (subCtrlExtₗₑ σ1≈σ2 E1) (subCtrlExtₗₑ σ1≈σ2 E2)
 subCtrlExtₗₑ σ1≈σ2 (App E1 E2) = cong₂ App (subCtrlExtₗₑ σ1≈σ2 E1) (subCtrlExtₗₑ σ1≈σ2 E2)
 subCtrlExtₗₑ σ1≈σ2 (Fun E) = cong Fun (subCtrlExtₗₑ σ1≈σ2 E)
@@ -672,7 +694,7 @@ subChoicesIdₗₑ : ∀ C → subChoicesₗₑ idSubₑ C ≡ C
 
 subCtrlIdₗₑ (Return e) = cong Return (subIdₑ e)
 subCtrlIdₗₑ (Var x) = refl
-subCtrlIdₗₑ Fail = refl
+subCtrlIdₗₑ End = refl
 subCtrlIdₗₑ (Then E1 E2) = cong₂ Then (subCtrlIdₗₑ E1) (subCtrlIdₗₑ E2)
 subCtrlIdₗₑ (App E1 E2) = cong₂ App (subCtrlIdₗₑ E1) (subCtrlIdₗₑ E2)
 subCtrlIdₗₑ (Fun E) = cong Fun (subCtrlIdₗₑ E)
@@ -693,3 +715,4 @@ subChoicesIdₗₑ NoChoice = refl
 subChoicesIdₗₑ (TChoice ET) = cong TChoice (subCtrlIdₗₑ ET)
 subChoicesIdₗₑ (FChoice EF) = cong FChoice (subCtrlIdₗₑ EF)
 subChoicesIdₗₑ (TFChoice ET EF) = cong₂ TFChoice (subCtrlIdₗₑ ET) (subCtrlIdₗₑ EF)
+ 
