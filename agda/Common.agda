@@ -136,11 +136,11 @@ idRen n = n
 ↑Fuse ξ1 ξ2 (suc n) = refl
 
 -- ↑ preserves injectivity
-↑-pres-inj : ∀{ξ} → Injective _≡_ _≡_ ξ → Injective _≡_ _≡_ (↑ ξ)
-↑-pres-inj ξ-inj {x = zero} {zero} refl = refl
-↑-pres-inj ξ-inj {x = zero} {suc y} ()
-↑-pres-inj ξ-inj {x = suc x} {zero} ()
-↑-pres-inj ξ-inj {x = suc x} {suc y} sξx≡sξy = cong suc (ξ-inj (suc-injective sξx≡sξy))
+↑Inj : ∀{ξ} → Injective _≡_ _≡_ ξ → Injective _≡_ _≡_ (↑ ξ)
+↑Inj ξ-inj {x = zero} {zero} refl = refl
+↑Inj ξ-inj {x = zero} {suc y} ()
+↑Inj ξ-inj {x = suc x} {zero} ()
+↑Inj ξ-inj {x = suc x} {suc y} sξx≡sξy = cong suc (ξ-inj (suc-injective sξx≡sξy))
 
 {-
   Applying ↑ ξ after increasing all variables is
@@ -185,6 +185,17 @@ cong₅ : ∀{a b c d e f} {A : Set a} {B : Set b} {C : Set c} {D : Set d} {E : 
         a1 ≡ a2 → b1 ≡ b2 → c1 ≡ c2 → d1 ≡ d2 → e1 ≡ e2 →
         α a1 b1 c1 d1 e1 ≡ α a2 b2 c2 d2 e2
 cong₅ α refl refl refl refl refl = refl
+
+ -- Instantiate topmost variable in a substitution
+_▸_ : ∀{a} {A : Set a} →
+      (σ : ℕ → A) → A → ℕ → A
+(σ ▸ x) zero = x
+(σ ▸ x) (suc n) = σ n
+
+▸Ext : ∀{a} {A : Set a} {σ1 σ2 : ℕ → A} →
+       σ1 ≈ σ2 → (x : A) → σ1 ▸ x ≈ σ2 ▸ x
+▸Ext eq x zero = refl
+▸Ext eq x (suc n) = eq n
 
 -- Choose a different value for 0 or suc
 ifZeroElse : ∀{a} {A : Set a} →

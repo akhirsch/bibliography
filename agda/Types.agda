@@ -12,6 +12,7 @@ open import Relation.Binary.PropositionalEquality
 open import Function
 
 open import Common
+open import Kinds
 open import LocalLang
 open import TypedLocalLang
 open import Locations
@@ -25,13 +26,28 @@ open Location L
 open TypedLocalLanguage E
 open ≡-Reasoning
 
+-- Local expression types
+data Typₑ : Set where
+  VarTypₑ : (x : ℕ) → Typₑ
+  LitTypₑ : (t : TypVal) → Typₑ
+
 -- Choreographic types
 data Typ : Set where
+  VarTyp : (x : ℕ) → Typ
   At : (t : Typₑ) (ℓ : Loc) → Typ
   Arrow : (τ1 τ2 : Typ) → Typ
-  AllLoc : (τ : Typ) → Typ
+  All : (κ : Kind) (τ : Typ) → Typ
 
 -- Injectivity of constructors
+VarTypₑ-inj : ∀{x x'} → VarTypₑ x ≡ VarTypₑ x' → x ≡ x'
+VarTypₑ-inj refl = refl
+
+LitTypₑ-inj : ∀{t t'} → LitTypₑ t ≡ LitTypₑ t' → t ≡ t'
+LitTypₑ-inj refl = refl
+
+VarTyp-inj : ∀{x x'} → VarTyp x ≡ VarTyp x' → x ≡ x'
+VarTyp-inj refl = refl
+
 At-inj : ∀{t t' ℓ ℓ'} → 
          At t ℓ ≡ At t' ℓ' →
          t ≡ t' × ℓ ≡ ℓ'
@@ -42,123 +58,94 @@ Arrow-inj : ∀{τ1 τ1' τ2 τ2'} →
             τ1 ≡ τ1' × τ2 ≡ τ2'
 Arrow-inj refl = refl , refl
 
-AllLoc-inj : ∀{τ τ'} →
-             AllLoc τ ≡ AllLoc τ' →
-             τ ≡ τ'
-AllLoc-inj refl = refl
+All-inj : ∀{κ κ' τ τ'} →
+          All κ τ ≡ All κ' τ' →
+          κ ≡ κ' × τ ≡ τ'
+All-inj refl = refl , refl
 
--- Location renaming on types
-renₜ : (ℕ → ℕ) → Typ → Typ
-renₜ ξ (At t ℓ) = At t (renₗ-Loc ξ ℓ)
+-- Renaming on local expression types
+renₑₜ : (ℕ → ℕ) → Typₑ → Typₑ
+renₑₜ ξ (VarTypₑ x) = VarTypₑ (ξ x)
+renₑₜ ξ (LitTypₑ t) = LitTypₑ t
+
+-- Renaming on types
+renₜ : KindRen → Typ → Typ
+renₜ ξ (VarTyp x) = VarTyp (ξ ⋆ x)
+renₜ ξ (At t ℓ) = At (renₑₜ (ξ ⋆ₑ) t) (renₗ-Loc (ξ ⋆ₗ) ℓ)
 renₜ ξ (Arrow τ1 τ2) = Arrow (renₜ ξ τ1) (renₜ ξ τ2)
-renₜ ξ (AllLoc τ) = AllLoc (renₜ (↑ ξ) τ)
+renₜ ξ (All κ τ) = All κ (renₜ (↑ₖ[ κ ] ξ) τ)
 
--- Renaming respects extensional equality
-renExtₜ : ∀{ξ1 ξ2} → ξ1 ≈ ξ2 → ∀ τ → renₜ ξ1 τ ≡ renₜ ξ2 τ
-renExtₜ ξ1≈ξ2 (At t ℓ) = cong₂ At refl (renExtₗ-Loc ξ1≈ξ2 ℓ)
+
+-- Renaming respects extensional equaLitTypₑy
+renExtₑₜ : ∀{ξ1 ξ2} → ξ1 ≈ ξ2 → renₑₜ ξ1 ≈ renₑₜ ξ2
+renExtₑₜ ξ1≈ξ2 (VarTypₑ x) = cong VarTypₑ (ξ1≈ξ2 x)
+renExtₑₜ ξ1≈ξ2 (LitTypₑ t) = refl
+
+renExtₜ : ∀{ξ1 ξ2} → ξ1 ≈₂ ξ2 → renₜ ξ1 ≈ renₜ ξ2
+renExtₜ ξ1≈ξ2 (VarTyp x) = cong VarTyp (ξ1≈ξ2 ⋆ x)
+renExtₜ ξ1≈ξ2 (At t ℓ) = cong₂ At (renExtₑₜ (ξ1≈ξ2 ⋆ₑ) t) (renExtₗ-Loc (ξ1≈ξ2 ⋆ₗ) ℓ)
 renExtₜ ξ1≈ξ2 (Arrow τ1 τ2) =
   cong₂ Arrow (renExtₜ ξ1≈ξ2 τ1) (renExtₜ ξ1≈ξ2 τ2)
-renExtₜ ξ1≈ξ2 (AllLoc τ) = cong AllLoc (renExtₜ (↑Ext ξ1≈ξ2) τ)
+renExtₜ ξ1≈ξ2 (All κ τ) = cong (All κ) (renExtₜ (↑Extₖ κ ξ1≈ξ2) τ)
 
 -- Renaming respects the identity
-renIdₜ : ∀ τ → renₜ idRen τ ≡ τ
-renIdₜ (At t ℓ) = cong₂ At refl (renIdₗ-Loc ℓ)
-renIdₜ (Arrow τ1 τ2) = cong₂ Arrow (renIdₜ τ1) (renIdₜ τ2)
-renIdₜ (AllLoc τ) = cong AllLoc τ⟨↑id⟩≡τ
-  where
+renIdₑₜ : ∀ t → renₑₜ idRen t ≡ t
+renIdₑₜ (VarTypₑ x) = refl
+renIdₑₜ (LitTypₑ t) = refl
 
-  τ⟨↑id⟩≡τ : renₜ (↑ idRen) τ ≡ τ
-  τ⟨↑id⟩≡τ =
-    renₜ (↑ idRen) τ ≡⟨ renExtₜ ↑Id τ ⟩
-    renₜ idRen τ     ≡⟨ renIdₜ τ ⟩
-    τ                ∎
+-- Renaming respects the identity
+renIdₜ : ∀ τ → renₜ idKindRen τ ≡ τ
+renIdₜ (VarTyp x) = refl
+renIdₜ (At t ℓ) = cong₂ At (renIdₑₜ t) (renIdₗ-Loc ℓ)
+renIdₜ (Arrow τ1 τ2) = cong₂ Arrow (renIdₜ τ1) (renIdₜ τ2)
+renIdₜ (All κ τ) = cong (All κ) (renExtₜ (↑Idₖ κ) τ ∙ renIdₜ τ)
 
 -- Renaming enjoys fusion
-renFuseₜ : ∀ ξ1 ξ2 → renₜ (ξ1 ∘ ξ2) ≈ renₜ ξ1 ∘ renₜ ξ2
-renFuseₜ ξ1 ξ2 (At t ℓ) = cong₂ At refl (renFuseₗ-Loc ξ1 ξ2 ℓ)
-renFuseₜ ξ1 ξ2 (Arrow τ1 τ2) =
-  cong₂ Arrow (renFuseₜ ξ1 ξ2 τ1) (renFuseₜ ξ1 ξ2 τ2)
-renFuseₜ ξ1 ξ2 (AllLoc τ) = cong AllLoc τ⟨↑[ξ1∘ξ2]⟩≡τ⟨↑ξ2⟩⟨↑ξ1⟩
-  where
+renFuseₑₜ : ∀ ξ1 ξ2 → renₑₜ (ξ1 ∘ ξ2) ≈ renₑₜ ξ1 ∘ renₑₜ ξ2
+renFuseₑₜ ξ1 ξ2 (VarTypₑ x) = refl
+renFuseₑₜ ξ1 ξ2 (LitTypₑ t) = refl
 
-  τ⟨↑[ξ1∘ξ2]⟩≡τ⟨↑ξ2⟩⟨↑ξ1⟩ : renₜ (↑ (ξ1 ∘ ξ2)) τ ≡ renₜ (↑ ξ1) (renₜ (↑ ξ2) τ)
-  τ⟨↑[ξ1∘ξ2]⟩≡τ⟨↑ξ2⟩⟨↑ξ1⟩ = 
-    renₜ (↑ (ξ1 ∘ ξ2)) τ        ≡⟨ renExtₜ (↑Fuse ξ1 ξ2) τ ⟩
-    renₜ (↑ ξ1 ∘ ↑ ξ2) τ        ≡⟨ renFuseₜ (↑ ξ1) (↑ ξ2) τ ⟩
-    renₜ (↑ ξ1) (renₜ (↑ ξ2) τ) ∎
+renFuseₜ : ∀ ξ1 ξ2 → renₜ (ξ1 ∘ₖ ξ2)  ≈ renₜ ξ1 ∘ renₜ ξ2
+renFuseₜ ξ1 ξ2 (VarTyp x) = refl
+renFuseₜ ξ1 ξ2 (At t ℓ) = cong₂ At (renFuseₑₜ (ξ1 ⋆ₑ) (ξ2 ⋆ₑ) t) (renFuseₗ-Loc (ξ1 ⋆ₗ) (ξ2 ⋆ₗ) ℓ)
+renFuseₜ ξ1 ξ2 (Arrow τ1 τ2) = cong₂ Arrow (renFuseₜ ξ1 ξ2 τ1) (renFuseₜ ξ1 ξ2 τ2)
+renFuseₜ ξ1 ξ2 (All κ τ) = cong (All κ) (renExtₜ (↑Fuseₖ ξ1 ξ2 κ) τ ∙ renFuseₜ (↑ₖ[ κ ] ξ1) (↑ₖ[ κ ] ξ2) τ)
 
 -- Renaming preserves injectivity
-renₜ-pres-inj : ∀{ξ} →
+renInjₑₜ : ∀{ξ} →
                 Injective _≡_ _≡_ ξ →
-                ∀ τ1 τ2 →
-                renₜ ξ τ1 ≡ renₜ ξ τ2 →
-                τ1 ≡ τ2
-renₜ-pres-inj ξ-inj (At t ℓ) (At t' ℓ') eq =
-  cong₂ At (At-inj eq .fst) (renInjₗ-Loc ξ-inj (At-inj eq .snd))
-renₜ-pres-inj ξ-inj (Arrow τ1 τ2) (Arrow τ1' τ2') eq =
-  cong₂ Arrow (renₜ-pres-inj ξ-inj τ1 τ1' (Arrow-inj eq .fst))
-    (renₜ-pres-inj ξ-inj τ2 τ2' (Arrow-inj eq .snd))
-renₜ-pres-inj ξ-inj (AllLoc τ) (AllLoc τ') eq =
-  cong AllLoc (renₜ-pres-inj (↑-pres-inj ξ-inj) τ τ' (AllLoc-inj eq))
+                ∀ t1 t2 →
+                renₑₜ ξ t1 ≡ renₑₜ ξ t2 →
+                t1 ≡ t2
+renInjₑₜ ξ-inj (VarTypₑ x1) (VarTypₑ x2) eq = cong VarTypₑ (ξ-inj (VarTypₑ-inj eq))
+renInjₑₜ ξ-inj (LitTypₑ t1) (LitTypₑ .t1) refl = refl
 
--- Weakening a type by one variable
-↑ₜ : Typ → Typ
-↑ₜ τ = renₜ suc τ
+renInjₜ : ∀{ξ} →
+          (∀ κ → Injective _≡_ _≡_ (ξ κ)) →
+          ∀ τ1 τ2 →
+          renₜ ξ τ1 ≡ renₜ ξ τ2 →
+          τ1 ≡ τ2
+renInjₜ ξ-inj (VarTyp x1) (VarTyp x2) eq =
+  cong VarTyp (ξ-inj ⋆ (VarTyp-inj eq))
+renInjₜ ξ-inj (At t1 ℓ1) (At t2 ℓ2) eq =
+  cong₂ At (renInjₑₜ (ξ-inj ⋆ₑ) t1 t2 (At-inj eq .fst)) (renInjₗ-Loc (ξ-inj ⋆ₗ) (At-inj eq .snd))
+renInjₜ ξ-inj (Arrow τ11 τ12) (Arrow τ21 τ22) eq =
+  cong₂ Arrow (renInjₜ ξ-inj τ11 τ21 (Arrow-inj eq .fst)) (renInjₜ ξ-inj τ12 τ22 (Arrow-inj eq .snd))
+renInjₜ {ξ} ξ-inj (All κ1 τ1) (All κ2 τ2) eq with All-inj eq .fst
+... | refl = cong (All κ1) (renInjₜ (↑Injₖ ξ-inj κ1) τ1 τ2 (All-inj eq .snd))
 
--- ↑ preserves injectivity
-↑ₜ-pres-inj : ∀ τ1 τ2 → ↑ₜ τ1 ≡ ↑ₜ τ2 → τ1 ≡ τ2
-↑ₜ-pres-inj = renₜ-pres-inj suc-injective
+-- Weakening a local expression type by one type variable
+↑ₑₜ : Typₑ → Typₑ
+↑ₑₜ = renₑₜ suc
 
--- Location substitution on types
-subₜ : (ℕ → Loc) → Typ → Typ
-subₜ σ (At t ℓ) = At t (subₗ-Loc σ ℓ)
-subₜ σ (Arrow τ1 τ2) = Arrow (subₜ σ τ1) (subₜ σ τ2)
-subₜ σ (AllLoc τ) = AllLoc (subₜ (↑σₗ σ) τ)
+-- ↑ₑₜ is injective
+↑Injₑₜ : ∀ t1 t2 → ↑ₑₜ t1 ≡ ↑ₑₜ t2 → t1 ≡ t2
+↑Injₑₜ = renInjₑₜ suc-injective
 
--- Substitution respects extensional equality
-subExtₜ : ∀{σ1 σ2} →
-          σ1 ≈ σ2 →
-          ∀ τ →
-          subₜ σ1 τ ≡ subₜ σ2 τ
-subExtₜ σ1≈σ2 (At t ℓ) = cong₂ At refl (subExtₗ-Loc σ1≈σ2 ℓ)
-subExtₜ σ1≈σ2 (Arrow τ1 τ2) = cong₂ Arrow (subExtₜ σ1≈σ2 τ1) (subExtₜ σ1≈σ2 τ2)
-subExtₜ σ1≈σ2 (AllLoc τ) = cong AllLoc (subExtₜ (↑σExtₗ σ1≈σ2) τ)
+-- Weakening a choreography type by one kind variable
+↑ₜ[_] : Kind → Typ → Typ
+↑ₜ[ κ ] = renₜ (sucₖ[ κ ] idKindRen)
 
--- Substitution respects the inclusion
-subιₜ : ∀ ξ τ → subₜ (ιₗ ξ) τ ≡ renₜ ξ τ
-subιₜ ξ (At t ℓ) = cong (At t) (subιₗ-Loc ξ ℓ)
-subιₜ ξ (Arrow τ1 τ2) = cong₂ Arrow (subιₜ ξ τ1) (subιₜ ξ τ2)
-subιₜ ξ (AllLoc τ) = cong AllLoc τ⟨↑ιξ⟩≡τ⟨↑ξ⟩
-  where
-
-  τ⟨↑ιξ⟩≡τ⟨↑ξ⟩ : subₜ (↑σₗ (ιₗ ξ)) τ ≡ renₜ (↑ ξ) τ
-  τ⟨↑ιξ⟩≡τ⟨↑ξ⟩ =
-    subₜ (↑σₗ (ιₗ ξ)) τ ≡⟨ subExtₜ (↑σιₗ ξ) τ ⟩
-    subₜ (ιₗ (↑ ξ)) τ   ≡⟨ subιₜ (↑ ξ) τ ⟩
-    renₜ (↑ ξ) τ        ∎
-
--- Substitution respects the identity
-subIdₜ : ∀ τ → subₜ idSubₗ τ ≡ τ
-subIdₜ (At t ℓ) = cong₂ At refl (subIdₗ-Loc ℓ)
-subIdₜ (Arrow τ1 τ2) = cong₂ Arrow (subIdₜ τ1) (subIdₜ τ2)
-subIdₜ (AllLoc τ) = cong AllLoc τ⟨↑id⟩≡τ
-  where
-
-  τ⟨↑id⟩≡τ : subₜ (↑σₗ idSubₗ) τ ≡ τ
-  τ⟨↑id⟩≡τ =
-    subₜ (↑σₗ idSubₗ) τ ≡⟨ subExtₜ ↑σIdₗ τ ⟩
-    subₜ idSubₗ τ       ≡⟨ subIdₜ τ ⟩
-    τ                   ∎
-
--- Substitution enjoys fusion
-subFuseₜ : ∀ σ1 σ2 → subₜ (σ1 •ₗ σ2) ≈ subₜ σ1 ∘ subₜ σ2
-subFuseₜ σ1 σ2 (At t ℓ) = cong₂ At refl (subFuseₗ-Loc σ1 σ2 ℓ)
-subFuseₜ σ1 σ2 (Arrow τ1 τ2) = cong₂ Arrow (subFuseₜ σ1 σ2 τ1) (subFuseₜ σ1 σ2 τ2)
-subFuseₜ σ1 σ2 (AllLoc τ) = cong AllLoc τ⟨↑[σ1•σ2]⟩≡τ⟨↑σ2⟩⟨↑σ1⟩
-  where
-
-  τ⟨↑[σ1•σ2]⟩≡τ⟨↑σ2⟩⟨↑σ1⟩ : subₜ (↑σₗ (σ1 •ₗ σ2)) τ ≡ subₜ (↑σₗ σ1) (subₜ (↑σₗ σ2) τ)
-  τ⟨↑[σ1•σ2]⟩≡τ⟨↑σ2⟩⟨↑σ1⟩ =
-    subₜ (↑σₗ (σ1 •ₗ σ2)) τ         ≡⟨ subExtₜ (↑σ•ₗ σ1 σ2) τ ⟩
-    subₜ (↑σₗ σ1 •ₗ ↑σₗ σ2) τ       ≡⟨ subFuseₜ (↑σₗ σ1) (↑σₗ σ2) τ ⟩
-    subₜ (↑σₗ σ1) (subₜ (↑σₗ σ2) τ) ∎ 
+-- ↑ₜ is injective
+↑Injₜ : ∀ κ τ1 τ2 → ↑ₜ[ κ ] τ1 ≡ ↑ₜ[ κ ] τ2 → τ1 ≡ τ2
+↑Injₜ κ = renInjₜ (sucInjₖ (λ κ' eq → eq) κ)

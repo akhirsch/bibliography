@@ -27,16 +27,16 @@ record TypedLocalLanguage (L : Location) : Set₁ where
 
   field
     -- Local types
-    Typₑ : Set
+    TypVal : Set
 
     -- Types have decidable equality
-    ≡-dec-Typₑ : (t₁ t₂ : Typₑ) → Dec (t₁ ≡ t₂)
+    ≡-dec-TypVal : (t₁ t₂ : TypVal) → Dec (t₁ ≡ t₂)
 
     {-
       Typing judgment of the form Γ ⊢ e : t.
       Contexts are infinite maps from variables to types.
     -}
-    _⊢ₑ_∶_ : (ℕ → Maybe Typₑ) → Expr → Typₑ → Set
+    _⊢ₑ_∶_ : (ℕ → Maybe TypVal) → Expr → TypVal → Set
 
     -- Typing respects extensional equality of contexts.
     tyExtₑ : ∀{Γ Δ e t} →
@@ -72,7 +72,7 @@ record TypedLocalLanguage (L : Location) : Set₁ where
             Γ' ⊢ₑ renₑ ξ e ∶ t
 
     -- We have a type for booleans, and the appropriate judgments.
-    Boolₑ : Typₑ
+    Boolₑ : TypVal
     ty-ttₑ : ∀{Γ} → Γ ⊢ₑ ttₑ ∶ Boolₑ
     ty-ffₑ : ∀{Γ} → Γ ⊢ₑ ffₑ ∶ Boolₑ
 
@@ -83,7 +83,7 @@ record TypedLocalLanguage (L : Location) : Set₁ where
                   (v ≡ ttₑ) ⊎ (v ≡ ffₑ)
     
     -- We have a type for locations, and the appropriate judgments.
-    Locₑ : Typₑ
+    Locₑ : TypVal
     ty-locₑ : ∀{Γ ℓ} → Γ ⊢ₑ locₑ ℓ ∶ Locₑ
 
     -- Each location value corresponds to an actual location.
@@ -107,7 +107,7 @@ record TypedLocalLanguage (L : Location) : Set₁ where
     if for every variable n, σ assigns n to an expression
     which, under Δ, has the same type that Γ assigns to n.
   -}
-  _∶_⇒ₑ_ : (σ : ℕ → Expr) (Γ Δ : ℕ → Maybe Typₑ) → Set
+  _∶_⇒ₑ_ : (σ : ℕ → Expr) (Γ Δ : ℕ → Maybe TypVal) → Set
   σ ∶ Γ ⇒ₑ Δ = ∀ n t → Γ n ≡ just t → Δ ⊢ₑ σ n ∶ t
 
   field
@@ -131,7 +131,7 @@ record TypedLocalLanguage (L : Location) : Set₁ where
   tyValₑ val Γ⊢v:t = tyClosedₑ (valClosedₑ val) Γ⊢v:t
 
   -- The identity substitution changes any context to itself
-  idSubChangesₑ : (Γ : ℕ → Maybe Typₑ) → idSubₑ ∶ Γ ⇒ₑ Γ
+  idSubChangesₑ : (Γ : ℕ → Maybe TypVal) → idSubₑ ∶ Γ ⇒ₑ Γ
   idSubChangesₑ Γ n = tyVarₑ Γ n
 
   -- The identity substitution respects typing
