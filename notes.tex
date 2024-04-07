@@ -51,177 +51,226 @@
 
 \newcommand\step[1]{\ensuremath{\xRightarrow{{#1}}_{\raisebox{3pt}{\footnotesize{c}}}}}
 
-\bibliographystyle{plainnat}
+\newcommand\app[2]{\ensuremath{#1 \; #2}}
+\newcommand\send[3]{\ensuremath{#1 \overset{#2}{\rightsquigarrow} #3}}
+\newcommand\ifthen[3]{\ensuremath{\text{if}\; #1 \;\text{then}\; #2 \;\text{else}\; #3}}
+\newcommand\letin[3]{\ensuremath{\text{let}\; #1 \;:=\; #2 \;\text{in}\; #3}}
+
 
 \begin{document}
 \section{Syntax}
 \begin{syntax}
-	\categoryFromSet[Conrete Locations]{L}{\mathcal{L}}
-	\abstractCategory[Location Variables]{X, Y, Z}
-		
-	\category[Locations]{\ell}
-	\alternative{L}
-	\alternative{X}
-	
-	\category[Location Sets]{\rho}
-	\alternative{\{\ell_1,\ldots,\ell_n\}}
-	\\
-	\abstractCategory[Local Expressions]{e}
-		
-	\abstractCategory[Local Variables]{x, y, z}
-	
-	\\
-	\abstractCategory[Choreography Variables]{\alpha, \phi}
-	
+	\categoryFromSet[Concrete Locations]{L}{\mathcal{L}}
 	\category[Synchronization Labels]{d}
-	\alternative{\mathbb{L}}
-	\alternative{\mathbb{R}}
-
+	\alternative{L}
+	\alternative{R}
+	\\
+	\category[Local Kinds]{\kappa_e}
+	\alternative{*_e}
+	\alternative{*_\ell}
+	\category[Kinds]{\kappa}
+	\alternative{\kappa_e}
+	\alternative{*}
+	\\
+	\abstractCategory[Local Types]{t}
 	
-	\category[Choreographies]{C}
-	\alternative{\alpha}
+	\category[Locations]{\ell}
+	\alternative{X}
+	\alternative{\mathcal{L}}
+	
+	\category[Choreographic Types]{\tau}
+	\alternative{X}
+	\alternative{t @ \ell}
+	\alternative{\kappa_e @ \ell}
+	\alternative{\tau_1 \rightarrow \tau_2}
+	\alternative{\forall X : \kappa.\tau}
+	
+	\category[General Types]{T}
+	\alternative{t}
+	\alternative{\ell}
+	\alternative{\tau}
+	\\
+	\category[Choreographies]{\tau}
+	\alternative{x}
 	\alternative{\ell.e}
-	\alternative{C_1\;C_2}\\
-	\alternative{\lambda \alpha.C}
-	\alternative{\mu \alpha.C}\\
-	\alternative{C \overset{\ell_1}{\rightsquigarrow} \ell_2}\\
-	\alternative{\ell.\text{if}\; C \;\text{then}\; C_1 \;\text{else}\; C_2}\\
-	\alternative{\ell_1[d] \rightsquigarrow \ell_2; C}\\
-	\alternative{\text{let}\; \ell.x := C_1 \;\text{in}\; C_2}\\
-	\alternative{\Lambda X.C}
-	\alternative{C\;\ell}\\
-	\alternative{\ell.\text{tell}\; \rho_1\; \text{let}\; X := C_1 \in \rho_2 \;\text{in}\; C_2}
+	\alternative{\lambda x : \tau.C}
+	\alternative{\mu x : \tau.C}
+	\alternative{\app{C_1}{C_2}}\\
+	\alternative{\send{C}{\ell_1}{\ell_2}}
+	\alternative{\send{\ell_1[d]}{}{\ell_2};C}
+	\alternative{\ell.\ifthen{C}{C_1}{C_2}}\\
+	\alternative{\Lambda X : \kappa.C}
+	\alternative{\app{C}{T}}\\
+	\alternative{\letin{\ell.x : t}{C_1}{C_2}}\\
+	\alternative{\letin{\ell.X : \kappa_e}{C_1}{C_2}}
 \end{syntax}
 
 
 \section{Type System}
-\paragraph{Syntax of Types}
+\paragraph{Contexts}
 \begin{syntax}
-	\abstractCategory[Local Types]{t}
-
-	\category[Choreography Types]{\tau}
-	\alternative{t @ \ell}
-	\alternative{\tau_1 \rightarrow \tau_2}
-	\alternative{\forall X.\tau}
-	
-	\category[Location Contexts]{\Theta}
+	\category[Choreography Kinding Context]{\Sigma}
 	\alternative{\cdot}
-	\alternative{\Theta, X : \text{Loc}}
+	\alternative{\Sigma, X : \kappa}
 	
-	\category[Local-Let Contexts]{\Delta}
+	\category[Local Kinding Context]{\Theta}
+	\alternative{\cdot}
+	\alternative{\Theta, \ell.X : \kappa_e}
+
+	\category[Choreography Typing Context]{\Gamma}
+	\alternative{\cdot}
+	\alternative{\Gamma, x : \tau}
+	
+	\category[Local Typing Context]{\Delta}
 	\alternative{\cdot}
 	\alternative{\Delta, \ell.x : t}
-	
-	\category[Choreography Contexts]{\Gamma}
+	\\
+	\category[Local Expression Kinding Context]{\Theta_e}
 	\alternative{\cdot}
-	\alternative{\Gamma, \alpha : \tau}
+	\alternative{\Theta_e, X : \kappa_e}
+	
+	\category[Local Expression Typing Context]{\Delta_e}
+	\alternative{\cdot}
+	\alternative{\Delta_e, x : t}
 \end{syntax}
 
 \paragraph{Context Projection}
-Projects a local-let context $\Delta$ to a local context at a (possibly variable) location $\ell$.
+Projects a choreography kinding, local kinding, or choreography typing context to a local expression kinding or typing context at a (possibly variable) location $\ell$. Note that because choreography kinding contexts $\Sigma$ bind types globally, the projection does not depend on the chosen location, and just removes any choreographic types of kind $*$ from the context.
 \begin{align*}
 	\proj{\cdot}{\ell} &= \cdot \\
-	\proj{\Delta, \ell.x : t}{\ell} &=
+	\proj{(\Sigma, X : \kappa_e)}{\ell} &= \proj{\Sigma}{\ell}, X : \kappa_e\\
+	\proj{(\Sigma, X : *)}{\ell} &= \proj{\Sigma}{\ell}\\
+	\proj{(\Theta, \ell.X : \kappa_e)}{\ell} &=
 		\begin{cases} 
-      		\proj{\Delta}{\ell}, x : t & \ell' = \ell \\
-      		\proj{\Delta}{\ell} & \ell' \neq \ell \\
-   		\end{cases}
+      		\proj{\Theta}{\ell}, X : \kappa_e & \ell' = \ell \\
+      		\proj{\Theta}{\ell} & \ell' \neq \ell \\
+   		\end{cases}\\
+	\proj{(\Delta, \ell.x : t)}{\ell} &=
+	\begin{cases} 
+		\proj{\Delta}{\ell}, x : t & \ell' = \ell \\
+		\proj{\Delta}{\ell} & \ell' \neq \ell \\
+	\end{cases}
 \end{align*}
 
-\paragraph{Typing Relations}
+\paragraph{Judgments}
 \begin{align*}
-	\Theta &\vdash \Delta \tag{Local-Let Context Well-Formedness}\\
-	\Theta &\vdash \Gamma \tag{Choreography Context Well-Formedness}\\
-	\Theta &\vdash \ell \;\text{Loc} \tag{Location Well-Formedness}\\
-	\Theta &\vdash \rho \;\text{LocSet} \tag{Location-Set Well-Formedness}\\
-	\Theta &\vdash \tau \;\text{Ty} \tag{Choreography Type Well-Formedness}\\
-	\Theta;\Gamma;\Delta &\vdash C : \tau \tag{Choreography Typing Relation}
+	\Sigma &\vdash \Theta \tag{Local Kinding Context Well-Formedness}\\
+	\Sigma;\Theta &\vdash \Gamma \tag{Choreography Typing Context Well-Formedness}\\
+	\Sigma;\Theta &\vdash \Delta \tag{Local Typing Context Well-Formedness}\\
+	\Sigma;\Theta &\vdash T : \kappa \tag{Kinding Judgment}\\
+	\Sigma; \Theta; \Gamma; \Delta &\vdash C : \tau \tag{Choreography Typing Judgment}\\
+	\Theta_e &\vdash_e t : *_e \tag{Local Type Kinding Judgment}\\
+	\Theta_e;\Delta_e &\vdash_e e : t \tag{Local Expression Typing Judgment}
 \end{align*}
 
-\paragraph{Context, Type, and Location Well-Formedness Rules}
-\begin{mathpar}
-  \infer[EmpCtx]{}
-  {\Theta \vdash \cdot} \and
+\paragraph{Context Well-Formedness Rules}\;\\
+\begin{mathparpagebreakable}
+  \infer[EmpLocalKind]{}
+  {\Sigma \vdash \cdot} \and
 
-  \infer[AddCtxLet]{\Theta \vdash \Delta \\
-    \Theta \vdash \ell \;\text{Loc}}
-  {\Theta \vdash (\Delta, \ell.x : t)} \and
+  \infer[AddLocalKind]{\Sigma \vdash \ell : *_\ell \\
+  \Sigma \vdash \Theta}
+  {\Sigma \vdash (\Theta, \ell.X : \kappa_e)} \and
+  
+   \infer[EmpTy]{\Sigma \vdash \Theta}
+  {\Sigma;\Theta \vdash \cdot} \and
 
-  \infer[AddCtxChor]{\Theta \vdash \Gamma \\
-    \Theta \vdash \tau \;\text{Ty}}
-  {\Theta \vdash (\Gamma, \alpha : \tau)} \and
+  \infer[AddTy]{\Sigma;\Theta \vdash \tau : * \\
+	\Sigma;\Theta \vdash \Gamma}
+  {\Sigma;\Theta \vdash (\Gamma, x : \tau)} \and
+	
+  \infer[EmpLocalTy]{\Sigma \vdash \Theta}
+	{\Sigma;\Theta \vdash \cdot} \and
+	
+  \infer[AddLocalTy]{\Sigma;\Theta \vdash \ell : *_\ell \\
+  	\proj{\Sigma}{\ell} + \proj{\Theta}{\ell} \vdash_e t : *_e \\
+    \Sigma;\Theta \vdash \Delta}
+  {\Sigma;\Theta \vdash (\Delta, \ell.x : t)}
+\end{mathparpagebreakable}
 
-  \infer[Loc]{\ell \in \mathcal{L} \cup \Theta}
-  {\Theta \vdash \ell \;\text{Loc}} \and
+\paragraph{Kinding Rules}\;
+\begin{mathparpagebreakable}
+	\infer[VarTy]{X : \kappa \in \Sigma \\
+	\Sigma \vdash \Theta}
+	{\Sigma;\Theta \vdash X : \kappa} \and
+	
+	\infer[Loc]{\Sigma \vdash \Theta}
+	{\Sigma;\Theta \vdash L : *_\ell} \and
 
-  \infer[LocSet]{\Theta \vdash \ell_1,\ldots,\ell_n \;\text{Loc}}
-  {\Theta \vdash \{\ell_1,\ldots,\ell_n\} \;\text{LocSet}} \and
+	\infer[At]{\Sigma;\Theta \vdash \ell : *_\ell \\
+	\proj{\Sigma}{\ell} + \proj{\Theta}{\ell} \vdash_e t : *_e}
+	{\Sigma;\Theta \vdash t @ \ell : *}
+	
+	\infer[TypeAt]{\Sigma;\Theta\vdash \ell : *_\ell}
+	{\Sigma;\Theta \vdash \kappa_e @ \ell : *}
+	
+	\infer[Arrow]{\Sigma;\Theta \vdash \tau_1 : *\\
+	  \Sigma;\Theta \vdash \tau_2 : *}
+	{\Sigma;\Theta \vdash \tau_1 \rightarrow \tau_2 : *}
+	
+	\infer[ForAll]{(\Sigma, X : \kappa);\Theta \vdash \tau : *}
+	{\Sigma;\Theta \vdash \forall X : \kappa.\tau : *}
+\end{mathparpagebreakable}
 
-
-  \infer[AtTy]{\Theta \vdash \ell \;\text{Loc}}
-  {\Theta \vdash t @ \ell \;\text{Ty}} \and
-
-  \infer[FunTy]{\Theta \vdash \tau_1  \;\text{Ty}\\
-    \Theta \vdash \tau_2 \;\text{Ty}}
-  {\Theta \vdash \tau_1 \rightarrow \tau_2 \;\text{Ty}} \and
-
-  \infer[AllTy]{\Theta, X \;\text{Loc} \vdash \tau \;\text{Ty}}
-  {\Theta \vdash \forall X.\tau  \;\text{Ty}} \and
-\end{mathpar}
-
-\paragraph{Choreography Typing Rules}
-\begin{mathpar}
-  \infer[Var]{\Theta \vdash \Gamma \\
-  	\Theta \vdash \Delta \\
+\paragraph{Choreography Typing Rules}\;
+\begin{mathparpagebreakable}
+  \infer[Var]{\Sigma \vdash \Theta \\
+  	\Sigma;\Theta \vdash \Gamma \\
+  	\Sigma;\Theta \vdash \Delta \\
     x : \tau \in \Gamma}
-  {\Theta;\Gamma;\Delta \vdash x : \tau} \and
+  {\Sigma;\Theta;\Gamma;\Delta \vdash x : \tau} \and
 
-  \infer[Done]{\Theta \vdash \Gamma \\
-  	\Theta \vdash \Delta \\
-    \Theta \vdash \ell \;\text{Loc} \\
-    \proj{\Delta}{\ell} \vdash e : t}
-  {\Theta;\Gamma;\Delta \vdash \ell.e \vdash t @ \ell} \and
+  \infer[Local]{\Sigma \vdash \Theta \\
+  	\Sigma;\Theta \vdash \Gamma \\
+  	\Sigma;\Theta \vdash \Delta \\
+  	\Sigma;\Theta \vdash \ell : *_\ell\\
+  	(\proj{\Sigma}{\ell} + \proj{\Theta}{\ell}; \proj{\Delta}{\ell}) \vdash_e e : t}
+  {\Sigma;\Theta;\Gamma;\Delta \vdash \ell.e \vdash t @ \ell} \and
 
-  \infer[Send]{\Theta;\Gamma;\Delta \vdash C : t @ \ell_1 \\
-	\Theta \vdash \ell_2 \;\text{Loc}}
-  {\Theta;\Gamma;\Delta \vdash C \overset{\ell_1}{\rightsquigarrow} \ell_2 : t @ \ell_2} \and
+  \infer[Send]{\Sigma;\Theta;\Gamma;\Delta \vdash C : t @ \ell_1 \\
+	\proj{\Sigma}{\ell_1} + \proj{\Theta}{\ell_1} \vdash_e \ell_2 : *_\ell}
+  {\Sigma;\Theta;\Gamma;\Delta \vdash \send{C}{\ell_1}{\ell_2} : t @ \ell_2} \and
 
-  \infer[If]{\Theta;\Gamma;\Delta \vdash C_1 : \text{bool} @ \ell \\
-    \Theta;\Gamma;\Delta \vdash C_1 : \tau \\
-    \Theta;\Gamma;\Delta \vdash C_2 : \tau}
-  {\Gamma \vdash \ell.\text{if}\; C \;\text{then}\; C_1 \;\text{else}\; C_2 : \tau} \and
+  \infer[SendTy]{\Sigma;\Theta;\Gamma;\Delta \vdash C : \kappa_e @ \ell_1 \\
+	\proj{\Sigma}{\ell_1} + \proj{\Theta}{\ell_1} \vdash_e \ell_2 : *_\ell}
+	{\Sigma;\Theta;\Gamma;\Delta \vdash \send{C}{\ell_1}{\ell_2} : \kappa_e @ \ell_2} \and
 
-  \infer[Sync]{\Gamma \vdash \ell_1, \ell_2 \;\text{Loc} \\
-    \Theta;\Gamma;\Delta \vdash C : \tau}
-  {\Theta;\Gamma;\Delta \vdash \ell_1[d] \rightsquigarrow \ell_2; C : \tau} \and
+  \infer[Sync]{\Sigma \vdash \ell_1 : *_\ell \\
+    \proj{\Sigma}{\ell_1} + \proj{\Theta}{\ell_1} \vdash_e \ell_2 : *_\ell\\
+    \Sigma;\Theta;\Gamma;\Delta \vdash C : \tau}
+	{\Sigma;\Theta;\Gamma;\Delta \vdash \send{\ell_1[d]}{}{\ell_2}; C : \tau} \and
 
-  \infer[LocalLet]{\Theta;\Gamma;\Delta \vdash C_1 : t_1 @ \ell \\
-    \Theta;\Gamma;(\Delta, x : \ell.t_1) \vdash C : \tau_2}
-  {\Gamma \vdash \text{let}\; \ell.x := C_1 \;\text{in}\; C_2 : \tau_2} \and
+  \infer[If]{\Sigma;\Theta;\Gamma;\Delta \vdash C_1 : \text{bool} @ \ell \\
+    \Sigma;\Theta;\Gamma;\Delta \vdash C_1 : \tau \\
+    \Sigma;\Theta;\Gamma;\Delta \vdash C_2 : \tau}
+  {\Sigma;\Theta;\Gamma;\Delta \vdash \ell.\ifthen{C}{C_1}{C_2}} \and
 
-  \infer[Fun]{\Theta;\Gamma;(\Delta, \alpha : \tau_1) \vdash C : \tau_2}
-  {\Theta;\Gamma;\Delta  \vdash \lambda \alpha.C : \tau_1 \rightarrow \tau_2} \and
+  \infer[Fun]{\Sigma;\Theta;(\Gamma, x : \tau_1);\Delta \vdash C : \tau_2}
+  {\Sigma;\Theta;\Gamma;\Delta \vdash \lambda x : \tau_1.C : \tau_1 \rightarrow \tau_2} \and
 
-  \infer[Rec]{\Theta;\Gamma;(\Delta, \alpha : \tau) \vdash C : \tau}
-	{\Theta;\Gamma;\Delta  \vdash \mu \alpha.C : \tau} \and
+  \infer[Rec]{\Sigma;\Theta;(\Gamma, x : \tau);\Delta \vdash C : \tau}
+  {\Sigma;\Theta;\Gamma;\Delta \vdash \mu x : \tau.C : \tau} \and
 
-  \infer[App]{\Theta;\Gamma;\Delta \vdash C_1 : \tau_1 \rightarrow \tau_2 \\
-    \Theta;\Gamma;\Delta \vdash C_2 : \tau_1}
-  {\Theta;\Gamma;\Delta  \vdash C_1\;C_2 : \tau_2} \and
+  \infer[App]{\Sigma;\Theta;\Gamma;\Delta \vdash C_1 : \tau_1 \rightarrow \tau_2 \\
+    \Sigma;\Theta;\Gamma;\Delta \vdash C_2 : \tau_1}
+  {\Sigma;\Theta;\Gamma;\Delta \vdash \app{C_1}{C_2} : \tau_2} \and
 
-  \infer[LocAbs]{(\Theta, X : \;\text{Loc});\Gamma;\Delta \vdash C : \tau}
-  {\Theta;\Gamma;\Delta \vdash \Lambda X.C : \forall X.\tau} \and
+  \infer[AbsTy]{(\Sigma, X : \kappa);\Theta;\Gamma;\Delta \vdash C : \tau}
+  {\Sigma;\Theta;\Gamma;\Delta \vdash \Lambda X : \kappa.C : \forall X : \kappa.\tau} \and
 
-  \infer[LocApp]{\Theta \vdash \ell \;\text{Loc} \\
-    \Theta;\Gamma;\Delta  \vdash C : \forall X.\tau}
-  {\Theta;\Gamma;\Delta \vdash C\;\ell : \tau[X \mapsto \ell]} \and
+  \infer[AppTy]{\Sigma;\Theta;\Gamma;\Delta \vdash C : \forall X : \kappa.\tau \\
+    \Sigma;\Theta \vdash T : \kappa}
+  {\Sigma;\Theta;\Gamma;\Delta \vdash \app{C}{T} : \tau[X \mapsto T]} \and
 
-  \infer[TellLet]{\Theta;\Gamma;\Delta \vdash C_1 : \text{Loc} @ \ell \\
-    \Theta \vdash \rho_1, \rho_2 \;\text{LocSet} \\
-    \Theta \vdash \tau \;\text{Ty} \\
-    (\Theta, X : \;\text{Loc});\Gamma;\Delta \vdash C : \tau}
-  {\Theta;\Gamma;\Delta \vdash \ell.\text{tell}\; \rho_1 \;\text{let}\; X := C_1 \in \rho_2 \;\text{in}\; C_2 : \tau}
-\end{mathpar}
+  \infer[LocalLet]{\Sigma;\Theta;\Gamma;\Delta \vdash C_1 : t_1 @ \ell \\
+	\Sigma;\Theta;\Gamma;(\Delta, x : \ell.t_1) \vdash C_2 : \tau_2}
+  {\Sigma;\Theta;\Gamma;\Delta \vdash \letin{\ell.x : t_1}{C_1}{C_2}} \and
+
+  \infer[LocalLetTy]{\Sigma;\Theta;\Gamma;\Delta \vdash C_1 : \kappa_e @ \ell \\
+  	\Sigma;\Theta;\Gamma;\Delta \vdash \tau : *\\
+    \Sigma;(\Theta, \ell.X : \kappa_e);\Gamma;\Delta \vdash C_2 : \tau}
+  {\Sigma;\Theta;\Gamma;\Delta \vdash \letin{\ell.X : \kappa_e}{C_1}{C_2} : \tau}
+\end{mathparpagebreakable}
 
 \section{Operational Semantics}
 \paragraph{Traces}\;
@@ -229,13 +278,13 @@ Projects a local-let context $\Delta$ to a local context at a (possibly variable
 	\category[Trace Elements]{T}
 	\alternative{\bullet}\\
 	\alternative{L}\\
-	\alternative{L_1[v] \rightsquigarrow L_2}\\
 	\alternative{L_1[d] \rightsquigarrow L_2}\\
-	\alternative{L_1[L_2] \rightsquigarrow \rho}
+	\alternative{L_1[v] \rightsquigarrow L_2}\\
+	\alternative{L_1[L_2] \rightsquigarrow L_2}\\
+	\alternative{L_1[t] \rightsquigarrow L_2}
 \end{syntax}
 
-\paragraph{Trace Semantics}\;
-Deterministic, small-step trace semantics $C_1 \step{T} C_2$ where $C_1, C_2$ are \emph{closed} choreographies, and $T$ is a trace element.
+\paragraph{Trace Semantics} Deterministic, small-step trace semantics $C_1 \step{T} C_2$ where $C_1, C_2$ are \emph{closed} choreographies, and $T$ is a trace element.
 
 \begin{mathparpagebreakable}
   \infer[Done]{e_1 \Rightarrow_e e_2}
@@ -316,9 +365,6 @@ Deterministic, small-step trace semantics $C_1 \step{T} C_2$ where $C_1, C_2$ ar
 \end{syntax}
 
 \paragraph{Endpoint Projection}\;
-
-%	\alternative{\ell.\text{tell}\; \rho_1\; \text{let}\; X := C_1 \in \rho_2 \;\text{in}\; C_2}
-
 \begin{mathparpagebreakable}
 \begin{aligned}[t]
 	\epp{\alpha}{L} &= \alpha\\
