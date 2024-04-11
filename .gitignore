@@ -21,3 +21,4 @@ _region_.tex
 \#*\#
 agda/.vscode/tasks.json
 agda/MAlonzo
+*.agdai

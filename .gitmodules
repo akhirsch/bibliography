@@ -1,0 +1,3 @@
+[submodule "higher-order-syntax"]
+	path = higher-order-syntax
+	url = https://github.com/ashlleysam/higher-order-syntax
