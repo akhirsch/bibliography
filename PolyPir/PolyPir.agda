@@ -162,12 +162,12 @@ just extract all local kinds.
 ∣ₖ (*ₛ ∷ Γ) = ∣ₖ Γ
 
 -- Projecting distributes over context concatenation
-++∣ₖ : (Γ1 Γ2 : C.KndCtx) → ∣ₖ (Γ1 ++ Γ2) ≡ (∣ₖ Γ1) ++ (∣ₖ Γ2)
-++∣ₖ [] Γ2 = refl
-++∣ₖ (LocKnd κₑ ∷ Γ1) Γ2 = cong (κₑ ∷_) (++∣ₖ Γ1 Γ2)
-++∣ₖ (* ∷ Γ1) Γ2 = ++∣ₖ Γ1 Γ2
-++∣ₖ (*ₗ ∷ Γ1) Γ2 = ++∣ₖ Γ1 Γ2
-++∣ₖ (*ₛ ∷ Γ1) Γ2 = ++∣ₖ Γ1 Γ2
+∣ₖ-++ : (Γ1 Γ2 : C.KndCtx) → ∣ₖ (Γ1 ++ Γ2) ≡ (∣ₖ Γ1) ++ (∣ₖ Γ2)
+∣ₖ-++ [] Γ2 = refl
+∣ₖ-++ (LocKnd κₑ ∷ Γ1) Γ2 = cong (κₑ ∷_) (∣ₖ-++ Γ1 Γ2)
+∣ₖ-++ (* ∷ Γ1) Γ2 = ∣ₖ-++ Γ1 Γ2
+∣ₖ-++ (*ₗ ∷ Γ1) Γ2 = ∣ₖ-++ Γ1 Γ2
+∣ₖ-++ (*ₛ ∷ Γ1) Γ2 = ∣ₖ-++ Γ1 Γ2
 
 -- Projecting after injecting a local kind context has no effect
 ∣ₖ∘LocKnd≡Id : (Γ : LL.KndCtx) → ∣ₖ (map LocKnd Γ) ≡ Γ
@@ -229,7 +229,7 @@ projTy {Γ1} {Γ2} p q (C.tyConstr (LocalTy sₑ) ts) =
 projTyVec {Σ1 = .[]} {[]} p q C.[] = LL.[]
 projTyVec {Γ1} {Σ1 = (Δ , _) ∷ Σ1} {(Δₑ , κₑ) ∷ Σ2} p q (t C.∷ ts) =
   projTy
-      (++∣ₖ Δ Γ1 ∙ cong₂ _++_ (cong ∣ₖ (sym (,-injective (∷-injective q .fst) .fst)) ∙ ∣ₖ∘LocKnd≡Id Δₑ) p)
+      (∣ₖ-++ Δ Γ1 ∙ cong₂ _++_ (cong ∣ₖ (sym (,-injective (∷-injective q .fst) .fst)) ∙ ∣ₖ∘LocKnd≡Id Δₑ) p)
       (sym (,-injective (∷-injective q .fst) .snd))
       t
     LL.∷
@@ -274,7 +274,7 @@ eraseProjTyVec≡ {Σ1 = []} {[]} p q C.[] = refl
 eraseProjTyVec≡ {Γ1} {Σ1 = (Δ , _) ∷ Σ1} {(Δₑ , κₑ) ∷ Σ2} p q (e C.∷ es) =
   cong₂ ULL._∷_ (cong₂ _,_ 
     (eraseProjTy≡
-    (++∣ₖ Δ Γ1 ∙ cong₂ _++_ (cong ∣ₖ (sym (,-injective (∷-injective q .fst) .fst)) ∙ ∣ₖ∘LocKnd≡Id Δₑ) p)
+    (∣ₖ-++ Δ Γ1 ∙ cong₂ _++_ (cong ∣ₖ (sym (,-injective (∷-injective q .fst) .fst)) ∙ ∣ₖ∘LocKnd≡Id Δₑ) p)
     (sym (,-injective (∷-injective q .fst) .snd))
     e)
     (sym (length-map LocKnd Δₑ) ∙ cong length (×-≡,≡↔≡ .Inverse.f⁻¹ (∷-injective q .fst) .fst)))
@@ -358,8 +358,14 @@ eraseInjTyVec≡ {Γ1} {Σ1 = (Δ1 , κ1) ∷ Σ1} {(Δ2 , κ2) ∷ Σ2} p q (t 
         ∙ length-map LocKnd Δ1))
     (eraseInjTyVec≡ p (∷-injective q .snd) ts)
 
-injTyp : ∀{Γ1 Γ2} → map LocKnd Γ1 ≡ Γ2 → LL.Typ Γ1 → C.Typ Γ2
-injTyp p (κₑ , t) = LocKnd κₑ , injTy p refl t
+injTyp : ∀{Γ} → LL.Typ (∣ₖ Γ) → C.Typ Γ
+injTyp {Γ} (κₑ , t) = LocKnd κₑ , C.tyRen (LocKnd∘∣ₖ-Ren Γ) (injTy refl refl t)
+
+injTyp++ : ∀ Γ Γ' → LL.Typ (Γ' ++ ∣ₖ Γ) → C.Typ (map LocKnd Γ' ++ Γ)
+injTyp++ Γ Γ' (κₑ , t) =
+  LocKnd κₑ ,
+  C.tyRen (LocKnd∘∣ₖ-Ren (map LocKnd Γ' ++ Γ))
+    (injTy (cong (map LocKnd) (cong (_++ ∣ₖ Γ) (sym (∣ₖ∘LocKnd≡Id Γ')) ∙ sym (∣ₖ-++ (map LocKnd Γ') Γ))) refl t)
 
 -- Projecting after injecting a local type just renames the type
 eraseInjProjTyVar : ∀{Γ κ κₑ} (q : κ ≡ LocKnd κₑ) (x : C.TyVar Γ κ) →
@@ -487,3 +493,311 @@ projInjTy {Γ1} {.(map LocKnd Γ1)} refl q r r' refl t = ULL.erase-inj (
   eraseProjTy (map LocKnd Γ1) (eraseInjTy (ULL.erase t))
     ≡⟨ eraseProjInjTy t ⟩
   ULL.erase t ∎)    
+
+---------------------------
+-- THIRD-ORDER SIGNATURE --
+---------------------------
+
+-- Choreographic terms
+data CShape : Set where
+  -- Embedding of local terms
+  Local : (sₑ : Shapeₑ) →
+          CShape
+  -- Choreographic local terms
+  Done : CShape
+
+  -- Lambda abstraction
+  Lam : CShape
+  -- Fixpoint
+  Fix : CShape
+  -- Function application
+  App : CShape
+  -- Type abstraction
+  Abs : (κ : CKnd) → CShape
+  -- Type application
+  AppTy : (κ : CKnd) → CShape
+  -- Send operation
+  Send : CShape
+  -- Synchronization operation
+  Sync : Bool → CShape
+  -- If-then-else
+  ITE : CShape
+
+  -- Binding local values
+  LocalLet : CShape
+  -- Binding local types
+  LocalLetTy : (κₑ : Kndₑ) → CShape
+  -- Binding local locations
+  LocalLetLoc : CShape
+
+CTmTyPos : CShape → List (List CKnd × CKnd)
+CTmTyPos (Local sₑ) = ([] , *ₗ) ∷ map (λ{ (Γₑ , κₑ) → map LocKnd Γₑ , LocKnd κₑ }) (TmTyPosₑ sₑ)
+CTmTyPos Done = ([] , *ₗ) ∷ ([] , *ₑ) ∷ []
+CTmTyPos Lam = ([] , *) ∷ ([] , *) ∷ []
+CTmTyPos Fix = ([] , *) ∷ []
+CTmTyPos App = ([] , *) ∷ ([] , *) ∷ []
+CTmTyPos (Abs κ) = (κ ∷ [] , *) ∷ []
+CTmTyPos (AppTy κ) = (κ ∷ [] , *) ∷ ([] , κ) ∷ []
+CTmTyPos Send = ([] , *ₗ) ∷ ([] , *ₗ) ∷ ([] , *ₑ) ∷ []
+CTmTyPos (Sync d) = ([] , *ₗ) ∷ ([] , *ₗ) ∷ ([] , *) ∷ []
+CTmTyPos ITE = ([] , *ₗ) ∷ ([] , *) ∷ []
+CTmTyPos LocalLet = ([] , *ₗ) ∷ ([] , *ₑ) ∷ ([] , *) ∷ []
+CTmTyPos (LocalLetTy κₑ) = ([] , *ₗ) ∷ ([] , *ₛ) ∷ ([] , *) ∷ []
+CTmTyPos LocalLetLoc = ([] , *ₗ) ∷ ([] , *ₛ) ∷ ([] , *) ∷ []
+
+CTmPos : (s : CShape) (Γ : C.KndCtx) →
+          C.TyVec Γ (CTmTyPos s) →
+          List (Σ[ Γ' ∈ _ ] (C.Ctx (Γ' ++ Γ) × C.Typ (Γ' ++ Γ)))
+          × C.Typ Γ
+-- sₑ Σₑ : t ⊢ Local{sₑ} ℓ Σₑ : ℓ.t
+CTmPos (Local sₑ) Γ (ℓ ∷ ts) =
+  map (λ{ (Γ' , Δ , t) → map LocKnd Γ' , map (injTyp++ Γ Γ') Δ , injTyp++ Γ Γ' t }) (TmPosₑ sₑ (∣ₖ Γ) (projTyVec refl refl ts)  .fst) ,
+  injTyp (TmPosₑ sₑ (∣ₖ Γ) (projTyVec refl refl ts) .snd)
+-- Done (ℓ : *ₗ) (t : *ₑ) ℓ.t : t@ℓ
+CTmPos Done Γ (ℓ ∷ t ∷ []) = ([] , [] , *ₑ , t) ∷ [] , * , TyAt ℓ t
+-- Lam (τ₁ τ₂ : *) [τ₁]τ₂ : τ₁⇒τ₂
+CTmPos Lam Γ (τ₁ ∷ τ₂ ∷ []) = ([] , (* , τ₁) ∷ [] , * , τ₂) ∷ [] , * , TyFun τ₁ τ₂
+-- Fix (τ : *) [τ]τ : τ
+CTmPos Fix Γ (τ ∷ []) = ([] , (* , τ) ∷ [] , * , τ) ∷ [] , * , τ
+-- App (τ₁ τ₂ : *) τ₁⇒τ₂ τ₁ : τ₂
+CTmPos App Γ (τ₁ ∷ τ₂ ∷ []) = ([] , [] , * , TyFun τ₁ τ₂) ∷ ([] , [] , * , τ₁) ∷ [] , * , τ₂
+-- Abs (τ : [κ]*) [κ]τ : ∀κ.τ
+CTmPos (Abs κ) Γ (τ ∷ []) = (κ ∷ [] , [] , * , τ) ∷ [] , * , TyAll κ τ
+-- AppTy (τ : [κ]*) (v : κ) ∀κ.τ : τ⟨v⟩
+CTmPos (AppTy κ) Γ (τ ∷ v ∷ []) = ([] , [] , * , TyAll κ τ) ∷ [] , * , C.tySub (C.TyIdSub C.▸ v) τ
+-- Send (ℓ₁ ℓ₂ : *ₗ) (t : *ₑ) t@ℓ₁ : t@ℓ₂
+CTmPos Send Γ (ℓ₁ ∷ ℓ₂ ∷ t ∷ []) = ([] , [] , * , TyAt ℓ₁ t) ∷ [] , * , TyAt ℓ₂ t
+-- Sync{d} (ℓ₁ ℓ₂ : *ₗ) (τ : *) τ : τ
+CTmPos (Sync d) Γ (ℓ₁ ∷ ℓ₂ ∷ τ ∷ []) = ([] , [] , * , τ) ∷ [] , * , τ
+-- ITE (ℓ : *ₗ) (τ : *) Boolₑ@ℓ τ τ : τ
+CTmPos ITE Γ (ℓ ∷ τ ∷ []) =
+  ([] , [] , * , TyAt ℓ (C.tyRen C.ε* (injTy refl refl (𝕃 .Boolₑ)))) ∷
+  ([] , [] , * , τ) ∷
+  ([] , [] , * , τ) ∷ [] ,
+  * , τ
+-- LocalLet (ℓ : *ₗ) (t : *ₑ) (τ : *) t@ℓ [ℓ.t]τ : τ
+CTmPos LocalLet Γ (ℓ ∷ t ∷ τ ∷ []) =
+  ([] , [] , * , TyAt ℓ t) ∷
+  ([] , (*ₑ , t) ∷ [] , * , TyAt ℓ t) ∷ [] ,
+  * , τ
+-- LocalLetTy (ℓ : *ₗ) (ρ : *ₛ) (τ : *) κₑ@ℓ [κₑ]τ : τ
+CTmPos (LocalLetTy κₑ) Γ (ℓ ∷ ρ ∷ τ ∷ []) =
+  ([] , [] , * , TyAt ℓ (C.tyRen C.ε* (injTy refl refl (𝕃 .TyRepₑ κₑ)))) ∷
+  (LocKnd κₑ ∷ [] , [] , * , C.tyRen (C.TyDrop C.TyIdRen) τ) ∷ [] ,
+  * , τ
+-- LocalLetLoc (ℓ : *ₗ) (ρ : *ₛ) (τ : *) Locₑ@ℓ [*ₗ]τ : τ
+CTmPos LocalLetLoc Γ (ℓ ∷ ρ ∷ τ ∷ []) =
+  ([] , [] , * , TyAt ℓ (C.tyRen C.ε* (injTy refl refl (𝕃 .Locₑ)))) ∷
+  (*ₗ ∷ [] , [] , * , C.tyRen (C.TyDrop C.TyIdRen) τ) ∷ [] ,
+  * , τ
+
+-- Project a renaming
+projRen : ∀{Γ1 Γ2} → C.TyRen Γ1 Γ2 → LL.TyRen (∣ₖ Γ1) (∣ₖ Γ2)
+projRen C.ε = LL.ε
+projRen (C.TyDrop {t = LocKnd κₑ} ξ) = LL.TyDrop (projRen ξ)
+projRen (C.TyDrop {t = *} ξ) = projRen ξ
+projRen (C.TyDrop {t = *ₗ} ξ) = projRen ξ
+projRen (C.TyDrop {t = *ₛ} ξ) = projRen ξ
+projRen (C.TyKeep {t = LocKnd κₑ} ξ) = LL.TyKeep (projRen ξ)
+projRen (C.TyKeep {t = *} ξ) = projRen ξ
+projRen (C.TyKeep {t = *ₗ} ξ) = projRen ξ
+projRen (C.TyKeep {t = *ₛ} ξ) = projRen ξ
+
+KeepProjRen : ∀{Γ1 Γ2 κ} (ξ : C.TyRen Γ1 Γ2) →
+              projRen (C.TyKeep {t = LocKnd κ} ξ) ≡
+              LL.TyKeep (projRen ξ)
+KeepProjRen C.ε = refl
+KeepProjRen (C.TyKeep ξ) = refl
+KeepProjRen (C.TyDrop ξ) = refl
+
+eraseKeepProjRen* : ∀{Γ1 Γ2} (ξ : C.TyRen Γ1 Γ2) → ∀ Δₑ →
+                    ULL.eraseRen (projRen (C.TyKeep* ξ (map LocKnd Δₑ))) ≡
+                    ULL.eraseRen (LL.TyKeep* (projRen ξ) Δₑ)
+eraseKeepProjRen* ξ [] = refl
+eraseKeepProjRen* ξ (κₑ ∷ Δₑ) = cong ULL.UKeep (eraseKeepProjRen* ξ Δₑ)
+
+eraseProjTyRenVar : ∀{Γ1 Γ2 Γ1' Γ2' κ κₑ} (p : ∣ₖ Γ1 ≡ Γ1') (p' : ∣ₖ Γ2 ≡ Γ2')
+                    (q : κ ≡ LocKnd κₑ)
+                    (ξ : C.TyRen Γ1 Γ2) (x : C.TyVar Γ1 κ) →   
+                    ULL.eraseVar (projTyVar p' q (C.tyRenVar ξ x))
+                    ≡ ULL.eraseVar (LL.tyRenVar (subst₂ LL.TyRen p p' (projRen ξ)) (projTyVar p q x))
+eraseProjTyRenVar refl refl q C.ε ()
+eraseProjTyRenVar {κ = LocKnd κₑ} refl refl refl (C.TyKeep {t = .(LocKnd κₑ)} ξ) C.TV0 = refl
+eraseProjTyRenVar refl refl refl (C.TyKeep {t = LocKnd κₑ} ξ) (C.TVS x) =
+  cong suc (eraseProjTyRenVar refl refl refl ξ x)
+eraseProjTyRenVar refl refl refl (C.TyKeep {t = *} ξ) (C.TVS x) =
+  eraseProjTyRenVar refl refl refl ξ x
+eraseProjTyRenVar refl refl refl (C.TyKeep {t = *ₗ} ξ) (C.TVS x) =
+  eraseProjTyRenVar refl refl refl ξ x
+eraseProjTyRenVar refl refl refl (C.TyKeep {t = *ₛ} ξ) (C.TVS x) =
+  eraseProjTyRenVar refl refl refl ξ x
+eraseProjTyRenVar refl refl refl (C.TyDrop {t = LocKnd κₑ} ξ) x =
+  cong suc (eraseProjTyRenVar refl refl refl ξ x)
+eraseProjTyRenVar refl refl refl (C.TyDrop {t = *} ξ) x =
+  eraseProjTyRenVar refl refl refl ξ x
+eraseProjTyRenVar refl refl refl (C.TyDrop {t = *ₗ} ξ) x =
+  eraseProjTyRenVar refl refl refl ξ x
+eraseProjTyRenVar refl refl refl (C.TyDrop {t = *ₛ} ξ) x =
+  eraseProjTyRenVar refl refl refl ξ x
+
+projTyRenVar : ∀{Γ1 Γ2 Γ1' Γ2' κ κₑ} (p : ∣ₖ Γ1 ≡ Γ1') (p' : ∣ₖ Γ2 ≡ Γ2')
+              (q : κ ≡ LocKnd κₑ)
+              (ξ : C.TyRen Γ1 Γ2) (x : C.TyVar Γ1 κ) →   
+              projTyVar p' q (C.tyRenVar ξ x)
+              ≡ LL.tyRenVar (subst₂ LL.TyRen p p' (projRen ξ)) (projTyVar p q x)
+projTyRenVar p p' q ξ x = ULL.eraseVar-inj (eraseProjTyRenVar p p' q ξ x)
+
+eraseProjTyRen : ∀{Γ1 Γ2 Γ1' Γ2' κ κₑ} (p : ∣ₖ Γ1 ≡ Γ1') (p' : ∣ₖ Γ2 ≡ Γ2')
+                (q : κ ≡ LocKnd κₑ)
+                (ξ : C.TyRen Γ1 Γ2) (t : C.Ty Γ1 κ) → 
+                ULL.erase (projTy p' q (C.tyRen ξ t))
+                ≡ ULL.erase (LL.tyRen (subst₂ LL.TyRen p p' (projRen ξ)) (projTy p q t))
+eraseProjTyVecRen : ∀{Γ1 Γ2 Γ1' Γ2' Σ1 Σ2} (p : ∣ₖ Γ1 ≡ Γ1') (p' : ∣ₖ Γ2 ≡ Γ2')
+                    (q : map (λ { (Γₑ , κₑ) → map LocKnd Γₑ , LocKnd κₑ }) Σ2 ≡ Σ1) → 
+                    (ξ : C.TyRen Γ1 Γ2) (ts : C.TyVec Γ1 Σ1) →
+                    ULL.eraseVec (projTyVec p' q (C.tyRenVec ξ ts))
+                    ≡ ULL.eraseVec (LL.tyRenVec (subst₂ LL.TyRen p p' (projRen ξ)) (projTyVec p q ts))
+
+eraseProjTyRen p p' q ξ (C.tyVar x) =
+  cong ULL.var (eraseProjTyRenVar p p' q ξ x)
+eraseProjTyRen {Γ1} {Γ2} {Γ1'} {Γ2'} p p' q ξ (C.tyConstr (LocalTy sₑ) es) =
+  ULL.erase (subst (LL.Ty Γ2') (LocKnd-injective q)
+    (LL.tyConstr sₑ (projTyVec p' refl (C.tyRenVec ξ es))))
+    ≡⟨ sym (ULL.substTy-erase (LocKnd-injective q) (LL.tyConstr sₑ (projTyVec p' refl (C.tyRenVec ξ es)))) ⟩
+  ULL.constr sₑ (ULL.eraseVec (projTyVec p' refl (C.tyRenVec ξ es)))
+    ≡⟨ cong (ULL.constr sₑ) (eraseProjTyVecRen p p' refl ξ es) ⟩
+  ULL.constr sₑ (ULL.eraseVec (LL.tyRenVec
+    (subst₂ LL.TyRen p p' (projRen ξ))
+    (projTyVec p refl es)))
+    ≡⟨ cong (ULL.constr sₑ) (ULL.eraseVec-distr-ren
+        (subst₂ LL.TyRen p p' (projRen ξ))
+        (projTyVec p refl es)) ⟩
+  ULL.constr sₑ
+    (ULL.renVecUnty (ULL.eraseRen (subst₂ LL.TyRen p p' (projRen ξ)))
+    (ULL.eraseVec (projTyVec p refl es)))
+    ≡⟨ cong (ULL.renUnty (ULL.eraseRen (subst₂ LL.TyRen p p' (projRen ξ))))
+        (ULL.substTy-erase (LocKnd-injective q) (LL.tyConstr sₑ (projTyVec p refl es))) ⟩
+  ULL.renUnty
+    (ULL.eraseRen (subst₂ LL.TyRen p p' (projRen ξ)))
+    (ULL.erase (subst (LL.Ty Γ1') (LocKnd-injective q)
+      (LL.tyConstr sₑ (projTyVec p refl es))))
+    ≡⟨ sym (ULL.erase-distr-ren 
+        (subst₂ LL.TyRen p p' (projRen ξ))
+        (subst (LL.Ty Γ1') (LocKnd-injective q)
+          (LL.tyConstr sₑ (projTyVec p refl es)))) ⟩
+  ULL.erase (LL.tyRen
+    (subst₂ LL.TyRen p p' (projRen ξ))
+    (subst (LL.Ty Γ1') (LocKnd-injective q)
+      (LL.tyConstr sₑ (projTyVec p refl es)))) ∎
+
+eraseProjTyVecRen {Σ1 = []} {[]} p p' q ξ C.[] = refl
+eraseProjTyVecRen {Γ1} {Γ2} {Σ1 = (Δ , _) ∷ Σ1} {(Δₑ , κₑ) ∷ Σ2} p p' q ξ (t C.∷ ts) =
+  cong₃ ULL.eraseCons
+    (ULL.erase (projTy
+      (∣ₖ-++ Δ Γ2 ∙ cong₂ _++_ (cong ∣ₖ (sym (,-injective (∷-injective q .fst) .fst)) ∙ ∣ₖ∘LocKnd≡Id Δₑ) p')
+      (sym (,-injective (∷-injective q .fst) .snd))
+      (C.tyRen (C.TyKeep* ξ Δ) t))
+      ≡⟨ eraseProjTyRen 
+          (∣ₖ-++ Δ Γ1 ∙ cong₂ _++_ (cong ∣ₖ (sym (,-injective (∷-injective q .fst) .fst)) ∙ ∣ₖ∘LocKnd≡Id Δₑ) p)
+          (∣ₖ-++ Δ Γ2 ∙ cong₂ _++_ (cong ∣ₖ (sym (,-injective (∷-injective q .fst) .fst)) ∙ ∣ₖ∘LocKnd≡Id Δₑ) p')
+          (sym (,-injective (∷-injective q .fst) .snd))
+          (C.TyKeep* ξ Δ)
+          t ⟩
+    ULL.erase (LL.tyRen
+      (subst₂ LL.TyRen
+        (∣ₖ-++ Δ Γ1 ∙ cong₂ _++_ (cong ∣ₖ (sym (,-injective (∷-injective q .fst) .fst)) ∙ ∣ₖ∘LocKnd≡Id Δₑ) p)
+        (∣ₖ-++ Δ Γ2 ∙ cong₂ _++_ (cong ∣ₖ (sym (,-injective (∷-injective q .fst) .fst)) ∙ ∣ₖ∘LocKnd≡Id Δₑ) p')
+        (projRen (C.TyKeep* ξ Δ)))
+      (projTy
+        (∣ₖ-++ Δ Γ1 ∙ cong₂ _++_ (cong ∣ₖ (sym (,-injective (∷-injective q .fst) .fst)) ∙ ∣ₖ∘LocKnd≡Id Δₑ) p)
+        (sym (,-injective (∷-injective q .fst) .snd))
+        t))
+      ≡⟨ ULL.erase-distr-ren 
+          (subst₂ LL.TyRen
+            (∣ₖ-++ Δ Γ1 ∙ cong₂ _++_ (cong ∣ₖ (sym (,-injective (∷-injective q .fst) .fst)) ∙ ∣ₖ∘LocKnd≡Id Δₑ) p)
+            (∣ₖ-++ Δ Γ2 ∙ cong₂ _++_ (cong ∣ₖ (sym (,-injective (∷-injective q .fst) .fst)) ∙ ∣ₖ∘LocKnd≡Id Δₑ) p')
+            (projRen (C.TyKeep* ξ Δ)))
+          (projTy
+            (∣ₖ-++ Δ Γ1 ∙ cong₂ _++_ (cong ∣ₖ (sym (,-injective (∷-injective q .fst) .fst)) ∙ ∣ₖ∘LocKnd≡Id Δₑ) p)
+            (sym (,-injective (∷-injective q .fst) .snd))
+            t) ⟩
+    ULL.renUnty (ULL.eraseRen
+      (subst₂ LL.TyRen
+        (∣ₖ-++ Δ Γ1 ∙ cong₂ _++_ (cong ∣ₖ (sym (,-injective (∷-injective q .fst) .fst)) ∙ ∣ₖ∘LocKnd≡Id Δₑ) p)
+        (∣ₖ-++ Δ Γ2 ∙ cong₂ _++_ (cong ∣ₖ (sym (,-injective (∷-injective q .fst) .fst)) ∙ ∣ₖ∘LocKnd≡Id Δₑ) p')
+        (projRen (C.TyKeep* ξ Δ))))
+      (ULL.erase (projTy
+        (∣ₖ-++ Δ Γ1 ∙ cong₂ _++_ (cong ∣ₖ (sym (,-injective (∷-injective q .fst) .fst)) ∙ ∣ₖ∘LocKnd≡Id Δₑ) p)
+        (sym (,-injective (∷-injective q .fst) .snd))
+        t))
+      ≡⟨ cong (λ x → ULL.renUnty x
+          (ULL.erase (projTy
+            (∣ₖ-++ Δ Γ1 ∙ cong₂ _++_ (cong ∣ₖ (sym (,-injective (∷-injective q .fst) .fst)) ∙ ∣ₖ∘LocKnd≡Id Δₑ) p)
+            (sym (,-injective (∷-injective q .fst) .snd))
+            t)))
+          (sym (ULL.subst₂-eraseRen 
+            (∣ₖ-++ Δ Γ1 ∙ cong₂ _++_ (cong ∣ₖ (sym (,-injective (∷-injective q .fst) .fst)) ∙ ∣ₖ∘LocKnd≡Id Δₑ) p)
+            (∣ₖ-++ Δ Γ2 ∙ cong₂ _++_ (cong ∣ₖ (sym (,-injective (∷-injective q .fst) .fst)) ∙ ∣ₖ∘LocKnd≡Id Δₑ) p') 
+            (projRen (C.TyKeep* ξ Δ)))) ⟩
+    ULL.renUnty (ULL.eraseRen (projRen (C.TyKeep* ξ Δ)))
+      (ULL.erase (projTy
+        (∣ₖ-++ Δ Γ1 ∙ cong₂ _++_ (cong ∣ₖ (sym (,-injective (∷-injective q .fst) .fst)) ∙ ∣ₖ∘LocKnd≡Id Δₑ) p)
+        (sym (,-injective (∷-injective q .fst) .snd))
+        t))
+      ≡⟨ cong (λ x → ULL.renUnty x
+          (ULL.erase (projTy
+            (∣ₖ-++ Δ Γ1 ∙ cong₂ _++_ (cong ∣ₖ (sym (,-injective (∷-injective q .fst) .fst)) ∙ ∣ₖ∘LocKnd≡Id Δₑ) p)
+            (sym (,-injective (∷-injective q .fst) .snd))
+            t))) (
+          ULL.eraseRen (projRen (C.TyKeep* ξ Δ))
+            ≡⟨ cong (λ x → ULL.eraseRen (projRen (C.TyKeep* ξ x))) (sym (,-injective (∷-injective q .fst) .fst)) ⟩
+          ULL.eraseRen (projRen (C.TyKeep* ξ (map LocKnd Δₑ)))
+            ≡⟨ eraseKeepProjRen* ξ Δₑ ⟩
+          ULL.eraseRen (LL.TyKeep* (projRen ξ) Δₑ) ∎) ⟩
+    ULL.renUnty (ULL.eraseRen
+      (LL.TyKeep* (projRen ξ) Δₑ))
+      (ULL.erase (projTy
+        (∣ₖ-++ Δ Γ1 ∙ cong₂ _++_ (cong ∣ₖ (sym (,-injective (∷-injective q .fst) .fst)) ∙ ∣ₖ∘LocKnd≡Id Δₑ) p)
+        (sym (,-injective (∷-injective q .fst) .snd))
+        t))
+      ≡⟨ ULL.renUntyExt
+          (λ x →
+            ULL.eraseRen (LL.TyKeep* (projRen ξ) Δₑ) x
+              ≡⟨ ULL.eraseRen-Keep* (projRen ξ) Δₑ x ⟩
+            ULL.UKeep* (ULL.eraseRen (projRen ξ)) (length Δₑ) x
+              ≡⟨ cong (λ y → ULL.UKeep* y (length Δₑ) x) (ULL.subst₂-eraseRen p p' (projRen ξ)) ⟩
+            ULL.UKeep* (ULL.eraseRen (subst₂ LL.TyRen p p' (projRen ξ))) (length Δₑ) x
+              ≡⟨ sym (ULL.eraseRen-Keep* (subst₂ LL.TyRen p p' (projRen ξ)) Δₑ x) ⟩
+            ULL.eraseRen (LL.TyKeep* (subst₂ LL.TyRen p p' (projRen ξ)) Δₑ) x ∎)
+          (ULL.erase (projTy
+            (∣ₖ-++ Δ Γ1 ∙ cong₂ _++_ (cong ∣ₖ (sym (,-injective (∷-injective q .fst) .fst)) ∙ ∣ₖ∘LocKnd≡Id Δₑ) p)
+            (sym (,-injective (∷-injective q .fst) .snd))
+            t)) ⟩
+    ULL.renUnty (ULL.eraseRen
+      (LL.TyKeep* (subst₂ LL.TyRen p p' (projRen ξ)) Δₑ))
+      (ULL.erase (projTy
+        (∣ₖ-++ Δ Γ1 ∙ cong₂ _++_ (cong ∣ₖ (sym (,-injective (∷-injective q .fst) .fst)) ∙ ∣ₖ∘LocKnd≡Id Δₑ) p)
+        (sym (,-injective (∷-injective q .fst) .snd))
+        t))
+      ≡⟨ sym (ULL.erase-distr-ren 
+          (LL.TyKeep* (subst₂ LL.TyRen p p' (projRen ξ)) Δₑ)
+          (projTy
+            (∣ₖ-++ Δ Γ1 ∙ cong₂ _++_ (cong ∣ₖ (sym (,-injective (∷-injective q .fst) .fst)) ∙ ∣ₖ∘LocKnd≡Id Δₑ) p)
+            (sym (,-injective (∷-injective q .fst) .snd))
+            t)) ⟩
+    ULL.erase (LL.tyRen
+      (LL.TyKeep* (subst₂ LL.TyRen p p' (projRen ξ)) Δₑ)
+      (projTy
+        (∣ₖ-++ Δ Γ1 ∙ cong₂ _++_ (cong ∣ₖ (sym (,-injective (∷-injective q .fst) .fst)) ∙ ∣ₖ∘LocKnd≡Id Δₑ) p)
+        (sym (,-injective (∷-injective q .fst) .snd))
+        t)) ∎)
+    refl
+    (eraseProjTyVecRen p p' (∷-injective q .snd) ξ ts)
+
+-- Project a substitution
+projSub : ∀{Γ1 Γ2} → C.TySub Γ1 Γ2 → LL.TySub (∣ₖ Γ1) (∣ₖ Γ2)
+projSub C.ε = LL.ε
+projSub {LocKnd κₑ ∷ Γ1} (σ C.▸ e) = projSub σ LL.▸ projTy refl refl e
+projSub {* ∷ Γ1} (σ C.▸ e) = projSub σ
+projSub {*ₗ ∷ Γ1} (σ C.▸ e) = projSub σ
+projSub {*ₛ ∷ Γ1} (σ C.▸ e) = projSub σ
