@@ -529,33 +529,65 @@ The "arity" function $\text{ar}$ now does double-duty by defining, for each sub-
 \end{mathparpagebreakable}
 That is, $\text{Alg}(\Sigma,\Gamma,t) \cong \{e \mid \Gamma \vdash e : t\}$. This just equates an inherently-typed representation with a non-inherently-typed representation.
 
-\subparagraph{STLC + Algebraic Types} Suppose $B$ is any set of base types. The signature for STLC with product and sum types is
-\begin{itemize}
-	\item $T = B \;|\; T_1 \rightarrow T_2 \;|\; T_1 \times T_2 \;|\; T_1 + T_2$ (literally, the data type containing the closure of $B$ under arrows, products, and sums)
-	\item $\mathcal{F} = \text{Lam}_{T_1,T_2} \;|\; \text{App}_{T_1,T_2} \;|\; \text{Pair}_{T_1,T_2} \;|\; \text{Rec}_{T_1,T_2,S} \;|\; \text{Inl}_{T_1,T_2} \;|\; \text{Inr}_{T_1,T_2} \;|\; \text{Case}_{T_1,T_2,S}$ (each symbol must be explicitly tagged with the relevant types so we can properly define the rest of the signature)
-	\item $\text{ar}(\text{Lam}_{T_1,T_2}) = (T_1;T_2)$
-	\item $\text{ty}(\text{Lam}_{T_1,T_2}) = T_1 \rightarrow T_2$
-	\item $\text{ar}(\text{App}_{T_1,T_2}) = (\cdot;T_1 \rightarrow T_2),(\cdot,T_1)$
-	\item $\text{ty}(\text{App}_{T_1,T_2}) = T_2$
-	\item $\text{ar}(\text{Pair}_{T_1,T_2}) = (\cdot;T_1),(\cdot,T_2)$
-	\item $\text{ty}(\text{Pair}_{T_1,T_2}) = T_1 \times T_2$
-	\item $\text{ar}(\text{Rec}_{T_1,T_2,S}) = (\cdot;T_1 \rightarrow T_2 \rightarrow S),(\cdot;T_1 \times T_2)$
-	\item $\text{ty}(\text{Rec}_{T_1,T_2,S}) = S$
-	\item $\text{ar}(\text{Inl}_{T_1,T_2}) = (\cdot;T_1)$
-	\item $\text{ty}(\text{Inl}_{T_1,T_2}) = T_1 + T_2$
-	\item $\text{ar}(\text{Inr}_{T_1,T_2}) = (\cdot;T_2)$
-	\item $\text{ty}(\text{Inr}_{T_1,T_2}) = T_1 + T_2$
-	\item $\text{ar}(\text{Case}_{T_1,T_2,S}) = (\cdot;T_1 \rightarrow S),(\cdot;T_2 \rightarrow S),(\cdot;T_1 + T_2)$
-	\item $\text{ty}(\text{Case}_{T_1,T_2,S}) = S$
-\end{itemize}
+\subparagraph{STLC + Algebraic Types} Suppose $B$ is any set of base types. The signature for STLC with product and sum types is as follows.
+\begin{verbatim}
+B : Type
+
+data Ty : Type where
+  Base : B -> Ty
+  Arrow : Ty -> Ty -> Ty
+  Prod : Ty -> Ty -> Ty
+  Sum : Ty -> Ty -> Ty
+  
+data F : Type where
+  lam : (t1 t2 : Ty) -> F
+  app : (t1 t2 : Ty) -> F
+  
+  pair : (t1 t2 : Ty) -> F
+  rec : (t1 t2 s : Ty) -> F
+  
+  inl : (t1 t2 : Ty) -> F
+  inr : (t1 t2 : Ty) -> F
+  case : (t1 t2 s : Ty) -> F
+  
+ty (lam t1 t2) = Arrow t1 t2
+ty (app t1 t2) = t2
+ty (pair t1 t2) = Prod t1 t2
+ty (rec t1 t2 s) = s
+ty (inl t1 t2) = Sum t1 t2
+ty (inr t1 t2) = Sum t1 t2
+ty (case t1 t2 s) = s
+
+ar (lam t1 t2) = (t1 :: [] |- t2) :: []
+ar (app t1 t2) =
+  ([] |- Arrow t1 t2) ::
+  ([] |- t1) ::
+  []
+ar (pair t1 t2) =
+  ([] |- t1) ::
+  ([] |- t2) ::
+  []
+ar (rec t1 t2 s) =
+  ([] |- Arrow t1 (Arrow t2 s)) ::
+  ([] |- Prod t1 t2) ::
+  []
+ar (inl t1 t2) = ([] |- t1) :: []
+ar (inr t1 t2) = ([] |- t2) :: []
+ar (case t1 t2 s) =
+  ([] |- Arrow t1 s) ::
+  ([] |- Arrow t2 s) ::
+  ([] |- Sum t1 t2) ::
+  []
+\end{verbatim}
+
 \subparagraph{Security Lattice - Extra Judgments} "But wait", says Ethan, "what if I need an extra condition like $\ell \sqsubseteq \tau$ in my typing judgments?". This is fine; in any reasonable ITP you can just pack it into the definition of your function symbols using an extra propositional argument.
 \begin{verbatim}
 Label : Type
 Ty : Type
-_<=_ : Label -> Ty -> Type
+prot : Label -> Ty -> Type
 
 data F : Type where
-  bind : (t1 t2 : Ty) (L : Label) -> L <= t1 -> F
+  bind : (t1 t2 : Ty) (L : Label) -> prot L t1 -> F
 \end{verbatim}
 "But wait", says Ethan, "what if I need a program counter label?". This is, unfortunately, less clean, and we have to be more creative, but it is definitely possible. Because we're not allowed to augment the context, we have to shove everything extra into the types themselves. Essentially, for every extra piece of information we want the context to have, put it into the type itself (and possibly also the associated function symbols).
 \begin{verbatim}		
