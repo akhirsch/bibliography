@@ -455,8 +455,157 @@ Local substitution has to be defined to avoid capture of locations. For instance
 &\;\ell.(x + y))\; L
 \end{align*}
 When you substitute $L$ in for $\ell$ naively, you capture $\ell.x$ in the final expression and rebind it to $L.x$, and end up computing $L.6$ instead of $L.5$.
-\end{document}
 
+
+\paragraph{5/16/2024}
+\subparagraph{Current Results}
+\begin{itemize}
+	\item Definition of type system and choreographies with abstraction over locations, local types, and choreographic types, and ability to send and use locations and local types
+	\item Simplification and generalization of some of Pirouette's types and choreographies (e.g. sending and if-then-else constructs)
+	\item Syntactic definitions like renaming and substitution and preservation of typing (non-trivial because of location substitution)
+	\item Definition of in-order semantics
+\end{itemize}
+\subparagraph{Results Wanted Before Submission}
+\begin{itemize}
+	\item Endpoint projection preserves semantics
+	\item Simple algebraic types
+\end{itemize}
+\subparagraph{Final Results}
+\begin{itemize}
+	\item (Co)Recursive types
+	\item Track involved processes in type system
+	\item Equivalence of old-style (explicit local expressions) and new-style (implicit local expressions) syntax
+\end{itemize}
+\subparagraph{Generic Syntax Library} Idea: Define the syntax (and possibly type system) of your language, and the library gives you the "standard" metafunctions (e.g. variable renaming and substitution) along with associated proofs. I have seen three classes of generic syntax libraries:
+\begin{itemize}
+	\item \emph{Algebraic}: Define the type for syntax "on your own" within your ITP, and prove it satisfies some algebraic property (e.g. it is a decorated-traversable monad). The library defines the metafunctions and related proofs universally for each type satisfying the algebraic property as a function within the ITP. It may require some non-trivial proofs to show the algebraic property is satisfied.
+	\item \emph{Syntactic}: Define your syntax by an algebraic signature (e.g. as in universal algebra or datatype-generic programming) within your ITP, and the library defines the type for syntax, the metafunctions, and related proofs universally for each signature as a function within the ITP. A little bit less general than the algebraic approach, but requires a lot less effort.
+	\item \emph{Extensional}: Define your syntax by an algebraic signature \emph{outside} of your ITP (e.g. with a text file defining a grammar) that an executable will parse and process. The executable will (hopefully!) give you the type for syntax, the metafunctions, and related proofs in separate files that can be used by your ITP. Similar to the syntactic approach, but there is usually no guarantee that the process will succeed and the ITP files will compile even with a well-formed grammar.
+\end{itemize}
+My library takes the syntactic approach as it is time-saving over the algebraic approach, and end-to-end verified/complete unlike the extensional approach.
+
+\subparagraph{Binding Signatures} To define a type theory/language, we need to define explicitly what a \emph{signature} means. We start with a plain universal algebra signature, and generalize to what my library uses.\\
+
+In universal algebra, a signature is just a set of function symbols of various arities. Explicitly, the data of a signature $\Sigma$ consists of:
+\begin{itemize}
+	\item the function symbols $\mathcal{F} : \text{Type}$, and
+	\item a function $\text{ar} : \mathcal{F} \rightarrow \mathbb{N}$ defining their arities.
+\end{itemize}
+The algebra/language $\text{Alg}(\Sigma,X)$ of this signature with variables from a set $X$ is the least set containing $X$ and $f(e_1,\ldots,e_n)$ for $f \in \mathcal{F}$, $\text{ar}(f) = n$, and $e_1,\ldots,e_n \in \text{Alg}(\Sigma,X)$. \\
+
+This system is in essence unityped, so we can first generalize to allow for expressions to have a specified type. Now a signature $\Sigma$ consists of the data
+\begin{itemize}
+	\item $T : \text{Type}$ specifying the types,
+	\item $\mathcal{F} : \text{Type}$ specifying the function symbols,
+	\item $\text{ar} : \mathcal{F} \rightarrow T^*$ defining function arities, and
+	\item $\text{ty} : \mathcal{F} \rightarrow T$ defining function types.
+\end{itemize}
+Here the arity metafunction $\text{ar}$ now specifies the type of each argument as a list of types $T^*$, and the function typing metafunction $\text{ty}$ defines the type of each function symbol. We could equivalently define a family of function symbols $\mathcal{F}_t$ for each $t : T$. The algebra/language $\text{Alg}(\Sigma,\Gamma,t)$ of a specified type $t : T$ of this signature with variables from a context $\Gamma$ which maps variables to types is the least set containing $x$ for each $x \in \Gamma_t$, and $f(e_1,\ldots,e_n)$ for $f \in \mathcal{F}$, $\text{ar}(f) = (t_1,\ldots,t_n)$, $\text{ty}(f) = t$, and $e_i \in \text{Alg}(\Sigma,\Gamma,t_i)$.\\
+
+This scheme works great for universal algebra and model theory, but it's missing the key component needed in programming languages; variable binding. To generalize, we will allow for each function symbol to additionally specify which new variables will be bound in each sub-expression, and the type of these variables. The data of a (second-order) \emph{binding signature} $\Sigma$ consists of
+\begin{itemize}
+	\item the types $T : \text{Type}$,
+	\item the function symbols $\mathcal{F} : \text{Type}$,
+	\item the bound variable types and sub-expression types $\text{ar} : \mathcal{F} \rightarrow (T^* \times T)^*$, and
+	\item the function types $\text{ty} : \mathcal{F} \rightarrow T$.
+\end{itemize}
+The "arity" function $\text{ar}$ now does double-duty by defining, for each sub-expression, the number and type of each variable that will be bound inside of the sub-expression as well as the expected type of that sub-expression. We could equivalently write this as multiple families of functions, but we use the given definition to avoid the use of dependent functions. The algebra $\text{Alg}(\Sigma,\Gamma,t)$ of a type $t : T$ of this signature with variables from context $\Gamma$ is the least set containing $x$ for each $x \in \Gamma_t$, and $f(e_1,\ldots,e_n)$ for $f \in \mathcal{F}$, $\text{ar}(f) = (\Gamma_1;t_1,\ldots,\Gamma_n;t_n)$, $\text{ty}(f) = t$, and $e_i \in \text{Alg}(\Sigma,\Gamma+\Gamma_i,t_i)$. Note that we have expanded the context of each sub-expression $e_i$ by adding the bound variables in context $\Gamma_i$, so the relevant variables are elements of the algebra used in the sub-expression. We can equivalently see the algebra as being isomorphic to the following grammar and typing judgments:
+\begin{syntax}
+	\categoryFromSet[]{f}{\mathcal{F}}
+	\category[]{e}
+	\alternative{x}
+	\alternative{f(e_1,\ldots,e_n)}
+\end{syntax}
+\begin{mathparpagebreakable}
+	\infer[]{x : t \in \Gamma}
+	{\Gamma \vdash x : t} \and
+	
+	\infer[]{\text{ar}(f) = (\Gamma_1;t_1,\ldots,\Gamma_n;t_n)\\
+		\text{ty}(f) = t\\
+		\Gamma + \Gamma_1 \vdash e_1 : t_1\\
+		\ldots\\
+		\Gamma + \Gamma_n \vdash e_n : t_n}
+	{\Gamma \vdash f(e_1,\ldots,e_n) : t} \and
+\end{mathparpagebreakable}
+That is, $\text{Alg}(\Sigma,\Gamma,t) \cong \{e \mid \Gamma \vdash e : t\}$. This just equates an inherently-typed representation with a non-inherently-typed representation.
+
+\subparagraph{STLC + Algebraic Types} Suppose $B$ is any set of base types. The signature for STLC with product and sum types is
+\begin{itemize}
+	\item $T = B \;|\; T_1 \rightarrow T_2 \;|\; T_1 \times T_2 \;|\; T_1 + T_2$ (literally, the data type containing the closure of $B$ under arrows, products, and sums)
+	\item $\mathcal{F} = \text{Lam}_{T_1,T_2} \;|\; \text{App}_{T_1,T_2} \;|\; \text{Pair}_{T_1,T_2} \;|\; \text{Rec}_{T_1,T_2,S} \;|\; \text{Inl}_{T_1,T_2} \;|\; \text{Inr}_{T_1,T_2} \;|\; \text{Case}_{T_1,T_2,S}$ (each symbol must be explicitly tagged with the relevant types so we can properly define the rest of the signature)
+	\item $\text{ar}(\text{Lam}_{T_1,T_2}) = (T_1;T_2)$
+	\item $\text{ty}(\text{Lam}_{T_1,T_2}) = T_1 \rightarrow T_2$
+	\item $\text{ar}(\text{App}_{T_1,T_2}) = (\cdot;T_1 \rightarrow T_2),(\cdot,T_1)$
+	\item $\text{ty}(\text{App}_{T_1,T_2}) = T_2$
+	\item $\text{ar}(\text{Pair}_{T_1,T_2}) = (\cdot;T_1),(\cdot,T_2)$
+	\item $\text{ty}(\text{Pair}_{T_1,T_2}) = T_1 \times T_2$
+	\item $\text{ar}(\text{Rec}_{T_1,T_2,S}) = (\cdot;T_1 \rightarrow T_2 \rightarrow S),(\cdot;T_1 \times T_2)$
+	\item $\text{ty}(\text{Rec}_{T_1,T_2,S}) = S$
+	\item $\text{ar}(\text{Inl}_{T_1,T_2}) = (\cdot;T_1)$
+	\item $\text{ty}(\text{Inl}_{T_1,T_2}) = T_1 + T_2$
+	\item $\text{ar}(\text{Inr}_{T_1,T_2}) = (\cdot;T_2)$
+	\item $\text{ty}(\text{Inr}_{T_1,T_2}) = T_1 + T_2$
+	\item $\text{ar}(\text{Case}_{T_1,T_2,S}) = (\cdot;T_1 \rightarrow S),(\cdot;T_2 \rightarrow S),(\cdot;T_1 + T_2)$
+	\item $\text{ty}(\text{Case}_{T_1,T_2,S}) = S$
+\end{itemize}
+\subparagraph{Security Lattice - Extra Judgments} "But wait", says Ethan, "what if I need an extra condition like $\ell \sqsubseteq \tau$ in my typing judgments?". This is fine; in any reasonable ITP you can just pack it into the definition of your function symbols using an extra propositional argument.
+\begin{verbatim}
+Label : Type
+Ty : Type
+_<=_ : Label -> Ty -> Type
+
+data F : Type where
+  bind : (t1 t2 : Ty) (L : Label) -> L <= t1 -> F
+\end{verbatim}
+"But wait", says Ethan, "what if I need a program counter label?". This is, unfortunately, less clean, and we have to be more creative, but it is definitely possible. Because we're not allowed to augment the context, we have to shove everything extra into the types themselves. Essentially, for every extra piece of information we want the context to have, put it into the type itself (and possibly also the associated function symbols).
+\begin{verbatim}		
+Label : Type
+Ty : Type
+Unit : Ty
+Arrow : Ty -> Ty -> Label -> Ty
+Says : Label -> Ty -> Ty
+_<=_ : Label -> Label -> Type
+prot : Label -> Ty -> Type
+join : Label -> Label -> Label
+
+TyPC : Type
+TyPC = Ty x Maybe Label
+-- For bound variables x:t use (t , nothing)
+-- For judgments Gamma;pc |- t use inr (t , just pc)
+
+data F : Type where
+  -- Explicit conversion from bound variables C[x] = t to
+  -- the judgment C;pc |- x : t
+  conv : (t : T) (pc : Label) -> F
+  tt : (pc : Label) -> F
+  lam : (t1 t2 : T) (pc1 pc2 : Label) -> F
+  app : (t1 t2 : T) (pc1 pc2 : Label) -> pc2 <= pc1 ->  F
+  bind : (t1 t2 : T) (L : Label) (pc : Label) -> prot L t1 -> F
+
+-- Note 1: We have no intro. rule for the type (t , nothing)
+ty : F -> TyPC
+ty (conv t pc) = (t , just pc)
+ty (tt pc) = (Unit , just pc)
+ty (lam t1 t2 pc1 pc2) = (Arrow t1 t2 pc1 , just pc2)
+ty (app t1 t2 pc1 pc2 _) = (t2 , just pc2)
+ty (bind t1 t2 L pc _) = (t2 , just pc)
+
+-- Note 2: We only bind things of type (t , nothing)
+ar : F -> List (List TyPC x TyPC)
+-- By (1) and (2), the argument to conv is necessarily a variable,
+-- so it acts the same as the judgment C1,x:t,C2;pc |- x : t
+ar (conv t pc) = ([] |- (t , nothing)) :: []
+ar (tt pc) = []
+ar (lam t1 t2 pc1 pc2) = ((t1 , nothing) :: [] |- (t2 , just pc1)) :: []
+ar (app t1 t2 pc1 pc2 _) =
+  ([] |- (Arrow t1 t2 pc1 , just pc2)) ::
+  ([] |- (t2 , just pc2)) :: []
+ar (bind t1 t2 L pc _) =
+  ([] |- (Says L t1 , just pc)) ::
+  ((t1 , nothing) :: [] |- (t2 , just (join pc L))) :: []
+\end{verbatim}
+
+\end{document}
 
 %%% Local Variables:
 %%% mode: latex
