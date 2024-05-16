@@ -476,11 +476,21 @@ When you substitute $L$ in for $\ell$ naively, you capture $\ell.x$ in the final
 	\item Track involved processes in type system
 	\item Equivalence of old-style (explicit local expressions) and new-style (implicit local expressions) syntax
 \end{itemize}
+
+\subparagraph{Story/Reasoning}
+\begin{itemize}
+	\item Don't want to view as just "Why not do PolyChor again?"
+	\item EXAMPLES! (Example with delegation via location sending. Encode examples from PolyChor paper)
+	\item Send locations and local types: Unclear if it's even possible in PolyChor style
+	\item System F versus System F$\omega$. We used a simpler type system for an analogous (and in some places more general) result. As well, it is(was!) an open question whether location polymorphism is possible in a choreographic language using System F. Maybe not possible in PolyChor style, but possible with Pirouette style (advantage of Pirouette style)
+	\item Unclear how much expressivity is lost due to lack of "explicit" delegation. We can show at the very least with examples that we can do delegation "implicitly" by sending locations
+\end{itemize}
+
 \subparagraph{Generic Syntax Library} Idea: Define the syntax (and possibly type system) of your language, and the library gives you the "standard" metafunctions (e.g. variable renaming and substitution) along with associated proofs. I have seen three classes of generic syntax libraries:
 \begin{itemize}
 	\item \emph{Algebraic}: Define the type for syntax "on your own" within your ITP, and prove it satisfies some algebraic property (e.g. it is a decorated-traversable monad). The library defines the metafunctions and related proofs universally for each type satisfying the algebraic property as a function within the ITP. It may require some non-trivial proofs to show the algebraic property is satisfied.
 	\item \emph{Syntactic}: Define your syntax by an algebraic signature (e.g. as in universal algebra or datatype-generic programming) within your ITP, and the library defines the type for syntax, the metafunctions, and related proofs universally for each signature as a function within the ITP. A little bit less general than the algebraic approach, but requires a lot less effort.
-	\item \emph{Extensional}: Define your syntax by an algebraic signature \emph{outside} of your ITP (e.g. with a text file defining a grammar) that an executable will parse and process. The executable will (hopefully!) give you the type for syntax, the metafunctions, and related proofs in separate files that can be used by your ITP. Similar to the syntactic approach, but there is usually no guarantee that the process will succeed and the ITP files will compile even with a well-formed grammar.
+	\item \emph{Extensional}: Define your syntax by an algebraic signature \emph{outside} of your ITP (e.g. with a text file defining a grammar) that an executable will parse and process. The executable will (hopefully!) give you the type for syntax, the metafunctions, and related proofs in separate files that can be used by your ITP. Similar to the syntactic approach, but there is usually no guarantee that the process will succeed and the ITP files will compile even with a well-formed grammar. (autosubst)
 \end{itemize}
 My library takes the syntactic approach as it is time-saving over the algebraic approach, and end-to-end verified/complete unlike the extensional approach.
 
