@@ -631,12 +631,128 @@ ar (tt pc) = []
 ar (lam t1 t2 pc1 pc2) = ((t1 , nothing) :: [] |- (t2 , just pc1)) :: []
 ar (app t1 t2 pc1 pc2 _) =
   ([] |- (Arrow t1 t2 pc1 , just pc2)) ::
-  ([] |- (t2 , just pc2)) :: []
+  ([] |- (t1 , just pc2)) :: []
 ar (bind t1 t2 L pc _) =
   ([] |- (Says L t1 , just pc)) ::
   ((t1 , nothing) :: [] |- (t2 , just (join pc L))) :: []
 \end{verbatim}
 
+\paragraph{5/30/2024}
+\subparagraph{Paper Outline}
+\begin{enumerate}
+	\item Introduction
+	\begin{enumerate}
+		\item Overview of distributed programming language goals and paradigms. Deadlocks, concurrency, session types, choreographies. History: Ad-hoc local programs $\Rightarrow$ session types $\Rightarrow$ choreographies $\Rightarrow$ higher-order choreographies $\Rightarrow$ process-polymorphic choreographies. Each step increases power, expressivity, and usability.
+		\item Current choreographic languages which support out-of-order execution (Pirouette) are insufficient
+		(Spend more time describing choreographies than justifying process polymorphism)
+		\begin{enumerate}
+			\item No process polymorphism
+			\item Cannot reflect local representations
+			\item No delegation ability (Don't put in introduction, means something different to session-type community that's closer to what PolyChor does)
+		\end{enumerate}
+		\item Current choreographic languages which support process polymorphism (PolyChor$\lambda$) are insufficient
+			\begin{enumerate}
+				\item No support for out-of-order execution (Why? 1. The authors didn't bother 2. It would be too difficult 3. It's mathematically impossible. We want to convince the reader that at least 1 and 2 are true. Note that a whole other paper was needed to develop out-of-order execution for PolyChor. Probably put in related works section instead)
+				\item Cannot reflect local representations of processes and types back into the choreographic language (you can technically send them but you just can't use them globally)
+				\item Uses System F$\omega$ which complicates type checking and could be considered a usability downside. Also the types are quite complex in general, which somewhat defeats the purpose of using choreographic types over session types.
+				\item Does not support arbitrary local languages
+			\end{enumerate}
+		\item Start with an example, and say that current languages can't support it. Don't need to get into heavy details in the introduction. Just a short and informal explanation of why it's impossible (Don't obscure new idea with too much related work)
+		\item Hook/example idea: middleman service. Two parties want to exchange items of arbitrary types (could be money or bartering) while remaining anonymous to each other. The middleman will act as an intermediary to determine if the two parties agree to the exchange, and to actually perform the exchange. The items can be arbitrary; the middleman must support arbitrary representations of items. I still cannot think of an example which effectively shows sending and reflection of types or locations.
+\begin{verbatim}
+doExchange
+  :: (A B : Type) (LA LB D : Loc).
+     A @ LA
+  -> (B @ LA -> Bool @ LA)
+  -> B @ LB
+  -> (A @ LB -> Bool @ LB)
+  -> ((L1 L2 : Loc).A @ L1 -> ())
+  -> ((L1 L2 : Loc).B @ L1 -> ())
+  -> ()
+doExchange A B LA LB D itemA acceptB itemB acceptA transferA transferB =
+  let D.a1 := acceptB (itemB --> D --> LA) --> D
+      D.a2 := acceptA (itemA --> D --> LB) --> D
+  in if D.(a1 && a2)
+       then D[L] --> A;
+            D[L] --> B;
+            transferA [LA] [D] itemA;
+            transferB [LB] [D] itemB;
+            transferA [D] [LB] (itemA --> D);
+            transferB [D] [LA] (itemB --> D)
+       else D[R] --> A;
+            D[R] --> B;
+            ()
+            
+bookName :: String @ Seller
+bookName = Seller."The Old Man and the Sea"
+
+acceptPrice :: Int @ Seller -> Bool @ Seller
+acceptPrice p = let Seller.x := p in Seller.(x >= 10)
+
+offerPrice :: Int @ Buyer
+offerPrice = Buyer.12
+
+acceptBook :: String @ Buyer -> Bool @ Buyer
+acceptBook b = let Buyer.x := b in Buyer.(x == "The Old Man and the Sea")
+
+giveBook  :: (L1 L2 : Loc).String @ L1 -> ()
+giveMoney :: (L1 L2 : Loc).Int @ L11   -> ()
+
+doExchange [String] [Int] [Seller] [Buyer] [Delegate]
+           bookName   acceptPrice
+           offerPrice acceptBook
+           giveBook   giveMoney
+  :: ()
+\end{verbatim}
+	\item Example: Centralized thread pool (either thread pool manager or load balancer?). Client, pool manager, and worker threads. Client sends request to manager, manager looks up worker and sends name to client, client can use worker thread. Manager has a queue of threads as its state. We can say that you could theoretically add a stateful semantics, but it's difficult because of proof mechanization. (Obviously implementable but not actually implemented features won't get any complaints. We \emph{believe} it would not impact the veracity of the theorems, but we didn't add it to the core calculus)
+\begin{verbatim}
+
+\end{verbatim}
+	\end{enumerate}
+	\item Assumptions/Model
+	\begin{enumerate}
+		\item Locations, network/communication
+		\item Local language
+		\item Representations of types and locations in local language
+	\end{enumerate}
+		
+	\item Language
+	\begin{enumerate}
+		\item Syntax
+		\item Type system
+		\item Operational semantics
+		\item Important properties
+	\end{enumerate}
+		
+	\item Endpoint Projection
+	\begin{enumerate}
+		\item Control language: Syntax and semantics
+		\item Endpoint projection definition
+		\item Important properties
+	\end{enumerate}
+	
+	\item Agda Code Notes
+	\begin{enumerate}
+		\item \emph{Very} concise explanation of representations of language definitions, syntax, and typing
+		\item Explanation of genericity over local languages
+	\end{enumerate}
+	
+	\item Related Work
+\end{enumerate}
+
+\subparagraph{Questions/Design Decisions}
+\begin{enumerate}
+	\item Use Haskell-like syntax (i.e. plain text) for examples, or $\lambda$-calculus/actual \LaTeX\ style? I'm a fan of Haskell-style for readability (especially so complex macros and 2D syntax can be avoided), but this is a POPL "core-calculus" paper so $\lambda$-calculus style may be more appropriate.
+	\item Having trouble thinking of examples which effectively use sending of types or locations on the network. Problem: Ad-hoc vs parametric polymorphism. When type \emph{representations} are in the local language they can be manipulated as regular values and inspected, but when they are bound at the type level they must be handled parametrically. Only way around this is full dependency.
+\end{enumerate}
+
+\subparagraph{Overall Strategy}
+\begin{itemize}
+	\item Not many possible reviewers who are explicitly knowledgeable about choreographies, at most just the general ideas of distributed languages \& concurrency
+	\item May want to create an example to appeal to this audience: Bookseller/traditional choreography examples may not be appealing
+	\item Also highlight the "pure" type theoretic advancements for this audience and a general POPL audience, e.g. using System F instead of System F$\omega$
+	\item Possible reviewers: Philip Wadler, Garrett Morris, Justin Hsu
+\end{itemize}
 \end{document}
 
 %%% Local Variables:
