@@ -14,7 +14,6 @@ open ≡-Reasoning
 
 open import Common
 open import SecondOrderSignatures
--- open import SecondOrderContexts
 open import ThirdOrderSignatures
 open import ThirdOrderLanguage
 
