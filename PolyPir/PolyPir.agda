@@ -866,7 +866,7 @@ erase-projSub-distr-DropSubProj {Γ1} {Γ2} σ (LocKnd κₑ) =
   ULL.eraseSub (projSub (C.TyDrop C.TyIdRen C.•◦ₜ σ))
     ≡⟨ (cong ULL.eraseSub $ proj-distr-•◦ (C.TyDrop C.TyIdRen) σ) ⟩
   ULL.eraseSub (projRen (C.TyDrop {t = LocKnd κₑ} (C.TyIdRen {Γ2})) LL.•◦ₜ projSub σ)
-    ≡⟨ ULL.erase-•◦U
+    ≡⟨ ULL.erase-distr-•◦
         (projRen (C.TyDrop {t = LocKnd κₑ} (C.TyIdRen {Γ2})))
         (projSub σ) ⟩
   ULL.UDrop (ULL.eraseRen (projRen (C.TyIdRen {Γ2})))
@@ -876,7 +876,7 @@ erase-projSub-distr-DropSubProj {Γ1} {Γ2} σ (LocKnd κₑ) =
           projRen-Id≡Id {Γ2}) ⟩
   ULL.UDrop (ULL.eraseRen LL.TyIdRen)
     ULL.•◦U ULL.eraseSub (projSub σ)
-    ≡⟨ (sym $ ULL.erase-•◦U
+    ≡⟨ (sym $ ULL.erase-distr-•◦
         (LL.TyDrop LL.TyIdRen)
         (projSub σ)) ⟩
   ULL.eraseSub (LL.TyDrop LL.TyIdRen LL.•◦ₜ projSub σ) ∎
@@ -1103,7 +1103,23 @@ injSub : ∀{Γ1 Γ2} → LL.TySub Γ1 Γ2 → C.TySub (injCtx Γ1) (injCtx Γ2)
 injSub ε = C.ε
 injSub (σ ▸ e) = injSub σ C.▸ injTy e
 
--- regain •◦ inj (proj σ) ≡ ξ ◦• regain
+erase-injSub-subst₂ : ∀{Γ1 Γ2 Γ1' Γ2'} (p : Γ1 ≡ Γ1') (q : Γ2 ≡ Γ2')
+                      (σ : LL.TySub Γ1 Γ2) →
+                      UC.eraseSub (injSub (subst₂ LL.TySub p q σ)) ≡
+                      UC.eraseSub (injSub σ)
+erase-injSub-subst₂ refl refl σ = refl                      
+
+cong-erase-injSub : ∀{Γ1 Γ2 Γ1' Γ2'} {σ1 : LL.TySub Γ1 Γ2} {σ2 : LL.TySub Γ1' Γ2'} →
+                    Γ1 ≡ Γ1' → Γ2 ≡ Γ2' →
+                    ULL.eraseSub σ1 ≡ ULL.eraseSub σ2 →
+                    UC.eraseSub (injSub σ1) ≡ UC.eraseSub (injSub σ2)
+cong-erase-injSub {σ1 = σ1} {σ2} p q r =
+  UC.eraseSub (injSub σ1)
+    ≡⟨ (sym $ erase-injSub-subst₂ p q σ1) ⟩
+  UC.eraseSub (injSub (subst₂ LL.TySub p q σ1))
+    ≡⟨ (cong (λ x → UC.eraseSub (injSub x)) $ ULL.eraseSub-injH p q r) ⟩
+  UC.eraseSub (injSub σ2) ∎
+
 regain•◦inj-proj-σ≡σ◦•regain : ∀{Γ1 Γ2} (σ : C.TySub Γ1 Γ2) →
                                 regain Γ2 C.•◦ₜ injSub (projSub σ)
                                 ≡ σ C.◦•ₜ regain Γ1
@@ -1118,6 +1134,18 @@ regain•◦inj-proj-σ≡σ◦•regain {*ₗ ∷ Γ1} (σ ▸ e) =
   regain•◦inj-proj-σ≡σ◦•regain σ
 regain•◦inj-proj-σ≡σ◦•regain {*ₛ ∷ Γ1} (σ ▸ e) =
   regain•◦inj-proj-σ≡σ◦•regain σ
+
+erase-regain•◦inj-proj-σ≡σ◦•regain : ∀{Γ1 Γ2} (σ : C.TySub Γ1 Γ2) →
+                                      UC.eraseRen (regain Γ2) UC.•◦U UC.eraseSub (injSub (projSub σ))
+                                      ≡ UC.eraseSub σ UC.◦•U UC.eraseRen (regain Γ1)
+erase-regain•◦inj-proj-σ≡σ◦•regain {Γ1} {Γ2} σ =
+  UC.eraseRen (regain Γ2) UC.•◦U UC.eraseSub (injSub (projSub σ))
+    ≡⟨ (sym $ UC.erase-distr-•◦ (regain Γ2) (injSub (projSub σ))) ⟩
+  UC.eraseSub (regain Γ2 C.•◦ₜ injSub (projSub σ))
+    ≡⟨ cong UC.eraseSub $ regain•◦inj-proj-σ≡σ◦•regain σ ⟩
+  UC.eraseSub (σ C.◦•ₜ regain Γ1)
+    ≡⟨ UC.erase-distr-◦• σ (regain Γ1) ⟩
+  UC.eraseSub σ UC.◦•U UC.eraseRen (regain Γ1) ∎
 
 -- Injecting distributes over combining a renaming and substitution
 inj-distr-•◦ : ∀{Γ1 Γ2 Γ3} (ξ : LL.TyRen Γ2 Γ3) (σ : LL.TySub Γ1 Γ2) →
@@ -1298,30 +1326,30 @@ CTmTyPos LocalLetLoc = ([] , *ₗ) ∷ ([] , *ₛ) ∷ ([] , *) ∷ []
 injTyp : ∀{Γ} → LL.Typ Γ → C.Typ (injCtx Γ)
 injTyp (κₑ , t) = LocKnd κₑ , injTy t
 
+injTypFun : ∀ Γ1 Γ2 → LL.Typ (Γ1 ++ projCtx Γ2) → C.Typ (injCtx Γ1 ++ Γ2)
+injTypFun Γ1 Γ2 (κₑ , t) =
+  LocKnd κₑ ,
+  (C.tyRen (regain (injCtx Γ1 ++ Γ2)) $
+    subst (flip C.Ty (LocKnd κₑ))
+      (cong injCtx $
+        (cong (_++ projCtx Γ2) $ sym $ projCtx∘injCtx≗id Γ1)
+        ∙ (sym $ projCtx-++ (injCtx Γ1) Γ2)) $
+      injTy t)
+
+injBinderFun : (Γ : List CKnd) → LL.Binder (projCtx Γ) →
+                Σ[ Γ' ∈ List CKnd ] (C.Ctx (Γ' ++ Γ) × C.Typ (Γ' ++ Γ))
+injBinderFun Γ (Γ' , Δ , t) =
+  injCtx Γ' ,
+  map (injTypFun Γ' Γ) Δ ,
+  injTypFun Γ' Γ t
+
 CTmPos : (s : CShape) (Γ : C.KndCtx) →
           C.TyVec Γ (CTmTyPos s) →
           List (Σ[ Γ' ∈ _ ] (C.Ctx (Γ' ++ Γ) × C.Typ (Γ' ++ Γ)))
           × C.Typ Γ
 -- sₑ Σₑ : t ⊢ Local{sₑ} ℓ Σₑ : ℓ.t
 CTmPos (Local sₑ) Γ (ℓ ∷ ts) =
-  (map (λ{ (Γ' , Δ , κₑ , t) →
-    injCtx Γ' ,
-    map (λ{ (κₑ , t) →
-      LocKnd κₑ ,
-      (C.tyRen (regain (injCtx Γ' ++ Γ)) $
-         subst (flip C.Ty (LocKnd κₑ))
-          (cong injCtx ((cong (_++ projCtx Γ) $ sym $ projCtx∘injCtx≗id Γ')
-                        ∙ ((sym $ projCtx-++ (injCtx Γ') Γ)))) $
-          injTy t)
-        }) Δ ,
-    LocKnd κₑ ,
-    (C.tyRen (regain (injCtx Γ' ++ Γ)) $
-        subst (flip C.Ty (LocKnd κₑ))
-        (cong injCtx ((cong (_++ projCtx Γ) $ sym $ projCtx∘injCtx≗id Γ')
-                      ∙ ((sym $ projCtx-++ (injCtx Γ') Γ)))) $
-        injTy t)
-        })
-    $ TmPosₑ sₑ (projCtx Γ) (projTyVec ts) .fst) ,
+  (map (injBinderFun Γ) $ TmPosₑ sₑ (projCtx Γ) (projTyVec ts) .fst) ,
   (LocKnd $ TmPosₑ sₑ (projCtx Γ) (projTyVec ts) .snd .fst) ,
   (C.tyRen (regain Γ) $ injTy (TmPosₑ sₑ (projCtx Γ) (projTyVec ts) .snd .snd))
 -- Done (ℓ : *ₗ) (t : *ₑ) ℓ.t : t@ℓ
@@ -1449,10 +1477,359 @@ subVecCTmPos LocalLet σ (ℓ ∷ t ∷ τ ∷ []) = refl
 subVecCTmPos (LocalLetTy κₑ) σ (ℓ ∷ ρ ∷ τ ∷ []) = refl
 subVecCTmPos LocalLetLoc σ (ℓ ∷ ρ ∷ τ ∷ []) = refl
 
+subVecKndCtxCTmPos :  ∀{Γ1 Γ2} (s : CShape) (σ : C.TySub Γ1 Γ2)
+                      (ts : C.TyVec Γ1 (CTmTyPos s)) →
+                      CTmPos s Γ2 (C.tySubVec σ ts) .fst ≡
+                      C.subBinders σ (CTmPos s Γ1 ts .fst)
+subVecKndCtxCTmPos {Γ1} {Γ2} (Local sₑ) σ (ℓ ∷ ts) =
+  map (injBinderFun Γ2) (TmPosₑ sₑ (projCtx Γ2) (projTyVec (C.tySubVec σ ts)) .fst)
+    ≡⟨ (cong (λ x → map (injBinderFun Γ2) (TmPosₑ sₑ (projCtx Γ2) x .fst)) $
+        proj∘⟨σ⟩≗⟨proj-σ⟩∘proj-vec σ ts) ⟩
+  map (injBinderFun Γ2) (TmPosₑ sₑ (projCtx Γ2) (LL.tySubVec (projSub σ) (projTyVec ts)) .fst)
+    ≡⟨ (cong (map (injBinderFun Γ2)) $ 𝕃 .⅀ₑ .subVecKndCtxTmPos sₑ (projSub σ) (projTyVec ts)) ⟩
+  map (injBinderFun Γ2) (map (LL.subBinder (projSub σ)) (TmPosₑ sₑ (projCtx Γ1) (projTyVec ts) .fst))
+    ≡⟨ (sym $ map-compose {g = injBinderFun Γ2} {LL.subBinder (projSub σ)} $
+          TmPosₑ sₑ (projCtx Γ1) (projTyVec ts) .fst) ⟩
+  map (injBinderFun Γ2 ∘ LL.subBinder (projSub σ)) (TmPosₑ sₑ (projCtx Γ1) (projTyVec ts) .fst)
+    ≡⟨ (map-cong
+        (λ{ (Γ' , Δ , κₑ , t) → Σ-≡-→-≡-Σ refl $ cong₂ _,_
+            (map (injTypFun Γ' Γ2) (map (LL.subTyp (LL.TyKeepSub* (projSub σ) Γ')) Δ)
+              ≡⟨ (sym $ map-compose {g = injTypFun Γ' Γ2} {LL.subTyp (LL.TyKeepSub* (projSub σ) Γ')} Δ) ⟩
+            map (injTypFun Γ' Γ2 ∘ LL.subTyp (LL.TyKeepSub* (projSub σ) Γ')) Δ
+              ≡⟨ map-cong (λ{ (κₑ , t) →
+                Σ-≡-→-≡-Σ refl
+                (UC.erase-inj $
+                UC.erase (C.tyRen (regain (map LocKnd Γ' ++ Γ2))
+                  (subst (λ x → C.Ty x (LocKnd κₑ))
+                    (cong (map LocKnd)
+                    (trans (cong (_++ projCtx Γ2) (sym (projCtx∘injCtx≗id Γ')))
+                      (sym (projCtx-++ (map LocKnd Γ') Γ2))))
+                    (mor injTyMor refl refl
+                    (LL.tySub (LL.TyKeepSub* (projSub σ) Γ') t))))
+                  ≡⟨ UC.erase-distr-ren (regain (map LocKnd Γ' ++ Γ2))
+                        (subst (λ x → C.Ty x (LocKnd κₑ))
+                          (cong (map LocKnd)
+                          (trans (cong (_++ projCtx Γ2) (sym (projCtx∘injCtx≗id Γ')))
+                            (sym (projCtx-++ (map LocKnd Γ') Γ2))))
+                          (mor injTyMor refl refl
+                          (LL.tySub (LL.TyKeepSub* (projSub σ) Γ') t))) ⟩
+                UC.renUnty (UC.eraseRen (regain (map LocKnd Γ' ++ Γ2)))
+                  (UC.erase (subst (λ x → C.Ty x (LocKnd κₑ))
+                    (cong (map LocKnd)
+                    (trans (cong (_++ projCtx Γ2) (sym (projCtx∘injCtx≗id Γ')))
+                      (sym (projCtx-++ (map LocKnd Γ') Γ2))))
+                    (injTy (LL.tySub (LL.TyKeepSub* (projSub σ) Γ') t))))
+                  ≡⟨ (cong (UC.renUnty (UC.eraseRen (regain (map LocKnd Γ' ++ Γ2)))) $
+                        sym $ UC.substCtx-erase 
+                        (cong (map LocKnd)
+                          (trans (cong (_++ projCtx Γ2) (sym (projCtx∘injCtx≗id Γ')))
+                            (sym (projCtx-++ (map LocKnd Γ') Γ2))))
+                        (injTy (LL.tySub (LL.TyKeepSub* (projSub σ) Γ') t))) ⟩
+                UC.renUnty (UC.eraseRen (regain (map LocKnd Γ' ++ Γ2)))
+                  (UC.erase (injTy (LL.tySub (LL.TyKeepSub* (projSub σ) Γ') t)))
+                  ≡⟨ (cong (λ x → UC.renUnty (UC.eraseRen (regain (map LocKnd Γ' ++ Γ2))) (UC.erase x)) $
+                        inj∘⟨σ⟩≗⟨inj-σ⟩∘inj (LL.TyKeepSub* (projSub σ) Γ') t) ⟩
+                UC.renUnty (UC.eraseRen (regain (map LocKnd Γ' ++ Γ2)))
+                  (UC.erase (C.tySub (injSub (LL.TyKeepSub* (projSub σ) Γ')) (injTy t)))
+                  ≡⟨ (cong (UC.renUnty (UC.eraseRen (regain (map LocKnd Γ' ++ Γ2)))) $ 
+                        UC.erase-distr-sub (injSub (LL.TyKeepSub* (projSub σ) Γ')) (injTy t)) ⟩
+                UC.renUnty (UC.eraseRen (regain (map LocKnd Γ' ++ Γ2)))
+                  (UC.subUnty (UC.eraseSub (injSub (LL.TyKeepSub* (projSub σ) Γ'))) (UC.erase (injTy t)))
+                  ≡⟨ UC.sub•◦UH (regain (map LocKnd Γ' ++ Γ2))
+                        (injSub (LL.TyKeepSub* (projSub σ) Γ'))
+                        (injTy t)
+                        (cong injCtx $
+                          cong (_++ projCtx Γ2) (sym (projCtx∘injCtx≗id Γ'))
+                          ∙ sym (projCtx-++ (injCtx Γ') Γ2))
+                        refl ⟩
+                UC.subUnty (UC.eraseRen (regain (map LocKnd Γ' ++ Γ2))
+                    UC.•◦U UC.eraseSub (injSub (LL.TyKeepSub* (projSub σ) Γ')))
+                  (UC.erase (injTy t))
+                  ≡⟨ (cong (λ x → UC.subUnty (UC.eraseRen (regain (map LocKnd Γ' ++ Γ2))
+                    UC.•◦U UC.eraseSub (injSub (LL.TyKeepSub* (projSub σ) x)))
+                  (UC.erase (injTy t))) $
+                  sym (projCtx∘injCtx≗id Γ')) ⟩
+                UC.subUnty (UC.eraseRen (regain (map LocKnd Γ' ++ Γ2))
+                    UC.•◦U UC.eraseSub (injSub (LL.TyKeepSub* (projSub σ) (projCtx (injCtx Γ')))))
+                  (UC.erase (injTy t))
+                  ≡⟨ (cong (λ x → UC.subUnty (UC.eraseRen (regain (map LocKnd Γ' ++ Γ2)) UC.•◦U x) (UC.erase (injTy t))) $
+                      cong-erase-injSub
+                        (sym (projCtx-++ (injCtx Γ') Γ1))
+                        (sym (projCtx-++ (injCtx Γ') Γ2))
+                        (sym $ erase-projSub-distr-KeepSub* σ (injCtx Γ'))) ⟩
+                UC.subUnty (UC.eraseRen (regain (map LocKnd Γ' ++ Γ2))
+                    UC.•◦U UC.eraseSub (injSub (projSub (C.TyKeepSub* σ (injCtx Γ')))))
+                  (UC.erase (injTy t))
+                  ≡⟨ (cong (λ x → UC.subUnty x (UC.erase (injTy t))) $
+                        erase-regain•◦inj-proj-σ≡σ◦•regain (C.TyKeepSub* σ (injCtx Γ'))) ⟩
+                UC.subUnty (UC.eraseSub (C.TyKeepSub* σ (injCtx Γ'))
+                    UC.◦•U UC.eraseRen (regain (injCtx Γ' ++ Γ1)))
+                  (UC.erase (injTy t))
+                  ≡⟨ (sym $ UC.sub◦•UH (C.TyKeepSub* σ (injCtx Γ')) (regain (injCtx Γ' ++ Γ1)) (injTy t)
+                      (cong injCtx (projCtx-++ (injCtx Γ') Γ1 ∙ cong (_++ projCtx Γ1) (projCtx∘injCtx≗id Γ')))
+                      refl) ⟩
+                UC.subUnty (UC.eraseSub (C.TyKeepSub* σ (injCtx Γ')))
+                  (UC.renUnty (UC.eraseRen (regain (injCtx Γ' ++ Γ1)))
+                    (UC.erase (injTy t)))
+                  ≡⟨ (cong (λ x → UC.subUnty (UC.eraseSub (C.TyKeepSub* σ (injCtx Γ')))
+                          (UC.renUnty (UC.eraseRen (regain (injCtx Γ' ++ Γ1))) x)) $
+                      UC.substCtx-erase
+                        (cong injCtx
+                          (trans (cong (_++ projCtx Γ1) (sym (projCtx∘injCtx≗id Γ')))
+                          (sym (projCtx-++ (injCtx Γ') Γ1))))
+                          (injTy t)) ⟩
+                UC.subUnty (UC.eraseSub (C.TyKeepSub* σ (injCtx Γ')))
+                  (UC.renUnty (UC.eraseRen (regain (injCtx Γ' ++ Γ1)))
+                  (UC.erase (subst (λ x → C.Ty x (LocKnd κₑ))
+                    (cong injCtx
+                      (trans (cong (_++ projCtx Γ1) (sym (projCtx∘injCtx≗id Γ')))
+                      (sym (projCtx-++ (injCtx Γ') Γ1))))
+                    (injTy t))))
+                  ≡⟨ (sym $ cong (UC.subUnty (UC.eraseSub (C.TyKeepSub* σ (injCtx Γ')))) $
+                        UC.erase-distr-ren (regain (injCtx Γ' ++ Γ1))
+                        (subst (λ x → C.Ty x (LocKnd κₑ))
+                          (cong injCtx
+                            (trans (cong (_++ projCtx Γ1) (sym (projCtx∘injCtx≗id Γ')))
+                            (sym (projCtx-++ (injCtx Γ') Γ1))))
+                          (injTy t))) ⟩
+                UC.subUnty (UC.eraseSub (C.TyKeepSub* σ (injCtx Γ')))
+                  (UC.erase (C.tyRen (regain (injCtx Γ' ++ Γ1))
+                    (subst (λ x → C.Ty x (LocKnd κₑ))
+                    (cong injCtx
+                      (trans (cong (_++ projCtx Γ1) (sym (projCtx∘injCtx≗id Γ')))
+                      (sym (projCtx-++ (injCtx Γ') Γ1))))
+                    (injTy t))))
+                  ≡⟨ (sym $ UC.erase-distr-sub (C.TyKeepSub* σ (injCtx Γ'))
+                        (C.tyRen (regain (injCtx Γ' ++ Γ1))
+                          (subst (λ x → C.Ty x (LocKnd κₑ))
+                          (cong injCtx
+                            (trans (cong (_++ projCtx Γ1) (sym (projCtx∘injCtx≗id Γ')))
+                            (sym (projCtx-++ (injCtx Γ') Γ1))))
+                          (injTy t)))) ⟩
+                UC.erase (C.tySub (C.TyKeepSub* σ (injCtx Γ'))
+                  (C.tyRen (regain (injCtx Γ' ++ Γ1))
+                    (subst (λ x → C.Ty x (LocKnd κₑ))
+                    (cong injCtx
+                      (trans (cong (_++ projCtx Γ1) (sym (projCtx∘injCtx≗id Γ')))
+                      (sym (projCtx-++ (injCtx Γ') Γ1))))
+                    (injTy t)))) ∎)
+                }) Δ ⟩
+            map (C.subTyp (C.TyKeepSub* σ (injCtx Γ')) ∘ injTypFun Γ' Γ1) Δ
+              ≡⟨ map-compose {g = C.subTyp (C.TyKeepSub* σ (injCtx Γ'))} {injTypFun Γ' Γ1} Δ ⟩
+            map (C.subTyp (C.TyKeepSub* σ (injCtx Γ'))) (map (injTypFun Γ' Γ1) Δ) ∎)
+            $ Σ-≡-→-≡-Σ refl $
+            UC.erase-inj $
+            UC.erase (C.tyRen (regain (injCtx Γ' ++ Γ2))
+              (subst (λ x → C.Ty x (LocKnd κₑ))
+                (cong injCtx
+                  (cong (_++ projCtx Γ2) (sym (projCtx∘injCtx≗id Γ'))
+                  ∙ sym (projCtx-++ (injCtx Γ') Γ2)))
+                (mor injTyMor refl refl
+                  (LL.tySub (LL.TyKeepSub* (projSub σ) Γ') t))))
+              ≡⟨ UC.erase-distr-ren (regain (injCtx Γ' ++ Γ2))
+                  (subst (λ x → C.Ty x (LocKnd κₑ))
+                    (cong injCtx
+                      (cong (_++ projCtx Γ2) (sym (projCtx∘injCtx≗id Γ'))
+                      ∙ sym (projCtx-++ (injCtx Γ') Γ2)))
+                    (mor injTyMor refl refl
+                      (LL.tySub (LL.TyKeepSub* (projSub σ) Γ') t))) ⟩
+            UC.renUnty (UC.eraseRen (regain (injCtx Γ' ++ Γ2)))
+              (UC.erase (subst (λ x → C.Ty x (LocKnd κₑ))
+                (cong injCtx
+                  (cong (_++ projCtx Γ2) (sym (projCtx∘injCtx≗id Γ')) ∙
+                    sym (projCtx-++ (injCtx Γ') Γ2)))
+                (injTy (LL.tySub (LL.TyKeepSub* (projSub σ) Γ') t))))
+              ≡⟨ (sym $ cong (UC.renUnty (UC.eraseRen (regain (injCtx Γ' ++ Γ2)))) $
+                  UC.substCtx-erase 
+                    (cong injCtx
+                      (cong (_++ projCtx Γ2) (sym (projCtx∘injCtx≗id Γ')) ∙
+                        sym (projCtx-++ (injCtx Γ') Γ2)))
+                    (injTy (LL.tySub (LL.TyKeepSub* (projSub σ) Γ') t))) ⟩
+            UC.renUnty (UC.eraseRen (regain (injCtx Γ' ++ Γ2)))
+              (UC.erase (injTy (LL.tySub (LL.TyKeepSub* (projSub σ) Γ') t)))
+              ≡⟨ (cong (λ x → UC.renUnty (UC.eraseRen (regain (injCtx Γ' ++ Γ2))) (UC.erase x)) $
+                  inj∘⟨σ⟩≗⟨inj-σ⟩∘inj (LL.TyKeepSub* (projSub σ) Γ') t) ⟩
+            UC.renUnty (UC.eraseRen (regain (injCtx Γ' ++ Γ2)))
+              (UC.erase (C.tySub (injSub (LL.TyKeepSub* (projSub σ) Γ')) (injTy t)))
+              ≡⟨ (cong (UC.renUnty (UC.eraseRen (regain (injCtx Γ' ++ Γ2)))) $
+                    UC.erase-distr-sub (injSub (LL.TyKeepSub* (projSub σ) Γ')) (injTy t)) ⟩
+            UC.renUnty (UC.eraseRen (regain (injCtx Γ' ++ Γ2)))
+              (UC.subUnty (UC.eraseSub (injSub (LL.TyKeepSub* (projSub σ) Γ')))
+                (UC.erase (injTy t)))
+              ≡⟨ (cong (λ x → UC.renUnty (UC.eraseRen (regain (injCtx Γ' ++ Γ2)))
+                  (UC.subUnty x (UC.erase (injTy t)))) $
+                  erase-injSub-distr-Keep* (projSub σ) Γ') ⟩
+            UC.renUnty (UC.eraseRen (regain (injCtx Γ' ++ Γ2)))
+              (UC.subUnty (UC.eraseSub (C.TyKeepSub* (injSub (projSub σ)) (injCtx Γ')))
+                (UC.erase (injTy t)))
+              ≡⟨ UC.sub•◦UH (regain (injCtx Γ' ++ Γ2))
+                    (C.TyKeepSub* (injSub (projSub σ)) (injCtx Γ'))
+                    (injTy t)
+                    (sym (injCtx-++ Γ' (projCtx Γ2))
+                      ∙ cong injCtx (cong (_++ projCtx Γ2) (sym (projCtx∘injCtx≗id Γ'))
+                      ∙ (sym $ projCtx-++ (injCtx Γ') Γ2)))
+                    (injCtx-++ Γ' (projCtx Γ1)) ⟩
+            UC.subUnty (UC.eraseRen (regain (injCtx Γ' ++ Γ2))
+                UC.•◦U UC.eraseSub (C.TyKeepSub* (injSub (projSub σ)) (injCtx Γ')))
+              (UC.erase (injTy t))
+              ≡⟨ (cong (λ x → UC.subUnty (UC.eraseRen (regain (injCtx Γ' ++ Γ2)) UC.•◦U x) (UC.erase (injTy t))) $
+                    sym $ erase-injSub-distr-Keep* (projSub σ) Γ') ⟩
+            UC.subUnty (UC.eraseRen (regain (injCtx Γ' ++ Γ2))
+                UC.•◦U UC.eraseSub (injSub (LL.TyKeepSub* (projSub σ) Γ')))
+              (UC.erase (injTy t))
+              ≡⟨ (sym $ cong (λ x → UC.subUnty (UC.eraseRen (regain (injCtx Γ' ++ Γ2))
+                    UC.•◦U UC.eraseSub (injSub (LL.TyKeepSub* (projSub σ) x)))
+                  (UC.erase (injTy t))) $
+                  projCtx∘injCtx≗id Γ') ⟩
+            UC.subUnty (UC.eraseRen (regain (injCtx Γ' ++ Γ2))
+                UC.•◦U UC.eraseSub (injSub (LL.TyKeepSub* (projSub σ) (projCtx (injCtx Γ')))))
+              (UC.erase (injTy t))
+              ≡⟨ (cong (λ x → UC.subUnty (UC.eraseRen (regain (injCtx Γ' ++ Γ2)) UC.•◦U x) (UC.erase (injTy t))) $
+                    cong-erase-injSub
+                      (sym $ projCtx-++ (injCtx Γ') Γ1)
+                      (sym $ projCtx-++ (injCtx Γ') Γ2) $
+                    sym $ erase-projSub-distr-KeepSub* σ (injCtx Γ')) ⟩
+            UC.subUnty (UC.eraseRen (regain (injCtx Γ' ++ Γ2))
+                UC.•◦U UC.eraseSub (injSub (projSub (C.TyKeepSub* σ (injCtx Γ')))))
+              (UC.erase (injTy t))
+              ≡⟨ (cong (λ x → UC.subUnty x (UC.erase (injTy t))) $
+                    erase-regain•◦inj-proj-σ≡σ◦•regain (C.TyKeepSub* σ (injCtx Γ'))) ⟩
+            UC.subUnty (UC.eraseSub (C.TyKeepSub* σ (injCtx Γ'))
+                UC.◦•U UC.eraseRen (regain (injCtx Γ' ++ Γ1)))
+              (UC.erase (injTy t))
+              ≡⟨ (sym $ UC.sub◦•UH (C.TyKeepSub* σ (injCtx Γ')) (regain (injCtx Γ' ++ Γ1))
+                    (injTy t)
+                    (cong injCtx (projCtx-++ (injCtx Γ') Γ1 ∙ cong (_++ projCtx Γ1) (projCtx∘injCtx≗id Γ')))
+                    refl) ⟩
+{-
+⟨regain (injCtx Γ' ++ Γ2)⟩ ∘ inj ∘ ⟨Keep (projSub σ) Γ'⟩
+≡ ⟨regain (injCtx Γ' ++ Γ2)⟩ ∘ ⟨injSub (Keep (projSub σ) Γ')⟩ ∘ inj
+≡ ⟨regain (injCtx Γ' ++ Γ2)⟩ ∘ ⟨Keep (injSub (projSub σ)) (injCtx Γ')⟩ ∘ inj
+≡ ⟨regain (injCtx Γ' ++ Γ2) •◦ Keep (injSub (projSub σ)) (injCtx Γ')⟩ ∘ inj
+≡ ⟨regain (injCtx Γ' ++ Γ2) •◦ injSub (Keep (projSub σ) Γ')⟩ ∘ inj
+≡ ⟨regain (injCtx Γ' ++ Γ2) •◦ injSub (Keep (projSub σ) (projCtx (injCtx Γ')))⟩ ∘ inj
+≡ ⟨regain (injCtx Γ' ++ Γ2) •◦ injSub (projSub (Keep σ (injCtx Γ')))⟩ ∘ inj
+
+≡ ⟨Keep σ (injCtx Γ') ◦• regain (injCtx Γ' ++ Γ1)⟩ ∘ inj
+≡ ⟨Keep σ (injCtx Γ')⟩ ∘ ⟨regain (injCtx Γ' ++ Γ1)⟩ ∘ inj
+
+-}
+            UC.subUnty (UC.eraseSub (C.TyKeepSub* σ (map LocKnd Γ')))
+              (UC.renUnty (UC.eraseRen (regain (map LocKnd Γ' ++ Γ1)))
+                (UC.erase (injTy t)))
+              ≡⟨ (cong (λ x → UC.subUnty (UC.eraseSub (C.TyKeepSub* σ (map LocKnd Γ')))
+                    (UC.renUnty (UC.eraseRen (regain (map LocKnd Γ' ++ Γ1))) x)) $
+                  UC.substCtx-erase 
+                    (cong (map LocKnd)
+                      (trans (cong (_++ projCtx Γ1) (sym (projCtx∘injCtx≗id Γ')))
+                        (sym (projCtx-++ (map LocKnd Γ') Γ1))))
+                    (mor injTyMor refl refl t)) ⟩
+            UC.subUnty (UC.eraseSub (C.TyKeepSub* σ (map LocKnd Γ')))
+              (UC.renUnty (UC.eraseRen (regain (map LocKnd Γ' ++ Γ1)))
+              (UC.erase (subst (λ x → C.Ty x (LocKnd κₑ))
+                (cong (map LocKnd)
+                  (trans (cong (_++ projCtx Γ1) (sym (projCtx∘injCtx≗id Γ')))
+                  (sym (projCtx-++ (map LocKnd Γ') Γ1))))
+                (mor injTyMor refl refl t))))
+              ≡⟨ (sym $ cong (UC.subUnty (UC.eraseSub (C.TyKeepSub* σ (map LocKnd Γ')))) $
+                  UC.erase-distr-ren (regain (map LocKnd Γ' ++ Γ1))
+                    (subst (λ x → C.Ty x (LocKnd κₑ))
+                      (cong (map LocKnd)
+                        (trans (cong (_++ projCtx Γ1) (sym (projCtx∘injCtx≗id Γ')))
+                        (sym (projCtx-++ (map LocKnd Γ') Γ1))))
+                      (mor injTyMor refl refl t))) ⟩
+            UC.subUnty (UC.eraseSub (C.TyKeepSub* σ (map LocKnd Γ')))
+              (UC.erase (C.tyRen (regain (map LocKnd Γ' ++ Γ1))
+                (subst (λ x → C.Ty x (LocKnd κₑ))
+                  (cong (map LocKnd)
+                    (trans (cong (_++ projCtx Γ1) (sym (projCtx∘injCtx≗id Γ')))
+                    (sym (projCtx-++ (map LocKnd Γ') Γ1))))
+                  (mor injTyMor refl refl t))))
+              ≡⟨ (sym $ UC.erase-distr-sub (C.TyKeepSub* σ (map LocKnd Γ'))
+                  (C.tyRen (regain (map LocKnd Γ' ++ Γ1))
+                    (subst (λ x → C.Ty x (LocKnd κₑ))
+                      (cong (map LocKnd)
+                        (trans (cong (_++ projCtx Γ1) (sym (projCtx∘injCtx≗id Γ')))
+                          (sym (projCtx-++ (map LocKnd Γ') Γ1))))
+                      (mor injTyMor refl refl t)))) ⟩
+            UC.erase (C.tySub (C.TyKeepSub* σ (map LocKnd Γ'))
+              (C.tyRen (regain (map LocKnd Γ' ++ Γ1))
+                (subst (λ x → C.Ty x (LocKnd κₑ))
+                  (cong (map LocKnd)
+                    (trans (cong (_++ projCtx Γ1) (sym (projCtx∘injCtx≗id Γ')))
+                      (sym (projCtx-++ (map LocKnd Γ') Γ1))))
+                  (mor injTyMor refl refl t)))) ∎ })
+        $ TmPosₑ sₑ (projCtx Γ1) (projTyVec ts) .fst) ⟩
+  map (C.subBinder σ ∘ injBinderFun Γ1) (TmPosₑ sₑ (projCtx Γ1) (projTyVec ts) .fst)
+    ≡⟨ map-compose {g = C.subBinder σ} {injBinderFun Γ1} (TmPosₑ sₑ (projCtx Γ1) (projTyVec ts) .fst) ⟩
+  map (C.subBinder σ) (map (injBinderFun Γ1) (TmPosₑ sₑ (projCtx Γ1) (projTyVec ts) .fst)) ∎
+subVecKndCtxCTmPos Done σ (ℓ ∷ t ∷ []) = refl
+subVecKndCtxCTmPos Lam σ (τ1 ∷ τ2 ∷ []) = refl
+subVecKndCtxCTmPos Fix σ (τ ∷ []) = refl
+subVecKndCtxCTmPos App σ (τ1 ∷ τ2 ∷ []) = refl
+subVecKndCtxCTmPos (Abs κ) σ (τ ∷ []) = refl
+subVecKndCtxCTmPos (AppTy κ) σ (τ1 ∷ τ2 ∷ []) = refl
+subVecKndCtxCTmPos Send σ (ℓ1 ∷ ℓ2 ∷ t ∷ []) = refl
+subVecKndCtxCTmPos (Sync x) σ (ℓ1 ∷ ℓ2 ∷ t ∷ []) = refl
+subVecKndCtxCTmPos ITE σ (ℓ ∷ τ ∷ []) =
+  cong₂ _∷_
+    (cong (λ x → [] , [] , * , C.tyConstr At (C.tySub σ ℓ C.∷ x C.∷ C.[])) $
+      C.tyRen C.ε* (injTy (𝕃 .Boolₑ))
+        ≡⟨ (sym $ C.subι C.ε* (injTy (𝕃 .Boolₑ))) ⟩
+      C.tySub (C.ιₜ C.ε*) (injTy (𝕃 .Boolₑ))
+        ≡⟨ (cong (λ x → C.tySub x (injTy (𝕃 .Boolₑ))) $ C.ιε*) ⟩
+      C.tySub C.ε (injTy (𝕃 .Boolₑ))
+        ≡⟨ (sym $ cong (λ x → C.tySub x (injTy (𝕃 .Boolₑ))) $ C.◦•ε σ) ⟩
+      C.tySub (σ C.◦•ₜ C.ε*) (injTy (𝕃 .Boolₑ))
+        ≡⟨ C.sub◦• σ C.ε* (injTy (𝕃 .Boolₑ)) ⟩
+      C.tySub σ (C.tyRen C.ε* (injTy (𝕃 .Boolₑ))) ∎) 
+    refl
+subVecKndCtxCTmPos LocalLet σ (ℓ ∷ t ∷ τ ∷ []) = refl
+subVecKndCtxCTmPos (LocalLetTy κₑ) σ (ℓ ∷ ρ ∷ τ ∷ []) = cong₂ (λ x y →
+    ([] , [] , * , C.tyConstr At (C.tySub σ ℓ C.∷ x C.∷ C.[]))
+      ∷ (LocKnd κₑ ∷ [] , [] , * , y)
+      ∷ [])
+      (C.tyRen C.ε* (injTy (𝕃 .TyRepₑ κₑ))
+        ≡⟨ (sym $ C.subι C.ε* (injTy (𝕃 .TyRepₑ κₑ))) ⟩
+      C.tySub (C.ιₜ C.ε*) (injTy (𝕃 .TyRepₑ κₑ))
+        ≡⟨ (cong (λ x → C.tySub x (injTy (𝕃 .TyRepₑ κₑ))) $ C.ιε*) ⟩
+      C.tySub C.ε (injTy (𝕃 .TyRepₑ κₑ))
+        ≡⟨ (sym $ cong (λ x → C.tySub x (injTy (𝕃 .TyRepₑ κₑ))) $ C.◦•ε σ) ⟩
+      C.tySub (σ C.◦•ₜ C.ε*) (injTy (𝕃 .TyRepₑ κₑ))
+        ≡⟨ C.sub◦• σ C.ε* (injTy (𝕃 .TyRepₑ κₑ)) ⟩
+      C.tySub σ (C.tyRen C.ε* (injTy (𝕃 .TyRepₑ κₑ))) ∎)
+      (C.tyRen (C.TyDrop C.TyIdRen) (C.tySub σ τ)
+        ≡⟨ (sym $ C.sub•◦ (C.TyDrop C.TyIdRen) σ τ) ⟩
+      C.tySub (C.TyDrop C.TyIdRen C.•◦ₜ σ) τ
+        ≡⟨ (cong (λ x → C.tySub x τ) $ sym $ C.◦•Id (C.TyDrop C.TyIdRen C.•◦ₜ σ)) ⟩
+      C.tySub ((C.TyDrop C.TyIdRen C.•◦ₜ σ) C.◦•ₜ C.TyIdRen) τ
+        ≡⟨ C.sub◦• (C.TyKeepSub σ) (C.TyDrop C.TyIdRen) τ ⟩
+      C.tySub (C.TyKeepSub σ) (C.tyRen (C.TyDrop C.TyIdRen) τ) ∎)
+subVecKndCtxCTmPos LocalLetLoc σ (ℓ ∷ ρ ∷ τ ∷ []) = cong₂ (λ x y →
+  ([] , [] , * , C.tyConstr At (C.tySub σ ℓ C.∷ x C.∷ C.[]))
+  ∷ (*ₗ ∷ [] , [] , * , y)
+  ∷ [])
+  (C.tyRen C.ε* (injTy (𝕃 .Locₑ))
+    ≡⟨ (sym $ C.subι C.ε* (injTy (𝕃 .Locₑ))) ⟩
+  C.tySub (C.ιₜ C.ε*) (injTy (𝕃 .Locₑ))
+    ≡⟨ (cong (λ x → C.tySub x (injTy (𝕃 .Locₑ))) $ C.ιε*) ⟩
+  C.tySub C.ε (injTy (𝕃 .Locₑ))
+    ≡⟨ (sym $ cong (λ x → C.tySub x (injTy (𝕃 .Locₑ))) $ C.◦•ε σ) ⟩
+  C.tySub (σ C.◦•ₜ C.ε*) (injTy (𝕃 .Locₑ))
+    ≡⟨ C.sub◦• σ C.ε* (injTy (𝕃 .Locₑ)) ⟩
+  C.tySub σ (C.tyRen C.ε* (injTy (𝕃 .Locₑ))) ∎)
+  (C.tyRen (C.TyDrop C.TyIdRen) (C.tySub σ τ)
+    ≡⟨ (sym $ C.sub•◦ (C.TyDrop C.TyIdRen) σ τ) ⟩
+  C.tySub (C.TyDropSub σ) τ
+    ≡⟨ (cong (λ x → C.tySub x τ) $ sym $ C.◦•Id $ C.TyDropSub σ) ⟩
+  C.tySub (C.TyDropSub σ C.◦•ₜ C.TyIdRen) τ
+    ≡⟨ C.sub◦• (C.TyKeepSub σ) (C.TyDrop C.TyIdRen) τ ⟩
+  C.tySub (C.TyKeepSub σ) (C.tyRen (C.TyDrop C.TyIdRen) τ) ∎)
+
 C⅀ : ThirdOrderSignature
 ⅀₂                C⅀ = C⅀₂
 Shape             C⅀ = CShape
 TmTyPos           C⅀ = CTmTyPos
 TmPos             C⅀ = CTmPos
 subVecTmPos       C⅀ = subVecCTmPos
-subVecKndCtxTmPos C⅀ = {!   !}
+subVecKndCtxTmPos C⅀ = subVecKndCtxCTmPos
