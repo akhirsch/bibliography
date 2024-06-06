@@ -1,16 +1,16 @@
 BIB := ../bibliography/main.bib
 
-PAPER_FILES := $(find . -name "*.tex")
+PAPER_FILES := $(shell find . -name "*.tex")
 
 export TEXINPUTS = .::$TEXMF/tex/::../styles::../styles/latex-pl-syntax
 
 .PHONY: clean cleanall all PACMAnon PACMCameraReady
 
+conference_anon: conference_anon.pdf
+
 all: conference conference_anon tech_report
 
 conference: conference.pdf
-
-conference_anon: conference_anon.pdf
 
 tech_report: tech_report.pdf
 
