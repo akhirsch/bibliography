@@ -3,31 +3,29 @@
 
 \begin{figure}[h]
   \begin{syntax}
-    \categoryFromSet[Conrete Locations]{L}{\mathcal{L}}
+	\categoryFromSet[Locations]{L}{\mathcal{L}}
+	\category[Synchronization Labels]{d}
+	\alternative{\textsf{Left}}
+	\alternative{\textsf{Right}}
 
-    \abstractCategory[Local Expressions]{e}
-
-    \category[Synchronization Labels]{d}
-    \alternative{\mathbb{L}}
-    \alternative{\mathbb{R}}
-
-    \abstractCategory[Variables]{x, y, z}
-
-    \category[Locations]{\ell}
-    \alternative{L}
-    \alternative{x}
-
-    \category[Choreographies]{C}
-    \alternative{x}
-    \alternative{\ell.e}
-    \alternative{C \overset{\ell_1}{\rightsquigarrow} \ell_2}\\
-    \alternative{\ell.\text{if}\; C \;\text{then}\; C_1 \;\text{else}\; C_2}\\
-    \alternative{\ell_1[d] \rightsquigarrow \ell_2; C}\\
-    \alternative{\text{let}\; x := C_1 \;\text{in}\; C_2}\\
-    \alternative{\text{fun}\; F(x) := C}
-    \alternative{C_1\;C_2}\\
-    \alternative{\Lambda x.C}
-    \alternative{C\;\ell}\\
+	\abstractCategory[Variables]{x, y, \ldots}
+	
+	\abstractCategory[Local Expressions]{e}
+	
+	
+	\category[Choreographies]{C}
+	\alternative{x}
+	\alternative{\ell.e}
+	\alternative{\lambda x : \tau.C}
+	\alternative{\mu x : \tau.C}
+	\alternative{\app{C_1}{C_2}}\\
+	\alternative{\send{C}{\ell_1}{\ell_2}}
+	\alternative{\send{\ell_1[d]}{}{\ell_2};C}\\
+	\alternative{\ell.\ifthen{C}{C_1}{C_2}}\\
+	\alternative{\Lambda X :: \kappa.C}
+	\alternative{\app{C}{T}}\\
+	\alternative{\letin{\ell.x : t}{C_1}{C_2}}\\
+	\alternative{\letinsend{\ell.X :: \kappa_e}{C_1}{\rho}{C_2}}
   \end{syntax}
 
   \caption{Syntax of Choreographies}
@@ -36,24 +34,52 @@
 
 \begin{figure}[h]
   \begin{syntax}
-  	\abstractCategory[Local Types]{t}
-
-    \category[Local Contexts]{\Delta}
-    \alternative{\cdot}
-    \alternative{\Delta, x : t}
-
-    \category[Choreography Types]{\tau}
-    \alternative{t @ \ell}
-    \alternative{\tau_1 \rightarrow \tau_2}
-    \alternative{\forall x.\tau}
-
-    \category[Choreography Contexts]{\Gamma}
-    \alternative{\cdot}
-    \alternative{\Gamma, x : \tau}
-    \alternative{\Gamma, x}
+  	\abstractCategory[Local Kinds]{\kappa_e}
+  	\category[Choreographic Kinds]{\kappa}
+  	\alternative{*}
+  	\alternative{*_\ell}
+  	\alternative{*_s}
+  	\alternative{\kappa_e}
+  	\\
+  	
+  	\abstractCategory[Type Variables]{X, Y, \ldots}
+  	
+  	\abstractCategory[Local Types]{t_e}
+  	
+  	\category[Choreography Types]{T, \ell, \rho, t, \tau}
+  	\alternative{X}
+  	\alternative{L}
+  	\alternative{\varnothing}
+  	\alternative{\{\ell\}}
+  	\alternative{\rho_1 \cup \rho_2}
+  	\\
+  	\alternative{t_e}
+  	\alternative{t @ \ell}
+  	\alternative{\tau_1 \rightarrow \tau_2}
+  	\alternative{\forall X :: \kappa.\tau}
+  	\\
+  	\category[Choreography Kinding Context]{\Sigma}
+  	\alternative{\cdot}
+  	\alternative{\Sigma, X : \kappa}
+  	
+  	\category[Choreography Typing Context]{\Gamma}
+  	\alternative{\cdot}
+  	\alternative{\Gamma, x : \tau}
+  	
+  	\category[Locally Bound Typing Context]{\Delta}
+  	\alternative{\cdot}
+  	\alternative{\Delta, \ell.x : t}
+  	\\
+  	\category[Local Kinding Context]{\Sigma_e}
+  	\alternative{\cdot}
+  	\alternative{\Sigma_e, X : \kappa_e}
+  	
+  	\category[Local Typing Context]{\Delta_e}
+  	\alternative{\cdot}
+  	\alternative{\Delta_e, x : t}
   \end{syntax}
 
-  \caption{Syntax of Types and Contexts}
+  \caption{Syntax of Kinds, Types, and Contexts}
   \label{fig:types}
 \end{figure}
 

@@ -1,0 +1,36 @@
+\section{System Model}
+\label{sec:system_model}
+
+We first provide an overview of the assumptions we make about the structure and behavior of the systems that ???? programs can run on.
+A system is composed of a set of logically distinct computational nodes which can run single-machine computations described by a set of local programs, and can send and receive messages with each-other over a network.
+
+\subsection{Locations}
+\label{sec:locations}
+
+The set of \emph{locations} is denoted by $\mathcal{L}$.
+We write elements of this set as uppercase letters, typically as $L$, $L_1$, $L_2$, $W$, $M$, and so-on.
+Locations are atomic and have no associated structure, simply representing the names of distinguishable physical nodes, threads, or other entities capable of running local computations and communicating with other locations.
+
+\subsection{Communication}
+\label{sec:communication}
+
+We assume that all locations can communicate with each-other synchronously, whether over a network or otherwise.
+In particular, sends are blocking, so that if $L_1$ sends a message to $L_2$, then $L_1$ will not continue execution until $L_2$ has received the message.
+Messages are sent instantaneously and deterministically, and must be guaranteed to arrive.
+
+Nodes must be able to send both values from local computations, and the special \emph{synchronization messages} denoted \textsf{Left} and \textsf{Right}.
+The synchronization messages are used to ensure that locations execute the correct branch of the program based on the results of previous computations at other locations, and can simply be represented as boolean values.
+
+
+\subsection{Local Programs}
+\label{sec:local-programs}
+
+Each node should be able to execute \emph{local} programs in an expression-based language.
+Our choreographic language is generic over the local language, requiring only that it obey typical syntactic and typing rules, have a sound type system, and include the components described below.
+
+First, we require that the language consist of variables and term constructors, including satisfying the typical substitution equations such as the substitution of variables $x \langle \sigma \rangle = \sigma_x$, substitution along the identity $e \langle  id \rangle = e$, and composition of simultaneous substitutions $e \langle \sigma_1 \rangle \langle \sigma_2 \rangle = e \langle \sigma_2 \circ \sigma_1 \rangle$.
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "conference"
+%%% End:

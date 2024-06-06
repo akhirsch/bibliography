@@ -15,6 +15,22 @@
 \newtheorem{defn}{Definition}
 \newtheorem{ex}{Example}
 
+% Context Projection
+\newcommand\proj[2]{\ensuremath{\left.#1\right|_{#2}}}
+
+% Endpoint Projection
+\newcommand\epp[2]{\ensuremath{\llbracket#1\rrbracket_{#2}}}
+
+% Semantics
+\newcommand\step[1]{\ensuremath{\xRightarrow{{#1}}_{\raisebox{3pt}{\footnotesize{c}}}}}
+
+% Syntax
+\newcommand\app[2]{\ensuremath{#1 \; #2}}
+\newcommand\send[3]{\ensuremath{#1 \overset{#2}{\rightsquigarrow} #3}}
+\newcommand\ifthen[3]{\ensuremath{\text{if}\; #1 \;\text{then}\; #2 \;\text{else}\; #3}}
+\newcommand\letin[3]{\ensuremath{\text{let}\; #1 \;:=\; #2 \;\text{in}\; #3}}
+\newcommand\letinsend[4]{\ensuremath{\text{let}\; #1 \;:=\; #2 \rightsquigarrow #3 \;\text{in}\; #4}}
+
 %%% Local Variables:
 %%% mode: latex
 %%% TeX-master: "conference"
