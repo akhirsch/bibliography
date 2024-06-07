@@ -1845,3 +1845,13 @@ TmApp {Γ} {Δ} {s} {t} C1 C2 =
       (s CL.∷ t CL.∷ CL.[])
       (subst (λ x → CL.Tm Γ x (* , TyFun s t)) eq C1 CL.∷
       subst (λ x → CL.Tm Γ x (* , s)) eq C2 CL.∷ CL.[])
+
+TmDone : ∀{Γ Δ} {t : C.Ty Γ *ₑ} (ℓ : C.Ty Γ *ₗ) →
+        CL.Tm Γ Δ (*ₑ , t) →
+        CL.Tm Γ Δ (* , TyAt ℓ t)
+TmDone {Γ} {Δ} {t} ℓ e =
+  let eq : Δ ≡ CL.renCtx (CL.TyDrop* CL.TyIdRen []) Δ
+      eq = sym $ CL.renCtxId Δ
+  in CL.constr Done
+    (ℓ CL.∷ t CL.∷ CL.[])
+    (subst (λ x → CL.Tm Γ x (*ₑ , t)) eq e CL.∷ CL.[])

@@ -43,7 +43,23 @@ open import PolyPir.PolyPir Loc ≡-dec-Loc 𝕃 public
 open import ThirdOrderLanguage C⅀ as C
 open import SecondOrderLanguageUntyped C⅀₂ as UC
 
--- Process names in types
+{-
+Values
+
+V ::= x | λx.C
+
+TODO: Finish definition
+TODO: Verify definition
+-}
+data Val : ∀{Γ Δ t} → C.Tm Γ Δ t → Set where
+  VarVal : ∀{Γ Δ t} (x : C.Var Γ Δ t) → Val (C.var x)
+  LamVal : ∀{Γ Δ s t} (C : C.Tm Γ ((* , s) ∷ Δ) (* , t)) → Val (TmLam C)
+
+{-
+Process names in types
+
+TODO: Verify definition
+-}
 tyProcessNames : ∀{Γ κ} → C.Ty Γ κ → C.Ty Γ *ₗ → Set
 tyProcessNames (tyVar x) ℓ' = ⊥
 tyProcessNames (tyConstr (LocalTy sₑ) es) ℓ' = ⊥
@@ -61,7 +77,11 @@ tyProcessNames (tyConstr Sng (ℓ ∷ [])) ℓ' = ℓ' ≡ ℓ
 tyProcessNames (tyConstr Union (ρ1 ∷ ρ2 ∷ [])) ℓ' =
   tyProcessNames ρ1 ℓ' ⊎ tyProcessNames ρ2 ℓ'
 
--- Process names in terms
+{-
+Process names in terms
+
+TODO: Verify definition
+-}
 processNames : ∀{Γ Δ t} → C.Tm Γ Δ t → C.Ty Γ *ₗ → Set
 processNames (var x) ℓ' = ⊥
 processNames (constr (Local sₑ) (ℓ ∷ ts) es) ℓ' = ℓ' ≡ ℓ
@@ -72,16 +92,10 @@ processNames (constr Fix (t ∷ []) (C ∷ [])) ℓ' =
   tyProcessNames t ℓ' ⊎ processNames C ℓ'
 processNames (constr App (s ∷ t ∷ []) (C1 ∷ C2 ∷ [])) ℓ' =
   processNames C1 ℓ' ⊎ processNames C2 ℓ'
-processNames (constr (Abs (LocKnd κₑ)) (t ∷ []) (C ∷ [])) ℓ' =
+processNames (constr (Abs κ) (t ∷ []) (C ∷ [])) ℓ' =
   tyProcessNames t (C.tyWk ℓ') ⊎ processNames C (C.tyWk ℓ')
-processNames (constr (Abs *) (t ∷ []) (C ∷ [])) ℓ' = ⊤
-processNames (constr (Abs *ₗ) (t ∷ []) (C ∷ [])) ℓ' = ⊤
-processNames (constr (Abs *ₛ) (t ∷ []) (C ∷ [])) ℓ' = ⊤
-processNames (constr (AppTy (LocKnd κₑ)) (t ∷ v ∷ []) (C ∷ [])) ℓ' =
+processNames (constr (AppTy κ) (t ∷ v ∷ []) (C ∷ [])) ℓ' =
   tyProcessNames t (C.tyWk ℓ') ⊎ tyProcessNames v ℓ' ⊎ processNames C ℓ'
-processNames (constr (AppTy *) (t ∷ v ∷ []) (C ∷ [])) ℓ' = {! v  !}
-processNames (constr (AppTy *ₗ) (t ∷ v ∷ []) (C ∷ [])) ℓ' = {!   !}
-processNames (constr (AppTy *ₛ) (t ∷ v ∷ []) (C ∷ [])) ℓ' = {!   !}
 processNames (constr Send (ℓ1 ∷ ℓ2 ∷ t ∷ []) (C ∷ [])) ℓ' =
   ℓ' ≡ ℓ1 ⊎ ℓ' ≡ ℓ2 ⊎ processNames C ℓ'
 processNames (constr (Sync d) (ℓ1 ∷ ℓ2 ∷ t ∷ []) (C ∷ [])) ℓ' =
@@ -90,8 +104,48 @@ processNames (constr ITE (ℓ ∷ t ∷ []) (C1 ∷ C2 ∷ C3 ∷ [])) ℓ' =
   ℓ' ≡ ℓ ⊎ processNames C1 ℓ' ⊎ processNames C2 ℓ' ⊎ processNames C3 ℓ'
 processNames (constr LocalLet (ℓ ∷ t ∷ s ∷ []) (e ∷ C ∷ [])) ℓ' =
   ℓ' ≡ ℓ ⊎ tyProcessNames s ℓ' ⊎ processNames C ℓ'
-processNames (constr (LocalLetTy κₑ) ts es) ℓ' = {!   !}
-processNames (constr LocalLetLoc ts es) ℓ' = {!   !}
+processNames (constr (LocalLetTy κₑ) (ℓ ∷ ρ ∷ t ∷ []) (C1 ∷ C2 ∷ [])) ℓ' =
+  ℓ' ≡ ℓ ⊎ tyProcessNames ρ ℓ' ⊎ tyProcessNames t ℓ'
+  ⊎ processNames C1 ℓ' ⊎ processNames C2 (C.tyWk ℓ')
+processNames (constr LocalLetLoc (ℓ ∷ ρ ∷ t ∷ []) (C1 ∷ C2 ∷ [])) ℓ' =
+  ℓ' ≡ ℓ ⊎ tyProcessNames ρ ℓ' ⊎ tyProcessNames t ℓ'
+  ⊎ processNames C1 ℓ' ⊎ processNames C2 (C.tyWk ℓ')
+
+{-
+Synchronizing process names in terms
+
+TODO: Verify definition
+-}
+syncProcessNames : ∀{Γ Δ t} → C.Tm Γ Δ t → C.Ty Γ *ₗ → Set
+syncProcessNames (var x) ℓ' = ⊥
+syncProcessNames (constr (Local sₑ) (ℓ ∷ ts) es) ℓ' = ℓ' ≡ ℓ
+syncProcessNames (constr Done (ℓ ∷ t ∷ []) (e ∷ [])) ℓ' = {! 
+  C.constr Done (ℓ C.∷ t C.∷ C.[]) (e C.∷ C.[])
+  !}
+syncProcessNames (constr Lam (s ∷ t ∷ []) (C ∷ [])) ℓ' =
+  syncProcessNames C ℓ'
+syncProcessNames (constr Fix (t ∷ []) (C ∷ [])) ℓ' =
+  syncProcessNames C ℓ'
+syncProcessNames (constr App (s ∷ t ∷ []) (C1 ∷ C2 ∷ [])) ℓ' =
+  syncProcessNames C1 ℓ' ⊎ syncProcessNames C2 ℓ'
+syncProcessNames (constr (Abs κ) (t ∷ []) (C ∷ [])) ℓ' =
+  syncProcessNames C (C.tyWk ℓ')
+syncProcessNames (constr (AppTy κ) (t ∷ v ∷ []) (C ∷ [])) ℓ' =
+  syncProcessNames C ℓ'
+syncProcessNames (constr Send (ℓ1 ∷ ℓ2 ∷ t ∷ []) (C ∷ [])) ℓ' =
+  ℓ' ≡ ℓ1 ⊎ ℓ' ≡ ℓ2 ⊎ syncProcessNames C ℓ'
+syncProcessNames (constr (Sync d) (ℓ1 ∷ ℓ2 ∷ t ∷ []) (C ∷ [])) ℓ' =
+  ℓ' ≡ ℓ1 ⊎ ℓ' ≡ ℓ2 ⊎ syncProcessNames C ℓ'
+syncProcessNames (constr ITE (ℓ ∷ t ∷ []) (C1 ∷ C2 ∷ C3 ∷ [])) ℓ' =
+  syncProcessNames C1 ℓ' ⊎ syncProcessNames C2 ℓ' ⊎ syncProcessNames C3 ℓ'
+syncProcessNames (constr LocalLet (ℓ ∷ t ∷ s ∷ []) (e ∷ C ∷ [])) ℓ' =
+  syncProcessNames C ℓ'
+syncProcessNames (constr (LocalLetTy κₑ) (ℓ ∷ ρ ∷ t ∷ []) (C1 ∷ C2 ∷ [])) ℓ' =
+  ℓ' ≡ ℓ ⊎ tyProcessNames ρ ℓ'
+  ⊎ syncProcessNames C1 ℓ' ⊎ syncProcessNames C2 (C.tyWk ℓ')
+syncProcessNames (constr LocalLetLoc (ℓ ∷ ρ ∷ t ∷ []) (C1 ∷ C2 ∷ [])) ℓ' =
+  ℓ' ≡ ℓ ⊎ tyProcessNames ρ ℓ'
+  ⊎ syncProcessNames C1 ℓ' ⊎ syncProcessNames C2 (C.tyWk ℓ')
 
 {-
 Choreography rewriting relation
@@ -101,8 +155,12 @@ Choreography rewriting relation
 (λx.C1) C2 C3 ⇝ (λx.C1 C3) C2
 
 [AbsL]
+spn(C1) ∩ pn(C2) ≡ ∅
 ---------------------------------
 C1 ((λx.C2) C3) ⇝ (λx.(C1 C2)) C3
+
+TODO: Finish definition
+TODO: Verify definition
 -}
 data _⇝_ : ∀{Γ Δ t} → C.Tm Γ Δ t → C.Tm Γ Δ t → Set where
   AbsR : ∀{Γ Δ} {t2 t3 s : C.Ty Γ *} →
@@ -112,11 +170,10 @@ data _⇝_ : ∀{Γ Δ t} → C.Tm Γ Δ t → C.Tm Γ Δ t → Set where
           TmApp (TmApp (TmLam C1) C2) C3 ⇝ TmApp (TmLam (TmApp C1 (C.ren (C.Drop C.IdRen) C3))) C2
 
   AbsL : ∀{Γ Δ} {t2 t3 s : C.Ty Γ *} →
-          -- spn(C1) ∩ pn(C2) ≡ ∅
-          {!   !} →
           (C1 : C.Tm Γ Δ (* , TyFun t2 s))
           (C2 : C.Tm Γ ((* , t3) ∷ Δ) (* , t2))
           (C3 : C.Tm Γ Δ (* , t3)) →
+          (∀ ℓ → syncProcessNames C1 ℓ → processNames C2 ℓ → ⊥) →
           TmApp C1 (TmApp (TmLam C2) C3) ⇝ TmApp (TmLam (TmApp (C.ren (C.Drop C.IdRen) C1) C2)) C3
 
 data _⇝*_ {Γ Δ t} : C.Tm Γ Δ t → C.Tm Γ Δ t → Set where
@@ -139,10 +196,13 @@ C1 ⇝* C2
 C2 ⇒[τ,P] C3
 -------------
 C1 ⇒[τ,P] C3
+
+TODO: Finish definition
+TODO: Verify definition
 -}
 data _⇒[_,_]_ : ∀{Γ Δ t} → C.Tm Γ Δ t → AbsLabel → ProcLabel Γ → C.Tm Γ Δ t → Set where
   Str : ∀{Γ Δ t P} {C1 C2 C3 : C.Tm Γ Δ t} →
         C1 ⇝* C2 →
         C2 ⇒[ τ , P ] C3 →
         C1 ⇒[ τ , P ] C3
-   
+     
