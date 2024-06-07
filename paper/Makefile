@@ -2,7 +2,7 @@ BIB := ../bibliography/main.bib
 
 PAPER_FILES := $(shell find . -name "*.tex")
 
-export TEXINPUTS = .::$TEXMF/tex/::../styles::../styles/latex-pl-syntax
+export TEXINPUTS = .::$TEXMF/tex/::../styles::../latex-pl-syntax
 
 .PHONY: clean cleanall all PACMAnon PACMCameraReady
 
@@ -15,7 +15,7 @@ conference: conference.pdf
 tech_report: tech_report.pdf
 
 %.pdf: %.tex $(PAPER_FILES) $(BIB)
-	latexmk -pdf -bibtex -synctex=1 $<
+	latexmk -pvc -pdf -bibtex -synctex=1 $<
 
 
 ALLCLEANABLES := $(shell find . \( -name '*.aux'\

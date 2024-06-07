@@ -49,12 +49,15 @@
 % Endpoint Projection
 \newcommand\epp[2]{\ensuremath{\llbracket#1\rrbracket_{#2}}}
 
+% Semantics
 \newcommand\step[1]{\ensuremath{\xRightarrow{{#1}}_{\raisebox{3pt}{\footnotesize{c}}}}}
 
+% Syntax
 \newcommand\app[2]{\ensuremath{#1 \; #2}}
 \newcommand\send[3]{\ensuremath{#1 \overset{#2}{\rightsquigarrow} #3}}
 \newcommand\ifthen[3]{\ensuremath{\text{if}\; #1 \;\text{then}\; #2 \;\text{else}\; #3}}
 \newcommand\letin[3]{\ensuremath{\text{let}\; #1 \;:=\; #2 \;\text{in}\; #3}}
+\newcommand\letinsend[4]{\ensuremath{\text{let}\; #1 \;:=\; #2 \rightsquigarrow #3 \;\text{in}\; #4}}
 
 
 \begin{document}
@@ -69,28 +72,22 @@
 	\category[Choreographic Kinds]{\kappa}
 	\alternative{*}
 	\alternative{*_\ell}
+	\alternative{*_s}
 	\alternative{\kappa_e}
 	\\
 	\abstractCategory[Local Types]{t_e}
-	
-	\category[Locations]{\ell}
+
+	\category[Types]{T, \ell, \rho, t, \tau}
 	\alternative{X}
 	\alternative{L}
-	
-	\category[Locally Bound Types]{t}
-	\alternative{X}
+	\alternative{\varnothing}
+	\alternative{\{\ell\}}
+	\alternative{\rho_1 \cup \rho_2}
+	\\
 	\alternative{t_e}
-	
-	\category[Choreographic Types]{\tau}
-	\alternative{X}
 	\alternative{t @ \ell}
 	\alternative{\tau_1 \rightarrow \tau_2}
 	\alternative{\forall X : \kappa.\tau}
-	
-	\category[Types]{T}
-	\alternative{\ell}
-	\alternative{t}
-	\alternative{\tau}
 	\\
 	\abstractCategory[Local Expressions]{e}
 	
@@ -106,7 +103,7 @@
 	\alternative{\Lambda X : \kappa.C}
 	\alternative{\app{C}{T}}\\
 	\alternative{\letin{\ell.x : t}{C_1}{C_2}}\\
-	\alternative{\letin{\ell.X : \kappa_e}{C_1}{C_2}}
+	\alternative{\letinsend{\ell.X : \kappa_e}{C_1}{\rho}{C_2}}
 \end{syntax}
 
 

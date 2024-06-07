@@ -1377,17 +1377,17 @@ CTmPos ITE Γ (ℓ ∷ τ ∷ []) =
 -- LocalLet (ℓ : *ₗ) (t : *ₑ) (τ : *) t@ℓ [ℓ.t]τ : τ
 CTmPos LocalLet Γ (ℓ ∷ t ∷ τ ∷ []) =
   ([] , [] , * , TyAt ℓ t) ∷
-  ([] , (*ₑ , t) ∷ [] , * , TyAt ℓ t) ∷ [] ,
+  ([] , (*ₑ , t) ∷ [] , * , τ) ∷ [] ,
   * , τ
 -- LocalLetTy (ℓ : *ₗ) (ρ : *ₛ) (τ : *) κₑ@ℓ [κₑ]τ : τ
 CTmPos (LocalLetTy κₑ) Γ (ℓ ∷ ρ ∷ τ ∷ []) =
   ([] , [] , * , TyAt ℓ (C.tyRen C.ε* (injTy (𝕃 .TyRepₑ κₑ)))) ∷
-  (LocKnd κₑ ∷ [] , [] , * , C.tyRen (C.TyDrop C.TyIdRen) τ) ∷ [] ,
+  (LocKnd κₑ ∷ [] , [] , * , C.tyWk τ) ∷ [] ,
   * , τ
 -- LocalLetLoc (ℓ : *ₗ) (ρ : *ₛ) (τ : *) Locₑ@ℓ [*ₗ]τ : τ
 CTmPos LocalLetLoc Γ (ℓ ∷ ρ ∷ τ ∷ []) =
   ([] , [] , * , TyAt ℓ (C.tyRen C.ε* (injTy (𝕃 .Locₑ)))) ∷
-  (*ₗ ∷ [] , [] , * , C.tyRen (C.TyDrop C.TyIdRen) τ) ∷ [] ,
+  (*ₗ ∷ [] , [] , * , C.tyWk τ) ∷ [] ,
   * , τ
 
 subVecCTmPos : ∀{Γ1 Γ2} (s : CShape) (σ : C.TySub Γ1 Γ2) (ts : C.TyVec Γ1 (CTmTyPos s)) →
@@ -1701,19 +1701,7 @@ subVecKndCtxCTmPos {Γ1} {Γ2} (Local sₑ) σ (ℓ ∷ ts) =
                     (injTy t)
                     (cong injCtx (projCtx-++ (injCtx Γ') Γ1 ∙ cong (_++ projCtx Γ1) (projCtx∘injCtx≗id Γ')))
                     refl) ⟩
-{-
-⟨regain (injCtx Γ' ++ Γ2)⟩ ∘ inj ∘ ⟨Keep (projSub σ) Γ'⟩
-≡ ⟨regain (injCtx Γ' ++ Γ2)⟩ ∘ ⟨injSub (Keep (projSub σ) Γ')⟩ ∘ inj
-≡ ⟨regain (injCtx Γ' ++ Γ2)⟩ ∘ ⟨Keep (injSub (projSub σ)) (injCtx Γ')⟩ ∘ inj
-≡ ⟨regain (injCtx Γ' ++ Γ2) •◦ Keep (injSub (projSub σ)) (injCtx Γ')⟩ ∘ inj
-≡ ⟨regain (injCtx Γ' ++ Γ2) •◦ injSub (Keep (projSub σ) Γ')⟩ ∘ inj
-≡ ⟨regain (injCtx Γ' ++ Γ2) •◦ injSub (Keep (projSub σ) (projCtx (injCtx Γ')))⟩ ∘ inj
-≡ ⟨regain (injCtx Γ' ++ Γ2) •◦ injSub (projSub (Keep σ (injCtx Γ')))⟩ ∘ inj
 
-≡ ⟨Keep σ (injCtx Γ') ◦• regain (injCtx Γ' ++ Γ1)⟩ ∘ inj
-≡ ⟨Keep σ (injCtx Γ')⟩ ∘ ⟨regain (injCtx Γ' ++ Γ1)⟩ ∘ inj
-
--}
             UC.subUnty (UC.eraseSub (C.TyKeepSub* σ (map LocKnd Γ')))
               (UC.renUnty (UC.eraseRen (regain (map LocKnd Γ' ++ Γ1)))
                 (UC.erase (injTy t)))
@@ -1798,13 +1786,13 @@ subVecKndCtxCTmPos (LocalLetTy κₑ) σ (ℓ ∷ ρ ∷ τ ∷ []) = cong₂ (�
       C.tySub (σ C.◦•ₜ C.ε*) (injTy (𝕃 .TyRepₑ κₑ))
         ≡⟨ C.sub◦• σ C.ε* (injTy (𝕃 .TyRepₑ κₑ)) ⟩
       C.tySub σ (C.tyRen C.ε* (injTy (𝕃 .TyRepₑ κₑ))) ∎)
-      (C.tyRen (C.TyDrop C.TyIdRen) (C.tySub σ τ)
+      (C.tyWk (C.tySub σ τ)
         ≡⟨ (sym $ C.sub•◦ (C.TyDrop C.TyIdRen) σ τ) ⟩
       C.tySub (C.TyDrop C.TyIdRen C.•◦ₜ σ) τ
         ≡⟨ (cong (λ x → C.tySub x τ) $ sym $ C.◦•Id (C.TyDrop C.TyIdRen C.•◦ₜ σ)) ⟩
       C.tySub ((C.TyDrop C.TyIdRen C.•◦ₜ σ) C.◦•ₜ C.TyIdRen) τ
         ≡⟨ C.sub◦• (C.TyKeepSub σ) (C.TyDrop C.TyIdRen) τ ⟩
-      C.tySub (C.TyKeepSub σ) (C.tyRen (C.TyDrop C.TyIdRen) τ) ∎)
+      C.tySub (C.TyKeepSub σ) (C.tyWk τ) ∎)
 subVecKndCtxCTmPos LocalLetLoc σ (ℓ ∷ ρ ∷ τ ∷ []) = cong₂ (λ x y →
   ([] , [] , * , C.tyConstr At (C.tySub σ ℓ C.∷ x C.∷ C.[]))
   ∷ (*ₗ ∷ [] , [] , * , y)
@@ -1818,13 +1806,13 @@ subVecKndCtxCTmPos LocalLetLoc σ (ℓ ∷ ρ ∷ τ ∷ []) = cong₂ (λ x y �
   C.tySub (σ C.◦•ₜ C.ε*) (injTy (𝕃 .Locₑ))
     ≡⟨ C.sub◦• σ C.ε* (injTy (𝕃 .Locₑ)) ⟩
   C.tySub σ (C.tyRen C.ε* (injTy (𝕃 .Locₑ))) ∎)
-  (C.tyRen (C.TyDrop C.TyIdRen) (C.tySub σ τ)
+  (C.tyWk (C.tySub σ τ)
     ≡⟨ (sym $ C.sub•◦ (C.TyDrop C.TyIdRen) σ τ) ⟩
   C.tySub (C.TyDropSub σ) τ
     ≡⟨ (cong (λ x → C.tySub x τ) $ sym $ C.◦•Id $ C.TyDropSub σ) ⟩
   C.tySub (C.TyDropSub σ C.◦•ₜ C.TyIdRen) τ
     ≡⟨ C.sub◦• (C.TyKeepSub σ) (C.TyDrop C.TyIdRen) τ ⟩
-  C.tySub (C.TyKeepSub σ) (C.tyRen (C.TyDrop C.TyIdRen) τ) ∎)
+  C.tySub (C.TyKeepSub σ) (C.tyWk τ) ∎)
 
 C⅀ : ThirdOrderSignature
 ⅀₂                C⅀ = C⅀₂
@@ -1833,3 +1821,27 @@ TmTyPos           C⅀ = CTmTyPos
 TmPos             C⅀ = CTmPos
 subVecTmPos       C⅀ = subVecCTmPos
 subVecKndCtxTmPos C⅀ = subVecKndCtxCTmPos
+
+open import ThirdOrderLanguage C⅀ as CL
+
+TmLam : ∀{Γ Δ} {s t : C.Ty Γ *} →
+        CL.Tm Γ ((* , s) ∷ Δ) (* , t) →
+        CL.Tm Γ Δ (* , TyFun s t)
+TmLam {Γ} {Δ} {s} {t} C =
+  let eq : Δ ≡ CL.renCtx (CL.TyDrop* CL.TyIdRen []) Δ
+      eq = sym $ CL.renCtxId Δ
+  in CL.constr Lam 
+      (s CL.∷ t CL.∷ CL.[])
+      (subst (λ x → CL.Tm Γ ((* , s) ∷ x) (* , t)) eq C CL.∷ CL.[])
+
+TmApp : ∀{Γ Δ} {s t : C.Ty Γ *} →
+        CL.Tm Γ Δ (* , TyFun s t) →
+        CL.Tm Γ Δ (* , s) →
+        CL.Tm Γ Δ (* , t)
+TmApp {Γ} {Δ} {s} {t} C1 C2 =
+  let eq : Δ ≡ CL.renCtx (CL.TyDrop* CL.TyIdRen []) Δ
+      eq = sym $ CL.renCtxId Δ
+  in CL.constr App 
+      (s CL.∷ t CL.∷ CL.[])
+      (subst (λ x → CL.Tm Γ x (* , TyFun s t)) eq C1 CL.∷
+      subst (λ x → CL.Tm Γ x (* , s)) eq C2 CL.∷ CL.[])
