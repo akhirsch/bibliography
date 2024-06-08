@@ -58,6 +58,19 @@ data Val : ∀{Γ Δ t} → C.Tm Γ Δ t → Set where
 {-
 Process names in types
 
+pn(X) = ∅
+pn(tₑ) = ∅
+pn(t @ ℓ) = {ℓ}
+pn(τ1 → τ2) = pn(τ1) ∪ pn(τ2)
+pn(∀x:*ₑ.τ) = pn(τ)
+pn(∀x:*.τ) = ℒ
+pn(∀x:*ₗ.τ) = ℒ
+pn(∀x:*ₛ.τ) = ℒ
+pn(L) = {L}
+pn(∅) = ∅
+pn({ℓ}) = {ℓ}
+pn(ρ1 ∪ ρ2) = pn(ρ1) ∪ pn(ρ2)
+
 TODO: Verify definition
 -}
 tyProcessNames : ∀{Γ κ} → C.Ty Γ κ → C.Ty Γ *ₗ → Set
@@ -79,6 +92,20 @@ tyProcessNames (tyConstr Union (ρ1 ∷ ρ2 ∷ [])) ℓ' =
 
 {-
 Process names in terms
+
+pn(x) = ∅
+pn(e) = ∅
+pn(ℓ.e) = {ℓ}
+pn(λx:τ.C) = pn(τ) ∪ pn(C)
+pn(μx:τ.C) = pn(τ) ∪ pn(C)
+pn(C1 C2) = pn(C1) ∪ pn(C2)
+pn(ΛX:κ.C) = pn(ty(C)) ∪ pn(C)
+pn(C [T]) = pn(ty(C)) ∪ pn(C) ∪ pn(T)
+pn(ℓ1.C ↝ ℓ2) = {ℓ1,ℓ2} ∪ pn(C)
+pn(ℓ1[d] ↝ ℓ2; C) = {ℓ1,ℓ2} ∪ pn(C)
+pn(ℓ.if C1 then C2 else C3) = {ℓ} ∪ pn(C1) ∪ pn(C2) ∪ pn(C3)
+pn(let ℓ.x := C1 in C2) = {ℓ1} ∪ pn(C1) ∪ pn(C2)
+pn(let X := ℓ.C1 ↝ ρ in C2) = {ℓ} ∪ pn(ρ) ∪ pn(C1) ∪ pn(C2)
 
 TODO: Verify definition
 -}
@@ -103,7 +130,7 @@ processNames (constr (Sync d) (ℓ1 ∷ ℓ2 ∷ t ∷ []) (C ∷ [])) ℓ' =
 processNames (constr ITE (ℓ ∷ t ∷ []) (C1 ∷ C2 ∷ C3 ∷ [])) ℓ' =
   ℓ' ≡ ℓ ⊎ processNames C1 ℓ' ⊎ processNames C2 ℓ' ⊎ processNames C3 ℓ'
 processNames (constr LocalLet (ℓ ∷ t ∷ s ∷ []) (e ∷ C ∷ [])) ℓ' =
-  ℓ' ≡ ℓ ⊎ tyProcessNames s ℓ' ⊎ processNames C ℓ'
+  ℓ' ≡ ℓ ⊎ tyProcessNames s ℓ' ⊎ processNames e ℓ' ⊎ processNames C ℓ'
 processNames (constr (LocalLetTy κₑ) (ℓ ∷ ρ ∷ t ∷ []) (C1 ∷ C2 ∷ [])) ℓ' =
   ℓ' ≡ ℓ ⊎ tyProcessNames ρ ℓ' ⊎ tyProcessNames t ℓ'
   ⊎ processNames C1 ℓ' ⊎ processNames C2 (C.tyWk ℓ')
@@ -114,14 +141,26 @@ processNames (constr LocalLetLoc (ℓ ∷ ρ ∷ t ∷ []) (C1 ∷ C2 ∷ [])) �
 {-
 Synchronizing process names in terms
 
+spn(x) = ∅
+spn(e) = ∅
+spn(ℓ.e) = ∅
+spn(λx:τ.C) = spn(C)
+spn(μx:τ.C) = spn(C)
+spn(C1 C2) = spn(C1) ∪ spn(C2)
+spn(ΛX:κ.C) = spn(C)
+spn(C [T]) = spn(C)
+spn(ℓ1.C ↝ ℓ2) = {ℓ1,ℓ2} ∪ spn(C)
+spn(ℓ1[d] ↝ ℓ2; C) = {ℓ1,ℓ2} ∪ spn(C)
+spn(ℓ.if C1 then C2 else C3) = spn(C1) ∪ spn(C2) ∪ spn(C3)
+spn(let ℓ.x := C1 in C2) = spn(C1) ∪ spn(C2)
+spn(let X := ℓ.C1 ↝ ρ in C2) = {ℓ} ∪ pn(ρ) ∪ spn(C1) ∪ spn(C2)
+
 TODO: Verify definition
 -}
 syncProcessNames : ∀{Γ Δ t} → C.Tm Γ Δ t → C.Ty Γ *ₗ → Set
 syncProcessNames (var x) ℓ' = ⊥
-syncProcessNames (constr (Local sₑ) (ℓ ∷ ts) es) ℓ' = ℓ' ≡ ℓ
-syncProcessNames (constr Done (ℓ ∷ t ∷ []) (e ∷ [])) ℓ' = {! 
-  C.constr Done (ℓ C.∷ t C.∷ C.[]) (e C.∷ C.[])
-  !}
+syncProcessNames (constr (Local sₑ) (ℓ ∷ ts) es) ℓ' = ⊥
+syncProcessNames (constr Done (ℓ ∷ t ∷ []) (e ∷ [])) ℓ' = ⊥
 syncProcessNames (constr Lam (s ∷ t ∷ []) (C ∷ [])) ℓ' =
   syncProcessNames C ℓ'
 syncProcessNames (constr Fix (t ∷ []) (C ∷ [])) ℓ' =
