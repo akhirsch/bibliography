@@ -6,6 +6,68 @@
 }
 \newcommenter{\akh}{purple}{AKH}
 
+\newcommand{\programfont}[1]{\ensuremath{\mathsf{#1}}\xspace}
+\makeatletter
+% This recursively parses a list of pairs of arguments.
+% The use if `\_nil` on the end creates a termiator so that #3 grabs all of the
+% rest of the arguments, not just the first one. That means that #3 may be a
+% sequence of groupings that will be interpreted as separate arguments in a
+% recursive call. Each call processes the first two arguments and then, if
+% there are any left, inserts a comma and processes the rest.
+\def\subst@inner#1#2#3\_nil{#1 \mapsto #2\ifx\relax#3\relax\else,\mkern2mu\subst@inner#3\_nil\fi}%
+% The core substitution typesetting command, using matchoice.
+\newcommand{\raw@subst}[3]{
+  \mathchoice{#1{\left[#2\subst@inner#3\_nil\right]}}
+             {#1[#2\subst@inner#3\_nil]}
+             {#1[#2\subst@inner#3\_nil]}
+             {#1[#2\subst@inner#3\_nil]}%
+}
+\newcommand{\subst}[3]{\raw@subst{#1}{}{{#2}{#3}}}
+\WithSuffix\newcommand\subst*[2]{\raw@subst{#1}{}{#2}}
+\newcommand{\hsubst}[4]{\raw@subst{#1}{#2|}{{#3}{#4}}}
+\WithSuffix\newcommand\hsubst*[3]{\raw@subst{#1}{#2|}{#3}}
+\makeatother
+
+\newcommand{\ty}{\mkern2mu{:}\mkern2mu}
+\newcommand{\proves}{\vdash}
+\newcommand{\nproves}{\nvdash}
+\newcommand{\dom}{\operatorname{dom}}
+\newcommand{\sendsto}{\rightsquigarrow}
+\newcommand{\tpat}{\raisebox{1pt}{\footnotesize\ensuremath{@}}}
+
+%% Types
+\newcommand{\Int}{\programfont{int}}
+
+\newcommand{\ChorCol}[1]{{\color{RoyalBlue}#1}}
+%\newcommand{\ChorCol}[1]{#1}
+\newcommand{\FontChoreo}[1]{\programfont{\ChorCol{#1}}}
+%% Choreography Names
+\newcommand{\seq}{\mathrel{;}}
+%\newcommand{\ChorSend}[1][\loc]{\mathrel{\color{ChorColor}\sendsto}}
+\newcommand{\ColSend}{\mathrel{\ChorCol{\sendsto}}}
+\newcommand{\ChorSend}[1][\ell]{\mathchoice%
+  {\mathrel{\raisebox{0.15ex}{$\scriptstyle\ChorCol{\{}#1\ChorCol{\}}$}\mkern-2mu\ChorCol{\sendsto}}}
+  {\mathrel{\raisebox{0.15ex}{$\scriptstyle\ChorCol{\{}#1\ChorCol{\}}$}\mkern-2mu\ChorCol{\sendsto}}}
+  {\mathrel{\mkern3mu\raisebox{0.1ex}{$\scriptstyle\ChorCol{\{}#1\ChorCol{\}}$}\mkern-1mu\ChorCol{\sendsto}}}
+  {\mathrel{\mkern3mu\raisebox{0.05ex}{$\scriptstyle\ChorCol{\{}#1\ChorCol{\}}$}\mkern-1mu\ChorCol{\sendsto}}}%
+}
+\newcommand{\LetN}{\FontChoreo{let}}
+\newcommand{\In}{\FontChoreo{in}}
+\newcommand{\IfN}{\FontChoreo{if}}
+\newcommand{\ThenN}{\FontChoreo{then}}
+\newcommand{\ElseN}{\FontChoreo{else}}
+\newcommand{\Left}{\FontChoreo{L}}
+\newcommand{\Right}{\FontChoreo{R}}
+\newcommand{\FunN}{\FontChoreo{fun}}
+\newcommand{\ChorDef}{\mathrel{\ChorCol{\coloneqq}}}
+\newcommand{\TellN}{\FontChoreo{tell}}
+\newcommand{\To}{\FontChoreo{to}}
+
+\newcommand{\LetIn}[3]{\LetN~{#1} \ChorDef {#2}~\In~{#3}}
+\newcommand{\ITE}[4][\loc]{\IfN_{#1}~{#2}~\ThenN~{#3}~\ElseN~{#4}}
+\newcommand{\Fun}[3]{\FunN~{#1}(#2) \ChorDef {#3}}
+\newcommand{\Tell}[3][\loc]{{#1}.\TellN~{#2}~\To~{#3}}
+
 % AMSThm Setup
 \theoremstyle{theorem}
 \newtheorem{thm}{Theorem}

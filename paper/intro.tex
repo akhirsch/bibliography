@@ -16,12 +16,16 @@ To understand why choreographic programming is a useful paradigm, consider a sim
 The client has on their local system the code to calculate a computationally expensive function $f : (\textsf{Int} \rightarrow \textsf{Int}) @ \textsf{C}$, and an integer $x : \textsf{Int} @ \textsf{C}$ on which they wish to evaluate the function.
 Consider the following choreographic program in which \textsf{C} sends $x$ and $f$ to \textsf{W}, who then computes $f \; x$ locally and returns the result back to \textsf{C}:
 \begin{align*}
-\textsf{applyAtWorker} &: (\textsf{Int} \rightarrow \textsf{Int}) @ \textsf{C} \rightarrow \textsf{Int} @ \textsf{C} \rightarrow \textsf{Int} @ \textsf{C}\\
-\textsf{applyAtWorker} &= \lambda\, f \; x.\\
-&\;\;\;\;\;\; \text{let}\; \textsf{W}.\textsf{fun} : \textsf{Int} \rightarrow \textsf{Int} \coloneq (f \rightsquigarrow \textsf{W})\\
-&\;\;\;\;\;\;\;\;\;\;\; \textsf{W}.\textsf{inp} : \textsf{Int} \coloneq (x \rightsquigarrow \textsf{W})\\
-&\;\;\;\;\;\;\;\;\;\;\; y : \textsf{Int} @ \textsf{W} \coloneq \textsf{W}.(\textsf{inp} \; \textsf{fun})\\
-&\;\;\;\;\;\; \text{in}\; y \rightsquigarrow \textsf{C}
+  \programfont{applyAtWorker} & : (\Int \to \Int) @ \programfont{C} \to \Int@\programfont{C} \to \Int@\programfont{C} \\
+  \programfont{applyAtWorker} & =
+  \def\arraystretch{1.1}
+  \FunN~F~X\ldotp \begin{array}[t]{@{}l@{}}
+    \LetN~\begin{array}[t]{@{}l@{}}
+        \programfont{W}.f \ChorDef F \ColSend \programfont{W} \\
+        \programfont{W}.x \ChorDef X \ColSend \programfont{W} \\
+    \end{array} \\
+    \In~\programfont{W}.(f~x) \ColSend \programfont{C}
+  \end{array}
 \end{align*}
 This pattern of \emph{delegation} of work is common in higher-order choreographic languages, and allows for a concise representation of asynchronous computation while retaining important behavioral properties such as deadlock freedom.
 
@@ -36,12 +40,19 @@ In this process, (C)lients will submit jobs to a pool (M)anager, who will track 
 
 The programmer could implement the job-submission process using the following choreography:
 \begin{align*}
-\textsf{withWorker} &: (\forall W :: *_\ell.\,t @ C) \rightarrow t @ C\\
-\textsf{withWorker} &= \lambda\, \textsf{job}.\\
-&\;\;\;\;\;\; \text{let}\; \textsf{worker} : \textsf{Loc} @ M \coloneq  \textsf{acquireWorker}\\
-&\;\;\;\;\;\;\;\;\;\; M.w :: *_\ell \coloneq \textsf{worker} \rightsquigarrow \rho_w \cup \{C\} \\
-&\;\;\;\;\;\;\;\;\;\;\; x : t @ C \coloneq  \textsf{job}\,w\\
-&\;\;\;\;\;\; \text{in}\; \textsf{releaseWorker}\,\textsf{worker};\; x
+  \programfont{withWorker} & : (\Int \to \Int) @ \programfont{C} \to \Int@\programfont{C} \to \Int@\programfont{C} \\
+  \programfont{withWorker} &=
+  \def\arraystretch{1.1}
+  \FunN~F~X\ldotp \begin{array}[t]{@{}l@{}}
+    \LetN~\begin{array}[t]{@{}l@{}}
+      \programfont{M}.w \ChorDef \programfont{acquireWorker}~\rho_w \\
+      W \ChorDef \Tell[\programfont{M}]{w}{\rho_w \cup \{C\}} \\
+      W.f \ChorDef F \ColSend W \\
+      W.x \ChorDef X \ColSend W \\
+      \mathit{Res} \ChorDef W.(f~x) \ColSend \programfont{C}
+    \end{array} \\
+    \In~\programfont{releaseWorker}~W \seq \mathit{Res}
+  \end{array}
 \end{align*}
 
 In this program, the pool manager $M$ first finds and selects an idle \textsf{worker} location from the pool using the \textsf{acquireWorker} function.
