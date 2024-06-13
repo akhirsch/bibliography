@@ -1,6 +1,11 @@
 \section{Conclusion}
 \label{sec:conclusion}
 
+The key components of this choreography which are not expressible in previous works are the \textsf{acquireWorker} function, which allows the pool manager to \emph{dynamically} select a worker location, and the ability to communicate location names between nodes, enabling the chosen worker name to be shared with the client.
+Previous works, notably PolyChor$\lambda$, allow for \emph{delegation} of tasks to workers as in our thread pool.
+However in this language, as locations are part of the type system, types may not depend on values (that is, it is not a dependent type system), and there is no mechanism to reflect values into types, the locations must always be statically known, precluding the ability to \emph{dynamically} select location names at runtime.
+(Focus on what we can do rather than why they can't, move to related works possibly)
+
 %%% Local Variables:
 %%% mode: latex
 %%% TeX-master: "conference"

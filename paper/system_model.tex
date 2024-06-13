@@ -1,7 +1,7 @@
 \section{System Model}
 \label{sec:system_model}
 
-We first provide an overview of the assumptions we make about the structure and behavior of the systems that ???? programs can run on.
+We first provide an overview of the assumptions we make about the structure and behavior of the systems that \langname{} programs can run on.
 A system is composed of a set of logically distinct computational nodes which can run single-machine computations described by a set of local programs, and can send and receive messages with each-other over a network.
 
 \subsection{Locations}
@@ -26,9 +26,9 @@ The synchronization messages are used to ensure that locations execute the corre
 \label{sec:local-programs}
 
 Each node should be able to execute \emph{local} programs in an expression-based language.
-Our choreographic language is generic over the local language, requiring only that it obey typical syntactic and typing rules, have a sound type system, and include the components described below.
+Our choreographic language is generic over the local language, requiring only that it obey typical syntactic and typing rules, have a sound type system and semantics, and include the components described below.
 
-First, we require that the language consist of variables and term constructors, including satisfying the typical substitution equations such as the substitution of variables $x \langle \sigma \rangle = \sigma_x$, substitution along the identity $e \langle  id \rangle = e$, and composition of simultaneous substitutions $e \langle \sigma_1 \rangle \langle \sigma_2 \rangle = e \langle \sigma_2 \circ \sigma_1 \rangle$.
+First, we require that the language consist of variables and term constructors, including satisfying typical simultaneous substitution equations such as the substitution of variables $x \langle \sigma \rangle = \sigma_x$, substitution along the identity $e \langle  id \rangle = e$, and composition of simultaneous substitutions $e \langle \sigma_1 \rangle \langle \sigma_2 \rangle = e \langle \sigma_2 \circ \sigma_1 \rangle$.
 
 %%% Local Variables:
 %%% mode: latex

@@ -10,24 +10,38 @@ However, session types can be difficult to work with as a separate program must 
 \emph{Choreographic programming} offers an alternative solution in which a single program is written to describe all interactions between nodes, and the program that each individual node will run is derived from this global program.
 Such choreographic languages lead to \emph{deadlock freedom by design}, providing the programmer assurance that the system will never become stuck.
 Currently, typed choreographic languages are typically functional and support higher-order types, but either do not support \emph{process polymorphism}, are not flexible enough to allow for an arbitrary language to be used for local computations, or cannot send \emph{dynamically computed process names}.
-This paper presents ???, the first choreographic programming language which supports process polymorphism and dynamically generated process names over an arbitrary language of local computations.
+This paper presents \langname{}, the first choreographic programming language which supports process polymorphism and dynamically generated process names over an arbitrary language of local computations.
+
+To understand why choreographic programming is a useful paradigm, consider a simple example in which two computational nodes, (W)orker and (C)lient communicate to compute a value.
+The client has on their local system the code to calculate a computationally expensive function $f : (\textsf{Int} \rightarrow \textsf{Int}) @ \textsf{C}$, and an integer $x : \textsf{Int} @ \textsf{C}$ on which they wish to evaluate the function.
+Consider the following choreographic program in which \textsf{C} sends $x$ and $f$ to \textsf{W}, who then computes $f \; x$ locally and returns the result back to \textsf{C}:
+\begin{align*}
+\textsf{applyAtWorker} &: (\textsf{Int} \rightarrow \textsf{Int}) @ \textsf{C} \rightarrow \textsf{Int} @ \textsf{C} \rightarrow \textsf{Int} @ \textsf{C}\\
+\textsf{applyAtWorker} &= \lambda\, f \; x.\\
+&\;\;\;\;\;\; \text{let}\; \textsf{W}.\textsf{fun} : \textsf{Int} \rightarrow \textsf{Int} \coloneq (f \rightsquigarrow \textsf{W})\\
+&\;\;\;\;\;\;\;\;\;\;\; \textsf{W}.\textsf{inp} : \textsf{Int} \coloneq (x \rightsquigarrow \textsf{W})\\
+&\;\;\;\;\;\;\;\;\;\;\; y : \textsf{Int} @ \textsf{W} \coloneq \textsf{W}.(\textsf{inp} \; \textsf{fun})\\
+&\;\;\;\;\;\; \text{in}\; y \rightsquigarrow \textsf{C}
+\end{align*}
+This pattern of \emph{delegation} of work is common in higher-order choreographic languages, and allows for a concise representation of asynchronous computation while retaining important behavioral properties such as deadlock freedom.
+
+In earlier choreographic languages, the worker and client locations mentioned in the above program were not treated \emph{polymorphically}.
+In particular, a new program would have to be written for each possible choice of worker and client, which come from a fixed set specified ahead of time.
+Similarly, there was no polymorphism for data types, which can be a hinderance for programmers who wish to create abstract computational patterns.
+As well, in existing choreographic languages which do support location polymorphism, there is no way to \emph{dynamically} choose a location according to the result of a local computation; all locations used in a program must be known and determined at compile-time.
+In \langname{}, we support location name and type polymorphism, and the ability to send and use dynamically computed location names and types.
 
 To demonstrate the utility of these features, consider a programmer who wishes to implement a thread pool.
-In this process, clients will submit jobs to a pool manager, who will track a queue of idle worker locations and execute the jobs with a selected worker.
+In this process, (C)lients will submit jobs to a pool (M)anager, who will track a queue of idle worker locations and execute the jobs with a selected (W)orker.
+
 The programmer could implement the job-submission process using the following choreography:
-
-Add small example showing how choreographies are used. (old)
-Add small example showing delegation. (old)
-
-(Change let-in to single block)
-
 \begin{align*}
 \textsf{withWorker} &: (\forall W :: *_\ell.\,t @ C) \rightarrow t @ C\\
-\textsf{withWorker} &= \lambda\, \textsf{job} : (\forall W :: *_\ell.\;t @ C).\\
-&\;\;\;\;\;\; \letin{\textsf{worker} : \textsf{Loc} @ M}{\textsf{acquireWorker}}{}\\
-&\;\;\;\;\;\; \letinsend{M.w :: *_\ell}{\textsf{worker}}{\rho_w \cup \{C\}}{}\\
-&\;\;\;\;\;\; \letin{x : t @ C}{\textsf{job}\,w}{}\\
-&\;\;\;\;\;\;\; \textsf{releaseWorker}\,\textsf{worker};\; x
+\textsf{withWorker} &= \lambda\, \textsf{job}.\\
+&\;\;\;\;\;\; \text{let}\; \textsf{worker} : \textsf{Loc} @ M \coloneq  \textsf{acquireWorker}\\
+&\;\;\;\;\;\;\;\;\;\; M.w :: *_\ell \coloneq \textsf{worker} \rightsquigarrow \rho_w \cup \{C\} \\
+&\;\;\;\;\;\;\;\;\;\;\; x : t @ C \coloneq  \textsf{job}\,w\\
+&\;\;\;\;\;\; \text{in}\; \textsf{releaseWorker}\,\textsf{worker};\; x
 \end{align*}
 
 In this program, the pool manager $M$ first finds and selects an idle \textsf{worker} location from the pool using the \textsf{acquireWorker} function.
@@ -38,11 +52,6 @@ Finally, the manager releases the worker back into the thread pool.
 Note that this program is \emph{polymorphic} with respect to the type $t$ returned by the job, the set $\rho_w$ of possible workers, and the client $C$.
 As well, because the type of the \textsf{job} ($\forall W :: *_\ell.\,t @ C$) is polymorphic in the worker location, it has the freedom to communicate back and forth between the client, worker, and any other locations known to the client, rather than just running a task locally on the worker.
 The program could also be made polymorphic in the pool manager location $M$ by taking the \textsf{acquireWorker} and \textsf{releaseWorker} functions as arguments, which we do not do for simplicity.
-
-The key components of this choreography which are not expressible in previous works are the \textsf{acquireWorker} function, which allows the pool manager to \emph{dynamically} select a worker location, and the ability to communicate location names between nodes, enabling the chosen worker name to be shared with the client.
-Previous works, notably PolyChor$\lambda$, allow for \emph{delegation} of tasks to workers as in our thread pool.
-However in this language, as locations are part of the type system, types may not depend on values (that is, it is not a dependent type system), and there is no mechanism to reflect values into types, the locations must always be statically known, precluding the ability to \emph{dynamically} select location names at runtime.
-(Focus on what we can do rather than why they can't, move to related works possibly)
 
 \paragraph{Contributions}
 \begin{itemize}
