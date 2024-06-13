@@ -15,7 +15,7 @@ conference: conference.pdf
 tech_report: tech_report.pdf
 
 %.pdf: %.tex $(PAPER_FILES) $(BIB)
-	latexmk -pvc -pdf -bibtex -synctex=1 $<
+	latexmk -pdf -bibtex -synctex=1 $<
 
 
 ALLCLEANABLES := $(shell find . \( -name '*.aux'\
