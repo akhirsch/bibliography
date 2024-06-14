@@ -1,4 +1,5 @@
 \newif\iftr\trfalse
+\newif\ifdraft\drafttrue
 
 \ifcase\paperformat\relax
   \trtrue
@@ -77,6 +78,15 @@
 
 
 \begin{document}
+
+\ifdraft
+  \fancypagestyle{firstpagestyle}{
+    \renewcommand{\shorttitle}{}
+    \renewcommand{\thepage}{}
+    \fancyhead[C]{\raisebox{1.5em}[0pt][0pt]{\color{red}\large\itshape\fbox{Draft -- Do Not Distribute}}}
+  }
+  \fancyhead[C]{\raisebox{1.5em}[0pt][0pt]{\color{red}\large\itshape\fbox{Draft -- Do Not Distribute}}}
+\fi
 
 % PACM Required stuff here
 \begin{abstract}

@@ -1,10 +1,16 @@
 % Notes
 \newcommand{\newcommenter}[3]{%
-  \newcommand{#1}[1]{%
-    \textcolor{#2}{\small\textsf{[#3: {##1}]}}%
-  }%
+  \ifdraft
+    \newcommand{#1}[1]{%
+      \textcolor{#2}{\small\textsf{[#3: {##1}]}}%
+    }%
+  \else
+    \newcommand{#1}[1]{\ignorespaces}
+  \fi
 }
+\definecolor{darkgreen}{rgb}{0,0.7,0}
 \newcommenter{\akh}{purple}{AKH}
+\newcommenter{\ethan}{darkgreen}{Ethan}
 
 \newcommand{\programfont}[1]{\ensuremath{\mathsf{#1}}\xspace}
 \makeatletter
@@ -68,6 +74,14 @@
 \newcommand{\Fun}[3]{\FunN~{#1}(#2) \ChorDef {#3}}
 \newcommand{\Tell}[3][\loc]{{#1}.\TellN~{#2}~\To~{#3}}
 
+%% Example Names
+\newcommand{\LocFont}[1]{\programfont{#1}}
+\newcommand{\Client}{\LocFont{C}}
+\newcommand{\Worker}{\LocFont{W}}
+\newcommand{\Mngr}{\LocFont{M}}
+\newcommand{\RunAtWorker}{\programfont{runAtW}}
+\newcommand{\WithWorker}{\programfont{withWorker}}
+
 % AMSThm Setup
 \theoremstyle{theorem}
 \newtheorem{thm}{Theorem}
@@ -78,7 +92,7 @@
 \newtheorem{ex}{Example}
 
 % Names
-\newcommand\langname{\textcolor{red}{\textsf{PLACEHOLDER NAME}}}
+\newcommand{\langname}{\textcolor{red}{\textlangle\textsc{LangName}\textrangle}\xspace}
 
 % Context Projection
 \newcommand\proj[2]{\ensuremath{\left.#1\right|_{#2}}}

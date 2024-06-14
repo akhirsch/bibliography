@@ -10,53 +10,63 @@ However, session types can be difficult to work with as a separate program must 
 \emph{Choreographic programming} offers an alternative solution in which a single program is written to describe all interactions between nodes, and the program that each individual node will run is derived from this global program.
 Such choreographic languages lead to \emph{deadlock freedom by design}, providing the programmer assurance that the system will never become stuck.
 Currently, typed choreographic languages are typically functional and support higher-order types, but either do not support \emph{process polymorphism}, are not flexible enough to allow for an arbitrary language to be used for local computations, or cannot send \emph{dynamically computed process names}.
-This paper presents \langname{}, the first choreographic programming language which supports process polymorphism and dynamically generated process names over an arbitrary language of local computations.
+\ethan{Do any typed choreographies allow this?
+  I thought the main argument was we're the only one.
+  Symphony does it, but it doesn't have a type system.}
+This paper presents \langname, the first choreographic programming language which supports process polymorphism and dynamically generated process names over an arbitrary language of local computations.
 
-To understand why choreographic programming is a useful paradigm, consider a simple example in which two computational nodes, (W)orker and (C)lient communicate to compute a value.
-The client has on their local system the code to calculate a computationally expensive function $f : (\textsf{Int} \rightarrow \textsf{Int}) @ \textsf{C}$, and an integer $x : \textsf{Int} @ \textsf{C}$ on which they wish to evaluate the function.
-Consider the following choreographic program in which \textsf{C} sends $x$ and $f$ to \textsf{W}, who then computes $f \; x$ locally and returns the result back to \textsf{C}:
+To understand why choreographic programming is a useful paradigm,
+consider a simple example in which a Client \Client wishes to run a job on a dedicated worker.
+The client has on their local system the code to calculate a computationally expensive function $F$, and an input $X$ on which they wish to evaluate the function.
+If \Client wishes to run $F$ on a specific (statically known) worker \Worker,
+it can run the following choreography where \Client sends $F$ and $X$ to \Worker,
+then \Worker computes $F~X$ locally, and sends the result back to \Client.
+Note here, the syntax $t@\Client$ indicates a value of type $t$ located at \Client.
 \begin{align*}
-  \programfont{applyAtWorker} & : (\Int \to \Int) @ \programfont{C} \to \Int@\programfont{C} \to \Int@\programfont{C} \\
-  \programfont{applyAtWorker} & =
+  \RunAtWorker & : (t \to t') @ \Client \to t@\Client \to t'@\Client \\
+  \RunAtWorker & =
   \def\arraystretch{1.1}
   \FunN~F~X\ldotp \begin{array}[t]{@{}l@{}}
     \LetN~\begin{array}[t]{@{}l@{}}
-        \programfont{W}.f \ChorDef F \ColSend \programfont{W} \\
-        \programfont{W}.x \ChorDef X \ColSend \programfont{W} \\
+        \Worker.f \ChorDef F \ColSend \Worker \\
+        \Worker.x \ChorDef X \ColSend \Worker \\
     \end{array} \\
-    \In~\programfont{W}.(f~x) \ColSend \programfont{C}
+    \In~\Worker.(f~x) \ColSend \Client
   \end{array}
 \end{align*}
 This pattern of \emph{delegation} of work is common in higher-order choreographic languages, and allows for a concise representation of asynchronous computation while retaining important behavioral properties such as deadlock freedom.
 
+\ethan{I think we want to more heavily emphasize that this is not how real distributed systems work.}
 In earlier choreographic languages, the worker and client locations mentioned in the above program were not treated \emph{polymorphically}.
 In particular, a new program would have to be written for each possible choice of worker and client, which come from a fixed set specified ahead of time.
 Similarly, there was no polymorphism for data types, which can be a hinderance for programmers who wish to create abstract computational patterns.
 As well, in existing choreographic languages which do support location polymorphism, there is no way to \emph{dynamically} choose a location according to the result of a local computation; all locations used in a program must be known and determined at compile-time.
-In \langname{}, we support location name and type polymorphism, and the ability to send and use dynamically computed location names and types.
+In \langname, we support location name and type polymorphism, and the ability to send and use dynamically computed location names and types.
 
 To demonstrate the utility of these features, consider a programmer who wishes to implement a thread pool.
 In this process, (C)lients will submit jobs to a pool (M)anager, who will track a queue of idle worker locations and execute the jobs with a selected (W)orker.
 
 The programmer could implement the job-submission process using the following choreography:
 \begin{align*}
-  \programfont{withWorker} & : (\Int \to \Int) @ \programfont{C} \to \Int@\programfont{C} \to \Int@\programfont{C} \\
-  \programfont{withWorker} &=
+  \WithWorker & : (\Int \to \Int) @ \Client \to \Int@\Client \to \Int@\Client \\
+  \WithWorker &=
   \def\arraystretch{1.1}
   \FunN~F~X\ldotp \begin{array}[t]{@{}l@{}}
     \LetN~\begin{array}[t]{@{}l@{}}
-      \programfont{M}.w \ChorDef \programfont{acquireWorker}~\rho_w \\
-      W \ChorDef \Tell[\programfont{M}]{w}{\rho_w \cup \{C\}} \\
+      \Mngr.w \ChorDef \programfont{acquireWorker}~\rho_w \\
+      W \ChorDef \Tell[\Mngr]{w}{\rho_w \cup \{\Client\}} \\
       W.f \ChorDef F \ColSend W \\
       W.x \ChorDef X \ColSend W \\
-      \mathit{Res} \ChorDef W.(f~x) \ColSend \programfont{C}
+      \mathit{Res} \ChorDef W.(f~x) \ColSend \Client
     \end{array} \\
     \In~\programfont{releaseWorker}~W \seq \mathit{Res}
   \end{array}
 \end{align*}
 
-In this program, the pool manager $M$ first finds and selects an idle \textsf{worker} location from the pool using the \textsf{acquireWorker} function.
-The manager then sends the selected location to the client $C$, and notifies the worker that they have been selected to run the \textsf{job}.
+\ethan{This no longer matches the updated example}
+
+In this program, the pool manager \Mngr first finds and selects an idle \textsf{worker} location from the pool using the \textsf{acquireWorker} function.
+The manager then sends the selected location to the client \Client, and notifies the worker that they have been selected to run the \textsf{job}.
 The worker then runs the job, yielding the result $x$ directly to the client.
 Finally, the manager releases the worker back into the thread pool.
 
@@ -67,6 +77,7 @@ The program could also be made polymorphic in the pool manager location $M$ by t
 \paragraph{Contributions}
 \begin{itemize}
 	\item First choreographic programming language with dynamic location capabilities
+    \ethan{We should be careful. One could argue Symphony did that, it just didn't have a type system.}
 	\item Process and type polymorphism over an arbitrary local language
 	\item Out-of-order execution (with process polymorphism)
 	\item System F versus System F$\omega$. We used a simpler type system for an analogous (and in some places more general) result. As well, it is(was!) an open question whether location polymorphism is possible in a choreographic language using System F. Maybe not possible in PolyChor style, but possible with Pirouette style (advantage of Pirouette style)
