@@ -13,6 +13,7 @@ Currently, typed choreographic languages are typically functional and support hi
 \ethan{Do any typed choreographies allow this?
   I thought the main argument was we're the only one.
   Symphony does it, but it doesn't have a type system.}
+\ashley{Correct, I'm not aware of anyone else who does it while including a type system.}
 This paper presents \langname, the first choreographic programming language which supports process polymorphism and dynamically generated process names over an arbitrary language of local computations.
 
 To understand why choreographic programming is a useful paradigm,
@@ -37,6 +38,7 @@ Note here, the syntax $t@\Client$ indicates a value of type $t$ located at \Clie
 This pattern of \emph{delegation} of work is common in higher-order choreographic languages, and allows for a concise representation of asynchronous computation while retaining important behavioral properties such as deadlock freedom.
 
 \ethan{I think we want to more heavily emphasize that this is not how real distributed systems work.}
+\ashley{Additionally the word delegation isn't appropriate. I'm not sure how to best describe this pattern?}
 In earlier choreographic languages, the worker and client locations mentioned in the above program were not treated \emph{polymorphically}.
 In particular, a new program would have to be written for each possible choice of worker and client, which come from a fixed set specified ahead of time.
 Similarly, there was no polymorphism for data types, which can be a hinderance for programmers who wish to create abstract computational patterns.
@@ -64,20 +66,22 @@ The programmer could implement the job-submission process using the following ch
 \end{align*}
 
 \ethan{This no longer matches the updated example}
+\ashley{Updated}
 
-In this program, the pool manager \Mngr first finds and selects an idle \textsf{worker} location from the pool using the \textsf{acquireWorker} function.
-The manager then sends the selected location to the client \Client, and notifies the worker that they have been selected to run the \textsf{job}.
-The worker then runs the job, yielding the result $x$ directly to the client.
-Finally, the manager releases the worker back into the thread pool.
+In this program, the pool manager \Mngr first finds and selects an idle \textsf{worker} location from the pool $\rho_w$ using the \textsf{acquireWorker} function.
+The manager then tells the selected location to the client \Client, and notifies the worker that they have been selected to run the \textsf{job}.
+Note that the choice of worker is told to the entire pool $\rho_w$, as workers who are \emph{not} selected must also be notified.
+As in the earlier \RunAtWorker function, the client sends $F$ and $X$ to $W$, who then computes $F~X$ locally, and sends the output to \Client.
+Finally, the manager releases the worker back into the thread pool, at which point the computation has finished.
 
-Note that this program is \emph{polymorphic} with respect to the type $t$ returned by the job, the set $\rho_w$ of possible workers, and the client $C$.
-As well, because the type of the \textsf{job} ($\forall W :: *_\ell.\,t @ C$) is polymorphic in the worker location, it has the freedom to communicate back and forth between the client, worker, and any other locations known to the client, rather than just running a task locally on the worker.
-The program could also be made polymorphic in the pool manager location $M$ by taking the \textsf{acquireWorker} and \textsf{releaseWorker} functions as arguments, which we do not do for simplicity.
+Although not explicitly shown, this program program is \emph{polymorphic} with respect to the set $\rho_w$ of possible workers and the client \Client.
+Within \langname we could, for instance, quantify over all possible clients by prefixing the type of the example with the for-all quantifier $\forall C :: *_\ell.~\tau$, indicating that the client is some arbitrary location.
 
 \paragraph{Contributions}
 \begin{itemize}
-	\item First choreographic programming language with dynamic location capabilities
+	\item First choreographic programming language with dynamic location capabilities and a type system
     \ethan{We should be careful. One could argue Symphony did that, it just didn't have a type system.}
+    \ashley{This could also be phrased semantically instead, i.e. Symphony can get stuck but we have progress}
 	\item Process and type polymorphism over an arbitrary local language
 	\item Out-of-order execution (with process polymorphism)
 	\item System F versus System F$\omega$. We used a simpler type system for an analogous (and in some places more general) result. As well, it is(was!) an open question whether location polymorphism is possible in a choreographic language using System F. Maybe not possible in PolyChor style, but possible with Pirouette style (advantage of Pirouette style)
