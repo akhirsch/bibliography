@@ -7,61 +7,81 @@ open import Data.List
 open import Data.Product renaming (proj₁ to fst; proj₂ to snd)
 open import Data.Bool
 open import Relation.Nullary
+open import Relation.Binary
 open import Relation.Binary.PropositionalEquality
 open import Function
 
 open ≡-Reasoning
 
 open import Common
-open import SecondOrderSignatures
-open import ThirdOrderSignatures
-open import ThirdOrderLanguage
+open import KindSignatures
+open import TypeSignatures
+open import Types
+open import Kinding
+open import Terms
+open import Typing
 
 module PolyPir.LocalLang where
 
--- Binding signature and extra requirements for a local language
+-- Type signature and extra requirements for a local language
 record LocalLang (Loc : Set) : Set₁ where
   field
-    -- Binding signature of the language
-    {{⅀ₑ}} : ThirdOrderSignature
+    -- Type signature of the language
+    ⅀ₑ : TypeSignature
+
+    -- Kinds have decidable equality
+    ≡-dec-Kndₑ : DecidableEquality (⅀ₑ .⅀ₖ .Knd)
+
+    -- Type constructor symbols have decidable equality
+    ≡-dec-TySymbₑ : DecidableEquality (⅀ₑ .⅀ₖ .TySymb)
 
     -- Kind of local types
-    TyKnd : ⅀ₑ .⅀₂ .Knd
+    TyKnd : ⅀ₑ .⅀ₖ .Knd
 
-    -- Inherently type-preserving ground semantics
-    _⇒ₑ_ : ∀{t} (e₁ e₂ : Tm ⅀ₑ [] [] t) → Set
+    -- Semantics
+    _⇒ₑ_ : Tm ⅀ₑ → Tm ⅀ₑ → Set
     -- Values
-    Valₑ : ∀{t} (e : Tm ⅀ₑ [] [] t) → Set
+    Valₑ : Tm ⅀ₑ → Set
+    -- Only well-typed ground-terms can be values
+    ⊢Valₑ : ∀{e} → Valₑ e → Σ[ t ∈ _ ] (typed ⅀ₑ [] [] e t)
     -- Values cannot step
-    valNoStepₑ : ∀{t} {e₁ e₂ : Tm ⅀ₑ [] [] t} → Valₑ e₁ → ¬ (e₁ ⇒ₑ e₂)
+    valNoStepₑ : ∀{e1 e2} → Valₑ e1 → ¬ (e1 ⇒ₑ e2)
     -- We have type safety
-    progress : ∀{t} (e : Tm ⅀ₑ [] [] t) →
-               (Valₑ e) ⊎ (Σ[ e' ∈ _ ] (e ⇒ₑ e'))
+    preservationₑ : ∀{e1 e2 t} →
+                    typed ⅀ₑ [] [] e1 t →
+                    e1 ⇒ₑ e2 →
+                    typed ⅀ₑ [] [] e2 t
+    progressₑ : ∀{e1 t} →
+                typed ⅀ₑ [] [] e1 t →
+                (Valₑ e1) ⊎ (Σ[ e2 ∈ Tm ⅀ₑ ] e1 ⇒ₑ e2)
 
-    -- Local type for booleans
-    Boolₑ : Ty ⅀ₑ [] TyKnd
-    -- True and false are values
-    ttₑ : Tm ⅀ₑ [] [] (TyKnd , Boolₑ)
+    -- Boolean type
+    Boolₑ : Ty (⅀ₑ .⅀ₖ)
+    ⊢Boolₑ : kinded (⅀ₑ .⅀ₖ) [] Boolₑ TyKnd
+    -- True and false are boolean values
+    ttₑ : Tm ⅀ₑ
+    ⊢ttₑ : typed ⅀ₑ [] [] ttₑ (TyKnd , Boolₑ)
     tt-Valₑ : Valₑ ttₑ
-    ffₑ : Tm ⅀ₑ [] [] (TyKnd , Boolₑ)
+    ffₑ : Tm ⅀ₑ
+    ⊢ffₑ : typed ⅀ₑ [] [] ffₑ (TyKnd , Boolₑ)
     ff-Valₑ : Valₑ ffₑ
-    -- The only ground values are true and false
-    invertBoolₑ : ∀ e → Valₑ e → e ≡ ttₑ ⊎ e ≡ ffₑ
+    -- The only ground boolean values are true and false
+    invertBoolₑ : ∀{e} → typed ⅀ₑ [] [] e (TyKnd , Boolₑ) → Valₑ e → e ≡ ttₑ ⊎ e ≡ ffₑ
 
-    -- Local type for locations
-    Locₑ : Ty ⅀ₑ [] TyKnd
-    -- Each location has a value
-    litLocₑ : Loc → Tm ⅀ₑ [] [] (TyKnd , Locₑ)
-    litLoc-Valₑ : ∀ L → Valₑ (litLocₑ L)
-    -- The only ground values are literals
-    invertLocₑ : ∀ e → Valₑ e → Σ[ L ∈ Loc ] (e ≡ litLocₑ L)
+    -- Location type
+    Locₑ : Ty (⅀ₑ .⅀ₖ)
+    ⊢Locₑ : kinded (⅀ₑ .⅀ₖ) [] Locₑ TyKnd
+    -- Each location has a corresponding literal value
+    litLocₑ : Loc → Tm ⅀ₑ
+    ⊢litLocₑ : (L : Loc) → typed ⅀ₑ [] [] (litLocₑ L) (TyKnd , Locₑ)
+    litLoc-Valₑ : (L : Loc) → Valₑ (litLocₑ L)
+    -- The only ground location values are literals
+    invertLocₑ : ∀{e} → typed ⅀ₑ [] [] e (TyKnd , Locₑ) → Valₑ e → Σ[ L ∈ Loc ] (e ≡ litLocₑ L)
 
-    -- Local type for representations of local types of a given kind
-    TyRepₑ : ⅀ₑ .⅀₂ .Knd → Ty ⅀ₑ [] TyKnd
-    -- Each type has a representation
-    litTyRepₑ : (κₑ : ⅀ₑ .⅀₂ .Knd) → Ty ⅀ₑ [] κₑ → Tm ⅀ₑ [] [] (TyKnd , TyRepₑ κₑ)
-    litTyRep-Valₑ : ∀ κₑ t → Valₑ (litTyRepₑ κₑ t)
-    -- The only ground values are literals
-    invertTyRepₑ : ∀ κₑ tᵣ → Valₑ tᵣ → Σ[ t ∈ Ty ⅀ₑ [] κₑ ] (tᵣ ≡ litTyRepₑ κₑ t)
+    -- Type for representations of local types
+    TyRepₑ : Ty (⅀ₑ .⅀ₖ)
+    ⊢TyRepₑ : kinded (⅀ₑ .⅀ₖ) [] TyRepₑ TyKnd
+    Elₑ : ∀{e} → typed ⅀ₑ [] [] e (TyKnd , TyRepₑ) → Valₑ e →
+          Σ[ t ∈ Ty (⅀ₑ .⅀ₖ) ] kinded (⅀ₑ .⅀ₖ) [] t TyKnd
 
 open LocalLang public
