@@ -30,7 +30,7 @@ Our choreographic language is generic over the choice of local language, requiri
 \ashley{Should I convert the substitution properties to be in single-variable form? I think many people may not be familiar with the treatment of simultaneous substitution and find this confusing. It may also fit with the named-style of the paper better.}
 First, we require that the language consist of variables and term constructors, and includes a notion of variable substitution satisfying the standard simultaneous substitution properties of substitution of variables $x \langle \sigma \rangle = \sigma_x$, substitution along the identity $e \langle  id \rangle = e$, and composition of simultaneous substitutions $e \langle \sigma_1 \rangle \langle \sigma_2 \rangle = e \langle \sigma_2 \circ \sigma_1 \rangle$.
 
-Types are first-class in the local language, and we allow for type variables and type constructors that satisfy identical substitutive properties.
+Types are reflected in the local language, and we allow for type variables and type constructors that satisfy identical substitutive properties.
 Type variables may also appear in terms of the language, rather than just the types, and we put the same requirements on substitution of type variables as for expression variables.
 As shown in Example \ref{ex:st-lambda}, type variables need not be used in a nontrivial manner, and the type system may ultimately be \emph{simply-typed}.
 
@@ -57,7 +57,7 @@ In particular, this rules-out the usage of languages like System $F_\omega$ or a
 \iftr\subsubsection{Examples}\else\paragraph{Examples}\fi
 \label{sec:loc-lang-examples}
 
-Although the requirement that types be first-class in the local language may seem restrictive, most simply-typed languages satisfy our requirements by reflecting their type system into the type expressions of the language, and disallowing type variables from being bound or used non-trivially.
+Although the requirement that types be reflected in the local language may seem restrictive, most simply-typed languages satisfy our requirements by reflecting their type system into the type expressions of the language, and disallowing type variables from being bound or used non-trivially.
 Alternatively, types may be an active part of the language and used to express useful features, such as parametric polymorphism within System F.
 
 \begin{ex}[Simply-Typed $\lambda$-Calculus]
@@ -75,7 +75,7 @@ Alternatively, types may be an active part of the language and used to express u
 
 \begin{ex}[System F]
   \label{ex:system-f}
-  System F with primitive types for booleans and integers, as well as a way to represent simple types denoted via the quotations \say{\Int}, \say{\Bool}, and $e_1 \quoteto e_2$, satisfies our requirements.
+  System F with primitive types for booleans and integers, as well as a way to represent simple types denoted via the quotations \sayjp{\Int}, \say{\Bool}, and $e_1 \quoteto e_2$, satisfies our requirements.
   Note that only a strict subset of the types of the language, namely the simple types, have a representation.
     \ashley{Any better suggestions for this quotation syntax?}
   In this language, type variables are bound by the polymorphic for-all type $\forall \alpha.t$ and the type-abstraction expression $\Lambda \alpha.e$, and so may be used in a non-trivial manner.
@@ -150,9 +150,9 @@ We additionally require the following \emph{soundness} assumptions on the local 
 
 	\item (\textsc{Boolean Invertibility}) The type \Bool is invertible for values: if $v$ is a value and $\localemptyped{v}{\Bool}$ then either $v = \True$ or $v = \False$.
 
-	\item (\textsc{Location Name Invertibility}) The type \Loc is invertible for values: there is a \emph{partial} map $\text{locLit} : \Locations \rightharpoonup \text{Expr}$ from location names to local language expressions such that if $v$ is a value and $\localemptyped{v}{\Loc}$ then there exists some $L \in \Locations$ such that $v = \text{locLit}(L)$.
+	\item (\textsc{Location Name Invertibility}) The type \Loc is invertible for values: there is an injective \emph{partial} map $\text{locLit} : \Locations \rightharpoonup \text{Expr}$ from location names to local language expressions such that if $v$ is a value and $\localemptyped{v}{\Loc}$ then there exists some $L \in \Locations$ such that $v = \text{locLit}(L)$.
 
-	\item (\textsc{Type Representation Invertibility}) The type \Typ is invertible for values: there is a partial map $\text{tyLit} : \text{Type} \rightharpoonup \text{Expr}$ from local language types to local language expressions such that if $v$ is a value and $\localemptyped{v}{\Typ}$ then there exists some type $t$ such that $v = \text{tyLit}(t)$ and $\localempkinded{t}$.
+	\item (\textsc{Type Representation Invertibility}) The type \Typ is invertible for values: there is an injective partial map $\text{tyLit} : \text{Type} \rightharpoonup \text{Expr}$ from local language types to local language expressions such that if $v$ is a value and $\localemptyped{v}{\Typ}$ then there exists some type $t$ such that $v = \text{tyLit}(t)$ and $\localempkinded{t}$.
 \end{itemize}
 
 %%% Local Variables:

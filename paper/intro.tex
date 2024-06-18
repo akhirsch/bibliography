@@ -25,9 +25,9 @@ then \Worker computes $F~X$ locally, and sends the result back to \Client.
 Note here, the syntax $t@\Client$ indicates a value of type $t$ located at \Client.
 \begin{align*}
   \RunAtWorker & : (t \to t') @ \Client \to t@\Client \to t'@\Client \\
-  \RunAtWorker & =
+  \RunAtWorker~F~X & =
   \def\arraystretch{1.1}
-  \FunN~F~X\ldotp \begin{array}[t]{@{}l@{}}
+  \begin{array}[t]{@{}l@{}}
     \LetN~\begin{array}[t]{@{}l@{}}
         \Worker.f \ChorDef F \ColSend \Worker \\
         \Worker.x \ChorDef X \ColSend \Worker \\
@@ -35,7 +35,9 @@ Note here, the syntax $t@\Client$ indicates a value of type $t$ located at \Clie
     \In~\Worker.(f~x) \ColSend \Client
   \end{array}
 \end{align*}
-This pattern of \emph{delegation} of work is common in higher-order choreographic languages, and allows for a concise representation of asynchronous computation while retaining important behavioral properties such as deadlock freedom.
+\ashley{Walk through this program in more detail. E.g. F is a function stored at C, the let-expression lets the location access it in local expressions, etc}
+% This pattern of \emph{delegation} of work is common in higher-order choreographic languages, and allows for a concise representation of asynchronous computation while retaining important behavioral properties such as deadlock freedom.
+% What did i mean by this :(
 
 \ethan{I think we want to more heavily emphasize that this is not how real distributed systems work.}
 \ashley{Additionally the word delegation isn't appropriate. I'm not sure how to best describe this pattern?}
@@ -51,9 +53,9 @@ In this process, (C)lients will submit jobs to a pool (M)anager, who will track 
 The programmer could implement the job-submission process using the following choreography:
 \begin{align*}
   \WithWorker & : (\Int \to \Int) @ \Client \to \Int@\Client \to \Int@\Client \\
-  \WithWorker &=
+  \WithWorker~F~X &=
   \def\arraystretch{1.1}
-  \FunN~F~X\ldotp \begin{array}[t]{@{}l@{}}
+  \begin{array}[t]{@{}l@{}}
     \LetN~\begin{array}[t]{@{}l@{}}
       \Mngr.w \ChorDef \programfont{acquireWorker}~\rho_w \\
       W \ChorDef \Tell[\Mngr]{w}{\rho_w \cup \{\Client\}} \\
@@ -68,6 +70,10 @@ The programmer could implement the job-submission process using the following ch
 \ethan{This no longer matches the updated example}
 \ashley{Updated}
 
+\ashley{Explain the acquire worker function}
+\ashley{Explain the second tell-let line in more detail. Emphasize this line, it's "the magic" which makes it work. Everything else in the program is seen in the first example.}
+\ashley{See if we can add another ingredient to stop locations from accessing bound locations and types that they don't have access to}
+
 In this program, the pool manager \Mngr first finds and selects an idle \textsf{worker} location from the pool $\rho_w$ using the \textsf{acquireWorker} function.
 The manager then tells the selected location to the client \Client, and notifies the worker that they have been selected to run the \textsf{job}.
 Note that the choice of worker is told to the entire pool $\rho_w$, as workers who are \emph{not} selected must also be notified.
@@ -81,7 +87,7 @@ Within \langname we could, for instance, quantify over all possible clients by p
 \begin{itemize}
 	\item First choreographic programming language with dynamic location capabilities and a type system
     \ethan{We should be careful. One could argue Symphony did that, it just didn't have a type system.}
-    \ashley{This could also be phrased semantically instead, i.e. Symphony can get stuck but we have progress}
+    \ashley{This could alsobe phrased semantically instead, i.e. Symphony can get stuck but we have progress}
 	\item Process and type polymorphism over an arbitrary local language
 	\item Out-of-order execution (with process polymorphism)
 	\item System F versus System F$\omega$. We used a simpler type system for an analogous (and in some places more general) result. As well, it is(was!) an open question whether location polymorphism is possible in a choreographic language using System F. Maybe not possible in PolyChor style, but possible with Pirouette style (advantage of Pirouette style)

@@ -62,9 +62,16 @@
 \newcommand{\dom}{\operatorname{dom}}
 \newcommand{\sendsto}{\rightsquigarrow}
 \newcommand{\tpat}{\raisebox{1pt}{\footnotesize\ensuremath{@}}}
-\newcommand{\say}[1]{\text{``#1''}}
-\newcommand{\quoteto}{~\say{\ensuremath{\to}}~}
+
 \newcommand{\defeq}{\ensuremath{\stackrel{\text{def}}{=}}}
+
+\newcommand{\leftjpquote}{\begin{CJK}{UTF8}{min}「\end{CJK}}
+\newcommand{\rightjpquote}{\begin{CJK}{UTF8}{min}」\end{CJK}}
+\newcommand{\sayam}[1]{\text{``#1''}}
+\newcommand{\sayjp}[1]{\ensuremath{\lceil#1\rfloor}}
+\newcommand{\sayfr}[1]{\guillemotleft\text{#1}\guillemotright}
+\newcommand{\say}[1]{\sayjp{#1}}
+\newcommand{\quoteto}{\ensuremath{\mathrel{\say{\mathord{\to}}}}}
 
 \newcommand{\Locations}{\ensuremath{\mathcal{L}}}
 
