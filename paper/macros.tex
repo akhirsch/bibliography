@@ -56,6 +56,7 @@
 \makeatother
 
 \newcommand{\ty}{\mkern2mu{:}\mkern2mu}
+\newcommand{\knd}{\mkern2mu{::}\mkern2mu}
 \newcommand{\proves}{\vdash}
 \newcommand{\nproves}{\nvdash}
 \newcommand{\dom}{\operatorname{dom}}
@@ -103,6 +104,7 @@
 \newcommand{\ITE}[4][\loc]{\IfN_{#1}~{#2}~\ThenN~{#3}~\ElseN~{#4}}
 \newcommand{\Fun}[3]{\FunN~{#1}(#2) \ChorDef {#3}}
 \newcommand{\Tell}[3][\loc]{{#1}.\TellN~{#2}~\To~{#3}}
+\newcommand{\LetTellIn}[4]{\LetN~\Tell[#1]{#2}{#3}~\In~{#4}}
 
 \newcommand{\LocalLangFont}[1]{\programfont{#1}}
 \newcommand{\True}{\LocalLangFont{true}}
@@ -147,7 +149,6 @@
 \newcommand\send[3]{\ensuremath{#1 \overset{#2}{\rightsquigarrow} #3}}
 \newcommand\ifthen[3]{\ensuremath{\text{if}\; #1 \;\text{then}\; #2 \;\text{else}\; #3}}
 \newcommand\letin[3]{\ensuremath{\text{let}\; #1 \;\coloneq \; #2 \;\text{in}\; #3}}
-\newcommand\letinsend[4]{\ensuremath{\text{let}\; #1 \;\coloneq \; #2 \rightsquigarrow #3 \;\text{in}\; #4}}
 
 % Typing & kinding judgments
 \newcommand\localkinded[2]{\ensuremath{#1 ~{\proves}_{\footnotesize{e}}~ #2}}
