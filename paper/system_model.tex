@@ -7,7 +7,7 @@ A system is composed of a set of logically distinct computational nodes which ca
 \subsection{Locations}
 \label{sec:locations}
 
-The set of \emph{locations} is denoted by $\mathcal{L}$.
+The set of \emph{locations} is denoted by \Locations.
 We write elements of this set as uppercase letters, typically as $L$, $L_1$, $L_2$, $W$, $M$, and so-on.
 Locations are atomic and have no associated structure, simply representing the names of distinguishable physical nodes, threads, or other entities capable of running local computations and communicating with other locations.
 
@@ -15,20 +15,49 @@ Locations are atomic and have no associated structure, simply representing the n
 \label{sec:communication}
 
 We assume that all locations can communicate with each-other synchronously, whether over a network or otherwise.
-In particular, sends are blocking, so that if $L_1$ sends a message to $L_2$, then $L_1$ will not continue execution until $L_2$ has received the message.
+In particular, if $L_1$ sends a message to $L_2$, then $L_1$ will not continue execution until $L_2$ has received the message.
 Messages are sent instantaneously and deterministically, and must be guaranteed to arrive.
 
 Nodes must be able to send both values from local computations, and the special \emph{synchronization messages} denoted \textsf{Left} and \textsf{Right}.
 The synchronization messages are used to ensure that locations execute the correct branch of the program based on the results of previous computations at other locations, and can simply be represented as boolean values.
 
-
 \subsection{Local Programs}
 \label{sec:local-programs}
 
 Each node should be able to execute \emph{local} programs in an expression-based language.
-Our choreographic language is generic over the local language, requiring only that it obey typical syntactic and typing rules, have a sound type system and semantics, and include the components described below.
+Our choreographic language is generic over the choice of local language, requiring only that it obey typical syntactic and typing rules, have a sound type system and semantics, and include the components described below.
 
-First, we require that the language consist of variables and term constructors, including satisfying typical simultaneous substitution equations such as the substitution of variables $x \langle \sigma \rangle = \sigma_x$, substitution along the identity $e \langle  id \rangle = e$, and composition of simultaneous substitutions $e \langle \sigma_1 \rangle \langle \sigma_2 \rangle = e \langle \sigma_2 \circ \sigma_1 \rangle$.
+First, we require that the language consist of variables and term constructors, and includes a notion of variable substitution satisfying the standard simultaneous substitution properties of substitution of variables $x \langle \sigma \rangle = \sigma_x$, substitution along the identity $e \langle  id \rangle = e$, and composition of simultaneous substitutions $e \langle \sigma_1 \rangle \langle \sigma_2 \rangle = e \langle \sigma_2 \circ \sigma_1 \rangle$.
+
+Types are first-class in the local language, and we allow for type variables and type constructors that satisfy identical substitutive properties.
+Type variables may also appear in terms of the language, rather than just the types, and we put the same requirements on substitution of type variables.
+
+To implement the synchronization messages, we require that the local language have two distinguishable constants, \True and \False, which are values.
+There should also be a type \Bool of booleans within the local language.
+We also require that these constants be the \emph{only} well-typed values of boolean type, as described in \todo.
+
+In order for location names to be dynamically computed and sent over the network, we require a type \Loc in the local language for representations of location names.
+This type need not be \emph{complete}, in the sense that there does not need to be a value of this type for each concrete location $L \in \Locations$.
+Similarly there must be a type \Typ for representations of local language types, which also need not be complete.
+We formulate the existence of these two types as a strict requirement on the local language, however if they are not present we could alternatively choose to remove the relevant features from \langname and still retain the core choreographic functionality and properties.
+
+We require the language have a predicate Value$(e)$ to determine whether an expression is a value of the language, and all values are required to be closed expressions with no free expression or type variables.
+All values of the local language are able to be sent over the network.
+
+\ashley{Why is the localstep being gross? Neither of the two here look correct.}
+We require a small-step operational semantics on expressions defined by the relation $e_1 \localstep{} e_2$, read as $e_1$ \emph{steps-to} $e_2$.
+Values are required to be \emph{fully-reduced}, so that for any value Value$(v)$, $v \nlocalstep{} e$ for every $e$.
+Types are not allowed to have an operational semantics.
+In particular, we do not make any assumption of operational semantics on the types, and more strongly we require that the expression semantics $e_1 \localstep{} e_2$ obeys type preservation \emph{on-the-nose} without type-conversion, as in \todo.
+
+\iftr\subsubsection{Examples}\else\paragraph{Examples}\fi
+\label{sec:loc-lang-examples}
+
+\begin{ex}[Call-by-Value $\lambda$-Calculus]
+  \label{ex:cbv-lambda}
+ The call-by-value $\lambda$-calculus, extended with recursive functions, Boolean values and if-then-else expression, almost fits our requirements.
+  However, we must restrict values to be closed.
+\end{ex}
 
 %%% Local Variables:
 %%% mode: latex

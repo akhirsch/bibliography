@@ -36,6 +36,25 @@
 \WithSuffix\newcommand\hsubst*[3]{\raw@subst{#1}{#2|}{#3}}
 \makeatother
 
+\makeatletter
+\newcommand{\narrowfill@}[5]{%
+  $\m@th\thickmuskip0mu\medmuskip\thickmuskip\thinmuskip\thickmuskip
+  \relax#5#1\mkern-7mu%
+  \cleaders\hbox{$#5\mkern-2mu#2\mkern-2mu$}\hfill
+  \mkern-5mu %
+  #4%
+  \mkern-5mu %
+  \cleaders\hbox{$#5\mkern-2mu#2\mkern-2mu$}\hfill
+  \mkern-7mu#3$%
+}
+\newcommand{\nRightarrowfill@}{%
+  \narrowfill@\Relbar\Relbar\Rightarrow\neq
+}
+\newcommand*{\xnRightarrow}[2][]{%
+  \ext@arrow 0359\nRightarrowfill@{#1}{#2}%
+}
+\makeatother
+
 \newcommand{\ty}{\mkern2mu{:}\mkern2mu}
 \newcommand{\proves}{\vdash}
 \newcommand{\nproves}{\nvdash}
@@ -45,6 +64,9 @@
 
 %% Types
 \newcommand{\Int}{\programfont{int}}
+\newcommand{\Bool}{\programfont{bool}}
+\newcommand{\Typ}{\programfont{typ}}
+\newcommand{\Loc}{\programfont{loc}}
 
 \newcommand{\ChorCol}[1]{{\color{RoyalBlue}#1}}
 %\newcommand{\ChorCol}[1]{#1}
@@ -76,6 +98,13 @@
 \newcommand{\Fun}[3]{\FunN~{#1}(#2) \ChorDef {#3}}
 \newcommand{\Tell}[3][\loc]{{#1}.\TellN~{#2}~\To~{#3}}
 
+\newcommand{\LocalLangFont}[1]{\programfont{#1}}
+\newcommand{\True}{\LocalLangFont{true}}
+\newcommand{\False}{\LocalLangFont{false}}
+
+%% Math names
+\newcommand{\Locations}{\ensuremath{\mathcal{L}}}
+
 %% Example Names
 \newcommand{\LocFont}[1]{\programfont{#1}}
 \newcommand{\Client}{\LocFont{C}}
@@ -93,6 +122,9 @@
 \newtheorem{defn}{Definition}
 \newtheorem{ex}{Example}
 
+% TODO
+\newcommand{\todo}{\textcolor{red}{TODO}\xspace}
+
 % Names
 \newcommand{\langname}{\textcolor{red}{\textlangle\textsc{LangName}\textrangle}\xspace}
 
@@ -104,6 +136,8 @@
 
 % Semantics
 \newcommand\step[1]{\ensuremath{\xRightarrow{{#1}}_{\raisebox{3pt}{\footnotesize{c}}}}}
+\newcommand\localstep[1]{\ensuremath{\xRightarrow{{#1}}_{\raisebox{3pt}{\footnotesize{e}}}}}
+\newcommand\nlocalstep[1]{\ensuremath{\xnRightarrow{{#1}}_{\raisebox{3pt}{\footnotesize{e}}}}}
 
 % Syntax
 \newcommand\app[2]{\ensuremath{#1 \; #2}}
