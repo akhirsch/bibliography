@@ -63,6 +63,7 @@
 \newcommand{\tpat}{\raisebox{1pt}{\footnotesize\ensuremath{@}}}
 \newcommand{\say}[1]{\text{``#1''}}
 \newcommand{\quoteto}{~\say{\ensuremath{\to}}~}
+\newcommand{\defeq}{\ensuremath{\stackrel{\text{def}}{=}}}
 
 \newcommand{\Locations}{\ensuremath{\mathcal{L}}}
 
@@ -147,6 +148,13 @@
 \newcommand\ifthen[3]{\ensuremath{\text{if}\; #1 \;\text{then}\; #2 \;\text{else}\; #3}}
 \newcommand\letin[3]{\ensuremath{\text{let}\; #1 \;\coloneq \; #2 \;\text{in}\; #3}}
 \newcommand\letinsend[4]{\ensuremath{\text{let}\; #1 \;\coloneq \; #2 \rightsquigarrow #3 \;\text{in}\; #4}}
+
+% Typing & kinding judgments
+\newcommand\localkinded[2]{\ensuremath{#1 ~{\proves}_{\footnotesize{e}}~ #2}}
+\newcommand\localtyped[4]{\ensuremath{#1;#2 ~{\proves}_{\footnotesize{e}}~ #3 \ty #4}}
+\newcommand\localempkinded[1]{\ensuremath{{\proves}_{\footnotesize{e}}~ #1}}
+\newcommand\localemptyped[2]{\ensuremath{{\proves}_{\footnotesize{e}}~ #1 \ty #2}}
+\newcommand\localctxwf[2]{\ensuremath{#1 ~{\proves}_{\footnotesize{e}}~ #2}}
 
 %%% Local Variables:
 %%% mode: latex
