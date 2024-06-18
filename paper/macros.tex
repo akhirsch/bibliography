@@ -67,7 +67,7 @@
 
 \newcommand{\leftjpquote}{\begin{CJK}{UTF8}{min}「\end{CJK}}
 \newcommand{\rightjpquote}{\begin{CJK}{UTF8}{min}」\end{CJK}}
-\newcommand{\sayam}[1]{\text{``#1''}}
+\newcommand{\sayam}[1]{\text{``}#1\text{''}}
 \newcommand{\sayjp}[1]{\ensuremath{\lceil#1\rfloor}}
 \newcommand{\sayfr}[1]{\guillemotleft\text{#1}\guillemotright}
 \newcommand{\say}[1]{\sayjp{#1}}
@@ -111,7 +111,7 @@
 \newcommand{\ITE}[4][\loc]{\IfN_{#1}~{#2}~\ThenN~{#3}~\ElseN~{#4}}
 \newcommand{\Fun}[3]{\FunN~{#1}(#2) \ChorDef {#3}}
 \newcommand{\Tell}[3][\loc]{{#1}.\TellN~{#2}~\To~{#3}}
-\newcommand{\LetTellIn}[4]{\LetN~\Tell[#1]{#2}{#3}~\In~{#4}}
+\newcommand{\LetTellIn}[5]{\LetN~ #1 \ChorDef \Tell[#2]{#3}{#4}~\In~{#5}}
 
 \newcommand{\LocalLangFont}[1]{\programfont{#1}}
 \newcommand{\True}{\LocalLangFont{true}}

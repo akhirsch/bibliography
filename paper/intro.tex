@@ -17,15 +17,14 @@ Currently, typed choreographic languages are typically functional and support hi
 This paper presents \langname, the first choreographic programming language which supports process polymorphism and dynamically generated process names over an arbitrary language of local computations.
 
 To understand why choreographic programming is a useful paradigm,
-consider a simple example in which a Client \Client wishes to run a job on a dedicated worker.
+consider a simple example in which a client \Client wishes to run a job on a dedicated worker \Worker.
 The client has on their local system the code to calculate a computationally expensive function $F$, and an input $X$ on which they wish to evaluate the function.
 If \Client wishes to run $F$ on a specific (statically known) worker \Worker,
-it can run the following choreography where \Client sends $F$ and $X$ to \Worker,
-then \Worker computes $F~X$ locally, and sends the result back to \Client.
+it can run the following choreography where \Client sends $F$ and $X$ to \Worker, then \Worker computes $F~X$ locally, and sends the result back to \Client.
 Note here, the syntax $t@\Client$ indicates a value of type $t$ located at \Client.
 \begin{align*}
   \RunAtWorker & : (t \to t') @ \Client \to t@\Client \to t'@\Client \\
-  \RunAtWorker~F~X & =
+  \RunAtWorker &~F~X =
   \def\arraystretch{1.1}
   \begin{array}[t]{@{}l@{}}
     \LetN~\begin{array}[t]{@{}l@{}}
@@ -35,35 +34,40 @@ Note here, the syntax $t@\Client$ indicates a value of type $t$ located at \Clie
     \In~\Worker.(f~x) \ColSend \Client
   \end{array}
 \end{align*}
-\ashley{Walk through this program in more detail. E.g. F is a function stored at C, the let-expression lets the location access it in local expressions, etc}
-% This pattern of \emph{delegation} of work is common in higher-order choreographic languages, and allows for a concise representation of asynchronous computation while retaining important behavioral properties such as deadlock freedom.
-% What did i mean by this :(
+In the first line of this program, \Client first sends the function $F$ stored on its local system to \Worker via the expression $F \ColSend \Worker$.
+This results in an expression with type $(t \to t') @ \Worker$, indicating that \Worker now has knowledge of this function.
 
+The second action which occurs on the first line of the program is the \emph{local let-binding} $\LetN~\Worker.f \ChorDef F \ColSend \Worker$, in which \Worker binds the value of the function it recieved from \Worker to a \emph{local variable} $\Worker.f$, allowing it to be used in \emph{local computations}.
+
+This construct is necessary as choreographic and local values cannot inter-mingle: choreographic values can only be used in a local expression by using a local let-binding, and local values can only be used in the choreographic program by using them at the location they belong to. For instance, if $N : \Int @ \ell$ is an integer stored at $\ell$, the choreography which represents $\ell$ locally adding 2 to $N$ is represented as the program $\LetN~\ell.n \ChorDef N ~\In~ \ell.(2 + n)$ which also has type $\Int @ \ell$.
+
+The second line of the program similarly has \Client send the value $X$ to \Worker, who then binds it to the local variable $\Worker.x$.
+The final line of the program performs two actions.
+\Worker first applies $f$ to $x$ on its local system, represented by the expression $\Worker.(f~x)$.
+Lastly \Worker yields the result of this computation to \Client, completing the program.
+ 
 \ethan{I think we want to more heavily emphasize that this is not how real distributed systems work.}
-\ashley{Additionally the word delegation isn't appropriate. I'm not sure how to best describe this pattern?}
-In earlier choreographic languages, the worker and client locations mentioned in the above program were not treated \emph{polymorphically}.
-In particular, a new program would have to be written for each possible choice of worker and client, which come from a fixed set specified ahead of time.
-Similarly, there was no polymorphism for data types, which can be a hinderance for programmers who wish to create abstract computational patterns.
-As well, in existing choreographic languages which do support location polymorphism, there is no way to \emph{dynamically} choose a location according to the result of a local computation; all locations used in a program must be known and determined at compile-time.
-In \langname, we support location name and type polymorphism, and the ability to send and use dynamically computed location names and types.
 
-To demonstrate the utility of these features, consider a programmer who wishes to implement a thread pool.
-In this process, (C)lients will submit jobs to a pool (M)anager, who will track a queue of idle worker locations and execute the jobs with a selected (W)orker.
+We have so-far assumed that the worker location \Worker in this program is both fixed and statically-known.
+What if, however, we wish for the identity of the worker location to be dynamically computed during the execution of the program?
 
+For instance, consider a programmer who wishes to implement a thread pool.
+In this process, the client \Client will ask a pool-manager \Mngr for the name of a location on which their task will run.
+The manager can locally track the state of the thread pool, for instance by using a queue of idle processes, and allow clients to acquire the least-recently-used location by using a \emph{dynamically-computed} local function \programfont{acquireWorker}.
 The programmer could implement the job-submission process using the following choreography:
 \begin{align*}
   \WithWorker & : (\Int \to \Int) @ \Client \to \Int@\Client \to \Int@\Client \\
-  \WithWorker~F~X &=
+  \WithWorker & ~F~X =
   \def\arraystretch{1.1}
   \begin{array}[t]{@{}l@{}}
     \LetN~\begin{array}[t]{@{}l@{}}
-      \Mngr.w \ChorDef \programfont{acquireWorker}~\rho_w \\
-      W \ChorDef \Tell[\Mngr]{w}{\rho_w \cup \{\Client\}} \\
+      \Mngr.w \ChorDef \programfont{acquireWorker} \\
+      W \ChorDef \Tell[\Mngr]{w}{\{\Client\} \cup \rho_w} \\
       W.f \ChorDef F \ColSend W \\
       W.x \ChorDef X \ColSend W \\
       \mathit{Res} \ChorDef W.(f~x) \ColSend \Client
     \end{array} \\
-    \In~\programfont{releaseWorker}~W \seq \mathit{Res}
+    \In~\programfont{releaseWorker}~M.w \seq \mathit{Res}
   \end{array}
 \end{align*}
 
@@ -74,14 +78,26 @@ The programmer could implement the job-submission process using the following ch
 \ashley{Explain the second tell-let line in more detail. Emphasize this line, it's "the magic" which makes it work. Everything else in the program is seen in the first example.}
 \ashley{See if we can add another ingredient to stop locations from accessing bound locations and types that they don't have access to}
 
-In this program, the pool manager \Mngr first finds and selects an idle \textsf{worker} location from the pool $\rho_w$ using the \textsf{acquireWorker} function.
-The manager then tells the selected location to the client \Client, and notifies the worker that they have been selected to run the \textsf{job}.
-Note that the choice of worker is told to the entire pool $\rho_w$, as workers who are \emph{not} selected must also be notified.
-As in the earlier \RunAtWorker function, the client sends $F$ and $X$ to $W$, who then computes $F~X$ locally, and sends the output to \Client.
+On the first line of this program, the pool manager \Mngr first finds and selects an idle \textsf{worker} location $w$ from the pool $\rho_w$ of possible worker locations using the local \textsf{acquireWorker} function.
+With this dynamically computed value, on the seond line \Mngr then \emph{tells} the identity of the location $w$ to the client \Client, where it is bound to the choreographic program variable $W$.
+As well, all workers in the pool $\rho_w$ are notified about the identity of the chosen worker so that they know whether or not they have been selected.
+
+As in the earlier \RunAtWorker function, the client then sends $F$ and $X$ to $W$, who then computes $F~X$ locally, and sends the result to \Client.
 Finally, the manager releases the worker back into the thread pool, at which point the computation has finished.
 
-Although not explicitly shown, this program program is \emph{polymorphic} with respect to the set $\rho_w$ of possible workers and the client \Client.
-Within \langname we could, for instance, quantify over all possible clients by prefixing the type of the example with the for-all quantifier $\forall C :: *_\ell.~\tau$, indicating that the client is some arbitrary location.
+The second line of this program, $W \ChorDef \Tell[\Mngr]{w}{\{\Client\} \cup \rho_w}$, is the main difference between this and the previous example, and is critical for the ability of \langname to be able to send and use dynamically generated location names.
+This expression, called a \emph{tell-let} binding, allows for location names from the local language to be used within the subsequent choreographic program.
+While it might appear that because the type of the choreography can depend on the value of the chosen location name, for instance with the type $\Int @ \Worker$, we disallow such \emph{dependent types} within our language while still allowing the value of the location to be used in the body of the program using the following typing rule.
+\begin{mathpar}
+  \infer[TellLetLoc]{\chortyped{\Gamma}{\Delta}{\Sigma}{C_1}{\Loc @ \ell} \\
+    \chorkinded{\Gamma}{\rho}{*_s} \\
+    \chorkinded{\Gamma}{\tau}{*} \\
+    \chortyped{\Gamma, \alpha \knd *_\ell}{\Delta}{\Sigma}{C_2}{\tau} \\
+    }
+  {\chortyped{\Gamma}{\Delta}{\Sigma}{\LetTellIn{\alpha}{\ell}{C_1 \knd *_\ell}{\rho}{C_2}}{\tau}}
+\end{mathpar}
+
+\ashley{Useful to include the typing rule here?}
 
 \paragraph{Contributions}
 \begin{itemize}

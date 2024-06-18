@@ -52,7 +52,7 @@ We require a small-step operational semantics on expressions defined by the rela
 Values are required to be \emph{fully-reduced}, so that for any value Value$(v)$, $v \nlocalstep{} e$ for every $e$.
 Types are disallowed from having an operational semantics.
 In particular, we do not make any assumption of an operational semantics on the types of the language, and more strongly we require that the expression semantics $e_1 \localstep{} e_2$ obeys type preservation \emph{on-the-nose} without an allowance for \emph{type-conversion}, as described in \todo.
-In particular, this rules-out the usage of languages like System $F_\omega$ or a fully-dependent lambda calculus from being used as the local language, however we believe that this requirement is not essential an can be relaxed.
+In particular, this rules-out the usage of languages like System $F_\omega$ or a language with a dependent type system from being used as the local language.
 
 \iftr\subsubsection{Examples}\else\paragraph{Examples}\fi
 \label{sec:loc-lang-examples}
@@ -75,9 +75,8 @@ Alternatively, types may be an active part of the language and used to express u
 
 \begin{ex}[System F]
   \label{ex:system-f}
-  System F with primitive types for booleans and integers, as well as a way to represent simple types denoted via the quotations \sayjp{\Int}, \say{\Bool}, and $e_1 \quoteto e_2$, satisfies our requirements.
+  System F with primitive types for booleans and integers, as well as a way to represent simple types denoted via the quotations \say{\Int}, \say{\Bool}, and $e_1 \quoteto e_2$, satisfies our requirements.
   Note that only a strict subset of the types of the language, namely the simple types, have a representation.
-    \ashley{Any better suggestions for this quotation syntax?}
   In this language, type variables are bound by the polymorphic for-all type $\forall \alpha.t$ and the type-abstraction expression $\Lambda \alpha.e$, and so may be used in a non-trivial manner.
   \begin{syntax}
   	\category[Types]{t} \alternative{\alpha} \alternative{\Int} \alternative{\Bool} \alternative{\Typ}\\

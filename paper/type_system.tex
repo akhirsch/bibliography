@@ -79,14 +79,18 @@
   {\chortyped{\Gamma}{\Delta}{\Sigma}{\LetIn{\ell.x \ty t_e}{C_1}{C_2}}{\tau}} \and
 
   \infer[TellLetLoc]{\chortyped{\Gamma}{\Delta}{\Sigma}{C_1}{\Loc @ \ell} \\
+    \chorkinded{\Gamma}{\rho}{*_s} \\
+    \chorkinded{\Gamma}{\tau}{*} \\
     \chortyped{\Gamma, \alpha \knd *_\ell}{\Delta}{\Sigma}{C_2}{\tau} \\
-    \chorkinded{\Gamma}{\rho}{*_s}}
-  {\chortyped{\Gamma}{\Delta}{\Sigma}{\LetTellIn{\ell}{C_1 \knd *_\ell}{\rho}{C_2}}{\tau}} \and
+    }
+  {\chortyped{\Gamma}{\Delta}{\Sigma}{\LetTellIn{\alpha}{\ell}{C_1 \knd *_\ell}{\rho}{C_2}}{\tau}} \and
 
   \infer[TellLetTy]{\chortyped{\Gamma}{\Delta}{\Sigma}{C_1}{\Typ @ \ell} \\
+    \chorkinded{\Gamma}{\rho}{*_s} \\
+    \chorkinded{\Gamma}{\tau}{*} \\
     \chortyped{\Gamma, \alpha \knd *_e}{\Delta}{\Sigma}{C_2}{\tau} \\
-    \chorkinded{\Gamma}{\rho}{*_s}}
-  {\chortyped{\Gamma}{\Delta}{\Sigma}{\LetTellIn{\ell}{C_1 \knd *_e}{\rho}{C_2}}{\tau}}
+    }
+  {\chortyped{\Gamma}{\Delta}{\Sigma}{\LetTellIn{\alpha}{\ell}{C_1 \knd *_e}{\rho}{C_2}}{\tau}}
 \end{mathparpagebreakable}
 
 %%% Local Variables:
