@@ -39,6 +39,8 @@ We also require that these constants be the \emph{only} well-typed values of boo
 In order for location names to be dynamically computed and sent over the network, we require a type \Loc in the local language for representations of location names.
 This type need not be \emph{complete}, in the sense that there does not need to be a value of this type for each concrete location $L \in \Locations$.
 Similarly there must be a type \Typ for representations of local language types, which also need not be complete.
+For example, the types present in the simply-typed lambda calculus could be represented as a type of binary trees with root-nodes labeled as a basic type.
+
 We formulate the existence of these two types as a strict requirement on the local language, however if they are not present we could alternatively choose to remove the relevant features from \langname and still retain the core choreographic functionality and properties.
 
 We require the language have a predicate Value$(e)$ to determine whether an expression is a value of the language, and all values are required to be closed expressions with no free expression or type variables.
@@ -53,10 +55,36 @@ In particular, we do not make any assumption of operational semantics on the typ
 \iftr\subsubsection{Examples}\else\paragraph{Examples}\fi
 \label{sec:loc-lang-examples}
 
-\begin{ex}[Call-by-Value $\lambda$-Calculus]
-  \label{ex:cbv-lambda}
- The call-by-value $\lambda$-calculus, extended with recursive functions, Boolean values and if-then-else expression, almost fits our requirements.
-  However, we must restrict values to be closed.
+Although the requirement that types be first-class in the local language may seem restrictive, most simply-typed languages satisfy our requirements by disallowing the presence of type variables in expressions.
+Alternatively, types may be an active part of the language and used to express useful features, such as parametric polymorphism within System F.
+
+\begin{ex}[Simply-Typed $\lambda$-Calculus]
+  \label{ex:st-lambda}
+  The simply-typed, call-by-value $\lambda$-calculus with booleans and integers satisfies our requirements under the reasonable assumption that location names can be represented as integers.
+  We trivially satisfy the requirement of having representations of local types by using the empty type \Empty.
+  Note that although type variables $\alpha$ are part of the syntax of types as required by our assumptions, they are not bound in either types or expressions of the language, making their inclusion a purely formal matter and identical to the standard treatment when no type-variables are in-context.
+  \begin{syntax}
+  	\category[Types]{t} \alternative{\alpha} \alternative{\Int} \alternative{\Bool} \alternative{\Empty} \alternative{t_1 \to t_2}
+    \category[Expressions]{e} \alternative{x} \alternative{\lambda x : t.e} \alternative{e_1~e_2}\\
+    \alternative{n \in \mathbb{Z}} \alternative{e_1 + e_2}\\
+    \alternative{\True} \alternative{\False} \alternative{\mathsf{if}~e_1~\mathsf{then}~e_2~\mathsf{else}~e_3}
+  \end{syntax}
+\end{ex}
+
+\begin{ex}[System F]
+  \label{ex:system-f}
+  System F with primitive types for booleans and integers, as well as a way to represent simple types denoted via the quotations \say{\Int}, \say{\Bool}, and $e_1 \quoteto e_2$, satisfies our requirements.
+  Note that only a strict subset of the types of the language, namely the simple types, have a representation.
+    \ashley{Any better suggestions for this quotation syntax?}
+  In this language, type variables are bound by the polymorphic for-all type $\forall \alpha.t$ and the type-abstraction expression $\Lambda \alpha.e$, and so may be used in a non-trivial manner.
+  \begin{syntax}
+  	\category[Types]{t} \alternative{\alpha} \alternative{\Int} \alternative{\Bool} \alternative{\Typ}\\
+  	\alternative{t_1 \to t_2} \alternative{\forall \alpha.t}
+    \category[Expressions]{e} \alternative{x} \alternative{\lambda x : t.e} \alternative{e_1~e_2} \alternative{\Lambda \alpha.e} \alternative{e~t}\\
+    \alternative{n \in \mathbb{Z}} \alternative{e_1 + e_2}\\
+    \alternative{\True} \alternative{\False} \alternative{\mathsf{if}~e_1~\mathsf{then}~e_2~\mathsf{else}~e_3}\\
+    \alternative{\say{\Int}} \alternative{\say{\Bool}} \alternative{e_1 \quoteto e_2}
+  \end{syntax}
 \end{ex}
 
 %%% Local Variables:

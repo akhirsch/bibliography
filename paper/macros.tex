@@ -61,12 +61,17 @@
 \newcommand{\dom}{\operatorname{dom}}
 \newcommand{\sendsto}{\rightsquigarrow}
 \newcommand{\tpat}{\raisebox{1pt}{\footnotesize\ensuremath{@}}}
+\newcommand{\say}[1]{\text{``#1''}}
+\newcommand{\quoteto}{~\say{\ensuremath{\to}}~}
+
+\newcommand{\Locations}{\ensuremath{\mathcal{L}}}
 
 %% Types
 \newcommand{\Int}{\programfont{int}}
 \newcommand{\Bool}{\programfont{bool}}
 \newcommand{\Typ}{\programfont{typ}}
 \newcommand{\Loc}{\programfont{loc}}
+\newcommand{\Empty}{\ensuremath{\mathbf{0}}}
 
 \newcommand{\ChorCol}[1]{{\color{RoyalBlue}#1}}
 %\newcommand{\ChorCol}[1]{#1}
@@ -101,9 +106,6 @@
 \newcommand{\LocalLangFont}[1]{\programfont{#1}}
 \newcommand{\True}{\LocalLangFont{true}}
 \newcommand{\False}{\LocalLangFont{false}}
-
-%% Math names
-\newcommand{\Locations}{\ensuremath{\mathcal{L}}}
 
 %% Example Names
 \newcommand{\LocFont}[1]{\programfont{#1}}
