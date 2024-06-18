@@ -23,47 +23,51 @@ The synchronization messages are used to ensure that locations execute the corre
 
 \subsection{Local Programs}
 \label{sec:local-programs}
+\ashley{This subsection is a bit long before it gets to the examples, I'm thinking of ways to break it up and make it more readable}
 
 Each node should be able to execute \emph{local} programs in an expression-based language.
-Our choreographic language is generic over the choice of local language, requiring only that it obey typical syntactic and typing rules, have a sound type system and semantics, and include the components described below.
+\langname is generic over the choice of local language, requiring only that it obey typical syntactic and typing rules, have a sound type system and semantics, and include the components described below.
 
-\ashley{Should I convert the substitution properties to be in single-variable form? I think many people may not be familiar with the treatment of simultaneous substitution and find this confusing. It may also fit with the named-style of the paper better.}
-First, we require that the language consist of variables and term constructors, and includes a notion of variable substitution satisfying the standard simultaneous substitution properties of substitution of variables $x \langle \sigma \rangle = \sigma_x$, substitution along the identity $e \langle  id \rangle = e$, and composition of simultaneous substitutions $e \langle \sigma_1 \rangle \langle \sigma_2 \rangle = e \langle \sigma_2 \circ \sigma_1 \rangle$.
+First, we require that the language consist of a set of expressions which may include variables and expressions which bind variables.
+The free-variables of an expression are denoted by $\text{FV}(e)$.
 
-Types are reflected in the local language, and we allow for type variables and type constructors that satisfy identical substitutive properties.
-Type variables may also appear in terms of the language, rather than just the types, and we put the same requirements on substitution of type variables as for expression variables.
-As shown in Example \ref{ex:st-lambda}, type variables need not be used in a nontrivial manner, and the type system may ultimately be \emph{simply-typed}.
+The local language must have a notion of variable substitution satisfying standard properties such as substitution of variables $\subst{x}{x}{e} = e$, substitution along the identity $\subst{e}{x}{x} = e$, and compositionality of substitutions $\subst{\subst{e}{x_1}{e_1}}{x_2}{e_2} = \subst{\subst{e}{x_2}{e_2}}{x_1}{(\subst{e_1}{x_2}{e_2})}$ for $x_1 \notin \text{FV}(e_2)$.
+
+Types are reflected in the local language, along with type variables and binding thereof, and must satisfy identical substitutive properties.
+As shown in Example \ref{ex:st-lambda}, type variables need not be used in a nontrivial manner or bound in any types or expressions, and the type system may ultimately be \emph{simply-typed}.
 
 To implement the synchronization messages, we require that the local language have two distinguishable constants, \True and \False, which are values.
 There should also be a type \Bool of booleans within the local language.
-We also require that these constants be the \emph{only} well-typed values of the \Bool type, as described in \todo.
+We also require that these constants be the \emph{only} well-typed values of the \Bool type, as described in Section \ref{sec:sound-type-systems}.
 
 In order for location names to be dynamically computed and sent over the network, we require a type \Loc in the local language for representations of location names.
-This type need not be \emph{complete}, in the sense that there does not need to be a value of this type for each concrete location $L \in \Locations$.
+This type need not be \emph{complete}, in the sense that there does not need to be a value of this type which represents each concrete location $L \in \Locations$.
 Similarly there must be a type \Typ for representations of local language types, which also need not be complete.
-For example, the types present in the simply-typed lambda calculus could be represented as a type of binary trees with root-nodes labeled as a basic type.
-We formulate the existence of the types \Loc and \Typ as a strict requirement on the local language, however if they are not present we could alternatively choose to remove the relevant features from \langname and still retain the core choreographic functionality and properties.
+For example, the types present in the simply-typed lambda calculus could be represented as a type of binary trees with root-nodes labeled by a basic type.
+We formulate the existence of the types \Loc and \Typ as strict requirements of the local language, however if they are not present we could alternatively choose to remove the relevant features from \langname and still retain the core choreographic functionality and properties.
 
-We require the language have a predicate Value$(e)$ to determine whether an expression is a value of the language, and all values are required to be closed expressions with no free expression or type variables.
+We require the language have a predicate $\text{Val}(e)$ to determine whether an expression is a value of the language, and all values are required to be closed, with no free expression or type variables.
 All values of the local language are able to be sent over the network.
 
 \ashley{Why is the localstep being gross? Neither of the two here look correct.}
 We require a small-step operational semantics on expressions defined by the relation $e_1 \localstep{} e_2$, read as $e_1$ \emph{steps-to} $e_2$.
-Values are required to be \emph{fully-reduced}, so that for any value Value$(v)$, $v \nlocalstep{} e$ for every $e$.
+Values are required to be \emph{fully-reduced}, so that for any value $\text{Val}(v)$, we have that $v \nlocalstep{} e$ for every $e$.
+
 Types are disallowed from having an operational semantics.
-In particular, we do not make any assumption of an operational semantics on the types of the language, and more strongly we require that the expression semantics $e_1 \localstep{} e_2$ obeys type preservation \emph{on-the-nose} without an allowance for \emph{type-conversion}, as described in \todo.
+In particular, we do not make any assumption of an operational semantics on the types of the language, and more strongly we require that the expression semantics $e_1 \localstep{} e_2$ obeys type preservation \emph{on-the-nose} without an allowance for a \emph{type-conversion} rule, as described in Section \ref{sec:sound-type-systems}.
 In particular, this rules-out the usage of languages like System $F_\omega$ or a language with a dependent type system from being used as the local language.
 
 \iftr\subsubsection{Examples}\else\paragraph{Examples}\fi
 \label{sec:loc-lang-examples}
 
-Although the requirement that types be reflected in the local language may seem restrictive, most simply-typed languages satisfy our requirements by reflecting their type system into the type expressions of the language, and disallowing type variables from being bound or used non-trivially.
+Although the requirement that types be reflected in the local language may seem restrictive, most simply-typed languages satisfy our requirements by straightforwardly reflecting their type system into the type expressions of the language, and disallowing type variables from being bound or used non-trivially.
 Alternatively, types may be an active part of the language and used to express useful features, such as parametric polymorphism within System F.
 
 \begin{ex}[Simply-Typed $\lambda$-Calculus]
   \label{ex:st-lambda}
-  The simply-typed, call-by-value $\lambda$-calculus with booleans and integers satisfies our requirements under the reasonable assumption that location names can be represented as integers.
-  We trivially satisfy the requirement of having representations of local types by using the empty type \Empty.
+  The simply-typed, call-by-value $\lambda$-calculus with booleans representing synchronization messages and integers representing location names satisfies our requirements under reasonable assumptions about location names.
+  We trivially satisfy the requirement of having representations of local types by using the empty type \Empty, so the ability of \langname to send types across the network is essentially unused.
+
   Note that although type variables $\alpha$ are part of the syntax of types as required by our assumptions, they are not bound in either types or expressions of the language, making their inclusion a purely formal matter and identical to the standard treatment when no type-variables are in-context.
   \begin{syntax}
   	\category[Types]{t} \alternative{\alpha} \alternative{\Int} \alternative{\Bool} \alternative{\Empty} \alternative{t_1 \to t_2}
@@ -75,8 +79,8 @@ Alternatively, types may be an active part of the language and used to express u
 
 \begin{ex}[System F]
   \label{ex:system-f}
-  System F with primitive types for booleans and integers, as well as a way to represent simple types denoted via the quotations \say{\Int}, \say{\Bool}, and $e_1 \quoteto e_2$, satisfies our requirements.
-  Note that only a strict subset of the types of the language, namely the simple types, have a representation.
+  System F with primitive types for booleans and integers again representing synchronization messages and location names, satisfies our requirements.
+  In order to include representations for a non-trivial set of types, we inlcude the type \Typ which includes the quotations \say{\Int}, \say{\Bool}, and $e_1 \quoteto e_2$, representing a subset of simple-types.
   In this language, type variables are bound by the polymorphic for-all type $\forall \alpha.t$ and the type-abstraction expression $\Lambda \alpha.e$, and so may be used in a non-trivial manner.
   \begin{syntax}
   	\category[Types]{t} \alternative{\alpha} \alternative{\Int} \alternative{\Bool} \alternative{\Typ}\\
@@ -90,16 +94,16 @@ Alternatively, types may be an active part of the language and used to express u
 
 \subsection{Local Type-System}
 \label{sec:local-types}
-We require a type-system on expressions of the local language, and a well-formedness judgment on local language types.
-For simplicity we assume there is a single kind of types, but this assumption is not essential, and our formalization allows kinds of the local language to be from an arbitrary set.
+We require a type-system for expressions of the local language, and a well-formedness judgment for local language types.
+For simplicity we assume there is a single kind for types, but this assumption is not essential, and our formalization allows kinds of the local language to be from an arbitrary set.
 
 The type well-formedness judgement is written as \localkinded{\Gamma}{t}, where the \emph{kinding context} $\Gamma$ is a list of in-scope type variables, and $t$ is a type of the local language.
-The typing judgement is written as \localtyped{\Gamma}{\Delta_e}{e}{t}, where $\Gamma$ is a kinding context, the \emph{typing context} $\Delta$ is a list of ascriptions $x \ty t$ of expression variables to types, $e$ is an expression, and $t$ is a type.
-The typing context well-formedness judgment $\localctxwf{\Gamma}{\Delta}$ requires that all types in $\Delta$ be well-formed: $\localctxwf{\Gamma}{\Delta} \defeq \forall_{t \in \Delta}~\localkinded{\Gamma}{t}$.
+The typing judgement is written as \localtyped{\Gamma}{\Sigma}{e}{t}, where $\Gamma$ is a kinding context, the \emph{typing context} $\Sigma$ is a list of ascriptions $x \ty t$ of expression variables to types, $e$ is an expression, and $t$ is a type.
+The typing context well-formedness judgment $\localctxwf{\Gamma}{\Sigma}$ requires that all types in $\Sigma$ be well-formed: $\localctxwf{\Gamma}{\Sigma} \defeq \forall_{t \in \Sigma}~\localkinded{\Gamma}{t}$.
 
-\ashley{Should I convert the \textsc{TyVar} and \textsc{Var} rules to instead be explicit about exchange, weakening, and strengthening to more suit the named-style, or are they fine as-is?}
+\ashley{Should I convert the \textsc{TyVar} and \textsc{Var} rules to instead be explicit about exchange, weakening, and strengthening to more suit the named-style, or are they fine as-is? I'm a fan of this style for conciseness}
 
-\begin{figure}[h]
+\begin{figure}
 	\begin{mathpar}
 		\infer[TyVar]{\alpha \in \Gamma}
 		{\localkinded{\Gamma}{\alpha}} \and
@@ -117,23 +121,23 @@ The typing context well-formedness judgment $\localctxwf{\Gamma}{\Delta}$ requir
 			\localkinded{\Gamma, \alpha}{t_2}}
 		{\localkinded{\Gamma}{\subst{t_2}{\alpha}{t_1}}} \and
 
-		\infer[Var]{\localctxwf{\Gamma}{\Delta} \\
-			x \ty t \in \Delta}
-		{\localtyped{\Gamma}{\Delta}{x}{t}}
+		\infer[Var]{\localctxwf{\Gamma}{\Sigma} \\
+			x \ty t \in \Sigma}
+		{\localtyped{\Gamma}{\Sigma}{x}{t}}
 
-		\infer[True]{\localctxwf{\Gamma}{\Delta}}
-		{\localtyped{\Gamma}{\Delta}{\True}{\Bool}}
+		\infer[True]{\localctxwf{\Gamma}{\Sigma}}
+		{\localtyped{\Gamma}{\Sigma}{\True}{\Bool}}
 
-		\infer[False]{\localctxwf{\Gamma}{\Delta}}
-		{\localtyped{\Gamma}{\Delta}{\False}{\Bool}}
+		\infer[False]{\localctxwf{\Gamma}{\Sigma}}
+		{\localtyped{\Gamma}{\Sigma}{\False}{\Bool}}
 
-		\infer[Subst]{\localtyped{\Gamma}{\Delta}{e_1}{t_1} \\
-			\localtyped{\Gamma}{\Delta, x \ty t_1}{e_2}{t_2}}
-		{\localtyped{\Gamma}{\Delta}{\subst{e_2}{x}{e_1}}{t_2}} \and
+		\infer[Subst]{\localtyped{\Gamma}{\Sigma}{e_1}{t_1} \\
+			\localtyped{\Gamma}{\Sigma, x \ty t_1}{e_2}{t_2}}
+		{\localtyped{\Gamma}{\Sigma}{\subst{e_2}{x}{e_1}}{t_2}} \and
 
 		\infer[TmTySubst]{\localkinded{\Gamma}{t_1} \\
-			\localtyped{\Gamma, \alpha}{\Delta}{e_2}{t_2}}
-		{\localtyped{\Gamma}{\Delta}{\subst{e_2}{\alpha}{t_1}}{\subst{t_2}{\alpha}{t_1}}}
+			\localtyped{\Gamma, \alpha}{\Sigma}{e_2}{t_2}}
+		{\localtyped{\Gamma}{\Sigma}{\subst{e_2}{\alpha}{t_1}}{\subst{t_2}{\alpha}{t_1}}}
 	\end{mathpar}
   \caption[Required-Admissible Rules]{Required-Admissible Rules for Local Type and Kinding Systems}
   \label{fig:local-type-rules}
@@ -143,15 +147,15 @@ The typing context well-formedness judgment $\localctxwf{\Gamma}{\Delta}$ requir
 \label{sec:sound-type-systems}
 We additionally require the following \emph{soundness} assumptions on the local type system:
 \begin{itemize}
-	\item (\textsc{Preservation}) If $e_1 \localstep{} e_2$ and $\localtyped{\Gamma}{\Delta}{e_1}{t}$, then $\localtyped{\Gamma}{\Delta}{e_2}{t}$.
+	\item (\textsc{Preservation}) If $e_1 \localstep{} e_2$ and $\localtyped{\Gamma}{\Sigma}{e_1}{t}$, then $\localtyped{\Gamma}{\Sigma}{e_2}{t}$.
 
 	\item (\textsc{Progress}) If $e_1$ is a closed expression and $\localemptyped{e_1}{t}$, then either $e_1$ is a value or there is an $e_2$ such that $e_1 \localstep{} e_2$.
 
 	\item (\textsc{Boolean Invertibility}) The type \Bool is invertible for values: if $v$ is a value and $\localemptyped{v}{\Bool}$ then either $v = \True$ or $v = \False$.
 
-	\item (\textsc{Location Name Invertibility}) The type \Loc is invertible for values: there is an injective \emph{partial} map $\text{locLit} : \Locations \rightharpoonup \text{Expr}$ from location names to local language expressions such that if $v$ is a value and $\localemptyped{v}{\Loc}$ then there exists some $L \in \Locations$ such that $v = \text{locLit}(L)$.
+	\item (\textsc{Location Name Invertibility}) The type \Loc is partially invertible for values: there is an injective partial map $\text{locLit} : \Locations \rightharpoonup \text{Expr}$ from location names to local language expressions such that if $v$ is a value and $\localemptyped{v}{\Loc}$ then there exists some $L \in \Locations$ such that $v = \text{locLit}(L)$.
 
-	\item (\textsc{Type Representation Invertibility}) The type \Typ is invertible for values: there is an injective partial map $\text{tyLit} : \text{Type} \rightharpoonup \text{Expr}$ from local language types to local language expressions such that if $v$ is a value and $\localemptyped{v}{\Typ}$ then there exists some type $t$ such that $v = \text{tyLit}(t)$ and $\localempkinded{t}$.
+	\item (\textsc{Type Representation Invertibility}) The type \Typ is partially invertible for values: there is an injective partial map $\text{tyLit} : \text{Type} \rightharpoonup \text{Expr}$ from local language types to local language expressions such that if $v$ is a value and $\localemptyped{v}{\Typ}$ then there exists some type $t$ such that $v = \text{tyLit}(t)$ and $\localempkinded{t}$.
 \end{itemize}
 
 %%% Local Variables:
