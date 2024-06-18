@@ -1,47 +1,92 @@
-\section{Type System}
-\label{sec:type_system}
+\section{Full Choreography Type System}
+\label{sec:full_chor_types}
+
+\ashley{How should kind-context projection be denoted? It is not specific to a location, so either $\proj{\Gamma}{}$ or $\proj{\Gamma}{e}$ could work, but the latter clashes with the syntax for expressions.}
 
 \begin{mathparpagebreakable}
-  \infer[Loc]{\ell \in \mathcal{L} \cup \Gamma}
-  {\Gamma \vdash \ell} \and
+  \infer[TyVar]{\alpha \knd \kappa \in \Gamma}
+    {\chorkinded{\Gamma}{\alpha}{\kappa}} \and
 
-  \infer[Var]{x : \tau \in \Gamma}
-  {\Gamma \vdash x : \tau} \and
+  \infer[TyAt]{\localkinded{\proj{\Gamma}{}}{t_e} \\
+    \chorkinded{\Gamma}{\ell}{*_\ell}}
+    {\chorkinded{\Gamma}{t_e @ \ell}{*}} \and
 
-  \infer[Done]{\Gamma \vdash \ell \\
-    \Gamma_\ell \vdash \ell.e \vdash t}
-  {\Gamma \vdash e \vdash t @ \ell} \and
+  \infer[TyArrow]{\chorkinded{\Gamma}{\tau_1}{*} \\
+    \chorkinded{\Gamma}{\tau_2}{*}}
+    {\chorkinded{\Gamma}{\tau_1 \to \tau_2}{*}} \and
 
-  \infer[Send]{\Gamma \vdash \ell_1, \ell_2 \\
-    \Gamma \vdash C : t @ \ell_1}{\Gamma \vdash C \overset{\ell_1}
-  {\rightsquigarrow} \ell_2 : t @ \ell_2} \and
+  \infer[TyAbs]{\chorkinded{\Gamma, \alpha \knd \kappa}{\tau}{*}}
+    {\chorkinded{\Gamma}{\forall \alpha \knd \kappa.\tau}{*}} \and 
 
-  \infer[If]{\Gamma \vdash C : \text{bool} @ \ell \\
-    \Gamma \vdash C_1 : \tau \\
-    \Gamma \vdash C_2 : \tau}
-  {\Gamma \vdash \ell.\text{if}\; C \;\text{then}\; C_1 \;\text{else}\; C_2 : \tau} \and
+  \infer[TyLoc]{L \in \Locations}
+    {\chorkinded{\Gamma}{L}{*_\ell}} \and 
 
+  \infer[TyEmp]{}
+    {\chorkinded{\Gamma}{\varnothing}{*_s}} \and 
 
-  \infer[Sync]{\Gamma \vdash \ell_1, \ell_2 \\
-    \Gamma \vdash C : \tau}
-  {\Gamma \vdash \ell_1[d] \rightsquigarrow \ell_2; C : \tau} \and
+  \infer[TySng]{\chorkinded{\Gamma}{\ell}{*_\ell}}
+    {\chorkinded{\Gamma}{\{\ell\}}{*_s}} \and 
 
-  \infer[Def]{\Gamma, x : \tau_1 \vdash C_2 : \tau_2}
-  {\Gamma \vdash \text{let}\; x := C_1 \;\text{in}\; C_2 : \tau_2} \and
+  \infer[TyUnion]{\chorkinded{\Gamma}{\rho_1}{*_s} \\
+    \chorkinded{\Gamma}{\rho_2}{*_s}}
+    {\chorkinded{\Gamma}{\rho_1 \cup \rho_2}{*_s}}
+\end{mathparpagebreakable}
 
-  \infer[Fun]{\Gamma, F : \tau_1 \rightarrow \tau_2, x : \tau_1 \vdash C : \tau_2}
-  {\Gamma \vdash \text{fun}\; F(x) := C : \tau_1 \rightarrow \tau_2} \and
+\begin{mathparpagebreakable}
+  \infer[Var]{X \ty t \in \Delta \\
+    \chorctxwf{\Gamma}{\Delta}}
+  {\chortyped{\Gamma}{\Delta}{\Sigma}{X}{t}} \and
 
-  \infer[App]{\Gamma \vdash C_1 : \tau_1 \rightarrow \tau_2 \\
-    \Gamma \vdash C_2 : \tau_1}
-  {\Gamma \vdash C_1\;C_2 : \tau_2} \and
+  \infer[Done]{\chorkinded{\Gamma}{\ell}{*_\ell} \\
+    \localtyped{\proj{\Gamma}{}}{\proj{\Sigma}{_\ell}}{e}{t_e}}
+  {\chortyped{\Gamma}{\Delta}{\Sigma}{\ell.e}{t_e @ \ell}} \and
 
-  \infer[LocAbs]{\Gamma, x \vdash C : \tau}
-  {\Gamma \vdash \Lambda x.C : \forall x.\tau} \and
+  \infer[Fun]{\chortyped{\Gamma}{\Delta,X \ty \tau_1}{\Sigma}{C}{\tau_2}}
+  {\chortyped{\Gamma}{\Delta}{\Sigma}{\lambda X \ty \tau_1.C}{\tau_1 \to \tau_2}}
 
-  \infer[LocApp]{\Gamma \vdash \ell \\
-    \Gamma \vdash C : \forall x.\tau}
-  {\Gamma \vdash C\;\ell : \tau[x \mapsto \ell]}
+  \infer[Rec]{\chortyped{\Gamma}{\Delta,X \ty \tau}{\Sigma}{C}{\tau}}
+  {\chortyped{\Gamma}{\Delta}{\Sigma}{\mu X \ty \tau_1.C}{\tau}}
+
+  \infer[App]{\chortyped{\Gamma}{\Delta}{\Sigma}{F}{\tau_1 \to \tau_2} \\
+    \Gamma \vdash C : \tau_1}
+  {\Gamma \vdash F~C : \tau_2} \and
+
+  \infer[Send]{\chorkinded{\Gamma}{\ell_1}{*_\ell} \\
+    \chorkinded{\Gamma}{\ell_2}{*_\ell} \\
+    \chortyped{\Gamma}{\Delta}{\Sigma}{C}{t_e @ \ell_1}}
+    {\chortyped{\Gamma}{\Delta}{\Sigma}{\send{C}{\ell_1}{\ell_2}}{t_e @ \ell_2}} \and
+
+  \infer[Sync]{\chorkinded{\Gamma}{\ell_1}{*_\ell} \\
+    \chorkinded{\Gamma}{\ell_2}{*_\ell} \\
+    \chortyped{\Gamma}{\Delta}{\Sigma}{C}{\tau}}
+    {\chortyped{\Gamma}{\Delta}{\Sigma}{\send{\ell_1[d]}{}{\ell_2};C}{\tau}} \and
+
+  \infer[ITE]{\chortyped{\Gamma}{\Delta}{\Sigma}{C}{\Bool @ \ell} \\
+    \chortyped{\Gamma}{\Delta}{\Sigma}{C_1}{\tau} \\
+    \chortyped{\Gamma}{\Delta}{\Sigma}{C_2}{\tau}}
+  {\chortyped{\Gamma}{\Delta}{\Sigma}{\ell.\ifthen{C}{C_1}{C_2}}{\tau}} \and
+
+  \infer[Abs]{\chorkinded{\Gamma, \alpha \knd \kappa}{\tau}{*} \\
+    \chortyped{\Gamma, \alpha \knd \kappa}{\Delta}{\Sigma}{C}{\tau}}
+  {\chortyped{\Gamma}{\Delta}{\Sigma}{\Lambda \alpha \knd \kappa.C}{\forall \alpha \knd \kappa.\tau}}
+
+  \infer[AppTy]{\chortyped{\Gamma}{\Delta}{\Sigma}{C}{\forall \alpha \knd \kappa.\tau} \\
+    \chorkinded{\Gamma}{t}{\kappa}}
+  {\chortyped{\Gamma}{\Delta}{\Sigma}{C~t}{\subst{\tau}{\alpha}{t}}} \and
+
+  \infer[DefLocal]{\chortyped{\Gamma}{\Delta}{\Sigma}{C_1}{t_e @ \ell} \\
+    \chortyped{\Gamma}{\Delta}{\Sigma, \ell.x \ty t_e}{C_2}{\tau}}
+  {\chortyped{\Gamma}{\Delta}{\Sigma}{\LetIn{\ell.x \ty t_e}{C_1}{C_2}}{\tau}} \and
+
+  \infer[TellLetLoc]{\chortyped{\Gamma}{\Delta}{\Sigma}{C_1}{\Loc @ \ell} \\
+    \chortyped{\Gamma, \alpha \knd *_\ell}{\Delta}{\Sigma}{C_2}{\tau} \\
+    \chorkinded{\Gamma}{\rho}{*_s}}
+  {\chortyped{\Gamma}{\Delta}{\Sigma}{\LetTellIn{\ell}{C_1 \knd *_\ell}{\rho}{C_2}}{\tau}} \and
+
+  \infer[TellLetTy]{\chortyped{\Gamma}{\Delta}{\Sigma}{C_1}{\Typ @ \ell} \\
+    \chortyped{\Gamma, \alpha \knd *_e}{\Delta}{\Sigma}{C_2}{\tau} \\
+    \chorkinded{\Gamma}{\rho}{*_s}}
+  {\chortyped{\Gamma}{\Delta}{\Sigma}{\LetTellIn{\ell}{C_1 \knd *_e}{\rho}{C_2}}{\tau}}
 \end{mathparpagebreakable}
 
 %%% Local Variables:

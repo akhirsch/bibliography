@@ -13,20 +13,20 @@
 
 	\abstractCategory[Choreographic Variables]{X, Y, \ldots}
 
-	\category[Choreographies]{C}
+	\category[Choreographies]{C, F}
 	\alternative{X}
 	\alternative{\ell.e}
-	\alternative{\lambda X \ty{} \tau.C}
-	\alternative{\mu X \ty{} \tau.C}
+	\alternative{\lambda X \ty \tau.C}
+	\alternative{\mu X \ty \tau.C}
 	\alternative{\app{C_1}{C_2}}\\
 	\alternative{\send{C}{\ell_1}{\ell_2}}
 	\alternative{\send{\ell_1[d]}{}{\ell_2};C}\\
 	\alternative{\ell.\ifthen{C}{C_1}{C_2}}\\
-	\alternative{\Lambda \alpha \knd{} \kappa.C}
+	\alternative{\Lambda \alpha \knd \kappa.C}
 	\alternative{\app{C}{t}}\\
-	\alternative{\LetIn{\ell.x \ty{} t}{C_1}{C_2}}\\
-	\alternative{\LetTellIn{\ell}{\alpha \knd{} *_\ell}{\rho}{C}}\\
-	\alternative{\LetTellIn{\ell}{\alpha \knd{} *_e}{\rho}{C}}
+	\alternative{\LetIn{\ell.x \ty t}{C_1}{C_2}}\\
+	\alternative{\LetTellIn{\ell}{C_1 \knd *_\ell}{\rho}{C_2}}\\
+	\alternative{\LetTellIn{\ell}{C_1 \knd *_e}{\rho}{C_2}}
   \end{syntax}
 
   \caption{Syntax of Choreographies}
@@ -52,7 +52,7 @@
   	\alternative{\alpha}
   	\alternative{t_e @ \ell}
   	\alternative{\tau_1 \rightarrow \tau_2}
-  	\alternative{\forall \alpha \knd{} \kappa.\tau}
+  	\alternative{\forall \alpha \knd \kappa.\tau}
   	\\
   	\alternative{L}
   	\alternative{\varnothing}
@@ -61,15 +61,15 @@
   	\\
   	\category[Choreography Kinding Context]{\Gamma}
   	\alternative{\cdot}
-  	\alternative{\Gamma, \alpha \knd{} \kappa}
+  	\alternative{\Gamma, \alpha \knd \kappa}
   	
   	\category[Choreography Typing Context]{\Delta}
   	\alternative{\cdot}
-  	\alternative{\Delta, X \ty{} \tau}
+  	\alternative{\Delta, X \ty \tau}
   	
   	\category[Locally-Bound Typing Context]{\Sigma}
   	\alternative{\cdot}
-  	\alternative{\Sigma, \ell.x \ty{} t_e}
+  	\alternative{\Sigma, \ell.x \ty t_e}
   	\\
   	\category[Local Kinding Context]{\Gamma_e}
   	\alternative{\cdot}
@@ -77,7 +77,7 @@
   	
   	\category[Local Typing Context]{\Delta_e}
   	\alternative{\cdot}
-  	\alternative{\Delta_e, x \ty{} t_e}
+  	\alternative{\Delta_e, x \ty t_e}
   \end{syntax}
 
   \caption{Syntax of Kinds, Types, and Contexts}
