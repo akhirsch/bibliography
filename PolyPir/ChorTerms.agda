@@ -68,7 +68,7 @@ C ::= X | e | ℓ.e
 -}
 data ChorTmSymb : Set where
   -- Embedding of local terms
-  LocalS : (sₑ : TmSymbₑ) → ChorTmSymb
+  LocalTmS : (sₑ : TmSymbₑ) → ChorTmSymb
   -- Choreographic local terms
   DoneS : ChorTmSymb
 
@@ -96,9 +96,12 @@ data ChorTmSymb : Set where
   -- Binding local locations
   TellLocS : ChorTmSymb
 
+LocalTmS-inj : ∀{sₑ sₑ'} → LocalTmS sₑ ≡ LocalTmS sₑ' → sₑ ≡ sₑ'
+LocalTmS-inj refl = refl
+
 -- Type annotations for terms
 ChorTmTySig : ChorTmSymb → List (List (C⅀ₖ .Knd) × C⅀ₖ .Knd)
-ChorTmTySig (LocalS sₑ) =
+ChorTmTySig (LocalTmS sₑ) =
   ([] , *ₗ) ∷ map LocKndΣ (TmTySigₑ sₑ)
 ChorTmTySig DoneS = ([] , *ₑ) ∷ ([] , *ₗ) ∷ []
 ChorTmTySig LamS = ([] , *) ∷ ([] , *) ∷ []
@@ -284,7 +287,7 @@ x : ℓ.t ⊢ C2 : τ
 ℓ.tell α : *ₗ := C1 to ρ in C2
 -}
 ChorTmSig : (s : ChorTmSymb) (Γ : ChorKndCtx) (ts : TyVec C⅀ₖ) → Binders C⅀ₖ × Typ C⅀ₖ
-ChorTmSig (LocalS sₑ) Γ ((ℓ , 0) ∷ ts) =
+ChorTmSig (LocalTmS sₑ) Γ ((ℓ , 0) ∷ ts) =
   let Σκtₑ : Binders ⅀ₑₖ × Typ ⅀ₑₖ
       Σκtₑ = TmSigₑ sₑ (projKndCtx Γ) (projTyVec (map isLocKnd Γ) ts)
   in map (BinderFun Γ ℓ) (Σκtₑ .fst) ,
@@ -355,7 +358,7 @@ ChorTmSig _ _ _ = [] , * , tyVar zero
 ⊢ChorTmSig-fst : ∀{Γ ts} (s : ChorTmSymb) →
                   vecKinded C⅀ₖ Γ ts (ChorTmTySig s) →
                   wfBinders C⅀ₖ Γ (ChorTmSig s Γ ts .fst)
-⊢ChorTmSig-fst {Γ} {(ℓ , 0) ∷ ts} (LocalS sₑ) (⊢ℓ ⊢ₜ∷ ⊢ts) =
+⊢ChorTmSig-fst {Γ} {(ℓ , 0) ∷ ts} (LocalTmS sₑ) (⊢ℓ ⊢ₜ∷ ⊢ts) =
   map-AllElems
     (wfBinder ⅀ₑₖ (projKndCtx Γ))
     (wfBinder C⅀ₖ Γ)
@@ -432,7 +435,7 @@ ChorTmSig _ _ _ = [] , * , tyVar zero
 ⊢ChorTmSig-snd : ∀{Γ ts} (s : ChorTmSymb) →
                 vecKinded C⅀ₖ Γ ts (ChorTmTySig s) →
                 wfTyp C⅀ₖ Γ (ChorTmSig s Γ ts .snd)
-⊢ChorTmSig-snd (LocalS sₑ) (ℓ ⊢ₜ∷ ts) =
+⊢ChorTmSig-snd (LocalTmS sₑ) (ℓ ⊢ₜ∷ ts) =
   ⊢Local (⊢regainTy (⊢injTy (𝕃 .⅀ₑ .⊢TmSig-snd sₑ (⊢projTyVec ts)))) ℓ
 ⊢ChorTmSig-snd DoneS (tₑ ⊢ₜ∷ ℓ ⊢ₜ∷ ⊢ₜ[]) = ⊢At tₑ ℓ
 ⊢ChorTmSig-snd LamS (τ1 ⊢ₜ∷ τ2 ⊢ₜ∷ ⊢ₜ[]) = ⊢Fun τ1 τ2
@@ -574,7 +577,7 @@ sub-comm-ChorTmSig-fst : ∀{Γ1 Γ2 σ ts} (s : ChorTmSymb) →
                           vecKinded C⅀ₖ Γ1 ts (ChorTmTySig s) →
                           ChorTmSig s Γ2 (subTyVec C⅀ₖ σ ts) .fst ≡
                           subBinders C⅀ₖ σ (ChorTmSig s Γ1 ts .fst)
-sub-comm-ChorTmSig-fst {Γ1} {Γ2} {σ} {(ℓ , 0) ∷ ts} (LocalS sₑ) ⊢σ (⊢ℓ ⊢ₜ∷ ⊢ts) =
+sub-comm-ChorTmSig-fst {Γ1} {Γ2} {σ} {(ℓ , 0) ∷ ts} (LocalTmS sₑ) ⊢σ (⊢ℓ ⊢ₜ∷ ⊢ts) =
   map (BinderFun Γ2 (subTy C⅀ₖ σ ℓ))
     (TmSigₑ sₑ (projKndCtx Γ2) (projTyVec (map isLocKnd Γ2) (subTyVec C⅀ₖ σ ts)) .fst)
     ≡⟨ (cong (λ x → map (BinderFun Γ2 (subTy C⅀ₖ σ ℓ))
@@ -646,7 +649,7 @@ sub-comm-ChorTmSig-snd : ∀{Γ1 Γ2 σ ts} (s : ChorTmSymb) →
                           vecKinded C⅀ₖ Γ1 ts (ChorTmTySig s) →
                           ChorTmSig s Γ2 (subTyVec C⅀ₖ σ ts) .snd ≡
                           subTyp C⅀ₖ σ (ChorTmSig s Γ1 ts .snd)
-sub-comm-ChorTmSig-snd {Γ1} {Γ2} {σ} {(ℓ , 0) ∷ ts} (LocalS sₑ) ⊢σ (⊢ℓ ⊢ₜ∷ ⊢ts) =
+sub-comm-ChorTmSig-snd {Γ1} {Γ2} {σ} {(ℓ , 0) ∷ ts} (LocalTmS sₑ) ⊢σ (⊢ℓ ⊢ₜ∷ ⊢ts) =
   let eq : TmSigₑ sₑ (projKndCtx Γ2) (projTyVec (map isLocKnd Γ2) (subTyVec C⅀ₖ σ ts)) .snd
             ≡ subTyp ⅀ₑₖ (projTySub Γ1 Γ2 σ)
                 (TmSig (𝕃 .⅀ₑ) sₑ (projKndCtx Γ1) (projTyVec (map isLocKnd Γ1) ts) .snd)
@@ -720,14 +723,38 @@ CTmVec = TmVec C⅀
 CTyp : Set
 CTyp = Typ C⅀ₖ
 
-_⨾_c⊢var_∶_ : ChorKndCtx → Ctx C⅀ₖ → ℕ → CTyp → Set
+Tmₑ : Set
+Tmₑ = Tm (𝕃 .⅀ₑ)
+
+TmVecₑ : Set
+TmVecₑ = TmVec (𝕃 .⅀ₑ)
+
+Typₑ : Set
+Typₑ = Typ ⅀ₑₖ
+
+_⨾_c⊢var_∶_ : ChorKndCtx → ChorCtx → ℕ → CTyp → Set
 _⨾_c⊢var_∶_ = varTyped C⅀
 
-_⨾_c⊢_∶_ : ChorKndCtx → Ctx C⅀ₖ → CTm → CTyp → Set
+_⨾_c⊢_∶_ : ChorKndCtx → ChorCtx → CTm → CTyp → Set
 _⨾_c⊢_∶_ = typed C⅀
 
-_⨾_c⊢vec_∶_ : ChorKndCtx → Ctx C⅀ₖ → CTmVec → Binders C⅀ₖ → Set
+_⨾_c⊢vec_∶_ : ChorKndCtx → ChorCtx → CTmVec → Binders C⅀ₖ → Set
 _⨾_c⊢vec_∶_ = vecTyped C⅀
+
+_c⊢ctx_ : ChorKndCtx → ChorCtx → Set
+_c⊢ctx_ = wfCtx C⅀ₖ
+
+_⨾_e⊢var_∶_ : KndCtxₑ → Ctxₑ → ℕ → Typₑ → Set
+_⨾_e⊢var_∶_ = varTyped (𝕃 .⅀ₑ)
+
+_e⊢ctx_ : KndCtxₑ → Ctxₑ → Set
+_e⊢ctx_ = wfCtx ⅀ₑₖ
+
+_⨾_e⊢_∶_ : KndCtxₑ → Ctxₑ → Tmₑ → Typₑ → Set
+_⨾_e⊢_∶_ = typed (𝕃 .⅀ₑ)
+
+_⨾_e⊢vec_∶_ : KndCtxₑ → Ctxₑ → TmVecₑ → Binders ⅀ₑₖ → Set
+_⨾_e⊢vec_∶_ = vecTyped (𝕃 .⅀ₑ)
 
 ⊢Local⁻ : ∀{Γ κₑ tₑ ℓ} →
           Γ c⊢ₜ Local κₑ tₑ ℓ ∶ Bnd κₑ →
@@ -770,7 +797,7 @@ _⨾_c⊢vec_∶_ = vecTyped C⅀
 
 -- Aliases for each term constructor
 EmbLocalTm : (sₑ : TmSymbₑ) (ℓ : CTy) (ts : CTyVec) (es : CTmVec) → CTm
-EmbLocalTm sₑ ℓ ts es = constr (LocalS sₑ) ((ℓ , 0) ∷ ts) es
+EmbLocalTm sₑ ℓ ts es = constr (LocalTmS sₑ) ((ℓ , 0) ∷ ts) es
 
 Done : (tₑ : CTy) (ℓ : CTy) (e : CTm) → CTm
 Done tₑ ℓ e = constr DoneS ((tₑ , 0) ∷ (ℓ , 0) ∷ []) ((e , 0 , 0) ∷ [])
@@ -847,7 +874,7 @@ Abs : ∀{κ} (∀κ : canAbstract κ) (τ : CTy) (C : CTm) → CTm
 Abs {κ} ∀κ τ C = constr (AbsS κ ∀κ) ((τ , 1) ∷ []) ((C , 1 , 0) ∷ [])
 
 ⊢Abs : ∀{Γ Δ C κ τ} (∀κ : canAbstract κ) →
-       wfCtx C⅀ₖ Γ Δ →
+       Γ c⊢ctx Δ →
        (κ ∷ Γ) ⨾ renCtx C⅀ₖ (Drop id) Δ c⊢ C ∶ (* , τ) →
        Γ ⨾ Δ c⊢ Abs ∀κ τ C ∶ (* , All ∀κ τ)
 ⊢Abs {κ = κ} ∀κ ⊢Δ ⊢C =

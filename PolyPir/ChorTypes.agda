@@ -204,6 +204,9 @@ data ChorTySymb : Set where
   -- UnionS of location sets
   UnionS : ChorTySymb
 
+LocalS-inj : ∀{κₑ κₑ'} → LocalS κₑ ≡ LocalS κₑ' → κₑ ≡ κₑ'
+LocalS-inj refl = refl
+
 {-
 Choreographic type kinding judgments
 
@@ -526,6 +529,16 @@ regainTyVar-++ : (Γ : List Bool) (n : ℕ) →
                   ≗ Keep* (regainTyVar Γ) n
 regainTyVar-++ Γ zero = ≗-refl
 regainTyVar-++ Γ (suc n) = Keep-ext (regainTyVar-++ Γ n)
+
+Keep-regainTyVar : (Γ : List Bool) →
+                   Keep (regainTyVar Γ) ≗ regainTyVar (true ∷ Γ)
+Keep-regainTyVar Γ x = refl
+
+Keep*-regainTyVar : (Γ : List Bool) (n : ℕ) →
+                    Keep* (regainTyVar Γ) n ≗ regainTyVar (replicate n true ++ Γ)
+Keep*-regainTyVar Γ zero x = refl
+Keep*-regainTyVar Γ (suc n) zero = refl
+Keep*-regainTyVar Γ (suc n) (suc x) = cong suc (Keep*-regainTyVar Γ n x)
 
 regainTyVar-true≗id : (n : ℕ) → regainTyVar (replicate n true) ≗ id
 regainTyVar-true≗id zero = ≗-refl
@@ -1285,3 +1298,62 @@ regain∘inj∘projSub≗sub∘regain∘inj {Γ1} {Γ2} {σ} {t} {κₑ} ⊢σ �
     ≡⟨ (sym $ subTy◦•ₜ C⅀ₖ σ (regainTyVar (map isLocKnd Γ1)) (injTy t)) ⟩
   subTy C⅀ₖ σ (regainTy (map isLocKnd Γ1) (injTy t)) ∎
 
+{-
+proj ∘ regain ∘ inj ≗ id
+
+Injecting, then regaining lost variables,
+the projecting has no effect on a type
+-}
+proj∘regain∘injTyVar≗id
+  : (Γ : List Bool) →
+    projTyVar Γ ∘ regainTyVar Γ ≗ id
+proj∘regain∘injTyVar≗id [] x = refl
+proj∘regain∘injTyVar≗id (true ∷ Γ) zero = refl
+proj∘regain∘injTyVar≗id (true ∷ Γ) (suc x) = cong suc (proj∘regain∘injTyVar≗id Γ x)
+proj∘regain∘injTyVar≗id (false ∷ Γ) x = proj∘regain∘injTyVar≗id Γ x
+
+proj∘regain∘injTy≗id
+  : ∀{Γ κₑ tₑ} →
+    projKndCtx Γ e⊢ₜ tₑ ∶ κₑ →
+    projTy (map isLocKnd Γ) (regainTy (map isLocKnd Γ) (injTy tₑ)) ≡ tₑ
+proj∘regain∘injTyVec≗id
+  : ∀{Γ Σₑ tsₑ} →
+    projKndCtx Γ e⊢ₜvec tsₑ ∶ Σₑ →
+    projTyVec (map isLocKnd Γ) (regainTyVec (map isLocKnd Γ) (injTyVec tsₑ)) ≡ tsₑ
+
+proj∘regain∘injTy≗id {Γ} (⊢ₜvar {x = x} ⊢x) =
+  cong tyVar (proj∘regain∘injTyVar≗id (map isLocKnd Γ) x)
+proj∘regain∘injTy≗id (⊢ₜtyConstr sₑ ⊢tsₑ) =
+  cong (tyConstr sₑ) (proj∘regain∘injTyVec≗id ⊢tsₑ)
+
+proj∘regain∘injTyVec≗id ⊢ₜ[] = refl
+proj∘regain∘injTyVec≗id {Γ} {(Γₑ' , κₑ') ∷ Σₑ'} {(tₑ , .(length Γₑ')) ∷ tsₑ} (⊢tₑ ⊢ₜ∷ ⊢tsₑ) =
+  let eq1 : replicate (length Γₑ') true ++ map isLocKnd Γ
+            ≡ map isLocKnd (injKndCtx Γₑ' ++ Γ)
+      eq1 =
+        replicate (length Γₑ') true ++ map isLocKnd Γ
+          ≡⟨ (cong (_++ map isLocKnd Γ) $ sym $ isLocKnd∘injKndCtx≡true Γₑ') ⟩
+        map isLocKnd (injKndCtx Γₑ') ++ map isLocKnd Γ
+          ≡⟨ (sym $ map-++-commute isLocKnd (injKndCtx Γₑ') Γ) ⟩
+        map isLocKnd (injKndCtx Γₑ' ++ Γ) ∎
+      eq2 : Γₑ' ++ projKndCtx Γ ≡ projKndCtx (injKndCtx Γₑ' ++ Γ)
+      eq2 =
+        Γₑ' ++ projKndCtx Γ
+          ≡⟨ (cong (_++ projKndCtx Γ) $ sym $ proj∘injKndCtx≗id Γₑ') ⟩
+        projKndCtx (injKndCtx Γₑ') ++ projKndCtx Γ
+          ≡⟨ (sym $ projKndCtx-++ (injKndCtx Γₑ') Γ) ⟩
+        projKndCtx (injKndCtx Γₑ' ++ Γ) ∎
+  in cong₂ (λ x y → (x , length Γₑ') ∷ y)
+    (projTy (replicate (length Γₑ') true ++ map isLocKnd Γ)
+      (renTy C⅀ₖ (Keep* (regainTyVar (map isLocKnd Γ)) (length Γₑ')) (injTy tₑ))
+      ≡⟨ (cong (projTy (replicate (length Γₑ') true ++ map isLocKnd Γ)) $
+            renTy-ext C⅀ₖ (Keep*-regainTyVar (map isLocKnd Γ) (length Γₑ')) (injTy tₑ)) ⟩
+    projTy (replicate (length Γₑ') true ++ map isLocKnd Γ)
+      (renTy C⅀ₖ (regainTyVar (replicate (length Γₑ') true ++ map isLocKnd Γ)) (injTy tₑ))
+      ≡⟨ (cong (λ x → projTy x (renTy C⅀ₖ (regainTyVar x) (injTy tₑ))) eq1) ⟩
+    projTy (map isLocKnd (injKndCtx Γₑ' ++ Γ))
+      (renTy C⅀ₖ (regainTyVar (map isLocKnd (injKndCtx Γₑ' ++ Γ))) (injTy tₑ))
+      ≡⟨ (proj∘regain∘injTy≗id $
+            subst (λ x → x e⊢ₜ tₑ ∶ κₑ') eq2 ⊢tₑ) ⟩
+    tₑ ∎)
+    (proj∘regain∘injTyVec≗id ⊢tsₑ)

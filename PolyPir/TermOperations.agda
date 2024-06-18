@@ -13,6 +13,7 @@ open import Data.List.Properties
 open import Data.Maybe renaming (map to mmap)
 open import Data.Sum renaming (inj₁ to inl; inj₂ to inr) hiding (map)
 open import Relation.Nullary
+open import Relation.Nullary.Decidable hiding (map)
 open import Relation.Binary hiding (_⇒_)
 open import Relation.Binary.PropositionalEquality
 open import Function
@@ -43,8 +44,6 @@ module PolyPir.TermOperations
 
 open import PolyPir.ChorTypes Loc ≡-dec-Loc 𝕃
 open import PolyPir.ChorTerms Loc ≡-dec-Loc 𝕃
-
-Typₑ = Typ ⅀ₑₖ
 
 ≡-dec-ChorKnd : DecidableEquality ChorKnd
 ≡-dec-ChorKnd (LocKnd κ1ₑ) (LocKnd κ2ₑ)
@@ -231,6 +230,9 @@ dec-isLocalTy ℓ (Bnd κ1ₑ , tyConstr UnionS ts) = no λ ()
 dec-isLocalTy ℓ (*ₗ , t) = no λ ()
 dec-isLocalTy ℓ (*ₛ , t) = no λ ()
 
+?isLocalTy : CTy → CTyp → Bool
+?isLocalTy ℓ t = dec-isLocalTy ℓ t .does
+
 {-
 Context projection
 
@@ -241,30 +243,23 @@ proj ℓ [] = []
 proj ℓ (ℓ.tₑ ∷ Δ) = tₑ ∷ proj ℓ Δ
 proj ℓ (t ∷ Δ) = proj ℓ Δ
 -}
-projCtx : ChorKndCtx → CTy → ChorCtx → Ctxₑ
+projCtx : List Bool → CTy → ChorCtx → Ctxₑ
 projCtx Γ ℓ [] = []
 projCtx Γ ℓ (t ∷ Δ) with dec-isLocalTy ℓ t
-... | yes (κₑ , tₑ , _ , _) = (κₑ , projTy (map isLocKnd Γ) tₑ) ∷ projCtx Γ ℓ Δ
+... | yes (κₑ , tₑ , _ , _) = (κₑ , projTy Γ tₑ) ∷ projCtx Γ ℓ Δ
 ... | no ¬p = projCtx Γ ℓ Δ
-
-_c⊢ctx_ : ChorKndCtx → ChorCtx → Set
-_c⊢ctx_ = wfCtx C⅀ₖ
-
-_e⊢ctx_ : KndCtxₑ → Ctxₑ → Set
-_e⊢ctx_ = wfCtx ⅀ₑₖ
-
 
 {-
 Projecting preserves context well-formedness
 
 Γ ⊢ Δ
 --------
-Γ∣ ⊢ Δ∣ℓ
+Γ∣ ⊢ₑ Δ∣ℓ
 -}
 ⊢projCtx : ∀{Γ Δ} →
            (ℓ : CTy) →
            Γ c⊢ctx Δ →
-           projKndCtx Γ e⊢ctx projCtx Γ ℓ Δ
+           projKndCtx Γ e⊢ctx projCtx (map isLocKnd Γ) ℓ Δ
 ⊢projCtx {Δ = []} ℓ tt = tt
 ⊢projCtx {Δ = t ∷ Δ} ℓ (⊢t , ⊢Δ) with dec-isLocalTy ℓ t
 ... | yes (κₑ , tₑ , refl , refl) =
@@ -272,20 +267,68 @@ Projecting preserves context well-formedness
 ... | no ¬p = ⊢projCtx ℓ ⊢Δ
 
 -- Projecting distributes over concatenation
-projCtx-++ : (Γ : ChorKndCtx) (ℓ : CTy) (Δ1 Δ2 : ChorCtx) →
-             projCtx Γ ℓ (Δ1 ++ Δ2) ≡ projCtx Γ ℓ Δ1 ++ projCtx Γ ℓ Δ2
+projCtx-++ : (Γ : List Bool) (ℓ : CTy) (Δ1 Δ2 : ChorCtx) →
+             projCtx Γ ℓ (Δ1 ++ Δ2) ≡
+             projCtx Γ ℓ Δ1 ++ projCtx Γ ℓ Δ2
 projCtx-++ Γ ℓ [] Δ2 = refl
 projCtx-++ Γ ℓ (t ∷ Δ1) Δ2 with dec-isLocalTy ℓ t
 ... | yes (κₑ , tₑ , refl , refl) =
-  cong ((κₑ , projTy (map isLocKnd Γ) tₑ) ∷_) $
+  cong ((κₑ , projTy Γ tₑ) ∷_) $
   projCtx-++ Γ ℓ Δ1 Δ2
 ... | no ¬p = projCtx-++ Γ ℓ Δ1 Δ2
 
+{-
+projCtx ∘ ⟨ξ⟩ ≗ ⟨proj ξ⟩ ∘ projCtx
+
+Renaming and then projecting a context is
+identical to projecting and then renaming the
+context on the projected renaming.
+-}
+proj∘ren≗projRen∘projCtx
+  : ∀{Γ1 Γ2 ξ Δ} →
+    Injective _≡_ _≡_ ξ →
+    TYREN C⅀ₖ ξ Γ1 Γ2 →
+    Γ1 c⊢ctx Δ →
+    (ℓ : CTy) →
+    projCtx (map isLocKnd Γ2) (renTy C⅀ₖ ξ ℓ) (renCtx C⅀ₖ ξ Δ) ≡
+    renCtx ⅀ₑₖ (projTyRen Γ1 Γ2 ξ) (projCtx (map isLocKnd Γ1) ℓ Δ)
+proj∘ren≗projRen∘projCtx {Δ = []} ξ-inj ⊢ξ tt ℓ = refl
+proj∘ren≗projRen∘projCtx {Γ1} {Γ2} {ξ} {Δ = t ∷ Δ} ξ-inj ⊢ξ (⊢t , ⊢Δ) ℓ
+  with dec-isLocalTy ℓ t | dec-isLocalTy (renTy C⅀ₖ ξ ℓ) (renTyp C⅀ₖ ξ t)
+... | yes (κₑ , tₑ , refl , refl) | yes (.κₑ , .(renTy C⅀ₖ (Keep* ξ 0) tₑ) , refl , refl) =
+  cong₂ (λ x y → (κₑ , x) ∷ y)
+    (proj∘ren≗projRen∘projTy ⊢ξ (⊢Local⁻ ⊢t .fst))
+    (proj∘ren≗projRen∘projCtx ξ-inj ⊢ξ ⊢Δ ℓ)
+... | yes (κₑ , tₑ , refl , refl) | no ¬q =
+  ⊥-elim $ ¬q (κₑ , renTy C⅀ₖ ξ tₑ , refl , refl)
+proj∘ren≗projRen∘projCtx {Γ1} {Γ2} {ξ} {(.(Bnd κₑ) , tyConstr (LocalS κₑ') ((tₑ' , 0) ∷ (ℓ' , 0) ∷ [])) ∷ Δ}
+  ξ-inj ⊢ξ (⊢t , ⊢Δ) ℓ | no ¬p | yes (κₑ , tₑ , refl , r) =
+   ⊥-elim $ ¬p (κₑ , tₑ' , refl ,
+   cong₂ (λ x y → tyConstr (LocalS x)
+        ((tₑ' , 0) ∷ (y , 0) ∷ []))
+        (LocalS-inj $ tyConstr-inj C⅀ₖ r .fst)
+        (renTy-inj C⅀ₖ ξ-inj $ fst $ tyCons-inj C⅀ₖ $ snd $ snd $ tyCons-inj C⅀ₖ (tyConstr-inj C⅀ₖ r .snd)))
+... | no ¬p | no ¬q = proj∘ren≗projRen∘projCtx ξ-inj ⊢ξ ⊢Δ ℓ
+
+-- Inject a local type at a specified location ℓ
 LocalTyp : (ℓ : CTy) (tₑ : Typₑ) → CTyp
 LocalTyp ℓ (κₑ , tₑ) = Bnd κₑ , Local κₑ (injTy tₑ) ℓ
 
-LocalTyp-isLocalTy : (ℓ : CTy) (tₑ : Typₑ) →  isLocalTy ℓ (LocalTyp ℓ tₑ)
+-- A local type is local
+Local-isLocalTy : (κₑ : Kndₑ) (ℓ : CTy) (tₑ : CTy) → isLocalTy ℓ (Bnd κₑ , Local κₑ tₑ ℓ)
+Local-isLocalTy κₑ ℓ tₑ = κₑ , tₑ , refl , refl
+
+Local-?isLocalTy : (κₑ : Kndₑ) (ℓ : CTy) (tₑ : CTy) → ?isLocalTy ℓ (Bnd κₑ , Local κₑ tₑ ℓ) ≡ true
+Local-?isLocalTy κₑ ℓ tₑ = dec-true (dec-isLocalTy ℓ (Bnd κₑ , Local κₑ tₑ ℓ)) (Local-isLocalTy κₑ ℓ tₑ)
+
+-- An injected type is local
+LocalTyp-isLocalTy : (ℓ : CTy) (tₑ : Typₑ) → isLocalTy ℓ (LocalTyp ℓ tₑ)
 LocalTyp-isLocalTy ℓ (κₑ , tₑ) = κₑ , injTy tₑ , refl , refl
+
+LocalTyp-?isLocalTy : (ℓ : CTy) (tₑ : Typₑ) → ?isLocalTy ℓ (LocalTyp ℓ tₑ) ≡ true
+LocalTyp-?isLocalTy ℓ tₑ =
+  dec-true (dec-isLocalTy ℓ (LocalTyp ℓ tₑ)) (LocalTyp-isLocalTy ℓ tₑ)
+
 
 {-
 Context injection
@@ -297,7 +340,7 @@ inj ℓ [] = []
 inj ℓ (tₑ ∷ Δₑ) = ℓ.tₑ ∷ inj Δₑ
 -}
 injCtx : CTy → Ctxₑ → ChorCtx
-injCtx ℓ Δ = map (LocalTyp ℓ) Δ
+injCtx ℓ Δₑ = map (LocalTyp ℓ) Δₑ
 
 {-
 Injecting preserves context well-formedness
@@ -321,13 +364,70 @@ injCtx-++ : (ℓ : CTy) (Δ1ₑ Δ2ₑ : Ctxₑ) →
 injCtx-++ ℓ Δ1 Δ2 = map-++-commute (LocalTyp ℓ) Δ1 Δ2
 
 -- Projecting after injecting a context has no effect
-proj∘injCtx≗id : (Γₑ : KndCtxₑ) (ℓ : CTy) → projCtx (injKndCtx Γₑ) ℓ ∘ injCtx ℓ ≗ id
-proj∘injCtx≗id Γₑ ℓ [] = refl
-proj∘injCtx≗id Γₑ ℓ ((κₑ , tₑ) ∷ Δₑ) with dec-isLocalTy ℓ (LocalTyp ℓ (κₑ , tₑ))
+proj∘injCtx≗id : (n : ℕ) (ℓ : CTy) → projCtx (replicate n true) ℓ ∘ injCtx ℓ ≗ id
+proj∘injCtx≗id n ℓ [] = refl
+proj∘injCtx≗id n ℓ ((κₑ , tₑ) ∷ Δₑ) with dec-isLocalTy ℓ (LocalTyp ℓ (κₑ , tₑ))
 ... | yes (_ , _ , refl , refl) =
   cong₂ (λ x y → (κₑ , x) ∷ y)
-    (subst (λ x → projTy x (injTy tₑ) ≡ tₑ)
-        (sym $ isLocKnd∘injKndCtx≡true Γₑ)
-        (proj∘injTy≗id (length Γₑ) tₑ))
-    (proj∘injCtx≗id Γₑ ℓ Δₑ)
+    (proj∘injTy≗id n tₑ)
+    (proj∘injCtx≗id n ℓ Δₑ)
 ... | no ¬p = ⊥-elim $ ¬p $ LocalTyp-isLocalTy ℓ (κₑ , tₑ)
+
+-- An injected context only contains local types
+isLocalTy∘injCtx≡true : (ℓ : CTy) (Δₑ : Ctxₑ) →
+                        map (?isLocalTy ℓ) (injCtx ℓ Δₑ) ≡
+                        replicate (length Δₑ) true
+isLocalTy∘injCtx≡true ℓ Δₑ =
+  map (?isLocalTy ℓ) (map (LocalTyp ℓ) Δₑ)
+    ≡⟨ (sym $ map-compose {g = ?isLocalTy ℓ} {LocalTyp ℓ} Δₑ) ⟩
+  map (?isLocalTy ℓ ∘ LocalTyp ℓ) Δₑ
+    ≡⟨ map-cong (LocalTyp-?isLocalTy ℓ) Δₑ ⟩
+  map (λ _ → true) Δₑ
+    ≡⟨ map-const true Δₑ ⟩
+  replicate (length Δₑ) true ∎
+
+---------------------
+-- TERM PROJECTION --
+---------------------
+
+{-
+Term projection
+
+If a choreographic term C has type ℓ.tₑ
+Γ ⨾ Δ ⊢ C : ℓ.tₑ
+then there is a corresponding local term
+Γ∣ ⨾ Δ∣ℓ ⊢ proj ℓ C : tₑ
+in the projected context
+-}
+projVar : (Δ : List Bool) → Ren
+projVar [] = id
+projVar (true ∷ Δ) = Keep (projVar Δ)
+projVar (false ∷ Δ) zero = zero
+projVar (false ∷ Δ) (suc x) = projVar Δ x
+
+⊢projVar : ∀{Γ Δ x κₑ tₑ} →
+            (ℓ : CTy) →
+            Γ ⨾ Δ c⊢var x ∶ (Bnd κₑ , Local κₑ tₑ ℓ) →
+            projKndCtx Γ ⨾ projCtx (map isLocKnd Γ) ℓ Δ
+            e⊢var projVar (map (?isLocalTy ℓ) Δ) x
+            ∶ ((κₑ , projTy (map isLocKnd Γ) tₑ))
+⊢projVar {Γ} {.(Bnd κₑ , Local κₑ tₑ ℓ) ∷ Δ} {zero} {κₑ} {tₑ} ℓ (⊢0 ⊢Δ ⊢t)
+  with dec-isLocalTy ℓ (Bnd κₑ , Local κₑ tₑ ℓ)
+... | yes (_ , _ , refl , refl) = ⊢0 (⊢projCtx ℓ ⊢Δ) (⊢projTy (fst $ ⊢Local⁻ ⊢t))
+... | no ¬p = ⊥-elim $ ¬p $ Local-isLocalTy κₑ ℓ tₑ
+⊢projVar {Γ} {Δ = t ∷ Δ} {suc x} ℓ (⊢S ⊢x ⊢t) with dec-isLocalTy ℓ t
+... | yes (κₑ , tₑ , refl , refl) = ⊢S (⊢projVar ℓ ⊢x) (⊢projTy (fst $ ⊢Local⁻ ⊢t))
+... | no _ = ⊢projVar ℓ ⊢x
+
+proj : (Γ Δ : List Bool) → CTm → Tmₑ
+projVec : (Γ Δ : List Bool) → CTmVec → TmVecₑ
+
+proj Γ Δ (var x) = var (projVar Δ x)
+proj Γ Δ (constr (LocalTmS sₑ) ((ℓ , 0) ∷ ts) es) =
+  constr sₑ (projTyVec Γ ts) (projVec Γ Δ es)
+proj Γ Δ _ = var zero
+
+projVec Γ Δ [] = []
+projVec Γ Δ ((e , m , n) ∷ es) =
+  (proj (replicate m true ++ Γ) (replicate n true ++ Δ) e , m , n)
+  ∷ projVec Γ Δ es
