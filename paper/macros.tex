@@ -63,7 +63,7 @@
 \newcommand{\sendsto}{\rightsquigarrow}
 \newcommand{\tpat}{\raisebox{1pt}{\footnotesize\ensuremath{@}}}
 
-\newcommand{\defeq}{\ensuremath{\stackrel{\text{def}}{=}}}
+\newcommand{\defeq}{\ensuremath{\stackrel{\text{\normalfont\tiny def}}{=}}}
 
 \newcommand{\sayam}[1]{\text{``}#1\text{''}}
 \newcommand{\sayjp}[1]{\ensuremath{\lceil#1\rfloor}}
@@ -147,9 +147,33 @@
 \newcommand\epp[2]{\ensuremath{\llbracket#1\rrbracket_{#2}}}
 
 % Semantics
-\newcommand\step[1]{\ensuremath{\xRightarrow{{#1}}_{\raisebox{3pt}{\footnotesize{c}}}}}
-\newcommand\localstep[1]{\ensuremath{\xRightarrow{{#1}}_{\raisebox{3pt}{\footnotesize{e}}}}}
-\newcommand\nlocalstep[1]{\ensuremath{\xnRightarrow{{#1}}_{\raisebox{3pt}{\footnotesize{e}}}}}
+\newcommand{\minwidthbox}[2]{\makebox[{\ifdim#1<\width\width\else#1\fi}]{#2}}
+\makeatletter
+\newcommand{\raw@step}[3]{\mathrel{%
+  \if\relax\detokenize{#1}\relax
+    \Longrightarrow
+  \else
+    {\xRightarrow{\minwidthbox{1em}{\ensuremath{\scriptstyle#1}}}}{}
+  \fi%
+  \if\relax\detokenize{#2}\relax\else^{#2}\fi%
+  \if\relax\detokenize{#3}\relax\else_{#3}\fi%
+}}
+\newcommand{\step}[1]{\raw@step{#1}{}{c}}
+\newcommand{\manystep}{\raw@step{}{*}{c}}
+\newcommand{\localstep}[1][]{\raw@step{#1}{}{e}}
+
+\newcommand{\raw@nstep}[3]{\mathrel{%
+  \if\relax\detokenize{#1}\relax
+    {\centernot{\Longrightarrow}}{}
+  \else
+    {\xnRightarrow{\minwidthbox{1em}{\ensuremath{\scriptstyle#1}}}}{}
+  \fi%
+  \if\relax\detokenize{#2}\relax\else^{#2}\fi%
+  \if\relax\detokenize{#3}\relax\else_{#3}\fi%
+}}
+\newcommand{\nstep}[1]{\raw@nstep{#1}{}{c}}
+\newcommand{\nlocalstep}[1][]{\raw@nstep{#1}{}{e}}
+\makeatother
 
 % Syntax
 \newcommand\app[2]{\ensuremath{#1 \; #2}}

@@ -25,12 +25,12 @@
 \end{figure}
 
 \begin{mathparpagebreakable}
-  \infer[DoneE]{L \notin \mathcal{B} \\
+  \infer[DoneE]{
   e_1 \Rightarrow_e e_2}
-  {L.e_1 \xRightarrow{L.(e_1 \Rightarrow e_2)\hfill{}\mathcal{B}}_c L.e_2} \and
+  {L.e_1 \step{L.(e_1 \Rightarrow e_2)} L.e_2} \and
 
-  \infer[SendE]{C_1 \xRightarrow{R\hfill{}\mathcal{B}}_c C_2}
-  {C_1 \overset{L_1}{\rightsquigarrow} L_2 \xRightarrow{R\hfill{}\mathcal{B}}_c C_2 \overset{L_1}{\rightsquigarrow} L_2} \and
+  \infer[SendE]{C_1 \step{R} C_2}
+  {C_1 \overset{L_1}{\rightsquigarrow} L_2 \step{R} C_2 \overset{L_1}{\rightsquigarrow} L_2} \and
 
   \infer[IfE]{C \xRightarrow{R\hfill{}\mathcal{B}}_c C'}
   {L.\text{if}\; C \;\text{then}\; C_1 \;\text{else}\; C_2 \xRightarrow{L.\text{if}\;R\hfill{}\mathcal{B}}_c L.\text{if}\; C' \;\text{then}\; C_1 \;\text{else}\; C_2} \and

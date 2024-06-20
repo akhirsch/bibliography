@@ -9,13 +9,18 @@ However, session types can be difficult to work with as a separate program must 
 
 \emph{Choreographic programming} offers an alternative solution in which a single program is written to describe all interactions between nodes, and the program that each individual node will run is derived from this global program.
 Such choreographic languages lead to \emph{deadlock freedom by design}, providing the programmer assurance that the system will never become stuck.
-Currently, typed choreographic languages are typically functional and support higher-order types, but either do not support \emph{process polymorphism}, are not flexible enough to allow for an arbitrary language to be used for local computations, or cannot send \emph{dynamically computed process names} in a manner which does not introduce deadlocks or stuck programs.
-\ethan{Do any typed choreographies allow this?
-  I thought the main argument was we're the only one.
-  Symphony does it, but it doesn't have a type system.}
-\ashley{Correct, I'm not aware of anyone else who does it while including a type system.}
-\ashley{How about this wording?}
-This paper presents \langname, the first typed choreographic programming language which supports process polymorphism and dynamically generated process names over an arbitrary language of local computations.
+Currently, typed choreographic languages are typically functional and support higher-order types, but either do not support \emph{process polymorphism},
+are not flexible enough to allow for an arbitrary language to be used for local computations.
+Moreover, the only existing typed choreography supporting process polymorphism does not allow \emph{dynamically computed process names}~\citep{aliceorbob}.
+%Moreover, the only , or cannot send \emph{dynamically computed process names} in a manner which does not introduce deadlocks or stuck programs.
+%\ashley{How about this wording?}
+This paper presents \langname, the first typed choreographic programming language
+supporting process polymorphism with dynamically computed process names.
+\ethan{I think we should identify the main selling point of the paper and try not to muddy the water with other things too much.
+  As I see it, ``we do typed process polymorphism with dynamic process names'' is th real winner here.
+  It's definitely worth mentioning the other cool stuff we do, but I want to make sure we drive home that
+  we wouldn't need anything else to be new and important.
+  I tweaked the text a bit in that direction, but I probably went too far.}
 
 To understand why choreographic programming is a useful paradigm,
 consider a simple example in which a client \Client wishes to run a job on a dedicated worker \Worker.
@@ -23,10 +28,11 @@ The client has on their local system the code to calculate a computationally exp
 If \Client wishes to run $F$ on a specific (statically known) worker \Worker,
 it can run the following choreography in which \Client sends $F$ and $X$ to \Worker, then \Worker computes $F~X$ locally, and sends the result back to \Client.
 \ashley{Reading this back, are the letters used too much instead of the actual full words Client/Worker here? Think it could be hard to read}
+\ethan{We'll adjust in polishing passes later, but good thing to watch for.}
 Note here, the syntax $t@\Client$ indicates a value of type $t$ located at \Client.
 \begin{align*}
-  \RunAtWorker & : (t \to t') @ \Client \to t@\Client \to t'@\Client \\
-  \RunAtWorker &~F~X =
+  & \RunAtWorker : (t \to t') @ \Client \to t@\Client \to t'@\Client \\
+  & \RunAtWorker~F~X =
   \def\arraystretch{1.1}
   \begin{array}[t]{@{}l@{}}
     \LetN~\begin{array}[t]{@{}l@{}}
@@ -51,6 +57,7 @@ Lastly \Worker sends the result of this computation to \Client, completing the p
  
 \ethan{I think we want to more heavily emphasize that this is not how real distributed systems work.}
 \ashley{What aspects specifically? I feel like this has been mentioned in other papers, but not in the introduction}
+\ethan{Just the point that real distributed systems don't have a single static worker, they use thread pools and load balancers.}
 
 We have so-far assumed that the worker location \Worker in this program is both fixed and statically-known.
 What if, however, we wish for the identity of the worker location to be dynamically computed during the execution of the program?
@@ -60,8 +67,8 @@ In this process, the client \Client will ask a pool-manager \Mngr for the name o
 The manager can locally track the state of the thread pool, for instance by using a queue of idle processes, and allow clients to acquire the least-recently-used location by using a \emph{dynamically-computed} local function \programfont{acquireWorker}.
 The programmer could implement the job-submission process using the following choreography:
 \begin{align*}
-  \WithWorker & : (\Int \to \Int) @ \Client \to \Int@\Client \to \Int@\Client \\
-  \WithWorker & ~F~X =
+  & \WithWorker : (\Int \to \Int) @ \Client \to \Int@\Client \to \Int@\Client \\
+  & \WithWorker~F~X =
   \def\arraystretch{1.1}
   \begin{array}[t]{@{}l@{}}
     \LetN~\begin{array}[t]{@{}l@{}}
@@ -89,7 +96,9 @@ Finally, the manager releases the worker back into the thread pool, at which poi
 
 The second line of this program, $W \ChorDef \Tell[\Mngr]{w}{\{\Client\} \cup \rho_w}$, is the main difference between this and the previous example, and is critical for the ability of \langname to be able to send and use dynamically generated location names.
 This expression, called a \emph{tell-let} binding, allows for location names from the local language to be used within the subsequent choreographic program.
-Although locations can appear in the types of choreographic programs such as $\Int @ \Worker$, we disallow \emph{dependent types} within our language while still allowing the dynamic value of the location to be used in the body of the program (by enforcing that the \emph{output type} of a tell-let binding does not depend on the value of the location.) using the following typing rule. \ashley{Maybe more concisely explain this without the full rule?}
+Although locations can appear in the types of choreographic programs such as $\Int @ \Worker$, we disallow \emph{dependent types} within our language while still allowing the dynamic value of the location to be used in the body of the program (by enforcing that the \emph{output type} of a tell-let binding does not depend on the value of the location.) using the following typing rule.
+\ashley{Maybe more concisely explain this without the full rule?}
+\ethan{Yeah, putting typing rules in the intro is generally a bad idea.}
 \begin{mathpar}
   \infer[TellLetLoc]{\chortyped{\Gamma}{\Delta}{\Sigma}{C_1}{\Loc @ \ell} \\
     \chorkinded{\Gamma}{\rho}{*_s} \\
@@ -104,6 +113,7 @@ Although locations can appear in the types of choreographic programs such as $\I
 	\item We present \langname, the first typed choreographic programming language with the ability to send dynamically generated location names and types 
     \ethan{We should be careful. One could argue Symphony did that, it just didn't have a type system.}
 	\item We show how process \ashley{Should I stick with "process polymorphism" or use "location polymorphism" as I'm sticking with Pirouette and calling them locations} and type polymorphism can be implemented in a manner which is generic over the choice of local language
+    \ethan{Good point. We should either be very consistent, or mention early on that we use the interchangeably. I vote consistent.}
 	\item We show how to define an out-of-order execution semantics for a choreographic language which includes process polymorphism
 	\item We settle an open question about the strength of the type-system needed to implement process polymorphism in a choreographic language.
   In particular, previous works (Alice \& Bob) have implemented process polymorphism using a variant of System $\text{F}_\omega$, whereas \langname extends System F.
