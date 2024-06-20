@@ -1,9 +1,30 @@
 \section{Agda Development}
 \label{sec:agda-dev}
 
-\todo Representation of local language
+In this paper we have presented \langname in a standard style with named variables.
+However for ease of development, our Agda code uses a nameless style implemented with de~Bruijn indices.
+As well, we use a specific representation for the local language which guarantees that the required admissible syntactic and typing rules hold, yet formally is not any less general.
 
-\todo Named vs unnamed representations
+\todo References specific to binding signatures
+
+\ashley{How detailed to make it? I think this may already be too much?}
+Specifically, we represent the syntax, kinding system, and type system of the local language, choreographic language, and control language using \emph{binding signatures}.
+In this representation, types and terms are described via \emph{operations} in a similar manner to how they are presented in a Backus–Naur form.
+Associated with each operator is an arity, quantifying the number of subexpressions, and for each subexpression a count of the number of variables bound in that subexpression.
+For example, the basic $\lambda$-calculus has three forms of expressions: variables, $\lambda$-abstractions, and applications.
+\begin{syntax}
+	\category{e}
+	\alternative{x}
+	\alternative{\lambda x.e}
+	\alternative{e_1~e_2}
+\end{syntax}
+Variables are naturally assumed to exist in this framework, so there is no operator associated with them.
+The operator for $\lambda$-abstraction has arity 1, with the sole subexpression having 1 bound variable.
+The operator for application has arity 2, where neither subexpression introduces any bound variables.
+
+Given its binding signature, the syntax and type system associated with a language, as well as certain metafunctions such as substitution, can be automatically defined.
+Using this representation allows us to prove standard syntactic and typing metatheorems for all languages at once, reducing boilerplate.
+As well, since our choreographic and control languages are still parameterized by the choice of local language, our theorems are no-less general.
 
 \todo Generalizations made by Agda vs presented in the paper
 
