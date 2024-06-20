@@ -41,7 +41,7 @@
   {\chortyped{\Gamma}{\Delta}{\Sigma}{X}{t}} \and
 
   \infer[Done]{\chorkinded{\Gamma}{\ell}{*_\ell} \\
-    \localtyped{\proj{\Gamma}{}}{\proj{\Sigma}{_\ell}}{e}{t_e}}
+    \localtyped{\proj{\Gamma}{\Locations}}{\proj{\Sigma}{_\ell}}{e}{t_e}}
   {\chortyped{\Gamma}{\Delta}{\Sigma}{\ell.e}{t_e @ \ell}} \and
 
   \infer[Fun]{\chortyped{\Gamma}{\Delta,X \ty \tau_1}{\Sigma}{C}{\tau_2}}

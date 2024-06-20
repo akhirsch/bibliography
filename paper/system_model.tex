@@ -100,8 +100,8 @@ Alternatively, types may be an active part of the language and used to express u
 We require a type-system for expressions of the local language, and a well-formedness judgment for local language types.
 For simplicity we assume there is a single kind for types, but this assumption is not essential, and our formalization allows kinds of the local language to be from an arbitrary set.
 
-The type well-formedness judgement is written as \localkinded{\Gamma}{t}, where the \emph{kinding context} $\Gamma$ is a list of in-scope type variables, and $t$ is a type of the local language.
-The typing judgement is written as \localtyped{\Gamma}{\Sigma}{e}{t}, where $\Gamma$ is a kinding context, the \emph{typing context} $\Sigma$ is a list of ascriptions $x \ty t$ of expression variables to types, $e$ is an expression, and $t$ is a type.
+The type well-formedness judgement is written as \localkinded{\Gamma_e}{t_e}, where the \emph{kinding context} $\Gamma_e$ is a list of in-scope type variables, and $t_e$ is a type of the local language.
+The typing judgement is written as \localtyped{\Gamma_e}{\Sigma_e}{e}{t_e}, where $\Gamma_e$ is a local kinding context, the \emph{typing context} $\Sigma_e$ is a list of ascriptions $x \ty t$ of expression variables to types, $e$ is an local expression, and $t_e$ is a local type.
 The typing context well-formedness judgment $\localctxwf{\Gamma}{\Sigma}$ requires that all types in $\Sigma$ be well-formed: $\localctxwf{\Gamma}{\Sigma} \defeq \forall_{t \in \Sigma}~\localkinded{\Gamma}{t}$.
 
 The only types required of the local language are the type $\Bool$ of booleans, the type $\Loc$ for location names, and the type $\Typ$ for \emph{representations} of local types.
