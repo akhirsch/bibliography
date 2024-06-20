@@ -28,7 +28,7 @@ Specifically, a program which take as input a type $t$ of kind $\kappa$ (from an
 
 These three types have the following kinding rules:
 \begin{mathpar}
-  \infer[TyAt]{\localkinded{\proj{\Gamma}{}}{t_e} \\
+  \infer[TyAt]{\localkinded{\proj{\Gamma}{\Locations}}{t_e} \\
     \chorkinded{\Gamma}{\ell}{*_\ell}}
     {\chorkinded{\Gamma}{t_e @ \ell}{*}} \and
 

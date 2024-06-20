@@ -45,10 +45,9 @@ In order for location names to be dynamically computed and sent over the network
 This type need not be \emph{complete}, in the sense that there does not need to be a value of this type which represents each concrete location $L \in \Locations$.
 Similarly there must be a type \Typ for representations of local language types, which also need not be complete.
 For example, the types present in the simply-typed lambda calculus could be represented as a type of binary trees with root-nodes labeled by a basic type.
-We formulate the existence of the types \Loc and \Typ as strict requirements of the local language, however if they are not present we could alternatively choose to remove the relevant features from \langname and still retain the core choreographic functionality and properties.
 
 We require the language have a predicate $\text{Val}(e)$ to determine whether an expression is a value of the language, and all values are required to be closed, with no free expression or type variables.
-All values of the local language are able to be sent over the network.
+All values of the local language are able to be sent over the network, including expressions which may be functions.
 
 \ashley{Why is the localstep being gross? Neither of the two here look correct.}
 \ethan{\texttt{\textbackslash xRightarrow} does not do what you want with subscripts. I have a distressingly complicated macro to fix it (and make the arrows longer, but that we can undo) that I just added. We should use it for all of our step relations.}
@@ -75,7 +74,7 @@ Alternatively, types may be an active part of the language and used to express u
   \begin{syntax}
   	\category[Types]{t} \alternative{\alpha} \alternative{\Int} \alternative{\Bool} \alternative{\Empty} \alternative{t_1 \to t_2}
     \category[Expressions]{e} \alternative{x} \alternative{\lambda x : t.e} \alternative{e_1~e_2}\\
-    \alternative{n \in \mathbb{Z}} \alternative{e_1 + e_2}\\
+    \alternative{n \in \mathbb{Z}} \alternative{e_1 + e_2} \alternative{e_1 = e_2}\\
     \alternative{\True} \alternative{\False} \alternative{\mathsf{if}~e_1~\mathsf{then}~e_2~\mathsf{else}~e_3}
   \end{syntax}
 \end{ex}
@@ -89,7 +88,7 @@ Alternatively, types may be an active part of the language and used to express u
   	\category[Types]{t} \alternative{\alpha} \alternative{\Int} \alternative{\Bool} \alternative{\Typ}\\
   	\alternative{t_1 \to t_2} \alternative{\forall \alpha.t}
     \category[Expressions]{e} \alternative{x} \alternative{\lambda x : t.e} \alternative{e_1~e_2} \alternative{\Lambda \alpha.e} \alternative{e~t}\\
-    \alternative{n \in \mathbb{Z}} \alternative{e_1 + e_2}\\
+    \alternative{n \in \mathbb{Z}} \alternative{e_1 + e_2} \alternative{e_1 = e_2}\\
     \alternative{\True} \alternative{\False} \alternative{\mathsf{if}~e_1~\mathsf{then}~e_2~\mathsf{else}~e_3}\\
     \alternative{\say{\Int}} \alternative{\say{\Bool}} \alternative{e_1 \quoteto e_2}
   \end{syntax}
@@ -100,11 +99,11 @@ Alternatively, types may be an active part of the language and used to express u
 We require a type-system for expressions of the local language, and a well-formedness judgment for local language types.
 For simplicity we assume there is a single kind for types, but this assumption is not essential, and our formalization allows kinds of the local language to be from an arbitrary set.
 
-The type well-formedness judgement is written as \localkinded{\Gamma_e}{t_e}, where the \emph{kinding context} $\Gamma_e$ is a list of in-scope type variables, and $t_e$ is a type of the local language.
-The typing judgement is written as \localtyped{\Gamma_e}{\Sigma_e}{e}{t_e}, where $\Gamma_e$ is a local kinding context, the \emph{typing context} $\Sigma_e$ is a list of ascriptions $x \ty t$ of expression variables to types, $e$ is an local expression, and $t_e$ is a local type.
-The typing context well-formedness judgment $\localctxwf{\Gamma}{\Sigma}$ requires that all types in $\Sigma$ be well-formed: $\localctxwf{\Gamma}{\Sigma} \defeq \forall_{t \in \Sigma}~\localkinded{\Gamma}{t}$.
+The type well-formedness judgement is written as \localkinded{\Gamma_e}{t_e}, where the \emph{local kinding context} $\Gamma_e$ is a list of in-scope type variables, and $t_e$ is a type of the local language.
+The typing judgement is written as \localtyped{\Gamma_e}{\Sigma_e}{e}{t_e}, where $\Gamma_e$ is a local kinding context, the \emph{local typing context} $\Sigma_e$ is a list of ascriptions $x \ty t_e$ of local expression variables to local types, $e$ is an local expression, and $t_e$ is a local type.
+The typing context well-formedness judgment $\localctxwf{\Gamma_e}{\Sigma_e}$ requires that all types in $\Sigma$ be well-formed: $\localctxwf{\Gamma_e}{\Sigma_e} \defeq \forall_{t_e \in \Sigma_e}~\localkinded{\Gamma_e}{t_e}$.
 
-The only types required of the local language are the type $\Bool$ of booleans, the type $\Loc$ for location names, and the type $\Typ$ for \emph{representations} of local types.
+The only types required of the local language are the type $\Bool$ of booleans, the type $\Loc$ for location names, and the type $\Typ$ for representations of local types.
 Features present in the choreographic kinding and type systems, such as polymorphism, are not required to be present in the local kinding and type systems.
 
 \ashley{Should I convert the \textsc{TyVar} and \textsc{Var} rules to instead be explicit about exchange, weakening, and strengthening to more suit the named-style, or are they fine as-is? I'm a fan of this style for conciseness}
@@ -116,28 +115,19 @@ Features present in the choreographic kinding and type systems, such as polymorp
 		\infer[TyVar]{\alpha \in \Gamma}
 		{\localkinded{\Gamma}{\alpha}} \and
 
-		% \infer[TyBool]{}
-		% {\localkinded{\Gamma}{\Bool}} \and
-
-		% \infer[TyLoc]{}
-		% {\localkinded{\Gamma}{\Loc}} \and
-
-		% \infer[TyTyp]{}
-		% {\localkinded{\Gamma}{\Typ}} \and
-
 		\infer[TySubst]{\localkinded{\Gamma}{t_1} \\
 			\localkinded{\Gamma, \alpha}{t_2}}
 		{\localkinded{\Gamma}{\subst{t_2}{\alpha}{t_1}}} \and
 
+		\infer[CtxWf]{\localtyped{\Gamma}{\Sigma}{e}{t}}
+		{\localctxwf{\Gamma}{\Sigma}} \and
+
+		\infer[TyWf]{\localtyped{\Gamma}{\Sigma}{e}{t}}
+		{\localkinded{\Gamma}{t}} \and
+
 		\infer[Var]{\localctxwf{\Gamma}{\Sigma} \\
 			x \ty t \in \Sigma}
 		{\localtyped{\Gamma}{\Sigma}{x}{t}}
-
-		\infer[True]{\localctxwf{\Gamma}{\Sigma}}
-		{\localtyped{\Gamma}{\Sigma}{\True}{\Bool}}
-
-		\infer[False]{\localctxwf{\Gamma}{\Sigma}}
-		{\localtyped{\Gamma}{\Sigma}{\False}{\Bool}}
 
 		\infer[Subst]{\localtyped{\Gamma}{\Sigma}{e_1}{t_1} \\
 			\localtyped{\Gamma}{\Sigma, x \ty t_1}{e_2}{t_2}}
@@ -147,14 +137,14 @@ Features present in the choreographic kinding and type systems, such as polymorp
 			\localtyped{\Gamma, \alpha}{\Sigma}{e_2}{t_2}}
 		{\localtyped{\Gamma}{\Sigma}{\subst{e_2}{\alpha}{t_1}}{\subst{t_2}{\alpha}{t_1}}}
 	\end{mathpar}
-  \caption[Required-Admissible Rules]{Required-Admissible Rules for Local Type and Kinding Systems}
+  \caption[Required Admissible Rules]{Required Admissible Rules for Local Type and Kinding Systems}
   \label{fig:local-type-rules}
 \end{figure}
 
 \label{sec:sound-type-systems}
 We additionally require the following \emph{soundness} assumptions on the local type system:
 \begin{itemize}
-	\item (\textsc{Preservation}) If $e_1 \localstep e_2$ and $\localtyped{\Gamma}{\Sigma}{e_1}{t}$, then $\localtyped{\Gamma}{\Sigma}{e_2}{t}$.
+	\item (\textsc{Preservation}) If $e_1 \localstep e_2$ and $\localtyped{\Gamma}{\Sigma}{e_1}{t}$, then $\localtyped{\Gamma_e}{\Sigma_e}{e_2}{t}$.
 
 	\item (\textsc{Progress}) If $\localemptyped{e_1}{t}$, then either $e_1$ is a value or there is an $e_2$ such that $e_1 \localstep e_2$.
     \ethan{I think saying ``$e_1$ is a closed expression'' is redundant. Doesn't $\localemptyped{e_1}{t}$ imply that?}
