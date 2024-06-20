@@ -42,6 +42,7 @@ module PolyPir.ChorTerms
   where
 
 open import PolyPir.ChorTypes Loc ≡-dec-Loc 𝕃
+open import PolyPir.TypeOperations Loc ≡-dec-Loc 𝕃
 
 ChorCtx = Ctx C⅀ₖ
 Ctxₑ = Ctx ⅀ₑₖ
@@ -153,6 +154,36 @@ TypFun Γ ℓ Γₑ' (κₑ , tₑ) =
               ⊢tₑ))))
     (⊢renTy C⅀ₖ (⊢TyDrop* C⅀ₖ (⊢TyIdRen C⅀ₖ) (injKndCtx Γₑ')) ⊢ℓ)
 
+⊢TypFun⁻ : ∀{Γ ℓ Γₑ' tₑ} →
+           wfTyp C⅀ₖ (injKndCtx Γₑ' ++ Γ) (TypFun Γ ℓ Γₑ' tₑ) →
+           Γ c⊢ₜ ℓ ∶ *ₗ ×
+           wfTyp ⅀ₑₖ (Γₑ' ++ projKndCtx Γ) tₑ
+⊢TypFun⁻ {Γ} {ℓ} {Γₑ'} {κₑ , tₑ} ⊢Local-tₑ with ⊢Local⁻ ⊢Local-tₑ
+... | (⊢tₑ , ⊢ℓ) =
+  let eq1 : map isLocKnd (injKndCtx Γₑ' ++ Γ)
+            ≡ replicate (length Γₑ') true ++ map isLocKnd Γ
+      eq1 =
+        map isLocKnd (injKndCtx Γₑ' ++ Γ)
+          ≡⟨ map-++-commute isLocKnd (injKndCtx Γₑ') Γ ⟩
+        map isLocKnd (injKndCtx Γₑ') ++ map isLocKnd Γ
+          ≡⟨ cong (_++ map isLocKnd Γ) (isLocKnd∘injKndCtx≡true Γₑ') ⟩
+        replicate (length Γₑ') true ++ map isLocKnd Γ ∎
+      eq2 : Γₑ' ++ projKndCtx Γ ≡ projKndCtx (injKndCtx Γₑ' ++ Γ)
+      eq2 =
+        Γₑ' ++ projKndCtx Γ
+          ≡⟨ cong (_++ projKndCtx Γ) (sym $ proj∘injKndCtx≗id Γₑ') ⟩
+        projKndCtx (injKndCtx Γₑ') ++ projKndCtx Γ
+          ≡⟨ (sym $ projKndCtx-++ (injKndCtx Γₑ') Γ) ⟩
+        projKndCtx (injKndCtx Γₑ' ++ Γ) ∎
+  in ⊢renTy⁻ C⅀ₖ (⊢TyDrop⁻* C⅀ₖ (⊢TyIdRen⁻ C⅀ₖ) (injKndCtx Γₑ')) ⊢ℓ ,
+    (⊢injTy⁻ $
+      subst (λ x → injKndCtx x c⊢ₜ injTy tₑ ∶ LocKnd κₑ)
+        (sym eq2) $
+      ⊢regainTy⁻ $
+      subst (λ x → (map LocKnd Γₑ' ++ Γ) c⊢ₜ regainTy x (injTy tₑ) ∶ LocKnd κₑ)
+        (sym eq1)
+        ⊢tₑ)
+
 BinderFun : (Γ : ChorKndCtx) (ℓ : CTy) → Binder ⅀ₑₖ → Binder C⅀ₖ
 BinderFun Γ ℓ (Γₑ' , Δₑ' , tₑ) =
   injKndCtx Γₑ' ,
@@ -194,6 +225,44 @@ BinderFun Γ ℓ (Γₑ' , Δₑ' , tₑ) =
           eq2
           ⊢tₑ))))
     (⊢renTy C⅀ₖ (⊢TyDrop* C⅀ₖ (⊢TyIdRen C⅀ₖ) (injKndCtx Γₑ')) ⊢ℓ)
+
+⊢BinderFun⁻ : ∀{Γ ℓ Σ} →
+             wfBinder C⅀ₖ Γ (BinderFun Γ ℓ Σ) →
+             Γ c⊢ₜ ℓ ∶ *ₗ ×
+             wfBinder ⅀ₑₖ (projKndCtx Γ) Σ
+⊢BinderFun⁻ {Γ} {ℓ} {Γₑ' , Δₑ' , κₑ , tₑ} (⊢Δₑ' , ⊢tₑ) =
+  let eq1 : map isLocKnd (injKndCtx Γₑ' ++ Γ)
+           ≡ replicate (length Γₑ') true ++ map isLocKnd Γ
+      eq1 = 
+        map isLocKnd (injKndCtx Γₑ' ++ Γ)
+          ≡⟨ map-++-commute isLocKnd (injKndCtx Γₑ') Γ ⟩
+        map isLocKnd (injKndCtx Γₑ') ++ map isLocKnd Γ
+          ≡⟨ cong (_++ map isLocKnd Γ) (isLocKnd∘injKndCtx≡true Γₑ') ⟩
+        replicate (length Γₑ') true ++ map isLocKnd Γ ∎
+      eq2 : Γₑ' ++ projKndCtx Γ ≡ projKndCtx (injKndCtx Γₑ' ++ Γ)
+      eq2 =
+        Γₑ' ++ projKndCtx Γ
+          ≡⟨ cong (_++ projKndCtx Γ) (sym $ proj∘injKndCtx≗id Γₑ') ⟩
+        projKndCtx (injKndCtx Γₑ') ++ projKndCtx Γ
+          ≡⟨ (sym $ projKndCtx-++ (injKndCtx Γₑ') Γ) ⟩
+        projKndCtx (injKndCtx Γₑ' ++ Γ) ∎
+  in ⊢TypFun⁻ {Γ} {ℓ} {Γₑ'} {κₑ , tₑ} ⊢tₑ .fst ,
+    (map-AllElems⁻
+      (wfTyp ⅀ₑₖ (Γₑ' ++ projKndCtx Γ))
+      (wfTyp C⅀ₖ (injKndCtx Γₑ' ++ Γ))
+      (TypFun Γ ℓ Γₑ')
+      (λ tₑ ⊢tₑ → ⊢TypFun⁻ {Γ} {ℓ} {Γₑ'} {tₑ} ⊢tₑ .snd)
+      ⊢Δₑ' , 
+    (subst (_e⊢ₜ tₑ ∶ κₑ)
+      (sym eq2) $
+    ⊢injTy⁻ $
+    ⊢regainTy⁻ $
+    subst
+      (λ x → (map LocKnd Γₑ' ++ Γ)
+             c⊢ₜ regainTy x (injTy tₑ)
+             ∶ LocKnd κₑ)
+    (sym eq1) $
+    ⊢Local⁻ ⊢tₑ .fst))
 
 {-
 Choreographic term typing judgments
@@ -755,29 +824,6 @@ _⨾_e⊢_∶_ = typed (𝕃 .⅀ₑ)
 
 _⨾_e⊢vec_∶_ : KndCtxₑ → Ctxₑ → TmVecₑ → Binders ⅀ₑₖ → Set
 _⨾_e⊢vec_∶_ = vecTyped (𝕃 .⅀ₑ)
-
-⊢Local⁻ : ∀{Γ κₑ tₑ ℓ} →
-          Γ c⊢ₜ Local κₑ tₑ ℓ ∶ Bnd κₑ →
-          Γ c⊢ₜ tₑ ∶ LocKnd κₑ × Γ c⊢ₜ ℓ ∶ *ₗ
-⊢Local⁻ (⊢ₜtyConstr (LocalS κₑ) (⊢tₑ ⊢ₜ∷ ⊢ℓ ⊢ₜ∷ ⊢ₜ[])) =
-  ⊢tₑ , ⊢ℓ
-
-⊢Fun⁻ : ∀{Γ τ1 τ2} →
-        Γ c⊢ₜ Fun τ1 τ2 ∶ * →
-        Γ c⊢ₜ τ1 ∶ * × Γ c⊢ₜ τ2 ∶ *
-⊢Fun⁻ (⊢ₜtyConstr .FunS (⊢τ1 ⊢ₜ∷ ⊢τ2 ⊢ₜ∷ ⊢ₜ[])) =
-  ⊢τ1 , ⊢τ2
-
-⊢At⁻ : ∀{Γ tₑ ℓ} →
-        Γ c⊢ₜ At tₑ ℓ ∶ * →
-        Γ c⊢ₜ tₑ ∶ *ₑ × Γ c⊢ₜ ℓ ∶ *ₗ
-⊢At⁻ (⊢ₜtyConstr AtS (⊢tₑ ⊢ₜ∷ ⊢ℓ ⊢ₜ∷ ⊢ₜ[])) =
-  ⊢tₑ , ⊢ℓ
-
-⊢All⁻ : ∀{Γ κ ∀κ τ} →
-        Γ c⊢ₜ All {κ} ∀κ τ ∶ * →
-        (κ ∷ Γ) c⊢ₜ τ ∶ *
-⊢All⁻ (⊢ₜtyConstr (AllS κ ∀κ) (⊢τ ⊢ₜ∷ ⊢ₜ[])) = ⊢τ
 
 ⊢renId : ∀{Γ Δ C t} →
           Γ ⨾ Δ c⊢ C ∶ t →

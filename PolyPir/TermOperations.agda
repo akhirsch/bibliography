@@ -43,6 +43,7 @@ module PolyPir.TermOperations
   where
 
 open import PolyPir.ChorTypes Loc ≡-dec-Loc 𝕃
+open import PolyPir.TypeOperations Loc ≡-dec-Loc 𝕃
 open import PolyPir.ChorTerms Loc ≡-dec-Loc 𝕃
 
 ≡-dec-ChorKnd : DecidableEquality ChorKnd
@@ -232,6 +233,54 @@ dec-isLocalTy ℓ (*ₛ , t) = no λ ()
 
 ?isLocalTy : CTy → CTyp → Bool
 ?isLocalTy ℓ t = dec-isLocalTy ℓ t .does
+
+?isLocalTy∘TypFun≡true :
+  ∀ Γ ℓ Γₑ' tₑ →
+  ?isLocalTy
+    (renTy C⅀ₖ (Drop* id (length (injKndCtx Γₑ'))) ℓ)
+    (TypFun Γ ℓ Γₑ' tₑ)
+    ≡ true
+?isLocalTy∘TypFun≡true Γ ℓ Γₑ' (κₑ , tₑ) with
+  dec-isLocalTy (renTy C⅀ₖ (Drop* id (length (injKndCtx Γₑ'))) ℓ) (TypFun Γ ℓ Γₑ' (κₑ , tₑ))
+... | yes p = refl
+... | no ¬p = ⊥-elim $ ¬p
+      (κₑ ,
+      renTy C⅀ₖ
+        (regainTyVar (replicate (length Γₑ') true ++ map isLocKnd Γ))
+        (injTy tₑ) ,
+      refl ,
+      refl)
+
+isLocalTy-ren
+  : ∀ ℓ tₑ ξ →
+    isLocalTy ℓ tₑ →
+    isLocalTy (renTy C⅀ₖ ξ ℓ) (renTyp C⅀ₖ ξ tₑ)
+isLocalTy-ren ℓ (.(Bnd κₑ) , .(Local κₑ tₑ ℓ)) ξ (κₑ , tₑ , refl , refl) =
+  κₑ , renTy C⅀ₖ ξ tₑ , refl , refl
+
+isLocalTy-ren⁻
+  : ∀ ℓ tₑ ξ →
+    Injective _≡_ _≡_ ξ →
+    isLocalTy (renTy C⅀ₖ ξ ℓ) (renTyp C⅀ₖ ξ tₑ) →
+    isLocalTy ℓ tₑ
+isLocalTy-ren⁻ ℓ (.(Bnd κₑ) , tyConstr (LocalS κₑ') ((tₑ' , 0) ∷ (ℓ' , 0) ∷ [])) ξ ξ-inj (κₑ , tₑ , refl , q) =
+  κₑ , tₑ' , refl ,
+  cong₃ Local
+    (LocalS-inj $ tyConstr-inj C⅀ₖ q .fst)
+    refl
+    (renTy-inj C⅀ₖ ξ-inj $
+       fst $ tyCons-inj C⅀ₖ $ snd $ snd $ tyCons-inj C⅀ₖ $ snd $ tyConstr-inj C⅀ₖ q)
+
+?isLocalTy-ren-≡
+  : ∀ ℓ tₑ ξ →
+    Injective _≡_ _≡_ ξ →
+    ?isLocalTy ℓ tₑ ≡ ?isLocalTy (renTy C⅀ₖ ξ ℓ) (renTyp C⅀ₖ ξ tₑ)
+?isLocalTy-ren-≡ ℓ tₑ ξ ξ-inj
+  with dec-isLocalTy ℓ tₑ | dec-isLocalTy (renTy C⅀ₖ ξ ℓ) (renTyp C⅀ₖ ξ tₑ)
+... | yes p | yes q = refl
+... | yes p | no ¬q = ⊥-elim $ ¬q $ isLocalTy-ren ℓ tₑ ξ p
+... | no ¬p | yes q = ⊥-elim $ ¬p $ isLocalTy-ren⁻ ℓ tₑ ξ ξ-inj q
+... | no ¬p | no ¬q = refl
 
 {-
 Context projection
@@ -431,3 +480,249 @@ projVec Γ Δ [] = []
 projVec Γ Δ ((e , m , n) ∷ es) =
   (proj (replicate m true ++ Γ) (replicate n true ++ Δ) e , m , n)
   ∷ projVec Γ Δ es
+
+projCtx∘TypFun≗id
+  : ∀{Γ ℓ} (Δₑ : Ctx ⅀ₑₖ) (Γₑ' : KndCtxₑ) →
+    projKndCtx (map LocKnd Γₑ' ++ Γ) e⊢ctx Δₑ →
+    projCtx (map isLocKnd (injKndCtx Γₑ' ++ Γ))
+      (renTy C⅀ₖ (Drop* id (length (injKndCtx Γₑ'))) ℓ)
+      (map (TypFun Γ ℓ Γₑ') Δₑ)
+    ≡ Δₑ
+projCtx∘TypFun≗id [] Γₑ' tt = refl
+projCtx∘TypFun≗id {Γ} {ℓ} ((κₑ , tₑ) ∷ Δₑ) Γₑ' (⊢tₑ , ⊢Δₑ)
+  with dec-isLocalTy (renTy C⅀ₖ (Drop* id (length (injKndCtx Γₑ'))) ℓ) (TypFun Γ ℓ Γₑ' (κₑ , tₑ))
+... | yes (_ , _ , refl , refl) =
+  let eq : replicate (length Γₑ') true ++ map isLocKnd Γ
+           ≡ map isLocKnd (map LocKnd Γₑ' ++ Γ)
+      eq =
+        replicate (length Γₑ') true ++ map isLocKnd Γ
+          ≡⟨ (cong (_++ map isLocKnd Γ) $ sym $ isLocKnd∘injKndCtx≡true Γₑ') ⟩
+        map isLocKnd (map LocKnd Γₑ') ++ map isLocKnd Γ
+          ≡⟨ (sym $ map-++-commute isLocKnd (map LocKnd Γₑ') Γ) ⟩
+        map isLocKnd (map LocKnd Γₑ' ++ Γ) ∎
+  in cong₂ (λ x y → (κₑ , x) ∷ y)
+    (projTy (map isLocKnd (map LocKnd Γₑ' ++ Γ))
+      (regainTy (replicate (length Γₑ') true ++ map isLocKnd Γ)
+        (injTy tₑ))
+      ≡⟨ cong (λ x → projTy (map isLocKnd (map LocKnd Γₑ' ++ Γ))
+            (regainTy x (injTy tₑ)))
+          eq ⟩
+    projTy (map isLocKnd (map LocKnd Γₑ' ++ Γ))
+      (regainTy (map isLocKnd (map LocKnd Γₑ' ++ Γ))
+        (injTy tₑ))
+      ≡⟨ proj∘regain∘injTy≗id ⊢tₑ ⟩
+    tₑ ∎)
+    (projCtx∘TypFun≗id Δₑ Γₑ' ⊢Δₑ)
+... | no ¬p = ⊥-elim $ ¬p (κₑ , _ , refl , refl)
+
+
+⊢proj : ∀{Γ Δ e κₑ tₑ} →
+          (ℓ : CTy) →
+          Γ ⨾ Δ c⊢ e ∶ (Bnd κₑ , Local κₑ tₑ ℓ) →
+          projKndCtx Γ ⨾ projCtx (map isLocKnd Γ) ℓ Δ
+          e⊢ proj (map isLocKnd Γ) (map (?isLocalTy ℓ) Δ) e
+          ∶ (κₑ , projTy (map isLocKnd Γ) tₑ)
+⊢projVec : ∀{Γ Δ es Σₑ} →
+            (ℓ : CTy) →
+            Γ ⨾ Δ c⊢vec es ∶ map (BinderFun Γ ℓ) Σₑ →
+            projKndCtx Γ ⨾ projCtx (map isLocKnd Γ) ℓ Δ
+            e⊢vec projVec (map isLocKnd Γ) (map (?isLocalTy ℓ) Δ) es
+            ∶ Σₑ
+
+⊢proj {e = var x} ℓ (⊢var ⊢x) = ⊢var $ ⊢projVar ℓ ⊢x
+⊢proj {Γ} {Δ} {e = constr (LocalTmS sₑ) ((ℓ , 0) ∷ ts) es}
+  {.(TmSigₑ sₑ (projKndCtx Γ) (projTyVec (map isLocKnd Γ) ts) .snd .fst)}
+  {.(regainTy (map isLocKnd Γ) (injTy (TmSigₑ sₑ (projKndCtx Γ) (projTyVec (map isLocKnd Γ) ts) .snd .snd)))}
+  .ℓ (⊢constr .(LocalTmS sₑ) (⊢ℓ ⊢ₜ∷ ⊢ts) ⊢es) =
+    let eq : projTy (map isLocKnd Γ) (regainTy (map isLocKnd Γ)
+              (injTy (TmSigₑ sₑ (projKndCtx Γ) (projTyVec (map isLocKnd Γ) ts) .snd .snd)))
+             ≡ TmSigₑ sₑ (projKndCtx Γ) (projTyVec (map isLocKnd Γ) ts) .snd .snd
+        eq = proj∘regain∘injTy≗id $ 𝕃 .⅀ₑ .⊢TmSig-snd sₑ $ ⊢projTyVec ⊢ts
+    in subst (λ x →
+          projKndCtx Γ ⨾ projCtx (map isLocKnd Γ) ℓ Δ
+          e⊢ constr sₑ
+            (projTyVec (map isLocKnd Γ) ts)
+            (projVec (map isLocKnd Γ) (map (λ t → dec-isLocalTy ℓ t .does) Δ) es)
+          ∶ (TmSigₑ sₑ (projKndCtx Γ) (projTyVec (map isLocKnd Γ) ts) .snd .fst , x))
+        (sym eq)
+        (⊢constr sₑ (⊢projTyVec ⊢ts) (⊢projVec ℓ ⊢es))
+⊢proj {e = constr DoneS ((tₑ , 0) ∷ (ℓ' , 0) ∷ []) ((e , 0 , 0) ∷ [])} ℓ ()
+⊢proj {e = constr LamS ((τ1 , 0) ∷ (τ2 , 0) ∷ []) ((C , 0 , 1) ∷ [])} ℓ ()
+⊢proj {e = constr FixS ((τ , 0) ∷ []) ((C , 0 , 1) ∷ [])} ℓ ()
+⊢proj {e = constr AppS ((τ1 , 0) ∷ (τ2 , 0) ∷ []) ((C1 , 0 , 0) ∷ (C2 , 0 , 0) ∷ [])} ℓ ()
+⊢proj {e = constr (AbsS κ ∀κ) ((τ , 1) ∷ []) ((C , 1 , 0) ∷ [])} ℓ ()
+⊢proj {e = constr (AppTyS κ ∀κ) ((τ , 1) ∷ (T , 0) ∷ []) ((C , 0 , 0) ∷ [])} ℓ ()
+⊢proj {e = constr SendS ((ℓ1 , 0) ∷ (ℓ2 , 0) ∷ (tₑ , 0) ∷ []) ((C , 0 , 0) ∷ [])} ℓ ()
+⊢proj {e = constr (SyncS d) ((ℓ1 , 0) ∷ (ℓ2 , 0) ∷ (τ , 0) ∷ []) ((C , 0 , 0) ∷ [])} ℓ ()
+⊢proj {e = constr ITES ((ℓ' , 0) ∷ (τ1 , 0) ∷ []) ((C1 , 0 , 0) ∷ (C2 , 0 , 0) ∷ (C3 , 0 , 0) ∷ [])} ℓ ()
+⊢proj {e = constr LocalLetS ((ℓ' , 0) ∷ (tₑ , 0) ∷ (τ , 0) ∷ []) ((C1 , 0 , 0) ∷ (C2 , 0 , 1) ∷ [])} ℓ ()
+⊢proj {e = constr TellTyS ((ℓ' , 0) ∷ (ρ , 0) ∷ (τ , 0) ∷ []) ((C1 , 0 , 0) ∷ (C2 , 1 , 0) ∷ [])} ℓ ()
+⊢proj {e = constr TellLocS ((ℓ' , 0) ∷ (ρ , 0) ∷ (τ , 0) ∷ []) ((C1 , 0 , 0) ∷ (C2 , 1 , 0) ∷ [])} ℓ ()
+
+⊢projVec {es = []} {[]} ℓ (⊢[] ⊢Δ) = ⊢[] (⊢projCtx ℓ ⊢Δ)
+⊢projVec {Γ} {Δ} {es = (e , .(length (injKndCtx Γₑ')) , .(length (map (TypFun _ ℓ Γₑ') Δₑ'))) ∷ es}
+  {(Γₑ' , Δₑ' , κₑ , tₑ) ∷ Σₑ} ℓ (⊢e ⊢∷ ⊢es) =
+    let ⊢Δ : Γ c⊢ctx Δ
+        ⊢Δ = ⊢renCtx⁻ C⅀ₖ (⊢TyDrop⁻* C⅀ₖ (⊢TyIdRen⁻ C⅀ₖ) (injKndCtx Γₑ')) $
+                ⊢ctx-++⁻ C⅀ₖ (map (TypFun Γ ℓ Γₑ') Δₑ')
+                (renCtx (C⅀ .⅀ₖ) (Drop* id (length (injKndCtx Γₑ'))) Δ)
+                (⊢⇒⊢ctx C⅀ ⊢e) .snd
+        ⊢TypFun-Δₑ' : (injKndCtx Γₑ' ++ Γ) c⊢ctx map (TypFun Γ ℓ Γₑ') Δₑ'
+        ⊢TypFun-Δₑ' = ⊢ctx-++⁻ C⅀ₖ (map (TypFun Γ ℓ Γₑ') Δₑ')
+                        (renCtx (C⅀ .⅀ₖ) (Drop* id (length (injKndCtx Γₑ'))) Δ)
+                        (⊢⇒⊢ctx C⅀ ⊢e) .fst
+        eq : Γₑ' ++ projKndCtx Γ ≡ projKndCtx (injKndCtx Γₑ' ++ Γ)
+        eq =
+          Γₑ' ++ projKndCtx Γ
+            ≡⟨ (cong (_++ projKndCtx Γ) $ sym $ proj∘injKndCtx≗id Γₑ') ⟩
+          projKndCtx (injKndCtx Γₑ') ++ projKndCtx Γ
+            ≡⟨ (sym $ projKndCtx-++ (injKndCtx Γₑ')  Γ) ⟩
+          projKndCtx (injKndCtx Γₑ' ++ Γ) ∎
+        ⊢Δₑ' : projKndCtx (injKndCtx Γₑ' ++ Γ) e⊢ctx Δₑ'
+        ⊢Δₑ' = map-AllElems⁻
+                  (wfTyp ⅀ₑₖ (projKndCtx (injKndCtx Γₑ' ++ Γ)))
+                  (wfTyp C⅀ₖ (injKndCtx Γₑ' ++ Γ))
+                  (TypFun Γ ℓ Γₑ')
+                  (λ tₑ ⊢Local-tₑ →
+                    subst (λ x → wfTyp ⅀ₑₖ x tₑ) eq $
+                    ⊢TypFun⁻ {Γ} {ℓ} {Γₑ'} {tₑ} ⊢Local-tₑ .snd)
+                  ⊢TypFun-Δₑ'
+        eq2 : replicate (length Γₑ') true ++ map isLocKnd Γ
+              ≡ map isLocKnd (injKndCtx Γₑ' ++ Γ)
+        eq2 =
+          replicate (length Γₑ') true ++ map isLocKnd Γ
+            ≡⟨ (cong (_++ map isLocKnd Γ) $ sym $ isLocKnd∘injKndCtx≡true Γₑ') ⟩
+          map isLocKnd (injKndCtx Γₑ') ++ map isLocKnd Γ
+            ≡⟨ (sym $ map-++-commute isLocKnd (injKndCtx Γₑ') Γ) ⟩
+          map isLocKnd (injKndCtx Γₑ' ++ Γ) ∎
+        eq3 : projTy (map isLocKnd (injKndCtx Γₑ' ++ Γ))
+                (regainTy (replicate (length Γₑ') true ++ map isLocKnd Γ)
+                  (injTy tₑ))
+              ≡ tₑ
+        eq3 =
+          projTy (map isLocKnd (injKndCtx Γₑ' ++ Γ))
+            (regainTy (replicate (length Γₑ') true ++ map isLocKnd Γ)
+              (injTy tₑ))
+            ≡⟨ (cong (λ x → projTy (map isLocKnd (injKndCtx Γₑ' ++ Γ))
+                  (regainTy x (injTy tₑ))) eq2) ⟩
+          projTy (map isLocKnd (injKndCtx Γₑ' ++ Γ))
+            (regainTy (map isLocKnd (injKndCtx Γₑ' ++ Γ))
+              (injTy tₑ))
+            ≡⟨ proj∘regain∘injTy≗id {injKndCtx Γₑ' ++ Γ}
+                {κₑ} {tₑ} $
+                (subst (_e⊢ₜ tₑ ∶ κₑ) eq $
+                  ⊢TypFun⁻ {Γ} {ℓ} {Γₑ'} {κₑ , tₑ} (⊢⇒⊢typ C⅀ ⊢e) .snd) ⟩
+          tₑ ∎
+        eq4 : map (?isLocalTy (renTy C⅀ₖ (Drop* id (length (injKndCtx Γₑ'))) ℓ))
+                (map (TypFun Γ ℓ Γₑ') Δₑ'
+                  ++ renCtx C⅀ₖ (Drop* id (length (injKndCtx Γₑ'))) Δ)
+              ≡ replicate (length (map (TypFun Γ ℓ Γₑ') Δₑ')) true
+                  ++ map (?isLocalTy ℓ) Δ
+        eq4 =
+          let ξ = Drop* id (length (injKndCtx Γₑ'))
+              ℓ' = renTy C⅀ₖ ξ ℓ
+              Δ' = renCtx C⅀ₖ ξ Δ in
+          map (?isLocalTy ℓ') (map (TypFun Γ ℓ Γₑ') Δₑ' ++ Δ')
+            ≡⟨ map-++-commute (?isLocalTy ℓ') (map (TypFun Γ ℓ Γₑ') Δₑ') Δ' ⟩
+          map (?isLocalTy ℓ') (map (TypFun Γ ℓ Γₑ') Δₑ')
+          ++ map (?isLocalTy ℓ') Δ'
+            ≡⟨ (sym $ cong (_++ map (?isLocalTy ℓ') Δ') $
+                  map-compose {g = ?isLocalTy ℓ'} {TypFun Γ ℓ Γₑ'} Δₑ') ⟩
+          map (?isLocalTy ℓ' ∘ TypFun Γ ℓ Γₑ') Δₑ'
+          ++ map (?isLocalTy ℓ') Δ'
+            ≡⟨ (cong (_++ map (?isLocalTy ℓ') Δ') $
+                  map-cong (?isLocalTy∘TypFun≡true Γ ℓ Γₑ') Δₑ') ⟩
+          map (λ _ → true) Δₑ'
+          ++ map (?isLocalTy ℓ') Δ'
+            ≡⟨ (cong (_++ map (?isLocalTy ℓ') Δ') $
+                  map-const true Δₑ') ⟩
+          replicate (length Δₑ') true
+          ++ map (?isLocalTy ℓ') Δ'
+            ≡⟨ (cong (λ x → replicate x true ++ map (?isLocalTy ℓ') Δ') $
+                  sym $ length-map (TypFun Γ ℓ Γₑ') Δₑ') ⟩
+          replicate (length (map (TypFun Γ ℓ Γₑ') Δₑ')) true
+          ++ map (?isLocalTy ℓ') (map (renTyp C⅀ₖ ξ) Δ)
+            ≡⟨ (sym $ cong (replicate (length (map (TypFun Γ ℓ Γₑ') Δₑ')) true ++_) $
+                map-compose {g = ?isLocalTy ℓ'}
+                {renTyp C⅀ₖ ξ}
+                Δ) ⟩
+          replicate (length (map (TypFun Γ ℓ Γₑ') Δₑ')) true
+          ++ map (?isLocalTy ℓ' ∘ renTyp C⅀ₖ ξ) Δ
+            ≡⟨ (cong (replicate (length (map (TypFun Γ ℓ Γₑ') Δₑ')) true ++_) $
+                map-cong
+                  (λ tₑ → sym $
+                    ?isLocalTy-ren-≡ ℓ tₑ ξ
+                      (Drop*-inj id (length (injKndCtx Γₑ'))))
+                  Δ) ⟩
+          replicate (length (map (TypFun Γ ℓ Γₑ') Δₑ')) true
+          ++ map (?isLocalTy ℓ) Δ ∎
+    in ⊢∷'
+      (𝕃 .⅀ₑ)
+      (⊢proj (renTy C⅀ₖ (Drop* id (length (injKndCtx Γₑ'))) ℓ) ⊢e)
+      (⊢projVec ℓ ⊢es)
+      (projKndCtx (injKndCtx Γₑ' ++ Γ)
+        ≡⟨ projKndCtx-++ (injKndCtx Γₑ') Γ ⟩
+      projKndCtx (injKndCtx Γₑ') ++ projKndCtx Γ
+        ≡⟨ (cong (_++ projKndCtx Γ) $ proj∘injKndCtx≗id Γₑ') ⟩
+      Γₑ' ++ projKndCtx Γ ∎)
+      (projCtx (map isLocKnd (injKndCtx Γₑ' ++ Γ))
+          (renTy C⅀ₖ (Drop* id (length (injKndCtx Γₑ'))) ℓ)
+          (map (TypFun Γ ℓ Γₑ') Δₑ'
+            ++ renCtx (C⅀ .⅀ₖ) (Drop* id (length (injKndCtx Γₑ'))) Δ)
+        ≡⟨ projCtx-++ (map isLocKnd (injKndCtx Γₑ' ++ Γ))
+            (renTy C⅀ₖ (Drop* id (length (injKndCtx Γₑ'))) ℓ)
+            (map (TypFun Γ ℓ Γₑ') Δₑ')
+            (renCtx (C⅀ .⅀ₖ) (Drop* id (length (injKndCtx Γₑ'))) Δ) ⟩
+      projCtx (map isLocKnd (injKndCtx Γₑ' ++ Γ))
+        (renTy C⅀ₖ (Drop* id (length (injKndCtx Γₑ'))) ℓ)
+        (map (TypFun Γ ℓ Γₑ') Δₑ')
+      ++ projCtx (map isLocKnd (injKndCtx Γₑ' ++ Γ))
+          (renTy C⅀ₖ (Drop* id (length (injKndCtx Γₑ'))) ℓ)
+          (renCtx C⅀ₖ (Drop* id (length (injKndCtx Γₑ'))) Δ)
+        ≡⟨ (cong (projCtx (map isLocKnd (injKndCtx Γₑ' ++ Γ))
+              (renTy C⅀ₖ (Drop* id (length (injKndCtx Γₑ'))) ℓ)
+              (map (TypFun Γ ℓ Γₑ') Δₑ') ++_) $
+            proj∘ren≗projRen∘projCtx
+                (Drop*-inj (λ p → p) (length (injKndCtx Γₑ')))
+                (⊢TyDrop* C⅀ₖ (⊢TyIdRen C⅀ₖ) (injKndCtx Γₑ'))
+                ⊢Δ ℓ) ⟩
+      projCtx (map isLocKnd (injKndCtx Γₑ' ++ Γ))
+        (renTy C⅀ₖ (Drop* id (length (injKndCtx Γₑ'))) ℓ)
+        (map (TypFun Γ ℓ Γₑ') Δₑ')
+      ++ renCtx ⅀ₑₖ
+        (projTyRen Γ (injKndCtx Γₑ' ++ Γ) (Drop* id (length (map LocKnd Γₑ'))))
+        (projCtx (map isLocKnd Γ) ℓ Δ)
+        ≡⟨ (cong (projCtx (map isLocKnd (injKndCtx Γₑ' ++ Γ))
+              (renTy C⅀ₖ (Drop* id (length (injKndCtx Γₑ'))) ℓ)
+              (map (TypFun Γ ℓ Γₑ') Δₑ') ++_) $
+                ⊢renCtx-≗TyRen ⅀ₑₖ
+                  (Drop*-projTyRen (⊢TyIdRen C⅀ₖ {Γ}) Γₑ')
+                  (⊢projCtx ℓ ⊢Δ)) ⟩
+      projCtx (map isLocKnd (injKndCtx Γₑ' ++ Γ))
+        (renTy C⅀ₖ (Drop* id (length (injKndCtx Γₑ'))) ℓ)
+        (map (TypFun Γ ℓ Γₑ') Δₑ')
+      ++ renCtx ⅀ₑₖ (Drop* (projTyRen Γ Γ id) (length (map LocKnd Γₑ'))) (projCtx (map isLocKnd Γ) ℓ Δ)
+        ≡⟨ (cong (projCtx (map isLocKnd (injKndCtx Γₑ' ++ Γ))
+              (renTy C⅀ₖ (Drop* id (length (injKndCtx Γₑ'))) ℓ)
+              (map (TypFun Γ ℓ Γₑ') Δₑ') ++_) $
+              renCtx-ext ⅀ₑₖ
+                (subst (λ x →
+                    Drop* (projTyRen Γ Γ id) (length (map LocKnd Γₑ')) ≗
+                    Drop* id x)
+                  (length-map LocKnd Γₑ')
+                  (Drop*-ext (projTyRenId Γ) (length (map LocKnd Γₑ'))))
+                (projCtx (map isLocKnd Γ) ℓ Δ)) ⟩
+      projCtx (map isLocKnd (injKndCtx Γₑ' ++ Γ))
+        (renTy C⅀ₖ (Drop* id (length (injKndCtx Γₑ'))) ℓ)
+        (map (TypFun Γ ℓ Γₑ') Δₑ')
+      ++ renCtx ⅀ₑₖ (Drop* id (length Γₑ')) (projCtx (map isLocKnd Γ) ℓ Δ)
+        ≡⟨ (cong (_++ renCtx ⅀ₑₖ (Drop* id (length Γₑ')) (projCtx (map isLocKnd Γ) ℓ Δ)) $
+            projCtx∘TypFun≗id Δₑ' Γₑ' ⊢Δₑ') ⟩
+      Δₑ' ++ renCtx ⅀ₑₖ (Drop* id (length Γₑ')) (projCtx (map isLocKnd Γ) ℓ Δ) ∎)
+      (length-map LocKnd Γₑ')
+      (length-map (TypFun Γ ℓ Γₑ') Δₑ')
+      refl
+      (cong (κₑ ,_) $ eq3)
+      (cong₂ (λ x y → proj x y e)
+        (sym eq2 ∙ (cong (λ x → replicate x true ++ map isLocKnd Γ) $ sym $ length-map LocKnd Γₑ'))
+        eq4)

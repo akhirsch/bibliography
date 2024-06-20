@@ -40,6 +40,7 @@ module PolyPir.Semantics
   where
 
 open import PolyPir.ChorTypes Loc ≡-dec-Loc 𝕃
+open import PolyPir.TypeOperations Loc ≡-dec-Loc 𝕃
 open import PolyPir.ChorTerms Loc ≡-dec-Loc 𝕃
 
 {-
