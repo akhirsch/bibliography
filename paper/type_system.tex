@@ -1,10 +1,59 @@
-\section{Type and Kinding Systems}
-\label{sec:type-system}
-\todo Similarities with Pirouette \& regular non-polymorphic typing rules
-\ethan{This is probably unnecessary.
-  If it helps explain what we have (as opposed to how we got here or how we're better/different/the same as other work), then ok, but otherwise leave it out.}
+\subsection{Kinding System}
+\label{sec:kind-system}
+ We have four kinds of types in our language:
+\begin{itemize}
+  \item Locations $*_\ell$
+  \item Sets of locations $*_s$
+  \item Choreographic types $*$
+  \item Local program types $*_e$
+\end{itemize}
+As with our language syntax, much of the syntax of our types are reminiscent of Pirouette and earlier typed choreographic languages, as well as System F.
 
-\todo Brief explanation of kind system
+\paragraph{Locations and Location Sets}
+Location names are represented by the kind $*_\ell$.
+This kind of type consists of precisely the concrete locations $L \in \Locations$, and the location variables $\ell \knd *_\ell$ that have been bound by the for-all quantifier.
+
+Sets of location names belong to the kind $*_s$.
+In particular, this kind consists of finite sets of elements of the $*_\ell$ kind, as introduced by the empty set $\varnothing$, singleton set $\{\ell\}$, and set union $\rho_1 \cup \rho_2$ constructors.
+
+\paragraph{Choreographic Types}
+There are three choreographic types of kind $*$ used to describe \langname programs.
+The located type $t_e @ \ell$ represents a local program of type $t_e$ located at $\ell$.
+Both $t_e$ and $\ell$, along with all other types, may either be concrete, or contain bound type variables.
+The choreographic function type $\tau_1 \to \tau_2$ represents (possibly higher-order) choreographies which take a value of type $\tau_1$ as input, and result in a value of type $\tau_2$.
+The universal quantifier type $\forall \alpha \knd \kappa.\tau$ is used to represent choreographic programs which implement parametric polymorphism.
+Specifically, a program which take as input a type $t$ of kind $\kappa$, and results in a value of type $\subst{\tau}{\alpha}{t}$.
+
+These three types have the following kinding rules:
+\begin{mathpar}
+  \infer[TyAt]{\localkinded{\proj{\Gamma}{}}{t_e} \\
+    \chorkinded{\Gamma}{\ell}{*_\ell}}
+    {\chorkinded{\Gamma}{t_e @ \ell}{*}} \and
+
+  \infer[TyArrow]{\chorkinded{\Gamma}{\tau_1}{*} \\
+    \chorkinded{\Gamma}{\tau_2}{*}}
+    {\chorkinded{\Gamma}{\tau_1 \to \tau_2}{*}} \and
+
+  \infer[TyAbs]{\chorkinded{\Gamma, \alpha \knd \kappa}{\tau}{*}}
+    {\chorkinded{\Gamma}{\forall \alpha \knd \kappa.\tau}{*}} \and 
+\end{mathpar}
+For example, the type of a choreographic program which sends a value of type $\eta$ from $\alpha$ to $\beta$, for any possible types $\eta$ and locations $\alpha$ and $\beta$, can be written as follows:
+\begin{mathpar}
+  \forall \eta \knd *_e.\forall \alpha \knd *_\ell.\forall \beta \knd *_\ell.\eta @ \alpha \to \eta @ \beta
+\end{mathpar}
+
+\paragraph{Local Types}
+Kinds of type $*_e$ are precisely the types included in the local language.
+The local language may or may-not include the capability of binding type variables, and this decision has no explicit effect on the choreographic types.
+However, local types included in our type system may use type variables which have been bound by the choreographic for-all type.
+For instance, recall Example \ref{ex:st-lambda}, a simply-typed lambda calculus with no polymorphism.
+Although type variables are not bound by any type constructors of this local language, type variables can still be explicitly used as in the following type representing a polymorphic function application at a concrete location $L$:
+\begin{mathpar}
+  \forall \eta_1 \knd *_e.\forall \eta_2 \knd *_e.(\eta_1 \to \eta_2) @ L \to \eta_1 @ L \to \eta_2 @ L
+\end{mathpar}
+
+\subsection{Type System}
+\label{sec:type-system}
 
 \todo How polymorphism is handled
 

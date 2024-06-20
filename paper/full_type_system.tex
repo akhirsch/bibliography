@@ -7,7 +7,7 @@
   \infer[TyVar]{\alpha \knd \kappa \in \Gamma}
     {\chorkinded{\Gamma}{\alpha}{\kappa}} \and
 
-  \infer[TyAt]{\localkinded{\proj{\Gamma}{}}{t_e} \\
+  \infer[TyAt]{\chorkinded{\Gamma}{t_e}{*_\ell} \\
     \chorkinded{\Gamma}{\ell}{*_\ell}}
     {\chorkinded{\Gamma}{t_e @ \ell}{*}} \and
 
@@ -17,6 +17,9 @@
 
   \infer[TyAbs]{\chorkinded{\Gamma, \alpha \knd \kappa}{\tau}{*}}
     {\chorkinded{\Gamma}{\forall \alpha \knd \kappa.\tau}{*}} \and 
+
+  \infer[TyLocal]{\localkinded{\proj{\Gamma}{}}{t_e}}
+    {\chorkinded{\Gamma}{t_e}{*_e}} \and 
 
   \infer[TyLoc]{L \in \Locations}
     {\chorkinded{\Gamma}{L}{*_\ell}} \and 
