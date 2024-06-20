@@ -1,5 +1,36 @@
-\section{Syntax}
+\section{The \langnameraw~ Language}
+\label{sec:language}
+
+\subsection{Syntax}
 \label{sec:syntax}
+The full syntax of \langname is presented in \todo.
+As we extend the \pirouette language, much of our syntax is identical or similar.
+As in \pirouette, we include both choreographic program variables written in uppercase Latin characters ($X,Y,F,\ldots$) and local program variables written in lowercase Latin characters ($x,y,f,\ldots$).
+Both choreographic and local type variables, including location variables, are denoted with lowercase Greek or script Latin characters ($\alpha,\beta,\ell,\ldots$).
+
+\todo Local variables/namespaces and why substitution of locations is somewhat tricky with named representations (Ethan's substitution example)
+
+\todo Explain base choreographic stuff: $\ell.e$, $\send{C_1}{\ell_1}{\ell_2}$, $\LetIn{\ell.x}{C_1}{C_2}$, $\send{\ell_1[d]}{}{\ell_2}$, $\lambda X \ty \tau.C$, $\mu X \ty \tau.C$
+
+\todo Explain location and type abstraction $\Lambda \alpha \knd \kappa.C$
+
+\todo Explain tell-let binding $\LetTellIn{\alpha}{\ell}{C_1 \knd *_\ell}{\rho}{C_2}$
+
+\subsection{Operational Semantics}
+\label{sec:oper-semantics}
+\todo
+
+\subsection{Type and Kinding System}
+\label{sec:type-system}
+\todo Similarities with Pirouette \& regular non-polymorphic typing rules
+
+\todo Brief explanation of kind system
+
+\todo How polymorphism is handled
+
+\todo How \& why the tell-let typing rules work
+
+\todo Statement of important metatheory theorems
 
 \begin{figure}[h]
   \begin{syntax}
