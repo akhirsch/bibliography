@@ -109,7 +109,16 @@
 \newcommand{\ITE}[4][\loc]{\IfN_{#1}~{#2}~\ThenN~{#3}~\ElseN~{#4}}
 \newcommand{\Fun}[3]{\FunN~{#1}(#2) \ChorDef {#3}}
 \newcommand{\Tell}[3][\loc]{{#1}.\TellN~{#2}~\To~{#3}}
-\newcommand{\LetTellIn}[5]{\LetN~ #1 \ChorDef \Tell[#2]{#3}{#4}~\In~{#5}}
+\newcommand{\LetTellIn}[5]{\LetN~ {#1} \ChorDef \Tell[#2]{#3}{#4}~\In~{#5}}
+\newcommand{\CtrlFail}{()}
+\newcommand{\Ret}[1]{\text{ret}({#1})}
+\newcommand{\SendTo}[2]{\text{send}~{#1}~\text{to}~{#2}}
+\newcommand{\RecvFrom}[1]{\text{receive from}~{#1}}
+\newcommand{\ChooseFor}[3]{\text{choose}~{#1}~\text{for}~{#2};~{#3}}
+\newcommand{\AllowChoice}[3]{\text{allow}~{#1}~\text{choice}~(\Left \Rightarrow {#2})~(\Right \Rightarrow {#3})}
+\newcommand{\LetRecvIn}[3]{\text{receive}~{#1}~\text{from}~{#2}~\In~{#3}}
+\newcommand{\LetSendIn}[3]{\text{send}~{#1}~\text{to}~{#2}~\In~{#3}}
+\newcommand{\AmI}[3]{\text{AmI}~{#1}~\text{then}~{#2}~\text{else}~{#3}}
 
 \newcommand{\LocalLangFont}[1]{\programfont{#1}}
 \newcommand{\True}{\LocalLangFont{true}}

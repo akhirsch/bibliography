@@ -1,28 +1,36 @@
 \subsection{Control Language}
 \label{sec:control-lang}
 
+\todo purpose and design of control language
+
+\todo explanation of AmI and reason it's needed
+
 \begin{figure}[h]
   \begin{syntax}
     \category[Control Expression]{E}
-    \alternative{x}
-    \alternative{\text{fun}\;F(x) := E}
-    \alternative{E_1\;E_2}\\
-    \alternative{()}
-    \alternative{\text{ret}(e)}
-    \alternative{\text{let}\;x := E_1 \;\text{in}\; E_2}\\
-    \alternative{\text{send}\; e \;\text{to}\; L}
-    \alternative{\text{receive from}\; L}\\
-    \alternative{\text{if}\; E \;\text{then}\; E_1 \;\text{else}\; E_2}
-    \alternative{\text{choose}\; d \;\text{for}\; L ; E}\\
-    \alternative{\text{allow}\; L \;\text{choice}\; E_1 \;\text{or}\; E_2}
+    \alternative{X} \alternative{\CtrlFail} \alternative{\Ret{e}} \alternative{\lambda X.E} \alternative{\mu X.E} \alternative{E_1~E_2} \\
+    \alternative{\SendTo{E}{\ell}} \alternative{\RecvFrom{\ell}} \\
+    \alternative{\ChooseFor{d}{\ell}{E}}\\
+    \alternative{\AllowChoice{\ell}{?E_1}{?E_2}} \\
+    \alternative{\ifthen{E_1}{E_2}{E_3}} \\
+    \alternative{\Lambda \alpha.E} \alternative{E~t} \\
+    \alternative{\LetIn{\Ret{x}}{E_1}{E_2}}\\
+    \alternative{\LetSendIn{\alpha \knd *_\ell}{\rho}{E}}\\
+    \alternative{\LetRecvIn{\alpha \knd *_\ell}{\ell}{E}}\\
+    \alternative{\LetSendIn{\alpha \knd *_\ell}{\rho}{E}}\\
+    \alternative{\LetRecvIn{\alpha \knd *_e}{\ell}{E}}\\
+    \alternative{\AmI{\ell}{E_1}{E_2}}
 
     \category[Systems]{\Pi}
     \alternative{L_1 \triangleright E_1 \;\|\; \ldots \;\|\; L_n \triangleright E_n}
   \end{syntax}
 
   \caption{Control Expressions}
-  \label{fig:control_lang}
+  \label{fig:control-lang-syntax}
 \end{figure}
+
+\paragraph{Operational Semantics}
+\label{sec:control-lang-semantics}
 
 
 %%% Local Variables:
