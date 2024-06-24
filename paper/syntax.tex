@@ -35,13 +35,13 @@ In order to rectify this problem of namespace capture, substitution of locations
 \subst{(\LetIn{\ell.x \ty t_e}{C_1}{C_2})}{\alpha}{\ell'} =
 	\begin{cases}
 		\LetIn{\ell'.y \ty t_e}{\subst{C_1}{\alpha}{\ell'}}{~}\\
-		\subst{\subst{C_2}{\ell.x}{\ell.y}}{\alpha}{\ell'} & \ell = \alpha ~\text{and}~ \ell.y, \ell'.y \notin \text{FV}(C_2) \\
+		\subst{\subst{C_2}{\ell.x}{\ell.y}}{\alpha}{\ell'} & \ell = \alpha ~\text{and}~ \ell.y, \ell'.y \notin \fv{C_2} \\
 		\LetIn{\ell.x \ty t_e}{\subst{C_1}{\alpha}{\ell'}}{~}\\
 		\subst{C_2}{\alpha}{\ell'} & \ell \neq \alpha \\
 	\end{cases}
 \end{mathpar}
 where substitution of local variables $\subst{C}{\ell.x}{e}$ is defined in a standard capture-avoiding manner.
-The condition that $\ell.y, \ell'.y \notin \text{FV}(C_2)$ in the first clause of the definition is critical, and ensures that no variables are mistakenly captured by the location substitution.
+The condition that $\ell.y, \ell'.y \notin \fv{C_2}$ in the first clause of the definition is critical, and ensures that no variables are mistakenly captured by the location substitution.
 
 \begin{figure}[h]
   \begin{syntax}
