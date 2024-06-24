@@ -26,38 +26,84 @@
   \label{fig:control-lang-syntax}
 \end{figure}
 
-% \paragraph{Operational Semantics}
-% \label{sec:control-lang-semantics}
+\paragraph{Operational Semantics}
+\label{sec:control-lang-semantics}
 
-% \begin{figure}
-%   \begin{mathparpagebreakable}
-%       \infer[RetE]{e_1 \localstep e_2}
-%       {\Ret{e_1} \ctrlstep[\iota] \Ret{e_2}} \and
 
-%       \infer[SendV]{\text{Value}(V)}
-%       {\SendTo{V}{L} \ctrlstep[V \sendsto L] \CtrlFail} \and
+\begin{syntax}
+\category[Label]{l}
+\alternative{\iota} \alternative{V \sendsto L} \alternative{L;V \sendsto} \alternative{d \sendsto L} \alternative{L;d \sendsto} \alternative{t \sendsto \rho} \alternative{L;t \sendsto} \alternative{\IAm{L}}
+\end{syntax}
 
-%       \infer[RecvV]{\text{Value}(V)}
-%       {\RecvFrom{L} \ctrlstep[L;V \sendsto] V} \and
+\begin{mathparpagebreakable}
+    \infer[RetE]{e_1 \localstep e_2}
+    {\Ret{e_1} \ctrlstep[\iota] \Ret{e_2}} \and
 
-%       \infer[Choose]{}
-%       {\ChooseFor{d}{L}{E} \ctrlstep[d \sendsto L] E} \and
+    \infer[Seq]{E_1 \ctrlstep[l] E_1'}
+    {\CtrlSeq{E_1}{E_2} \ctrlstep[l] \CtrlSeq{E_1'}{E_2}} \and
 
-%       \infer[AllowChoiceL]{}
-%       {\AllowChoice{L}{E_1}{E_2} \ctrlstep[L;\Left \sendsto] E_1} \and
+    \infer[SeqV]{\text{Value}(V)}
+    {\CtrlSeq{V}{E_2} \ctrlstep[\iota] E_2} \and
 
-%       \infer[AllowChoiceR]{}
-%       {\AllowChoice{L}{E_1}{E_2} \ctrlstep[L;\Right \sendsto] E_2} \and
+    \infer[AppFun]{E_1 \ctrlstep[l] E_1'}
+    {\ctrlapp{E_1}{E_2} \ctrlstep[l] \ctrlapp{E_1'}{E_2}} \and
 
-%       \infer[AmIL]{}
-%       {\AmI{L}{E_1}{E_2} \ctrlstep[L] E_1} \and
+    \infer[AppArg]{\text{Value}(V) \\
+      E_2 \ctrlstep[l] E_2'}
+    {\ctrlapp{V}{E_2} \ctrlstep[l] \ctrlapp{V}{E_2'}} \and
 
-%       \infer[AmIR]{L \neq L'}
-%       {\AmI{L}{E_1}{E_2} \ctrlstep[L'] E_2} \and
-%   \end{mathparpagebreakable}
-%   \caption{Control Language Semantics}
-%   \label{fig:control-lang-sem}
-% \end{figure}
+    \infer[App]{\text{Value}(V)}
+    {\ctrlapp{(\lambda X.E)}{V} \ctrlstep[\iota] \subst{E}{X}{V}} \and
+
+    \infer[Rec]{}
+    {\mu X.E \ctrlstep[\iota] \subst{E}{X}{\mu X.E}} \and
+   
+    \infer[Send]{E \ctrlstep[l] E'}
+    {\SendTo{E}{L} \ctrlstep[l] \SendTo{E'}{L}} \and
+
+    \infer[SendV]{\text{Value}(V)}
+    {\SendTo{V}{L} \ctrlstep[V \sendsto L] \CtrlFail} \and
+
+    \infer[Recv]{\text{Value}(V)}
+    {\RecvFrom{L} \ctrlstep[L;V \sendsto] V} \and
+
+    \infer[Choose]{}
+    {\ChooseFor{d}{L}{E} \ctrlstep[d \sendsto L] E} \and
+
+    \infer[AllowChoiceL]{}
+    {\AllowChoice{L}{E_1}{E_2} \ctrlstep[L;\Left \sendsto] E_1} \and
+
+    \infer[AllowChoiceR]{}
+    {\AllowChoice{L}{E_1}{E_2} \ctrlstep[L;\Right \sendsto] E_2} \and
+
+    \infer[AppTyFun]{E \ctrlstep[l] E'}
+    {\ctrlapp{E}{t} \ctrlstep[l] \ctrlapp{E'}{t}} \and
+
+    \infer[AppTy]{}
+    {\ctrlapp{(\Lambda \alpha.E)}{t} \ctrlstep[\iota] \subst{E}{\alpha}{t}} \and
+
+    \infer[LetRet]{E_1 \ctrlstep[l] E_1'}
+    {\LetIn{\Ret{x}}{E_1}{E_2} \ctrlstep[l] \LetIn{\Ret{x}}{E_1'}{E_2}} \and
+
+    \infer[LetRetV]{\text{Value}(v)}
+    {\LetIn{\Ret{x}}{\Ret{v}}{E} \ctrlstep[\iota] \subst{E}{x}{v}} \and
+
+    \infer[SendTy]{E_1 \ctrlstep[l] E_1'}
+    {\LetSendIn{\alpha \knd \kappa}{E_1}{\rho}{E_2} \ctrlstep[l] \LetSendIn{\alpha \knd \kappa}{E_1'}{\rho}{E_2}} \and
+
+    \infer[SendTyV]{}
+    {\LetSendIn{\alpha \knd \kappa}{\Ret{\say{t}}}{\rho}{E} \ctrlstep[t \sendsto \rho] \subst{E}{\alpha}{t}} \and
+
+    \infer[RecvTy]{}
+    {\LetRecvIn{\alpha \knd \kappa}{L}{E} \ctrlstep[L;t \sendsto] \subst{E}{\alpha}{t}} \and
+
+    \infer[AmIL]{}
+    {\AmI{L}{E_1}{E_2} \ctrlstep[\IAm{L}] E_1} \and
+
+    \infer[AmIR]{L \neq L'}
+    {\AmI{L}{E_1}{E_2} \ctrlstep[\IAm{L'}] E_2} \and
+\end{mathparpagebreakable}
+
 
 %%% Local Variables:
 %%% mode: latex
