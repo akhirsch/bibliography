@@ -5,7 +5,7 @@ As we extend the Pirouette language, much of our syntax is identical or similar.
 As in Pirouette, we include both choreographic program variables written in uppercase Latin characters ($X,Y,F,\ldots$) and local program variables written in lowercase Latin characters ($x,y,f,\ldots$).
 Both choreographic and local type variables, including location variables, are denoted with lowercase Greek characters ($\alpha,\beta,\ldots$).
 
-\todo Explain base choreographic stuff: $\ell.e$, $\send{C_1}{\ell_1}{\ell_2}$, $\LetIn{\ell.x}{C_1}{C_2}$, $\send{\ell_1[d]}{}{\ell_2}$, $\lambda X \ty \tau.C$, $\mu X \ty \tau.C$
+\todo Explain base choreographic stuff: $\ell.e$, $C_1 \ChorSend[\ell_1] \ell_2$, $\LetIn{\ell.x}{C_1}{C_2}$, $\syncs{\ell_1}{d}{\ell_2}$, $\lambda X \ty \tau.C$, $\mu X \ty \tau.C$
 
 \todo Explain location and type abstraction $\Lambda \alpha \knd \kappa.C$
 
@@ -17,7 +17,7 @@ For instance, consider the following example with a variable location $\alpha$ a
 \begin{mathpar}
 \LetIn{\alpha.x \ty \Int}{\alpha.2}{~}\\
 \LetIn{L.x \ty \Int}{L.3}{~}\\
-\LetIn{\alpha.y}{\send{L.x}{L}{\alpha}}{\alpha.(x + y)}
+\LetIn{\alpha.y}{L.x \ChorSend[L] \alpha}{\alpha.(x + y)}
 \end{mathpar}
 \ashley{This section may be too detailed? Maybe just define it correctly and show how it works correctly on the example}
 
@@ -27,48 +27,48 @@ However, in doing so we end up with the following program
 \begin{mathpar}
 \LetIn{L.x \ty \Int}{L.2}{~}\\
 \LetIn{L.x \ty \Int}{L.3}{~}\\
-\LetIn{L.y}{\send{L.x}{L}{L}}{L.(x + y)}
+\LetIn{L.y}{L.x \ChorSend[L] L}{L.(x + y)}
 \end{mathpar}
 which can reduce to $L.6$ because of the capture of $L.x$; clearly not what was intended.
 In order to rectify this problem of namespace capture, substitution of locations on local-let expressions is defined as
 \begin{mathpar}
 \subst{(\LetIn{\ell.x \ty t_e}{C_1}{C_2})}{\alpha}{\ell'} =
-	\begin{cases}
-		\LetIn{\ell'.y \ty t_e}{\subst{C_1}{\alpha}{\ell'}}{~}\\
-		\subst{\subst{C_2}{\ell.x}{\ell.y}}{\alpha}{\ell'} & \ell = \alpha ~\text{and}~ \ell.y, \ell'.y \notin \text{FV}(C_2) \\
-		\LetIn{\ell.x \ty t_e}{\subst{C_1}{\alpha}{\ell'}}{~}\\
-		\subst{C_2}{\alpha}{\ell'} & \ell \neq \alpha \\
-	\end{cases}
+  \begin{cases}
+    \LetIn{\ell'.y \ty t_e}{\subst{C_1}{\alpha}{\ell'}}{~}\\
+    \subst{\subst{C_2}{\ell.x}{\ell.y}}{\alpha}{\ell'} & \ell = \alpha ~\text{and}~ \ell.y, \ell'.y \notin \text{FV}(C_2) \\
+    \LetIn{\ell.x \ty t_e}{\subst{C_1}{\alpha}{\ell'}}{~}\\
+    \subst{C_2}{\alpha}{\ell'} & \ell \neq \alpha \\
+  \end{cases}
 \end{mathpar}
 where substitution of local variables $\subst{C}{\ell.x}{e}$ is defined in a standard capture-avoiding manner.
 The condition that $\ell.y, \ell'.y \notin \text{FV}(C_2)$ in the first clause of the definition is critical, and ensures that no variables are mistakenly captured by the location substitution.
 
 \begin{figure}[h]
   \begin{syntax}
-	\abstractCategory[Local Expressions]{e}
-	\abstractCategory[Local Variables]{x, y, \ldots}
-	\\
+  \abstractCategory[Local Expressions]{e}
+  \abstractCategory[Local Variables]{x, y, \ldots}
+  \\
 
-	\category[Synchronization Labels]{d}
-	\alternative{\Left}
-	\alternative{\Right}
+  \category[Synchronization Labels]{d}
+  \alternative{\Left}
+  \alternative{\Right}
 
-	\abstractCategory[Choreographic Variables]{X, Y, \ldots}
+  \abstractCategory[Choreographic Variables]{X, Y, \ldots}
 
-	\category[Choreographies]{C, F}
-	\alternative{X}
-	\alternative{\ell.e}
-	\alternative{\lambda X \ty \tau.C}
-	\alternative{\mu X \ty \tau.C}
-	\alternative{\app{F}{C}}\\
-	\alternative{\send{C}{\ell_1}{\ell_2}}
-	\alternative{\send{\ell_1[d]}{}{\ell_2};C}\\
-	\alternative{\ell.\ifthen{C}{C_1}{C_2}}\\
-	\alternative{\Lambda \alpha \knd \kappa.C}
-	\alternative{\app{C}{t}}\\
-	\alternative{\LetIn{\ell.x \ty t_e}{C_1}{C_2}}\\
-	\alternative{\LetTellIn{\alpha}{\ell}{C_1 \knd *_\ell}{\rho}{C_2}}\\
-	\alternative{\LetTellIn{\alpha}{\ell}{C_1 \knd *_e}{\rho}{C_2}}
+  \category[Choreographies]{C, F}
+  \alternative{X}
+  \alternative{\ell.e}
+  \alternative{\Fun{X \ty \tau}{C}}
+  \alternative{\Rec{X \ty \tau}{C}}
+  \alternative{F~C}\\
+  \alternative{C \ChorSend[\ell_1] \ell_2}
+  \alternative{\syncs{\ell_1}{d}{\ell_2} \seq C}\\
+  \alternative{\ITE{C}{C_1}{C_2}}\\
+  \alternative{\TFun{\alpha \knd \kappa}{C}}
+  \alternative{C~t}\\
+  \alternative{\LetIn{\ell.x \ty t_e}{C_1}{C_2}}\\
+  \alternative{\LetTellIn{\alpha}{\ell}{C_1 \knd *_\ell}{\rho}{C_2}}\\
+  \alternative{\LetTellIn{\alpha}{\ell}{C_1 \knd *_e}{\rho}{C_2}}
   \end{syntax}
 
   \caption{Syntax of Choreographies}
@@ -77,49 +77,49 @@ The condition that $\ell.y, \ell'.y \notin \text{FV}(C_2)$ in the first clause o
 
 \begin{figure}[h]
   \begin{syntax}
-  	\category[Kinds]{\kappa}
-  	\alternative{*}
-  	\alternative{*_\ell}
-  	\alternative{*_s}
-  	\alternative{*_e}
-  	\\
-  	
-  	\abstractCategory[Type Variables]{\alpha, \beta, \ldots}
-  	
-  	\abstractCategory[Local Types]{t_e}
+    \category[Kinds]{\kappa}
+    \alternative{*}
+    \alternative{*_\ell}
+    \alternative{*_s}
+    \alternative{*_e}
+    \\
+    
+    \abstractCategory[Type Variables]{\alpha, \beta, \ldots}
+    
+    \abstractCategory[Local Types]{t_e}
 
-		\categoryFromSet[Locations]{L}{\Locations}
-  	
-  	\category[Choreography Types]{t, \ell, \rho, \tau}
-  	\alternative{\alpha}
-  	\alternative{t_e @ \ell}
-  	\alternative{\tau_1 \rightarrow \tau_2}
-  	\alternative{\forall \alpha \knd \kappa.\tau}
-  	\\
-  	\alternative{L}
-  	\alternative{\varnothing}
-  	\alternative{\{\ell\}}
-  	\alternative{\rho_1 \cup \rho_2}
-  	\\
-  	\category[Choreography Kinding Contexts]{\Gamma}
-  	\alternative{\cdot}
-  	\alternative{\Gamma, \alpha \knd \kappa}
-  	
-  	\category[Choreography Typing Contexts]{\Delta}
-  	\alternative{\cdot}
-  	\alternative{\Delta, X \ty \tau}
-  	
-  	\category[Locally-Bound Typing Contexts]{\Sigma}
-  	\alternative{\cdot}
-  	\alternative{\Sigma, \ell.x \ty t_e}
-  	\\
-  	\category[Local Kinding Contexts]{\Gamma_e}
-  	\alternative{\cdot}
-  	\alternative{\Gamma_e, \alpha}
-  	
-  	\category[Local Typing Contexts]{\Sigma_e}
-  	\alternative{\cdot}
-  	\alternative{\Sigma_e, x \ty t_e}
+    \categoryFromSet[Locations]{L}{\Locations}
+    
+    \category[Choreography Types]{t, \ell, \rho, \tau}
+    \alternative{\alpha}
+    \alternative{t_e @ \ell}
+    \alternative{\tau_1 \rightarrow \tau_2}
+    \alternative{\forall \alpha \knd \kappa.\tau}
+    \\
+    \alternative{L}
+    \alternative{\varnothing}
+    \alternative{\{\ell\}}
+    \alternative{\rho_1 \cup \rho_2}
+    \\
+    \category[Choreography Kinding Contexts]{\Gamma}
+    \alternative{\cdot}
+    \alternative{\Gamma, \alpha \knd \kappa}
+    
+    \category[Choreography Typing Contexts]{\Delta}
+    \alternative{\cdot}
+    \alternative{\Delta, X \ty \tau}
+    
+    \category[Locally-Bound Typing Contexts]{\Sigma}
+    \alternative{\cdot}
+    \alternative{\Sigma, \ell.x \ty t_e}
+    \\
+    \category[Local Kinding Contexts]{\Gamma_e}
+    \alternative{\cdot}
+    \alternative{\Gamma_e, \alpha}
+    
+    \category[Local Typing Contexts]{\Sigma_e}
+    \alternative{\cdot}
+    \alternative{\Sigma_e, x \ty t_e}
   \end{syntax}
 
   \caption{Syntax of Kinds, Types, and Contexts}

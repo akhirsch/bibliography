@@ -59,6 +59,7 @@
 \newcommand{\knd}{\mkern2mu{::}\mkern2mu}
 \newcommand{\proves}{\vdash}
 \newcommand{\nproves}{\nvdash}
+\newcommand{\eproves}{\proves_{\mkern-2mu e}}
 \newcommand{\dom}{\operatorname{dom}}
 \newcommand{\sendsto}{\rightsquigarrow}
 \newcommand{\tpat}{\raisebox{1pt}{\footnotesize\ensuremath{@}}}
@@ -89,12 +90,13 @@
 \newcommand{\seq}{\mathrel{;}}
 %\newcommand{\ChorSend}[1][\loc]{\mathrel{\color{ChorColor}\sendsto}}
 \newcommand{\ColSend}{\mathrel{\ChorCol{\sendsto}}}
-\newcommand{\ChorSend}[1][\ell]{\mathchoice%
-  {\mathrel{\raisebox{0.15ex}{$\scriptstyle\ChorCol{\{}#1\ChorCol{\}}$}\mkern-2mu\ChorCol{\sendsto}}}
-  {\mathrel{\raisebox{0.15ex}{$\scriptstyle\ChorCol{\{}#1\ChorCol{\}}$}\mkern-2mu\ChorCol{\sendsto}}}
-  {\mathrel{\mkern3mu\raisebox{0.1ex}{$\scriptstyle\ChorCol{\{}#1\ChorCol{\}}$}\mkern-1mu\ChorCol{\sendsto}}}
-  {\mathrel{\mkern3mu\raisebox{0.05ex}{$\scriptstyle\ChorCol{\{}#1\ChorCol{\}}$}\mkern-1mu\ChorCol{\sendsto}}}%
-}
+\newcommand{\ChorSend}[1][\ell]{\mathrel{\mathchoice%
+  {\raisebox{0.15ex}{$\scriptstyle\ChorCol{\{}#1\ChorCol{\}}$}\mkern-2mu\ChorCol{\sendsto}}
+  {\raisebox{0.15ex}{$\scriptstyle\ChorCol{\{}#1\ChorCol{\}}$}\mkern-2mu\ChorCol{\sendsto}}
+  {\mkern3mu\raisebox{0.1ex}{$\scriptstyle\ChorCol{\{}#1\ChorCol{\}}$}\mkern-1mu\ChorCol{\sendsto}}
+  {\mkern3mu\raisebox{0.05ex}{$\scriptstyle\ChorCol{\{}#1\ChorCol{\}}$}\mkern-1mu\ChorCol{\sendsto}}%
+}}
+\newcommand{\syncs}[3]{{#1}\ChorCol{[}{#2}\ChorCol{]} \mathrel{\ChorCol{\sendsto}} {#3}}
 \newcommand{\LetN}{\FontChoreo{let}}
 \newcommand{\In}{\FontChoreo{in}}
 \newcommand{\IfN}{\FontChoreo{if}}
@@ -102,26 +104,42 @@
 \newcommand{\ElseN}{\FontChoreo{else}}
 \newcommand{\Left}{\FontChoreo{L}}
 \newcommand{\Right}{\FontChoreo{R}}
-\newcommand{\FunN}{\FontChoreo{fun}}
+\newcommand{\FunN}{\ChorCol{\lambda}}
+\newcommand{\TFunN}{\ChorCol{\Lambda}}
 \newcommand{\ChorDef}{\mathrel{\ChorCol{\coloneqq}}}
-\newcommand{\CtrlDef}{\mathrel{\ChorCol{\coloneqq}}}
+%\newcommand{\CtrlDef}{\mathrel{\ChorCol{\coloneqq}}}
 \newcommand{\TellN}{\FontChoreo{tell}}
 \newcommand{\To}{\FontChoreo{to}}
 
 \newcommand{\LetIn}[3]{\LetN~{#1} \ChorDef {#2}~\In~{#3}}
-\newcommand{\ITE}[4][\loc]{\IfN_{#1}~{#2}~\ThenN~{#3}~\ElseN~{#4}}
-\newcommand{\Fun}[3]{\FunN~{#1}(#2) \ChorDef {#3}}
+\newcommand{\ITE}[4][\ell]{\IfN_{#1}~{#2}~\ThenN~{#3}~\ElseN~{#4}}
+\newcommand{\Fun}[2]{\FunN{#1}\ldotp {#2}}
+\newcommand{\Rec}[2]{\ChorCol{\mu}{#1}\ldotp {#2}}
+\newcommand{\TFun}[2]{\TFunN{#1}\ldotp {#2}}
 \newcommand{\Tell}[3][\loc]{{#1}.\TellN~{#2}~\To~{#3}}
 \newcommand{\LetTellIn}[5]{\LetN~ {#1} \ChorDef \Tell[#2]{#3}{#4}~\In~{#5}}
+
+\newcommand{\CtrlCol}[1]{{\color{RedOrange}#1}}
+\newcommand{\FontCtrl}[1]{\mathtt{\CtrlCol{#1}}}
+
+\newcommand{\CtrlDef}{\mathrel{\CtrlCol{\coloneqq}}}
+\newcommand{\CtrlIn}{\FontCtrl{in}}
+\newcommand{\CtrlLeft}{\FontCtrl{L}}
+\newcommand{\CtrlRight}{\FontCtrl{R}}
+
+\newcommand{\CtrlLetIn}[3]{\FontCtrl{let}~{#1} \CtrlDef {#2}~\FontCtrl{in}~{#3}}
+\newcommand{\CtrlITE}[3]{\FontCtrl{if}~{#1}~\FontCtrl{then}~{#2}~\FontCtrl{else}~{#3}}
+
 \newcommand{\CtrlFail}{()}
-\newcommand{\Ret}[1]{\text{ret}({#1})}
-\newcommand{\SendTo}[2]{\text{send}~{#1}~\text{to}~{#2}}
-\newcommand{\RecvFrom}[1]{\text{receive from}~{#1}}
-\newcommand{\ChooseFor}[3]{\text{choose}~{#1}~\text{for}~{#2};~{#3}}
-\newcommand{\AllowChoice}[3]{\text{allow}~{#1}~\text{choice}~(\Left \Rightarrow {#2})~(\Right \Rightarrow {#3})}
-\newcommand{\LetRecvIn}[3]{\text{receive}~{#1}~\text{from}~{#2}~\In~{#3}}
-\newcommand{\LetSendIn}[4]{\text{send}~{#1}~\CtrlDef~{#2}~\text{to}~{#3}~\In~{#4}}
-\newcommand{\AmI}[3]{\text{AmI}~{#1}~\text{then}~{#2}~\text{else}~{#3}}
+\newcommand{\Ret}[1]{\FontCtrl{ret}({#1})}
+\newcommand{\SendTo}[2]{\FontCtrl{send}~{#1}~\FontCtrl{to}~{#2}}
+\newcommand{\RecvFrom}[1]{\FontCtrl{receive}~\FontCtrl{from}~{#1}}
+\newcommand{\ChooseFor}[3]{\FontCtrl{choose}~{#1}~\FontCtrl{for}~{#2};~{#3}}
+\newcommand{\AllowChoice}[3]{\FontCtrl{allow}~{#1}~\FontCtrl{choice} \mid \CtrlLeft \Rightarrow {#2} \mid \CtrlRight \Rightarrow {#3}}
+\WithSuffix\newcommand\AllowChoice*[2]{\FontCtrl{allow}~{#1}~\FontCtrl{choice} \mid d \Rightarrow {#2}}
+\newcommand{\LetRecvIn}[3]{\FontCtrl{receive}~{#1}~\FontCtrl{from}~{#2}~\CtrlIn~{#3}}
+\newcommand{\LetSendIn}[4]{\FontCtrl{send}~{#1}~\CtrlDef~{#2}~\FontCtrl{to}~{#3}~\CtrlIn~{#4}}
+\newcommand{\AmI}[3]{\FontCtrl{AmI}~{#1}~\FontCtrl{then}~{#2}~\FontCtrl{else}~{#3}}
 \newcommand{\CtrlSeq}[2]{{#1}\seq{#2}}
 \newcommand{\IAm}[1]{\text{IAm}~{#1}}
 
@@ -191,22 +209,20 @@
 \makeatother
 
 % Syntax
-\newcommand\app[2]{\ensuremath{#1 \; #2}}
-\newcommand\send[3]{\ensuremath{#1 \overset{#2}{\rightsquigarrow} #3}}
-\newcommand\ifthen[3]{\ensuremath{\text{if}\; #1 \;\text{then}\; #2 \;\text{else}\; #3}}
-\newcommand\letin[3]{\ensuremath{\text{let}\; #1 \;\coloneq \; #2 \;\text{in}\; #3}}
+\newcommand\app[2]{\ensuremath{#1 ~ #2}}
+\newcommand\send[3]{#1 \ChorSend[#2] #3}
 
 % Typing & kinding judgments
-\newcommand\localkinded[2]{\ensuremath{#1 ~{\proves}_{\footnotesize{e}}~ #2}}
-\newcommand\localtyped[4]{\ensuremath{#1;#2 ~{\proves}_{\footnotesize{e}}~ #3 \ty #4}}
-\newcommand\localempkinded[1]{\ensuremath{{\proves}_{\footnotesize{e}}~ #1}}
-\newcommand\localemptyped[2]{\ensuremath{{\proves}_{\footnotesize{e}}~ #1 \ty #2}}
-\newcommand\localctxwf[2]{\ensuremath{#1 ~{\proves}_{\footnotesize{e}}~ #2}}
+\newcommand\localkinded[2]{\ensuremath{#1 \eproves #2}}
+\newcommand\localtyped[4]{\ensuremath{#1;#2 \eproves #3 : #4}}
+\newcommand\localempkinded[1]{\ensuremath{\eproves #1}}
+\newcommand\localemptyped[2]{\ensuremath{\eproves #1 : #2}}
+\newcommand\localctxwf[2]{\ensuremath{#1 \eproves #2}}
 \newcommand\ctrlapp[2]{\ensuremath{#1 \; #2}}
 
-\newcommand\chorkinded[3]{\ensuremath{#1 ~{\proves}~ #2 \knd #3}}
-\newcommand\chortyped[5]{\ensuremath{#1;#2;#3 ~{\proves}~ #4 \ty #5}}
-\newcommand\chorctxwf[2]{\ensuremath{#1 ~{\proves}~ #2}}
+\newcommand\chorkinded[3]{\ensuremath{#1 \proves #2 :: #3}}
+\newcommand\chortyped[5]{\ensuremath{#1;#2;#3 \proves #4 : #5}}
+\newcommand\chorctxwf[2]{\ensuremath{#1 \proves #2}}
 
 
 %%% Local Variables:

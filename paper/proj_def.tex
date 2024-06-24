@@ -10,33 +10,30 @@
 	\end{cases} \and
 	\epp{\lambda X \ty \tau.C}{L} = \lambda X.\epp{C}{L} \and
 	\epp{\mu X \ty \tau.C}{L} = \mu X.\epp{C}{L} \and
-	\epp{\app{F}{C}}{L} = \ctrlapp{\epp{F}{L}}{\epp{F}{L}} \and
-	\epp{\send{C}{\ell_1}{\ell_2}}{L} =
+	\epp{F~C}{L} = \ctrlapp{\epp{F}{L}}{\epp{F}{L}} \and
+	\epp{C \ChorSend[\ell_1] \ell_2}{L} =
 		\begin{cases}
-			\epp{C}{L} & L = \ell_1 = \ell_2 \\
+			\epp{C}{L} & L = \ell_1 = \ell_2 ~\text{or}~ L \neq \ell_1, \ell_2 \\
 			\SendTo{\epp{C}{L}}{\ell_2} & L = \ell_1 \neq \ell_2 \\
-			\RecvFrom{\ell_1} & L = \ell_2 \neq \ell_1\\
-			\epp{C}{L} & L \neq \ell_1, \ell_2
+			\RecvFrom{\ell_1} & L = \ell_2 \neq \ell_1
 		\end{cases} \and
-	\epp{\send{\ell_1[d]}{}{\ell_2};C}{L} =
+	\epp{\syncs{\ell_1}{d}{\ell_2} \seq C}{L} =
 		\begin{cases}
-			\epp{C}{L} & L = \ell_1 = \ell_2 \\
+			\epp{C}{L} & L = \ell_1 = \ell_2 ~\text{or}~ L \neq \ell_1, \ell_2 \\
 			\ChooseFor{d}{\ell}{\epp{C}{L}} & L = \ell_1 \neq \ell_2 \\
-			\AllowChoice{\ell}{\epp{C}{L}}{\CtrlFail} & L = \ell_2 \neq \ell_1 ~\text{and}~ d = \Left \\
-			\AllowChoice{\ell}{\CtrlFail}{\epp{C}{L}} & L = \ell_2 \neq \ell_1 ~\text{and}~ d = \Right \\
-			\epp{C}{L} & L \neq \ell_1, \ell_2
+			\AllowChoice*{\ell}{\epp{C}{L}} & L = \ell_2 \neq \ell_1
 		\end{cases} \and
-	\epp{\ell.\ifthen{C}{C_1}{C_2}}{L} =
+	\epp{\ITE{C}{C_1}{C_2}}{L} =
 		\begin{cases}
-			\ifthen{\epp{C}{L}}{\epp{C_1}{L}}{\epp{C_2}{L}} & L = \ell \\
+			\CtrlITE{\epp{C}{L}}{\epp{C_1}{L}}{\epp{C_2}{L}} & L = \ell \\
 			\epp{C_1}{L} \sqcup \epp{C_2}{L} & L \neq \ell
 		\end{cases} \and
 	\epp{\Lambda \alpha \knd *_\ell . C}{L} = \AmI{\ell}{\epp{\subst{C}{\alpha}{L}}{L}}{\epp{C}{L}} \and
 	\epp{\Lambda \alpha \knd \kappa . C}{L} = \Lambda \alpha.\epp{C}{L} ~\text{if}~\kappa \neq *_\ell \and
-	\epp{\app{C}{t}}{L} = \ctrlapp{{\epp{C}{L}}}{t} \and
+	\epp{C~t}{L} = \ctrlapp{{\epp{C}{L}}}{t} \and
 	\epp{\LetIn{\ell.x \ty t_e}{C_1}{C_2}}{L} =
 		\begin{cases}
-			\LetIn{\Ret{x}}{\epp{C_1}{L}}{\epp{C_2}{L}} & L = \ell \\
+			\CtrlLetIn{\Ret{x}}{\epp{C_1}{L}}{\epp{C_2}{L}} & L = \ell \\
 			\CtrlSeq{\epp{C_1}{L}}{\epp{C_2}{L}} & L \neq \ell
 		\end{cases} \and
 	\epp{\LetTellIn{\alpha}{\ell}{C_1 \knd *_\ell}{\rho}{C_2}}{L} =

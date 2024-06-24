@@ -111,32 +111,32 @@ Features present in the choreographic kinding and type systems, such as polymorp
 \ashley{Good point, I think it's fairly obvious when you say "these things need to be types", but I think TyVar and TySubst are important to show that the kinding system can be non-trivial with polymorphism in the local language}
 
 \begin{figure}
-	\begin{mathpar}
-		\infer[TyVar]{\alpha \in \Gamma}
-		{\localkinded{\Gamma}{\alpha}} \and
-
-		\infer[TySubst]{\localkinded{\Gamma}{t_1} \\
-			\localkinded{\Gamma, \alpha}{t_2}}
-		{\localkinded{\Gamma}{\subst{t_2}{\alpha}{t_1}}} \and
-
-		\infer[CtxWf]{\localtyped{\Gamma}{\Sigma}{e}{t}}
-		{\localctxwf{\Gamma}{\Sigma}} \and
-
-		\infer[TyWf]{\localtyped{\Gamma}{\Sigma}{e}{t}}
-		{\localkinded{\Gamma}{t}} \and
-
-		\infer[Var]{\localctxwf{\Gamma}{\Sigma} \\
-			x \ty t \in \Sigma}
-		{\localtyped{\Gamma}{\Sigma}{x}{t}}
-
-		\infer[Subst]{\localtyped{\Gamma}{\Sigma}{e_1}{t_1} \\
-			\localtyped{\Gamma}{\Sigma, x \ty t_1}{e_2}{t_2}}
-		{\localtyped{\Gamma}{\Sigma}{\subst{e_2}{x}{e_1}}{t_2}} \and
-
-		\infer[TmTySubst]{\localkinded{\Gamma}{t_1} \\
-			\localtyped{\Gamma, \alpha}{\Sigma}{e_2}{t_2}}
-		{\localtyped{\Gamma}{\Sigma}{\subst{e_2}{\alpha}{t_1}}{\subst{t_2}{\alpha}{t_1}}}
-	\end{mathpar}
+  \begin{mathpar}
+    \infer[TyVar]{\alpha \in \Gamma}
+    {\localkinded{\Gamma}{\alpha}}
+    \and
+    \infer[TySubst]{\localkinded{\Gamma}{t_1} \\
+      \localkinded{\Gamma, \alpha}{t_2}}
+    {\localkinded{\Gamma}{\subst{t_2}{\alpha}{t_1}}}
+    \and
+    \infer[CtxWf]{\localtyped{\Gamma}{\Sigma}{e}{t}}
+    {\localctxwf{\Gamma}{\Sigma}}
+    \and
+    \infer[TyWf]{\localtyped{\Gamma}{\Sigma}{e}{t}}
+    {\localkinded{\Gamma}{t}}
+    \and
+    \infer[Var]{\localctxwf{\Gamma}{\Sigma} \\
+      x \ty t \in \Sigma}
+    {\localtyped{\Gamma}{\Sigma}{x}{t}}
+    \and
+    \infer[Subst]{\localtyped{\Gamma}{\Sigma}{e_1}{t_1} \\
+      \localtyped{\Gamma}{\Sigma, x \ty t_1}{e_2}{t_2}}
+    {\localtyped{\Gamma}{\Sigma}{\subst{e_2}{x}{e_1}}{t_2}}
+    \and
+    \infer[TmTySubst]{\localkinded{\Gamma}{t_1} \\
+      \localtyped{\Gamma, \alpha}{\Sigma}{e_2}{t_2}}
+    {\localtyped{\Gamma}{\Sigma}{\subst{e_2}{\alpha}{t_1}}{\subst{t_2}{\alpha}{t_1}}}
+  \end{mathpar}
   \caption[Required Admissible Rules]{Required Admissible Rules for Local Type and Kinding Systems}
   \label{fig:local-type-rules}
 \end{figure}

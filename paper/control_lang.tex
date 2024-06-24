@@ -11,9 +11,9 @@
     \alternative{X} \alternative{\CtrlFail} \alternative{\Ret{e}} \alternative{\CtrlSeq{E_1}{E_2}} \alternative{\lambda X.E} \alternative{\mu X.E} \alternative{\ctrlapp{E_1}{E_2}} \\
     \alternative{\SendTo{E}{\ell}} \alternative{\RecvFrom{\ell}} \\
     \alternative{\ChooseFor{d}{\ell}{E}} \alternative{\AllowChoice{\ell}{E_1}{E_2}} \\
-    \alternative{\ifthen{E}{E_1}{E_2}} \\
+    \alternative{\CtrlITE{E}{E_1}{E_2}} \\
     \alternative{\Lambda \alpha.E} \alternative{\ctrlapp{E}{t}} \\
-    \alternative{\LetIn{\Ret{x}}{E_1}{E_2}}\\
+    \alternative{\CtrlLetIn{\Ret{x}}{E_1}{E_2}}\\
     \alternative{\LetSendIn{\alpha \knd *_\ell}{E_1}{\rho}{E_2}} \alternative{\LetRecvIn{\alpha \knd *_\ell}{\ell}{E}}\\
     \alternative{\LetSendIn{\alpha \knd *_e}{E_1}{\rho}{E_2}} \alternative{\LetRecvIn{\alpha \knd *_e}{\ell}{E}}\\
     \alternative{\AmI{\ell}{E_1}{E_2}}
@@ -83,10 +83,10 @@
     {\ctrlapp{(\Lambda \alpha.E)}{t} \ctrlstep[\iota] \subst{E}{\alpha}{t}} \and
 
     \infer[LetRet]{E_1 \ctrlstep[l] E_1'}
-    {\LetIn{\Ret{x}}{E_1}{E_2} \ctrlstep[l] \LetIn{\Ret{x}}{E_1'}{E_2}} \and
+    {\CtrlLetIn{\Ret{x}}{E_1}{E_2} \ctrlstep[l] \CtrlLetIn{\Ret{x}}{E_1'}{E_2}} \and
 
     \infer[LetRetV]{\text{Value}(v)}
-    {\LetIn{\Ret{x}}{\Ret{v}}{E} \ctrlstep[\iota] \subst{E}{x}{v}} \and
+    {\CtrlLetIn{\Ret{x}}{\Ret{v}}{E} \ctrlstep[\iota] \subst{E}{x}{v}} \and
 
     \infer[SendTy]{E_1 \ctrlstep[l] E_1'}
     {\LetSendIn{\alpha \knd \kappa}{E_1}{\rho}{E_2} \ctrlstep[l] \LetSendIn{\alpha \knd \kappa}{E_1'}{\rho}{E_2}} \and
