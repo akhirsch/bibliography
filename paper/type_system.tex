@@ -72,28 +72,28 @@ This allows choreographic expressions of the form $t_e @ \ell$ to be used within
   \infer[Fun]{\chortyped{\Gamma}{\Delta,X \ty \tau_1}{\Sigma}{C}{\tau_2}}
   {\chortyped{\Gamma}{\Delta}{\Sigma}{\Fun{X\ty\tau_1}{C}}{\tau_1 \to \tau_2}}
   \and
-  \infer[Rec]{\chortyped{\Gamma}{\Delta,X \ty \tau}{\Sigma}{C}{\tau}}
-  {\chortyped{\Gamma}{\Delta}{\Sigma}{\mu X \ty \tau_1.C}{\tau}}
-  \and
-  \infer[App]{\chortyped{\Gamma}{\Delta}{\Sigma}{F}{\tau_1 \to \tau_2} \\
-    \Gamma \vdash C : \tau_1}
-  {\Gamma \vdash F~C : \tau_2}
-  \and
+%  \infer[Rec]{\chortyped{\Gamma}{\Delta,X \ty \tau}{\Sigma}{C}{\tau}}
+%  {\chortyped{\Gamma}{\Delta}{\Sigma}{\mu X \ty \tau_1.C}{\tau}}
+%  \and
+%  \infer[App]{\chortyped{\Gamma}{\Delta}{\Sigma}{F}{\tau_1 \to \tau_2} \\
+%    \Gamma \vdash C : \tau_1}
+%  {\Gamma \vdash F~C : \tau_2}
+%  \and
   \infer[Send]{\chorkinded{\Gamma}{\ell_1}{*_\ell} \\
-    \chorkinded{\Gamma}{\ell_2}{*_\ell} \\
+    \chorkinded{\Gamma}{\ell_2}{*_\ell} \\\\
     \chortyped{\Gamma}{\Delta}{\Sigma}{C}{t_e @ \ell_1}}
     {\chortyped{\Gamma}{\Delta}{\Sigma}{C \ChorSend[\ell_1] \ell_2}{t_e @ \ell_2}}
   \and
   \infer[Sync]{\chorkinded{\Gamma}{\ell_1}{*_\ell} \\
-    \chorkinded{\Gamma}{\ell_2}{*_\ell} \\
+    \chorkinded{\Gamma}{\ell_2}{*_\ell} \\\\
     \chortyped{\Gamma}{\Delta}{\Sigma}{C}{\tau}}
     {\chortyped{\Gamma}{\Delta}{\Sigma}{\syncs{\ell_1}{d}{\ell_2} \seq C}{\tau}}
   \and
-  \infer[Abs]{\chorkinded{\Gamma, \alpha \knd \kappa}{\tau}{*} \\
+  \infer[TAbs]{\chorkinded{\Gamma, \alpha \knd \kappa}{\tau}{*} \\\\
     \chortyped{\Gamma, \alpha \knd \kappa}{\Delta}{\Sigma}{C}{\tau}}
   {\chortyped{\Gamma}{\Delta}{\Sigma}{\TFun{\alpha \knd \kappa}{C}}{\forall \alpha \knd \kappa.\tau}}
 
-  \infer[AppTy]{\chortyped{\Gamma}{\Delta}{\Sigma}{C}{\forall \alpha \knd \kappa.\tau} \\
+  \infer[TApp]{\chortyped{\Gamma}{\Delta}{\Sigma}{C}{\forall \alpha \knd \kappa.\tau} \\\\
     \chorkinded{\Gamma}{t}{\kappa}}
   {\chortyped{\Gamma}{\Delta}{\Sigma}{C~t}{\subst{\tau}{\alpha}{t}}}
   \and
@@ -101,9 +101,10 @@ This allows choreographic expressions of the form $t_e @ \ell$ to be used within
     \chortyped{\Gamma}{\Delta}{\Sigma, \ell.x \ty t_e}{C_2}{\tau}}
   {\chortyped{\Gamma}{\Delta}{\Sigma}{\LetIn{\ell.x \ty t_e}{C_1}{C_2}}{\tau}}
   \and
-  \infer[TellLetLoc]{\chortyped{\Gamma}{\Delta}{\Sigma}{C_1}{\Loc @ \ell} \\
+  \infer[TellLetLoc]{
     \chorkinded{\Gamma}{\rho}{*_s} \\
-    \chorkinded{\Gamma}{\tau}{*} \\
+    \chorkinded{\Gamma}{\tau}{*} \\\\
+    \chortyped{\Gamma}{\Delta}{\Sigma}{C_1}{\Loc @ \ell} \\
     \chortyped{\Gamma, \alpha \knd *_\ell}{\Delta}{\Sigma}{C_2}{\tau} \\
     }
   {\chortyped{\Gamma}{\Delta}{\Sigma}{\LetTellIn{\alpha}{\ell}{C_1 \knd *_\ell}{\rho}{C_2}}{\tau}} \and
