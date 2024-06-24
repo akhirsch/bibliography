@@ -5,13 +5,13 @@
 
 \todo explanation of AmI and reason it's needed
 
-\begin{figure}[h]
+\begin{figure}
   \begin{syntax}
     \category[Control Expression]{E}
     \alternative{X} \alternative{\CtrlFail} \alternative{\Ret{e}} \alternative{\lambda X.E} \alternative{\mu X.E} \alternative{E_1~E_2} \\
     \alternative{\SendTo{E}{\ell}} \alternative{\RecvFrom{\ell}} \\
     \alternative{\ChooseFor{d}{\ell}{E}}\\
-    \alternative{\AllowChoice{\ell}{?E_1}{?E_2}} \\
+    \alternative{\AllowChoice{\ell}{E_1}{E_2}} \\
     \alternative{\ifthen{E_1}{E_2}{E_3}} \\
     \alternative{\Lambda \alpha.E} \alternative{E~t} \\
     \alternative{\LetIn{\Ret{x}}{E_1}{E_2}}\\
@@ -32,6 +32,35 @@
 \paragraph{Operational Semantics}
 \label{sec:control-lang-semantics}
 
+\begin{figure}
+  \begin{mathparpagebreakable}
+      \infer[RetE]{e_1 \localstep e_2}
+      {\Ret{e_1} \ctrlstep[\iota] \Ret{e_2}} \and
+
+      \infer[SendV]{\text{Value}(V)}
+      {\SendTo{V}{L} \ctrlstep[V \sendsto L] \CtrlFail} \and
+
+      \infer[RecvV]{\text{Value}(V)}
+      {\RecvFrom{L} \ctrlstep[L;V \sendsto] V} \and
+
+      \infer[Choose]{}
+      {\ChooseFor{d}{L}{E} \ctrlstep[d \sendsto L] E} \and
+
+      \infer[AllowChoiceL]{}
+      {\AllowChoice{L}{E_1}{E_2} \ctrlstep[L;\Left \sendsto] E_1} \and
+
+      \infer[AllowChoiceR]{}
+      {\AllowChoice{L}{E_1}{E_2} \ctrlstep[L;\Right \sendsto] E_2} \and
+
+      \infer[AmIL]{}
+      {\AmI{L}{E_1}{E_2} \ctrlstep[L] E_1} \and
+
+      \infer[AmIR]{L \neq L'}
+      {\AmI{L}{E_1}{E_2} \ctrlstep[L'] E_2} \and
+  \end{mathparpagebreakable}
+  \caption{Control Language Semantics}
+  \label{fig:control-lang-sem}
+\end{figure}
 
 %%% Local Variables:
 %%% mode: latex
