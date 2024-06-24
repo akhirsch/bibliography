@@ -13,7 +13,7 @@ Both choreographic and local type variables, including location variables, are d
 
 \paragraph{Location Substitution}
 While substitution and variable renaming in \langname can mostly be handled in standard ways, care must be taken to implement \emph{location substitution} correctly.
-For instance, consider the following example with a variable location $\alpha$ and concrete location $L$ which use the local variables $\alpha.x$ and $L.x$.
+For instance, consider the following example with a variable location $\alpha$ and concrete location $L$. Note that because $\alpha$ and $L$ are distinct, the local variables $\alpha.x$ and $L.x$ are also distinct.
 \begin{mathpar}
 \LetIn{\alpha.x \ty \Int}{\alpha.2}{~}\\
 \LetIn{L.x \ty \Int}{L.3}{~}\\
@@ -41,6 +41,7 @@ In order to rectify this problem of namespace capture, substitution of locations
 	\end{cases}
 \end{mathpar}
 where substitution of local variables $\subst{C}{\ell.x}{e}$ is defined in a standard capture-avoiding manner.
+The condition that $\ell.y, \ell'.y \notin \text{FV}(C_2)$ in the first clause of the definition is critical, and ensures that no variables are mistakenly captured by the location substitution.
 
 \begin{figure}[h]
   \begin{syntax}

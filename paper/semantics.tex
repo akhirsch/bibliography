@@ -1,6 +1,56 @@
 \subsection{Operational Semantics}
 \label{sec:oper-semantics}
-\todo
+\todo say that pn and spn came from Modular Compilation paper
+
+\begin{mathparpagebreakable}
+	\pn{*} = \Locations \and
+	\pn{*_\ell} = \Locations \and
+	\pn{*_s} = \Locations \and
+	\pn{*_e} = \varnothing
+\end{mathparpagebreakable}
+
+\begin{mathparpagebreakable}
+	\pn{\alpha} = \varnothing \and
+	\pn{t_e @ \ell} = \pn{\ell} \and
+	\pn{\tau_1 \to \tau_2} = \pn{\tau_1} \cup \pn{\tau_2} \and
+	\pn{\forall \alpha \knd \kappa.\tau} = \pn{\kappa} \cup \pn{\tau} \and
+	\pn{L} = \{L\} \and
+	\pn{\varnothing} = \varnothing \and
+	\pn{\{\ell\}} = \pn{\ell} \and
+	\pn{\rho_1 \cup \rho_2} = \pn{\rho_1} \cup \pn{\rho_2}
+\end{mathparpagebreakable}
+
+\begin{mathparpagebreakable}
+	\pn{X} = \varnothing \and
+	\pn{\ell.e} = \pn{\ell} \and
+	\pn{\lambda X \ty \tau.C} = \pn{\tau} \cup \pn{C} \and
+	\pn{\mu X \ty \tau.C} = \pn{\tau} \cup \pn{C} \and
+	\pn{\app{F}{C}} = \pn{F} \cup \pn{C} \and
+	\pn{\send{C}{\ell_1}{\ell_2}} = \pn{C} \cup \pn{\ell_1} \cup \pn{\ell_2} \and
+	\pn{\send{\ell_1[d]}{}{\ell_2};C} = \pn{\ell_1} \cup \pn{\ell_2} \cup \pn{C} \and
+	\pn{\ell.\ifthen{C}{C_1}{C_2}} = \pn{\ell} \cup \pn{C} \cup \pn{C_1} \cup \pn{C_2} \and
+	\pn{\Lambda \alpha \knd \kappa.C} = \pn{\kappa} \cup \pn{C} \and
+	\pn{\app{C}{t}} = \pn{C} \cup \pn{t} \and
+	\pn{\LetIn{\ell.x \ty t_e}{C_1}{C_2}} = \pn{\ell} \cup \pn{C_1} \cup \pn{C_2} \and
+	\pn{\LetTellIn{\alpha}{\ell}{C_1 \knd *_\ell}{\rho}{C_2}} = \pn{\ell} \cup \pn{C_1} \cup \pn{\rho} \cup \pn{C_2} \and
+	\pn{\LetTellIn{\alpha}{\ell}{C_1 \knd *_e}{\rho}{C_2}} = \pn{\ell} \cup \pn{C_1} \cup \pn{\rho} \cup \pn{C_2}
+\end{mathparpagebreakable}
+
+\begin{mathparpagebreakable}
+	\spn{X} = \varnothing \and
+	\spn{\ell.e} = \varnothing \and
+	\spn{\lambda X \ty \tau.C} = \spn{C} \and
+	\spn{\mu X \ty \tau.C} = \spn{C} \and
+	\spn{\app{F}{C}} = \spn{F} \cup \spn{C} \and
+	\spn{\send{C}{\ell_1}{\ell_2}} = \spn{C} \cup \pn{\ell_1} \cup \pn{\ell_2} \and
+	\spn{\send{\ell_1[d]}{}{\ell_2};C} = \pn{\ell_1} \cup \pn{\ell_2} \cup \spn{C} \and
+	\spn{\ell.\ifthen{C}{C_1}{C_2}} = \spn{C} \cup \spn{C_1} \cup \spn{C_2} \and
+	\spn{\Lambda \alpha \knd \kappa.C} = \spn{C} \and
+	\spn{\app{C}{t}} = \spn{C} \and
+	\spn{\LetIn{\ell.x \ty t_e}{C_1}{C_2}} = \spn{C_1} \cup \spn{C_2} \and
+	\spn{\LetTellIn{\alpha}{\ell}{C_1 \knd *_\ell}{\rho}{C_2}} = \pn{\ell} \cup \spn{C_1} \cup \pn{\rho} \cup \spn{C_2} \and
+	\spn{\LetTellIn{\alpha}{\ell}{C_1 \knd *_e}{\rho}{C_2}} = \pn{\ell} \cup \spn{C_1} \cup \pn{\rho} \cup \spn{C_2}
+\end{mathparpagebreakable}
 
 % \begin{figure}[h]
 %   \begin{syntax}

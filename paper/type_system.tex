@@ -14,17 +14,16 @@ There are four kinds of types:
 
 \paragraph{Locations and Location Sets}
 Location names are represented by the kind $*_\ell$.
-This kind of type consists of precisely the concrete locations $L \in \Locations$, and the location variables $\alpha \knd *_\ell$ that have been bound by the for-all quantifier.
+Well-formed types of this kind consist of precisely the concrete locations $L \in \Locations$, and the in-context location variables $\alpha \knd *_\ell$.
 Sets of location names belong to the kind $*_s$.
 In particular, this kind consists of finite sets of elements of the $*_\ell$ kind, as introduced by the empty set $\varnothing$, singleton set $\{\ell\}$, and set union $\rho_1 \cup \rho_2$ constructors.
 
 \paragraph{Choreographic Types}
 There are three choreographic types of kind $*$ used to describe \langname programs.
 The located type $t_e @ \ell$ represents a local program of type $t_e$ located at $\ell$.
-Both $t_e$ and $\ell$, along with all other types, may either be concrete, or contain bound type variables.
 The choreographic function type $\tau_1 \to \tau_2$ represents possibly higher-order choreographies which take a value of type $\tau_1$ as input, and result in a value of type $\tau_2$.
 The universal quantifier type $\forall \alpha \knd \kappa.\tau$ is used to represent choreographic programs which implement parametric polymorphism.
-Specifically, a program which take as input a type $t$ of kind $\kappa$ (from any of the four kinds mentioned above), and results in a value of type $\subst{\tau}{\alpha}{t}$.
+Specifically, a program which takes as input a type $t$ of kind $\kappa$ (from any of the four kinds mentioned above), and results in a value of type $\subst{\tau}{\alpha}{t}$.
 
 These three types have the following kinding rules:
 \begin{mathpar}
@@ -45,7 +44,7 @@ For example, the type of a choreographic program which sends a value of type $\e
 \end{mathpar}
 
 \paragraph{Local Types}
-Types of kind $*_e$ are precisely the types included in the local language.
+Types of kind $*_e$ are precisely the types included in the local language under a given type-variable context.
 The local language may or may-not include the capability of binding type variables, and this decision has no explicit effect on the choreographic types.
 However, local types included in our type system may use type variables which have been bound by the choreographic for-all type.
 For instance, recall Example \ref{ex:st-lambda}, a simply-typed lambda calculus with no type polymorphism.
@@ -60,7 +59,7 @@ In a similar manner to the kinding system, we use the type system of the local l
 
 Typing judgments for our language are of the form $\chortyped{\Gamma}{\Delta}{\Sigma}{C}{t}$, where $\Gamma$ is a choreographic kinding context, $\Delta$ is a list of choreographic typing ascriptions $X \ty t$, $\Sigma$ is a list of local variable typing ascriptions $\ell.x \ty t_e$, $C$ is a choreography, and $t$ is a choreographic type.
 
-Where the choreographic context $\Delta$ handles variables bound at the choreographic level, for instance via a lambda-abstraction $\lambda X \ty \tau.C$, the local context $\Sigma$ handles variables bound to the local system at a specific location via the local-let binding $\LetIn{\ell.x \ty t_e}{C_1}{C_2}$.
+Where the choreographic context $\Delta$ handles variables bound at the choreographic level, for instance via a lambda-abstraction $\lambda X \ty \tau.C$, the local context $\Sigma$ handles variables bound to a specific location via the local-let binding $\LetIn{\ell.x \ty t_e}{C_1}{C_2}$.
 This allows choreographic expressions of the form $t_e @ \ell$ to be used within local computations at $\ell$, and enforces that each location can only perform local computations on data that they have access to.
 
 \todo Figure out which typing rules to include. Further ones which could be removed as they are standard: Fun, Rec, App, Abs, AppTy
@@ -114,12 +113,8 @@ This allows choreographic expressions of the form $t_e @ \ell$ to be used within
   \label{fig:selected-type-rules}
 \end{figure}
 
-Where the choreographic context $\Delta$ handles variables bound at the choreographic level, for instance via a lambda-abstraction $\lambda X \ty \tau.C$, the local context $\Sigma$ handles variables bound to the local system at a specific location via the local-let binding $\LetIn{\ell.x \ty t_e}{C_1}{C_2}$.
-This allows choreographic expressions of the form $t_e @ \ell$ to be used within local computations at $\ell$, and enforces that each location can only perform local computations on data that they have access to.
-
-Parametric type and location polymorphism is handled in a manner identical to System F.
-One can introduce a type variable using the \emph{type abstraction} expression $\Lambda \alpha \knd \kappa.C$, where $\kappa$ can be any of the four kinds of types.
-One can then use these type variables in the body of the abstraction, as in the term $\Lambda \alpha \knd *_\ell.\send{C}{L}{\alpha}$ which sends a value $C \ty t_e @ L$ to an arbitrary location $\alpha$.
+Parametric polymorphism is handled in a manner identical to System F: one can introduce a type variable using the \emph{type abstraction} expression $\Lambda \alpha \knd \kappa.C$, where $\kappa$ can be any of the four kinds.
+The bound type-variable $\alpha$ can then be used in the body of the abstraction, as in the term $\Lambda \alpha \knd *_\ell.\send{C}{L}{\alpha}$ which sends a value $C \ty t_e @ L$ to an arbitrary location $\alpha$.
 
 The tell-let binding allows for dynamically generated location names and local types to be used in the choreographic program.
 Specifically, if $C_1 \ty \Loc @ \ell$ is a location name stored at $\ell$, then the expression $\LetTellIn{\alpha}{\ell}{C_1 \knd *_\ell}{\rho}{C_2}$ allows the \emph{type variable} $\alpha \knd *_\ell$ to be used in the subexpression $C_2$.

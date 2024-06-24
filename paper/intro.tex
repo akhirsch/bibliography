@@ -31,7 +31,7 @@ it can run the following choreography in which \Client sends $F$ and $X$ to \Wor
 \ethan{We'll adjust in polishing passes later, but good thing to watch for.}
 Note here, the syntax $t@\Client$ indicates a value of type $t$ located at \Client.
 \begin{align*}
-  & \RunAtWorker : (t \to t') @ \Client \to t@\Client \to t'@\Client \\
+  & \RunAtWorker : (\Int \to \Int) @ \Client \to \Int@\Client \to \Int@\Client \\
   & \RunAtWorker~F~X =
   \def\arraystretch{1.1}
   \begin{array}[t]{@{}l@{}}
@@ -106,8 +106,8 @@ Although locations can appear in the types of choreographic programs such as $\I
     \ethan{Good point. We should either be very consistent, or mention early on that we use the interchangeably. I vote consistent.}
 	\item We show how to define an out-of-order execution semantics for a choreographic language which includes process polymorphism
 	\item We settle an open question about the strength of the type-system needed to implement process polymorphism in a choreographic language.
-  In particular, previous works (Alice \& Bob) have implemented process polymorphism using a variant of System $\text{F}_\omega$, whereas \langname extends System F.
-	\item The majority of our metatheory has been formalized and mechanically verified in Agda, and we present proofs for all remaining major theorems within this paper.
+  In particular, previous works (Alice \& Bob) have implemented process polymorphism using a variant of System $\text{F}_\omega$ which includes a \emph{type-conversion} rule, whereas \langname extends System F and does not require type-conversion.
+	\item The metatheory of our syntax and type-system have been formalized and mechanically verified in Agda, and we present proofs for all remaining major theorems within this paper.
   The Agda implementation is discussed in Section \ref{sec:agda-dev}.
 \end{itemize}
 
