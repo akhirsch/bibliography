@@ -63,8 +63,9 @@
 \newcommand{\dom}{\operatorname{dom}}
 \newcommand{\sendsto}{\rightsquigarrow}
 \newcommand{\tpat}{\raisebox{1pt}{\footnotesize\ensuremath{@}}}
-\newcommand{\pn}[1]{\ensuremath{\text{pn}({#1})}}
-\newcommand{\spn}[1]{\ensuremath{\text{spn}({#1})}}
+\newcommand{\pn}[1]{\ensuremath{\text{PN}({#1})}}
+\newcommand{\spn}[1]{\ensuremath{\text{SPN}({#1})}}
+\newcommand{\fv}[1]{\ensuremath{\text{FV}({#1})}}
 
 \newcommand{\defeq}{\ensuremath{\stackrel{\text{\normalfont\tiny def}}{=}}}
 
@@ -194,6 +195,7 @@
 \newcommand{\manystep}{\raw@step{}{*}{c}}
 \newcommand{\localstep}[1][]{\raw@step{#1}{}{e}}
 \newcommand{\ctrlstep}[1][]{\raw@step{#1}{}{E[L]}}
+\newcommand{\rewrite}{\mathrel{\leadsto}}
 
 \newcommand{\raw@nstep}[3]{\mathrel{%
   \if\relax\detokenize{#1}\relax

@@ -52,6 +52,45 @@
 	\spn{\LetTellIn{\alpha}{\ell}{C_1 \knd *_e}{\rho}{C_2}} = \pn{\ell} \cup \spn{C_1} \cup \pn{\rho} \cup \spn{C_2}
 \end{mathparpagebreakable}
 
+\begin{mathparpagebreakable}
+	\infer[R-AbsR]{X \notin \fv{C_2}}
+	{\app{\app{(\lambda X \ty \tau.F)}{C_1}}{C_2} \rewrite \app{(\lambda X \ty \tau.(\app{F}{C_2}))}{C_1}} \and
+
+	\infer[R-AbsL]{X \notin \fv{F} \\
+		\spn{F} \cap \pn{C_1} = \varnothing}
+	{\app{F}{(\app{(\lambda X \ty \tau.C_1)}{C_2})} \rewrite \app{(\lambda X \ty \tau.(\app{F}{C_1}))}{C_2}} \and
+
+	\infer[R-SyncR]{}
+	{\app{(\send{\ell_1[d]}{}{\ell_2};F)}{C} \rewrite \send{\ell_1[d]}{}{\ell_2};(\app{F}{C})} \and
+
+	\infer[R-SyncL]{\spn{F} \cap \pn{C} = \varnothing}
+	{\app{F}{(\send{\ell_1[d]}{}{\ell_2};C)} \rewrite \send{\ell_1[d]}{}{\ell_2};(\app{F}{C})} \and
+
+	\infer[R-IfR]{}
+	{\app{(\ITE{C_1}{F_1}{F_2})}{C_2} \rewrite \ITE{C_1}{(\app{F_1}{C_2})}{(\app{F_2}{C_2})}} \and
+
+	\infer[R-IfL]{\spn{F} \cap \pn{C} = \varnothing}
+	{\app{F}{(\ITE{C}{C_1}{C_2})} \rewrite \ITE{C}{(\app{F}{C_1})}{(\app{F}{C_2})}} \and
+
+	\infer[R-LetR]{\ell.x \notin \fv{C_2}}
+	{\app{(\LetIn{\ell.x \ty t_e}{C_1}{F})}{C_2} \rewrite \LetIn{\ell.x \ty t_e}{C_1}{(\app{F}{C_2})}} \and
+
+	\infer[R-LetL]{\ell.x \notin \fv{F} \\
+	\spn{F} \cap \pn{C_1} = \varnothing}
+	{\app{F}{(\LetIn{\ell.x \ty t_e}{C_1}{C_2})} \rewrite \LetIn{\ell.x \ty t_e}{C_1}{(\app{F}{C_2})}} \and
+
+	\infer[R-LetTellR]{\alpha \notin \fv{C_2}}
+	{\app{(\LetTellIn{\alpha}{\ell}{C_1 \knd \kappa}{\rho}{F})}{C_2} \rewrite \LetTellIn{\alpha}{\ell}{C_1 \knd \kappa}{\rho}{(\app{F}{C_2})}} \and
+
+	\infer[R-LetTellL]{\ell.x \notin \fv{F} \\
+	\spn{F} \cap \pn{C_1} = \varnothing}
+	{\app{F}{(\LetTellIn{\alpha}{\ell}{C_1 \knd \kappa}{\rho}{C_2})} \rewrite \LetTellIn{\alpha}{\ell}{C_1 \knd \kappa}{\rho}{(\app{F}{C_2})}} \and
+
+	\infer[R-Alpha]{Y ~\text{fresh in}~ C}
+	{\lambda X \ty \tau.C \rewrite \lambda Y \ty \tau.\subst{C}{X}{Y}}
+\end{mathparpagebreakable}
+
+
 % \begin{figure}[h]
 %   \begin{syntax}
 %     \category[Redices]{R}
@@ -75,9 +114,9 @@
 % \end{figure}
 
 % \begin{mathparpagebreakable}
-%   \infer[DoneE]{
-%   e_1 \localstep e_2}
-%   {L.e_1 \step{L.(e_1 \Rightarrow e_2)} L.e_2} \and
+  % \infer[DoneE]{
+  % e_1 \localstep e_2}
+  % {L.e_1 \step{L.(e_1 \Rightarrow e_2)} L.e_2} \and
 
 %   \infer[SendE]{C_1 \step{R} C_2}
 %   {C_1 \overset{L_1}{\rightsquigarrow} L_2 \step{R} C_2 \overset{L_1}{\rightsquigarrow} L_2} \and
