@@ -102,6 +102,7 @@
 \newcommand{\Right}{\FontChoreo{R}}
 \newcommand{\FunN}{\FontChoreo{fun}}
 \newcommand{\ChorDef}{\mathrel{\ChorCol{\coloneqq}}}
+\newcommand{\CtrlDef}{\mathrel{\ChorCol{\coloneqq}}}
 \newcommand{\TellN}{\FontChoreo{tell}}
 \newcommand{\To}{\FontChoreo{to}}
 
@@ -117,8 +118,9 @@
 \newcommand{\ChooseFor}[3]{\text{choose}~{#1}~\text{for}~{#2};~{#3}}
 \newcommand{\AllowChoice}[3]{\text{allow}~{#1}~\text{choice}~(\Left \Rightarrow {#2})~(\Right \Rightarrow {#3})}
 \newcommand{\LetRecvIn}[3]{\text{receive}~{#1}~\text{from}~{#2}~\In~{#3}}
-\newcommand{\LetSendIn}[3]{\text{send}~{#1}~\text{to}~{#2}~\In~{#3}}
+\newcommand{\LetSendIn}[4]{\text{send}~{#1}~\CtrlDef~{#2}~\text{to}~{#3}~\In~{#4}}
 \newcommand{\AmI}[3]{\text{AmI}~{#1}~\text{then}~{#2}~\text{else}~{#3}}
+\newcommand{\CtrlSeq}[2]{{#1}\seq{#2}}
 
 \newcommand{\LocalLangFont}[1]{\programfont{#1}}
 \newcommand{\True}{\LocalLangFont{true}}
@@ -197,6 +199,7 @@
 \newcommand\localempkinded[1]{\ensuremath{{\proves}_{\footnotesize{e}}~ #1}}
 \newcommand\localemptyped[2]{\ensuremath{{\proves}_{\footnotesize{e}}~ #1 \ty #2}}
 \newcommand\localctxwf[2]{\ensuremath{#1 ~{\proves}_{\footnotesize{e}}~ #2}}
+\newcommand\ctrlapp[2]{\ensuremath{#1 \; #2}}
 
 \newcommand\chorkinded[3]{\ensuremath{#1 ~{\proves}~ #2 \knd #3}}
 \newcommand\chortyped[5]{\ensuremath{#1;#2;#3 ~{\proves}~ #4 \ty #5}}

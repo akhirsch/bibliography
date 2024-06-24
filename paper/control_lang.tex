@@ -8,17 +8,14 @@
 \begin{figure}
   \begin{syntax}
     \category[Control Expression]{E}
-    \alternative{X} \alternative{\CtrlFail} \alternative{\Ret{e}} \alternative{\lambda X.E} \alternative{\mu X.E} \alternative{E_1~E_2} \\
+    \alternative{X} \alternative{\CtrlFail} \alternative{\Ret{e}} \alternative{\CtrlSeq{E_1}{E_2}} \alternative{\lambda X.E} \alternative{\mu X.E} \alternative{\ctrlapp{E_1}{E_2}} \\
     \alternative{\SendTo{E}{\ell}} \alternative{\RecvFrom{\ell}} \\
-    \alternative{\ChooseFor{d}{\ell}{E}}\\
-    \alternative{\AllowChoice{\ell}{E_1}{E_2}} \\
-    \alternative{\ifthen{E_1}{E_2}{E_3}} \\
-    \alternative{\Lambda \alpha.E} \alternative{E~t} \\
+    \alternative{\ChooseFor{d}{\ell}{E}} \alternative{\AllowChoice{\ell}{E_1}{E_2}} \\
+    \alternative{\ifthen{E}{E_1}{E_2}} \\
+    \alternative{\Lambda \alpha.E} \alternative{\ctrlapp{E}{t}} \\
     \alternative{\LetIn{\Ret{x}}{E_1}{E_2}}\\
-    \alternative{\LetSendIn{\alpha \knd *_\ell}{\rho}{E}}\\
-    \alternative{\LetRecvIn{\alpha \knd *_\ell}{\ell}{E}}\\
-    \alternative{\LetSendIn{\alpha \knd *_\ell}{\rho}{E}}\\
-    \alternative{\LetRecvIn{\alpha \knd *_e}{\ell}{E}}\\
+    \alternative{\LetSendIn{\alpha \knd *_\ell}{E_1}{\rho}{E_2}} \alternative{\LetRecvIn{\alpha \knd *_\ell}{\ell}{E}}\\
+    \alternative{\LetSendIn{\alpha \knd *_e}{E_1}{\rho}{E_2}} \alternative{\LetRecvIn{\alpha \knd *_e}{\ell}{E}}\\
     \alternative{\AmI{\ell}{E_1}{E_2}}
 
     \category[Systems]{\Pi}
