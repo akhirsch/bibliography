@@ -2,73 +2,73 @@
 \label{sec:oper-semantics}
 \todo
 
-\begin{figure}[h]
-  \begin{syntax}
-    \category[Redices]{R}
-    \alternative{L.(e_1 \Rightarrow e_2)}
-    \alternative{L.\text{if}\;R}
-    \alternative{L.\text{if}\;\text{true}}
-    \alternative{L.\text{if}\;\text{false}}\\
-    \alternative{R \overset{L_1}{\rightsquigarrow} L_2}
-    \alternative{L_1.(v\;\text{value}) \overset{L_1}{\rightsquigarrow} L_2}\\
-    \alternative{L_1[d] \rightsquigarrow L_2}
-    \alternative{\text{Sync}}\\
-    \alternative{\text{let}\;x := (V \;\text{Value})}
-    \alternative{\text{Arg}(R)}
-    \alternative{\text{Fun}(R)}\\
-    \alternative{\text{Fun}\beta}
-    \alternative{\text{Loc}\beta}
-  \end{syntax}
+% \begin{figure}[h]
+%   \begin{syntax}
+%     \category[Redices]{R}
+%     \alternative{L.(e_1 \Rightarrow e_2)}
+%     \alternative{L.\text{if}\;R}
+%     \alternative{L.\text{if}\;\text{true}}
+%     \alternative{L.\text{if}\;\text{false}}\\
+%     \alternative{R \overset{L_1}{\rightsquigarrow} L_2}
+%     \alternative{L_1.(v\;\text{value}) \overset{L_1}{\rightsquigarrow} L_2}\\
+%     \alternative{L_1[d] \rightsquigarrow L_2}
+%     \alternative{\text{Sync}}\\
+%     \alternative{\text{let}\;x := (V \;\text{Value})}
+%     \alternative{\text{Arg}(R)}
+%     \alternative{\text{Fun}(R)}\\
+%     \alternative{\text{Fun}\beta}
+%     \alternative{\text{Loc}\beta}
+%   \end{syntax}
 
-  \caption{Redices}
-  \label{fig:redices}
-\end{figure}
+%   \caption{Redices}
+%   \label{fig:redices}
+% \end{figure}
 
-\begin{mathparpagebreakable}
-  \infer[DoneE]{
-  e_1 \localstep e_2}
-  {L.e_1 \step{L.(e_1 \Rightarrow e_2)} L.e_2} \and
+% \begin{mathparpagebreakable}
+%   \infer[DoneE]{
+%   e_1 \localstep e_2}
+%   {L.e_1 \step{L.(e_1 \Rightarrow e_2)} L.e_2} \and
 
-  \infer[SendE]{C_1 \step{R} C_2}
-  {C_1 \overset{L_1}{\rightsquigarrow} L_2 \step{R} C_2 \overset{L_1}{\rightsquigarrow} L_2} \and
+%   \infer[SendE]{C_1 \step{R} C_2}
+%   {C_1 \overset{L_1}{\rightsquigarrow} L_2 \step{R} C_2 \overset{L_1}{\rightsquigarrow} L_2} \and
 
-  \infer[IfE]{C \xRightarrow{R\hfill{}\mathcal{B}}_c C'}
-  {L.\text{if}\; C \;\text{then}\; C_1 \;\text{else}\; C_2 \xRightarrow{L.\text{if}\;R\hfill{}\mathcal{B}}_c L.\text{if}\; C' \;\text{then}\; C_1 \;\text{else}\; C_2} \and
+%   \infer[IfE]{C \xRightarrow{R\hfill{}\mathcal{B}}_c C'}
+%   {L.\text{if}\; C \;\text{then}\; C_1 \;\text{else}\; C_2 \xRightarrow{L.\text{if}\;R\hfill{}\mathcal{B}}_c L.\text{if}\; C' \;\text{then}\; C_1 \;\text{else}\; C_2} \and
 
-  \infer[IfI]{C_1 \xRightarrow{R\hfill{}\mathcal{B} \cup \{L\}}_c C_1' \\
-    C_2 \xRightarrow{R\hfill{}\mathcal{B} \cup \{L\}}_c C_2'}
-  {L.\text{if}\; C \;\text{then}\; C_1 \;\text{else}\; C_2 \xRightarrow{R\hfill{}\mathcal{B}}_c L.\text{if}\; C \;\text{then}\; C_1' \;\text{else}\; C_2'} \and
+%   \infer[IfI]{C_1 \xRightarrow{R\hfill{}\mathcal{B} \cup \{L\}}_c C_1' \\
+%     C_2 \xRightarrow{R\hfill{}\mathcal{B} \cup \{L\}}_c C_2'}
+%   {L.\text{if}\; C \;\text{then}\; C_1 \;\text{else}\; C_2 \xRightarrow{R\hfill{}\mathcal{B}}_c L.\text{if}\; C \;\text{then}\; C_1' \;\text{else}\; C_2'} \and
 
-  \infer[IfT]{L \notin \mathcal{B}}
-  {L.\text{if}\; L.\text{true} \;\text{then}\; C_1 \;\text{else}\; C_2 \xRightarrow{L.\text{if}\;\text{true}\hfill{}\mathcal{B}}_c C_1} \and
+%   \infer[IfT]{L \notin \mathcal{B}}
+%   {L.\text{if}\; L.\text{true} \;\text{then}\; C_1 \;\text{else}\; C_2 \xRightarrow{L.\text{if}\;\text{true}\hfill{}\mathcal{B}}_c C_1} \and
 
-  \infer[IfF]{L \notin \mathcal{B}}
-  {L.\text{if}\; L.\text{false} \;\text{then}\; C_1 \;\text{else}\; C_2 \xRightarrow{L.\text{if}\;\text{false}\hfill{}\mathcal{B}}_c C_2} \and
+%   \infer[IfF]{L \notin \mathcal{B}}
+%   {L.\text{if}\; L.\text{false} \;\text{then}\; C_1 \;\text{else}\; C_2 \xRightarrow{L.\text{if}\;\text{false}\hfill{}\mathcal{B}}_c C_2} \and
 
-  \infer[SyncI]{C_1 \xRightarrow{R\hfill{}\mathcal{B} \cup \{L_1, L_2\}}_c C_2}
-  {L_1[d] \rightsquigarrow L_2; C_1 \xRightarrow{R\hfill{}\mathcal{B}}_c L_1[d] \rightsquigarrow L_2; C_2} \and
+%   \infer[SyncI]{C_1 \xRightarrow{R\hfill{}\mathcal{B} \cup \{L_1, L_2\}}_c C_2}
+%   {L_1[d] \rightsquigarrow L_2; C_1 \xRightarrow{R\hfill{}\mathcal{B}}_c L_1[d] \rightsquigarrow L_2; C_2} \and
 
-  \infer[Sync]{L_1, L_2 \notin \mathcal{B}}
-  {L_1[d] \rightsquigarrow L_2; C \xRightarrow{\text{Sync}\hfill{}\mathcal{B}}_c C} \and
+%   \infer[Sync]{L_1, L_2 \notin \mathcal{B}}
+%   {L_1[d] \rightsquigarrow L_2; C \xRightarrow{\text{Sync}\hfill{}\mathcal{B}}_c C} \and
 
-  \infer[DefI]{C_1 \xRightarrow{R\hfill{}\mathcal{B}}_c C_1'}
-  {\text{let}\; x := C_1 \;\text{in}\; C_2 \xRightarrow{\text{Arg}(R)\hfill{}\mathcal{B}}_c \text{let}\; x := C_1' \;\text{in}\; C_2} \and
+%   \infer[DefI]{C_1 \xRightarrow{R\hfill{}\mathcal{B}}_c C_1'}
+%   {\text{let}\; x := C_1 \;\text{in}\; C_2 \xRightarrow{\text{Arg}(R)\hfill{}\mathcal{B}}_c \text{let}\; x := C_1' \;\text{in}\; C_2} \and
 
-  \infer[Def]{\text{Value}(V)}
-  {\text{let}\; x := V \;\text{in}\; C \xRightarrow{\text{let}\; x := (V \;\text{Value})\hfill{}\mathcal{B}}_c C[x \mapsto V]} \and
+%   \infer[Def]{\text{Value}(V)}
+%   {\text{let}\; x := V \;\text{in}\; C \xRightarrow{\text{let}\; x := (V \;\text{Value})\hfill{}\mathcal{B}}_c C[x \mapsto V]} \and
 
-  \infer[AppFun]{C_1 \xRightarrow{R\hfill{}\mathcal{B}}_c C_1'}
-  {C_1 \; C_2 \xRightarrow{\text{Fun}(R)\hfill{}\mathcal{B}}_c C_1' \; C_2} \and
+%   \infer[AppFun]{C_1 \xRightarrow{R\hfill{}\mathcal{B}}_c C_1'}
+%   {C_1 \; C_2 \xRightarrow{\text{Fun}(R)\hfill{}\mathcal{B}}_c C_1' \; C_2} \and
 
-  \infer[AppArg]{C_2 \xRightarrow{R\hfill{}\mathcal{B}}_c C_2'}
-  {C_1 \; C_2 \xRightarrow{\text{Arg}(R)\hfill{}\mathcal{B}}_c C_1 \; C_2'} \and
+%   \infer[AppArg]{C_2 \xRightarrow{R\hfill{}\mathcal{B}}_c C_2'}
+%   {C_1 \; C_2 \xRightarrow{\text{Arg}(R)\hfill{}\mathcal{B}}_c C_1 \; C_2'} \and
 
-  \infer[App]{\text{Value}(V)}
-  {(\text{fun}\; F(x) := C) \; V \xRightarrow{\text{Fun}\beta\hfill{}\emptyset}_c C[x \mapsto V, F \mapsto \text{fun}\; F(x) := C]} \and
+%   \infer[App]{\text{Value}(V)}
+%   {(\text{fun}\; F(x) := C) \; V \xRightarrow{\text{Fun}\beta\hfill{}\emptyset}_c C[x \mapsto V, F \mapsto \text{fun}\; F(x) := C]} \and
 
-  \infer[LocApp]{}
-  {(\Lambda x.C) \; L \xRightarrow{\text{Loc}\beta\hfill{}\emptyset}_c C[x \mapsto L]} \and
-\end{mathparpagebreakable}
+%   \infer[LocApp]{}
+%   {(\Lambda x.C) \; L \xRightarrow{\text{Loc}\beta\hfill{}\emptyset}_c C[x \mapsto L]} \and
+% \end{mathparpagebreakable}
 
 %%% Local Variables:
 %%% mode: latex
