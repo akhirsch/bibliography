@@ -1,0 +1,108 @@
+\subsection{Proof of Theorem \ref{thm:relative-pres}}
+We proceed by structural induction on $C_1 \step{R} C_2$.
+\begin{description}
+  \item[\textsc{DoneE}]
+  By \textsc{Done}, we have that $\localtyped{\proj{\Gamma}{\Locations}}{\proj{\Sigma}{_L}}{e_1}{t_e}$.
+  By \textsc{Preservation} of the local type system, $\localtyped{\proj{\Gamma}{\Locations}}{\proj{\Sigma}{_L}}{e_2}{t_e}$.
+  Therefore $\chortyped{\Gamma}{\Delta}{\Sigma}{L.e_2}{t_e @ L}$.
+
+  \item[\textsc{AppFun}]
+  By \textsc{App}, we have that $\chortyped{\Gamma}{\Delta}{\Sigma}{C_1}{\tau_1 \to \tau_2}$.
+  By induction, $\chortyped{\Gamma}{\Delta}{\Sigma}{C_1'}{\tau_1 \to \tau_2}$.
+  Therefore $\chortyped{\Gamma}{\Delta}{\Sigma}{C_1'~C_2}{\tau_2}$.
+
+  \item[\textsc{AppArg}]
+  By \textsc{App}, $\chortyped{\Gamma}{\Delta}{\Sigma}{C_2}{\tau_1}$.
+  By induction, $\chortyped{\Gamma}{\Delta}{\Sigma}{C_2'}{\tau_1}$.
+  Therefore $\chortyped{\Gamma}{\Delta}{\Sigma}{C_1~C_2'}{\tau_2}$.
+
+  \item[\textsc{App}]
+  By \textsc{App}, $\chortyped{\Gamma}{\Delta, X \ty \tau_1}{\Sigma}{C}{\tau_2}$ and $\chortyped{\Gamma}{\Delta}{\Sigma}{V}{\tau_1}$.
+  Therefore by \textsc{Substitution}, $\chortyped{\Gamma}{\Delta}{\Sigma}{\subst{C}{X}{V}}{\tau_2}$.
+
+  \item[\textsc{Rec}]
+  By \textsc{Rec}, $\chortyped{\Gamma}{\Delta, X \ty \tau}{\Sigma}{C}{\tau}$.
+  Therefore by \textsc{Substitution}, $\chortyped{\Gamma}{\Delta}{\Sigma}{\subst{C}{X}{\mu X \ty \tau.C}}{\tau}$.
+
+  \item[\textsc{SendE}]
+  By \textsc{Send}, $\chortyped{\Gamma}{\Delta}{\Sigma}{C}{t_e @ L}$.
+  By induction, $\chortyped{\Gamma}{\Delta}{\Sigma}{C'}{t_e @ L}$.
+  Therefore $\chortyped{\Gamma}{\Delta}{\Sigma}{C' \ChorSend[L_1] L_2}{\tau}$.
+
+  \item[\textsc{SendV}]
+  By \textsc{Send} and \textsc{Done}, $\localtyped{\proj{\Gamma}{\Locations}}{\proj{\Sigma}{_{L_1}}}{v}{t_e}$.
+  Therefore $\chortyped{\Gamma}{\Delta}{\Sigma}{L_2.v}{t_e @ L_2}$.
+
+  \item[\textsc{SyncI}]
+  By \textsc{Sync}, $\chortyped{\Gamma}{\Delta}{\Sigma}{C}{\tau}$.
+  By induction, $\chortyped{\Gamma}{\Delta}{\Sigma}{C'}{\tau}$.
+  Therefore $\chortyped{\Gamma}{\Delta}{\Sigma}{\syncs{L_1}{d}{L_2} \seq C'}{\tau}$.
+
+  \item[\textsc{Sync}]
+  By \textsc{Sync}, $\chortyped{\Gamma}{\Delta}{\Sigma}{C}{\tau}$ as desired.
+
+  \item[\textsc{IfE}]
+  By \textsc{If}, $\chortyped{\Gamma}{\Delta}{\Sigma}{C}{\Bool @ L}$.
+  By induction, $\chortyped{\Gamma}{\Delta}{\Sigma}{C'}{\Bool @ L}$.
+  Therefore $\chortyped{\Gamma}{\Delta}{\Sigma}{\ITE[L]{C'}{C_1}{C_2}}{\tau}$.
+
+  \item[\textsc{IfI}]
+  By \textsc{If}, $\chortyped{\Gamma}{\Delta}{\Sigma}{C_1}{\tau}$ and $\chortyped{\Gamma}{\Delta}{\Sigma}{C_2}{\tau}$.
+  By induction, $\chortyped{\Gamma}{\Delta}{\Sigma}{C_1'}{\tau}$ and $\chortyped{\Gamma}{\Delta}{\Sigma}{C_2'}{\tau}$.
+  Therefore $\chortyped{\Gamma}{\Delta}{\Sigma}{\ITE[L]{C}{C_1'}{C_2'}}{\tau}$.
+
+  \item[\textsc{IfT}]
+  By \textsc{If}, $\chortyped{\Gamma}{\Delta}{\Sigma}{C_1}{\tau}$, as desired.
+
+  \item[\textsc{IfF}]
+  By \textsc{If}, $\chortyped{\Gamma}{\Delta}{\Sigma}{C_2}{\tau}$, as desired.
+
+  \item[\textsc{TAppFun}]
+  By \textsc{TApp}, $\chortyped{\Gamma}{\Delta}{\Sigma}{C}{\forall \alpha \knd \kappa.\tau}$.
+  By induction, $\chortyped{\Gamma}{\Delta}{\Sigma}{C'}{\forall \alpha \knd \kappa.\tau}$.
+  Therefore $\chortyped{\Gamma}{\Delta}{\Sigma}{C'~t}{\subst{\tau}{\alpha}{t}}$.
+
+  \item[\textsc{TApp}]
+  By \textsc{TApp}, $\chortyped{\Gamma, \alpha \knd \kappa}{\Delta}{\Sigma}{C}{\tau}$.
+  Therefore by \textsc{Type Substitution}, $\chortyped{\Gamma}{\Delta}{\Sigma}{\subst{C}{\alpha}{t}}{\subst{\tau}{\alpha}{t}}$.
+
+  \item[\textsc{LocalLetArg}]
+  By \textsc{DefLocal}, $\chortyped{\Gamma}{\Delta}{\Sigma}{C_1}{t_e @ L}$.
+  By induction, $\chortyped{\Gamma}{\Delta}{\Sigma}{C_1'}{t_e @ L}$.
+  Therefore $\chortyped{\Gamma}{\Delta}{\Sigma}{\LetIn{L.x \ty t_e}{C_1'}{C_2}}{\tau}$.
+
+  \item[\textsc{LocalLetI}]
+  By \textsc{DefLocal}, $\chortyped{\Gamma}{\Delta, L.x \ty t_e}{\Sigma}{C_2}{\tau}$.
+  By induction, $\chortyped{\Gamma}{\Delta}{\Sigma}{C_2'}{\tau}$.
+  Therefore $\chortyped{\Gamma}{\Delta}{\Sigma}{\LetIn{L.x \ty t_e}{C_1}{C_2'}}{\tau}$.
+
+  \item[\textsc{LocalLet}]
+  By \textsc{DefLocal} and \textsc{Done}, $\localtyped{\proj{\Gamma}{\Locations}}{\proj{\Sigma}{_L}}{v}{t_e}$ and $\chortyped{\Gamma}{\Delta, L.x \ty t_e}{\Sigma}{C}{\tau}$.
+  Therefore by \textsc{Local Substitution}, $\chortyped{\Gamma}{\Delta}{\Sigma}{\subst{C}{L.x}{v}}{\tau}$.
+
+  \item[\textsc{TellLetArg}]
+  By \textsc{TellLet}, $\chortyped{\Gamma}{\Delta}{\Sigma}{C_1}{\say{\kappa}}$.
+  By induction, $\chortyped{\Gamma}{\Delta}{\Sigma}{C_1'}{\say{\kappa}}$.
+  Therefore $\chortyped{\Gamma}{\Delta}{\Sigma}{\LetTellIn{\alpha \knd \kappa}{\ell}{C_1'}{\rho}{C_2}}{\tau}$.
+
+  \item[\textsc{TellLetI}]
+  By \textsc{TellLet}, $\chortyped{\Gamma, \alpha \knd \kappa}{\Delta}{\Sigma}{C_2}{\tau}$.
+  By induction, $\chortyped{\Gamma, \alpha \knd \kappa}{\Delta}{\Sigma}{C_2'}{\tau}$.
+  Therefore $\chortyped{\Gamma}{\Delta}{\Sigma}{\LetTellIn{\alpha \knd *_\ell}{\ell}{C_1}{\rho}{C_2'}}{\tau}$.
+
+  \item[\textsc{TellLetLoc}]
+  By \textsc{TellLet}, $\localemptyped{v}{\Loc @ L}$ and $\chortyped{\Gamma, \alpha \knd *_\ell \kappa}{\Delta}{\Sigma}{C}{\tau}$.
+  By \textsc{Location Inversion}, there is a $L' \in \Locations$ such that $v = \say{L'}$.
+  Therefore by \textsc{Type Substitution} $\chortyped{\Gamma}{\Delta}{\Sigma}{\subst{C}{\alpha}{L'}}{\tau}$.
+
+  \item[\textsc{TellLetTy}]
+  By \textsc{TellLet}, $\localemptyped{v}{\Typ @ L}$ and $\chortyped{\Gamma, \alpha \knd *_e \kappa}{\Delta}{\Sigma}{C}{\tau}$.
+  By \textsc{Type Inversion}, there is a $\localempkinded{t_e}$ such that $v = \say{t_e}$.
+  Therefore by \textsc{Type Substitution} $\chortyped{\Gamma}{\Delta}{\Sigma}{\subst{C}{\alpha}{t_e}}{\tau}$.
+\end{description}
+
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "conference"
+%%% End:

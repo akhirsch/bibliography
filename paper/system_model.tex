@@ -144,7 +144,7 @@ Features present in the choreographic kinding and type systems, such as polymorp
 \label{sec:sound-type-systems}
 We additionally require the following \emph{soundness} assumptions on the local type system:
 \begin{itemize}
-	\item (\textsc{Preservation}) If $e_1 \localstep e_2$ and $\localtyped{\Gamma}{\Sigma}{e_1}{t}$, then $\localtyped{\Gamma_e}{\Sigma_e}{e_2}{t}$.
+	\item (\textsc{Preservation}) If $e_1 \localstep e_2$ and $\localtyped{\Gamma}{\Sigma}{e_1}{t}$, then $\localtyped{\Gamma}{\Sigma}{e_2}{t}$.
 
 	\item (\textsc{Progress}) If $\localemptyped{e_1}{t}$, then either $e_1$ is a value or there is an $e_2$ such that $e_1 \localstep e_2$.
     \ethan{I think saying ``$e_1$ is a closed expression'' is redundant. Doesn't $\localemptyped{e_1}{t}$ imply that?}
@@ -152,7 +152,7 @@ We additionally require the following \emph{soundness} assumptions on the local 
 
 	\item (\textsc{Boolean Invertibility}) The type \Bool is invertible for values: if $v$ is a value and $\localemptyped{v}{\Bool}$ then either $v = \True$ or $v = \False$.
 
-	\item (\textsc{Location Name Invertibility}) The type \Loc is invertible for values: if $v$ is a value and $\localemptyped{v}{\Loc}$ then $v \in \Locations$.
+	\item (\textsc{Location Invertibility}) The type \Loc is invertible for values: if $v$ is a value and $\localemptyped{v}{\Loc}$ then $v \in \Locations$.
     \ethan{Can we simplify this to say something like: if $\localemptyped{v}{\Loc}$, then $v \in \Locations$?
       It's a slightly less precise version of what you have, by automatically using locLit and locLit$^{-1}$ to map between $\dom(\text{locLit})$ and closed values of type $\Loc$ implicitly as necessary.}
   \ashley{Yes, this should be more readable and is more technical than is necessary. I am not sure whether the quotes add more clarity to the type invertibility so I have both versions here for now}

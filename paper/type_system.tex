@@ -125,7 +125,15 @@ Specifically, while the subexpression $C_2$ may use the newly bound location, it
 \ethan{Might want to move this higher up since it's our major innovation.}
 \ashley{If possible I want to work in talking about existential types for one sentence here as that's where the idea came from}
 
-\todo Statement of important metatheory theorems
+\begin{thm}[Relative Preservation]
+  \label{thm:relative-pres}
+  If the local type system enjoys \textsc{Preservation}, then for every choreography $C_1$ such that $\chortyped{\Gamma}{\Delta}{\Sigma}{C_1}{\tau}$ and $C_1 \step{R} C_2$, we have that $\chortyped{\Gamma}{\Delta}{\Sigma}{C_2}{\tau}$.
+\end{thm}
+
+\begin{thm}[Relative Progress]
+  \label{thm:relative-prog}
+  If the local type system enjoys \textsc{Boolean Invertability}, \textsc{Location Invertability}, \textsc{Type Invertability}, and \textsc{Progress}, then for every choreography $C_1$ such that $\choremptyped{C_1}{\tau}$, either $C_1$ is a choreography value or there is some $R$ and $C_2$ such that $C_1 \step{R} C_2$.
+\end{thm}
 
 %%% Local Variables:
 %%% mode: latex

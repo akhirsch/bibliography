@@ -49,7 +49,7 @@
   {C_1~C_2 \step{\RArg{R}} C_1~C_2'} \and
 
   \infer[App]{\text{Value}(V)}
-  {(\lambda X \ty \tau.C)~V \step{\RApp} \subst{C}{X}{V}} \and
+  {(\Fun{X \ty \tau}{C})~V \step{\RApp} \subst{C}{X}{V}} \and
 
   \infer[Rec]{~}
   {\mu X \ty \tau.C \step{\RRec} \subst{C}{X}{\mu X \ty \tau.C}} \and
@@ -83,6 +83,12 @@
   \infer[IfF]{~}
   {\ITE[L]{L.\False}{C_1}{C_2} \step{\RIfFalse{L}} C_2} \and
 
+  \infer[TAppFun]{C \step{R} C'}
+  {C~t \step{\RFun{R}} C'~t} \and
+
+  \infer[TApp]{~}
+  {(\TFun{\alpha \knd \kappa}{C})~t \step{\RTApp} \subst{C}{\alpha}{t}} \and
+
   \infer[LocalLetArg]{C_1 \step{R} C_1'}
   {\LetIn{L.x \ty t_e}{C_1}{C_2} \step{\RArg{R}} \LetIn{L.x \ty t_e}{C_1'}{C_2}} \and
 
@@ -101,8 +107,9 @@
     \rho \cap \rloc{R} = \varnothing}
   {\LetTellIn{\alpha \knd \kappa}{L}{C_1}{\rho}{C_2} \step{R} \LetTellIn{\alpha \knd \kappa}{L}{C_1}{\rho}{C_2'}} \and
 
-  \infer[TellLet]{\text{Value}(v)}
-  {\LetTellIn{\alpha \knd \kappa}{L}{\say{t}}{\rho}{C} \step{\RTellLet{L}{t}{\rho}} \subst{C}{\alpha}{t}} \and
+  \infer[TellLet]{\text{Value}(v) \\
+  v = \say{t}}
+  {\LetTellIn{\alpha \knd \kappa}{L}{v}{\rho}{C} \step{\RTellLet{L}{t}{\rho}} \subst{C}{\alpha}{t}} \and
 \end{mathparpagebreakable}
 
 % \begin{figure}[h]
