@@ -57,7 +57,7 @@ Although type variables are not bound by any type constructors of this local lan
 \label{sec:type-system}
 In a similar manner to the kinding system, we use the type system of the local language to build the choreographic typing system.
 
-Typing judgments for our language are of the form $\chortyped{\Gamma}{\Delta}{\Sigma}{C}{t}$, where $\Gamma$ is a choreographic kinding context, $\Delta$ is a list of choreographic typing ascriptions $X \ty t$, $\Sigma$ is a list of local variable typing ascriptions $\ell.x \ty t_e$, $C$ is a choreography, and $t$ is a choreographic type.
+Typing judgments for our language are of the form $\chortyped{\Gamma}{\Delta}{\Sigma}{C}{\tau}$, where $\Gamma$ is a choreographic kinding context, $\Delta$ is a list of choreographic typing ascriptions $X \ty \tau$, $\Sigma$ is a list of local variable typing ascriptions $\ell.x \ty t_e$, $C$ is a choreography, and $\tau$ is a choreographic type.
 
 Where the choreographic context $\Delta$ handles variables bound at the choreographic level, for instance via a lambda-abstraction $\Fun{X\ty\tau}{C}$, the local context $\Sigma$ handles variables bound to a specific location via the local-let binding $\LetIn{\ell.x \ty t_e}{C_1}{C_2}$.
 This allows choreographic expressions of the form $t_e @ \ell$ to be used within local computations at $\ell$, and enforces that each location can only perform local computations on data that they have access to.

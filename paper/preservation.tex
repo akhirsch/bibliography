@@ -73,7 +73,7 @@ We proceed by structural induction on $C_1 \step{R} C_2$.
 
   \item[\textsc{LocalLetI}]
   By \textsc{DefLocal}, $\chortyped{\Gamma}{\Delta, L.x \ty t_e}{\Sigma}{C_2}{\tau}$.
-  By induction, $\chortyped{\Gamma}{\Delta}{\Sigma}{C_2'}{\tau}$.
+  By induction, $\chortyped{\Gamma}{\Delta, L.x \ty t_e}{\Sigma}{C_2'}{\tau}$.
   Therefore $\chortyped{\Gamma}{\Delta}{\Sigma}{\LetIn{L.x \ty t_e}{C_1}{C_2'}}{\tau}$.
 
   \item[\textsc{LocalLet}]

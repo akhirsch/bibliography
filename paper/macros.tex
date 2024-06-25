@@ -128,6 +128,8 @@
 \newcommand{\CtrlIn}{\FontCtrl{in}}
 \newcommand{\CtrlLeft}{\FontCtrl{L}}
 \newcommand{\CtrlRight}{\FontCtrl{R}}
+\newcommand{\CtrlFunN}{\CtrlCol{\lambda}}
+\newcommand{\CtrlTFunN}{\CtrlCol{\Lambda}}
 
 \newcommand{\CtrlLetIn}[3]{\FontCtrl{let}~{#1} \CtrlDef {#2}~\FontCtrl{in}~{#3}}
 \newcommand{\CtrlITE}[3]{\FontCtrl{if}~{#1}~\FontCtrl{then}~{#2}~\FontCtrl{else}~{#3}}
@@ -142,12 +144,15 @@
 \newcommand{\LetRecvIn}[3]{\FontCtrl{receive}~{#1}~\FontCtrl{from}~{#2}~\CtrlIn~{#3}}
 \newcommand{\LetSendIn}[4]{\FontCtrl{send}~{#1}~\CtrlDef~{#2}~\FontCtrl{to}~{#3}~\CtrlIn~{#4}}
 \newcommand{\AmI}[3]{\FontCtrl{AmI}~{#1}~\FontCtrl{then}~{#2}~\FontCtrl{else}~{#3}}
-\newcommand{\CtrlSeq}[2]{{#1}\seq{#2}}
+\newcommand{\CtrlSeq}[2]{{#1}~\CtrlCol{\seq}~{#2}}
 \newcommand{\IAm}[1]{\text{IAm}~{#1}}
 
 \newcommand{\LocalLangFont}[1]{\programfont{#1}}
 \newcommand{\True}{\LocalLangFont{true}}
 \newcommand{\False}{\LocalLangFont{false}}
+\newcommand{\CtrlFun}[2]{\CtrlFunN{#1}\ldotp {#2}}
+\newcommand{\CtrlRec}[2]{\CtrlCol{\mu}{#1}\ldotp {#2}}
+\newcommand{\CtrlTFun}[2]{\CtrlTFunN{#1}\ldotp {#2}}
 
 %% Example Names
 \newcommand{\LocFont}[1]{\programfont{#1}}
@@ -221,7 +226,6 @@
 \newcommand\localempkinded[1]{\ensuremath{\eproves #1}}
 \newcommand\localemptyped[2]{\ensuremath{\eproves #1 : #2}}
 \newcommand\localctxwf[2]{\ensuremath{#1 \eproves #2}}
-\newcommand\ctrlapp[2]{\ensuremath{#1 \; #2}}
 
 \newcommand\chorkinded[3]{\ensuremath{#1 \proves #2 :: #3}}
 \newcommand\chortyped[5]{\ensuremath{#1;#2;#3 \proves #4 : #5}}
