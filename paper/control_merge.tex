@@ -1,0 +1,51 @@
+\subsection{Control Program Merging}
+\label{sec:control-merge-def}
+
+We show the patterns for which $E_1 \ctrlmerge E_2$ is defined.
+If there is no matching pattern below, then $E_1 \ctrlmerge E_2$ is undefined.
+\begin{mathparpagebreakable}
+  \CtrlNone \maybectrlmerge \question E_2 \defeq E_2
+  \and
+  \question E_1 \maybectrlmerge \CtrlNone \defeq \question E_1
+  \and
+  E_1 \maybectrlmerge E_2 \defeq E_1 \ctrlmerge E_2
+  \and
+  X \ctrlmerge X \defeq X
+  \and
+  \CtrlFail \ctrlmerge \CtrlFail \defeq \CtrlFail
+  \and
+  \Ret{e} \ctrlmerge \Ret{e} \defeq \Ret{e}
+  \and
+  (\CtrlSeq{E_{1,1}}{E_{1,2}}) \ctrlmerge (\CtrlSeq{E_{2,1}}{E_{2,2}}) \defeq \CtrlSeq{E_{1,1} \ctrlmerge E_{2,1}}{E_{1,2} \ctrlmerge E_{2,2}}
+  \and
+  (\CtrlFun{X}{E_1}) \ctrlmerge (\CtrlFun{X}{E_2}) \defeq \CtrlFun{X}{E_1 \ctrlmerge E_2}
+  \and
+  (\CtrlRec{X}{E_1}) \ctrlmerge (\CtrlRec{X}{E_2}) \defeq \CtrlRec{X}{E_1 \ctrlmerge E_2}
+  \and
+  (E_{1,1}~E_{1,2}) \ctrlmerge (E_{2,1}~E_{2,2}) \defeq (E_{1,1} \ctrlmerge E_{2,1})~(E_{1,2} \ctrlmerge E_{2,2})
+  \and
+  (\SendTo{E_1}{\ell}) \ctrlmerge (\SendTo{E_2}{\ell}) \defeq \SendTo{E_1 \ctrlmerge E_2}{\ell}
+  \and
+  (\RecvFrom{\ell}) \ctrlmerge (\RecvFrom{\ell}) \defeq \RecvFrom{\ell}
+  \and
+  (\ChooseFor{d}{\ell}{E_1}) \ctrlmerge (\ChooseFor{d}{\ell}{E_2}) \defeq \ChooseFor{d}{\ell}{E_1 \ctrlmerge E_2}
+  \and
+  (\AllowChoice{\ell}{\question E_{1,1}}{\question E_{1,2}}) \ctrlmerge (\AllowChoice{\ell}{\question E_{2,1}}{\question E_{2,2}}) \defeq \AllowChoice{\ell}{\question E_{1,1} \maybectrlmerge \question E_{2,1}}{\question E_{1,2} \maybectrlmerge \question E_{2,2}}
+  \and
+  (\CtrlITE{E_{1,1}}{E_{1,2}}{E_{1,3}}) \ctrlmerge (\CtrlITE{E_{2,1}}{E_{2,2}}{E_{2,3}}) \defeq \CtrlITE{E_{1,1} \ctrlmerge E_{2,1}}{E_{1,2} \ctrlmerge E_{2,2}}{E_{1,3} \ctrlmerge E_{2,3}}
+  \and
+  (\CtrlTFun{\alpha}{E_1}) \ctrlmerge (\CtrlTFun{\alpha}{E_2}) \defeq \CtrlTFun{\alpha}{E_1 \ctrlmerge E_2}
+  \and
+  (E_1~t) \ctrlmerge (E_1~t) \defeq (E_1 \ctrlmerge E_2)~t
+  \and
+  (\CtrlLetIn{\Ret{x}}{E_{1,1}}{E_{1,2}}) \ctrlmerge (\CtrlLetIn{\Ret{x}}{E_{2,1}}{E_{2,2}}) \defeq \CtrlLetIn{\Ret{x}}{E_{1,1} \ctrlmerge E_{2,1}}{E_{1,2} \ctrlmerge E_{2,2}}
+  \and
+  (\LetSendIn{\alpha \knd \kappa}{E_{1,1}}{\rho}{E_{1,2}}) \ctrlmerge (\LetSendIn{\alpha \knd \kappa}{E_{2,1}}{\rho}{E_{2,2}}) \defeq \LetSendIn{\alpha \knd \kappa}{E_{1,1} \ctrlmerge E_{2,1}}{\rho}{E_{1,2} \ctrlmerge E_{2,2}}
+  \and
+  (\LetRecvIn{\alpha \knd \kappa}{\ell}{E_1}) \ctrlmerge (\LetRecvIn{\alpha \knd \kappa}{\ell}{E_2}) \defeq \LetRecvIn{\alpha \knd \kappa}{\ell}{E_1 \ctrlmerge E_2}
+\end{mathparpagebreakable}
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "conference"
+%%% End:

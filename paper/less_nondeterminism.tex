@@ -43,9 +43,9 @@
   \infer[]{E_1 \lessnd E_2}
   {\ChooseFor{d}{\ell}{E_1} \lessnd \ChooseFor{d}{\ell}{E_2}} \and
 
-  \infer[]{?E_{1,1} \lessnd~ ?E_{2,1} \\
-    ?E_{2,1} \lessnd~ ?E_{2,2}}
-  {\AllowChoice{\ell}{?E_{1,1}}{?E_{2,1}} \lessnd \AllowChoice{\ell}{?E_{2,1}}{?E_{2,2}}} \and
+  \infer[]{\question E_{1,1} \lessnd \question E_{2,1} \\
+    \question E_{2,1} \lessnd \question E_{2,2}}
+  {\AllowChoice{\ell}{\question E_{1,1}}{\question E_{2,1}} \lessnd \AllowChoice{\ell}{\question E_{2,1}}{\question E_{2,2}}} \and
 
   \infer[]{E_{1,1} \lessnd E_{2,1} \\
     E_{2,1} \lessnd E_{2,2} \\
