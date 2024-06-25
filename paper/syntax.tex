@@ -46,30 +46,36 @@ The condition that $\ell.y, \ell'.y \notin \fv{C_2}$ in the first clause of the 
 
 \begin{figure}[h]
   \begin{syntax}
-  \abstractCategory[Local Expressions]{e}
-  \abstractCategory[Local Variables]{x, y, \ldots}
-  \\
+    \abstractCategory[Local Expressions]{e}
+    \abstractCategory[Local Values]{v}
+    \abstractCategory[Local Variables]{x, y, \ldots}
+    \\
 
-  \category[Synchronization Labels]{d}
-  \alternative{\Left}
-  \alternative{\Right}
+    \category[Synchronization Labels]{d}
+    \alternative{\Left}
+    \alternative{\Right}
 
-  \abstractCategory[Choreographic Variables]{X, Y, \ldots}
+    \abstractCategory[Choreographic Variables]{X, Y, \ldots}
 
-  \category[Choreographies]{C}
-  \alternative{X}
-  \alternative{\ell.e}
-  \alternative{\Fun{X \ty \tau}{C}}
-  \alternative{\Rec{X \ty \tau}{C}}
-  \alternative{C_1~C_2}\\
-  \alternative{C \ChorSend[\ell_1] \ell_2}
-  \alternative{\syncs{\ell_1}{d}{\ell_2} \seq C}\\
-  \alternative{\ITE{C}{C_1}{C_2}}\\
-  \alternative{\TFun{\alpha \knd \kappa}{C}}
-  \alternative{C~t}\\
-  \alternative{\LetIn{\ell.x \ty t_e}{C_1}{C_2}}\\
-  \alternative{\LetTellIn{\alpha \knd *_\ell}{\ell}{C_1}{\rho}{C_2}}\\
-  \alternative{\LetTellIn{\alpha \knd *_e}{\ell}{C_1}{\rho}{C_2}}
+    \category[Choreographies]{C}
+    \alternative{X}
+    \alternative{\ell.e}
+    \alternative{\Fun{X \ty \tau}{C}}
+    \alternative{\Rec{X \ty \tau}{C}}
+    \alternative{C_1~C_2}\\
+    \alternative{C \ChorSend[\ell_1] \ell_2}
+    \alternative{\syncs{\ell_1}{d}{\ell_2} \seq C}\\
+    \alternative{\ITE{C}{C_1}{C_2}}\\
+    \alternative{\TFun{\alpha \knd \kappa}{C}}
+    \alternative{C~t}\\
+    \alternative{\LetIn{\ell.x \ty t_e}{C_1}{C_2}}\\
+    \alternative{\LetTellIn{\alpha \knd *_\ell}{\ell}{C_1}{\rho}{C_2}}\\
+    \alternative{\LetTellIn{\alpha \knd *_e}{\ell}{C_1}{\rho}{C_2}}
+
+    \category[Choreography Values]{V}
+    \alternative{L.v}
+    \alternative{\Fun{X \ty \tau}{C}}
+    \alternative{\TFun{\alpha \knd \kappa}{C}}
   \end{syntax}
 
   \caption{Syntax of Choreographies}

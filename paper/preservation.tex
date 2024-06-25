@@ -3,7 +3,7 @@ We proceed by structural induction on $C_1 \step{R} C_2$.
 \begin{description}
   \item[\textsc{DoneE}]
   By \textsc{Done}, we have that $\localtyped{\proj{\Gamma}{\Locations}}{\proj{\Sigma}{_L}}{e_1}{t_e}$.
-  By \textsc{Preservation} of the local type system, $\localtyped{\proj{\Gamma}{\Locations}}{\proj{\Sigma}{_L}}{e_2}{t_e}$.
+  By \textsc{Local Preservation}, $\localtyped{\proj{\Gamma}{\Locations}}{\proj{\Sigma}{_L}}{e_2}{t_e}$.
   Therefore $\chortyped{\Gamma}{\Delta}{\Sigma}{L.e_2}{t_e @ L}$.
 
   \item[\textsc{AppFun}]
