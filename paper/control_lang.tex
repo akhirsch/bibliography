@@ -23,7 +23,6 @@
     \alternative{E}
 
     \category[Systems]{\Pi}
-    \alternative{L_1 \triangleright E_1 \;\|\; \ldots \;\|\; L_n \triangleright E_n}
   \end{syntax}
 
   \caption{Control Expressions}
@@ -33,10 +32,12 @@
 \paragraph{Operational Semantics}
 \label{sec:control-lang-semantics}
 
+\todo Labeled operational semantics $E_1 \ctrlstep[l] E_2$, \emph{parameterized at a specific location} $L$ (different from Pirouette).
+This isn't essential, just makes things easier for label merging and AmI.
 
 \begin{syntax}
-\category[Label]{l}
-\alternative{\iota} \alternative{V \sendsto L} \alternative{L;V \sendsto} \alternative{d \sendsto L} \alternative{L;d \sendsto} \alternative{t \sendsto \rho} \alternative{L;t \sendsto}
+  \category[Label]{l}
+  \alternative{\iota} \alternative{v \sendsto L} \alternative{L;v \sendsto} \alternative{d \sendsto L} \alternative{L;d \sendsto} \alternative{t \sendsto \rho} \alternative{L;t \sendsto}
 \end{syntax}
 
 \begin{mathparpagebreakable}
@@ -57,34 +58,34 @@
     {V~E_2 \ctrlstep[l] V~E_2'} \and
 
     \infer[App]{\text{Value}(V)}
-    {(\CtrlFun{X}{E})~V \ctrlstep[\iota] \subst{E}{X}{V}} \and
+    {(\CtrlFun{X}{E})~V \ctrlstep[\iotasync] \subst{E}{X}{V}} \and
 
     \infer[Rec]{~}
-    {\mu X.E \ctrlstep[\iota] \subst{E}{X}{\mu X.E}} \and
+    {\mu X.E \ctrlstep[\iotasync] \subst{E}{X}{\mu X.E}} \and
    
     \infer[Send]{E \ctrlstep[l] E'}
     {\SendTo{E}{L'} \ctrlstep[l] \SendTo{E'}{L'}} \and
 
-    \infer[SendV]{\text{Value}(V)}
-    {\SendTo{V}{L'} \ctrlstep[V \sendsto L] \CtrlFail} \and
+    \infer[SendV]{\text{Value}(v)}
+    {\SendTo{\Ret{v}}{L'} \ctrlstep[v \sendsto L'] \CtrlFail} \and
 
-    \infer[Recv]{\text{Value}(V)}
-    {\RecvFrom{L'} \ctrlstep[L';V \sendsto] V} \and
+    \infer[Recv]{\text{Value}(v)}
+    {\RecvFrom{L'} \ctrlstep[L';v \sendsto] \Ret{v}} \and
 
     \infer[Choose]{~}
     {\ChooseFor{d}{L'}{E} \ctrlstep[d \sendsto L'] E} \and
 
     \infer[AllowChoiceL]{~}
-    {\AllowChoice{L'}{E_1}{E_2} \ctrlstep[L';\Left \sendsto] E_1} \and
+    {\AllowChoice{L'}{E_1}{E_2} \ctrlstep[\Left \sendsto L] E_1} \and
 
     \infer[AllowChoiceR]{~}
-    {\AllowChoice{L'}{E_1}{E_2} \ctrlstep[L';\Right \sendsto] E_2} \and
+    {\AllowChoice{L'}{E_1}{E_2} \ctrlstep[\Right \sendsto L] E_2} \and
 
     \infer[AppTyFun]{E \ctrlstep[l] E'}
     {E~t \ctrlstep[l] E'~t} \and
 
     \infer[AppTy]{~}
-    {(\CtrlFun{\alpha}{E})~t \ctrlstep[\iota] \subst{E}{\alpha}{t}} \and
+    {(\CtrlFun{\alpha}{E})~t \ctrlstep[\iotasync] \subst{E}{\alpha}{t}} \and
 
     \infer[LetRet]{E_1 \ctrlstep[l] E_1'}
     {\CtrlLetIn{\Ret{x}}{E_1}{E_2} \ctrlstep[l] \CtrlLetIn{\Ret{x}}{E_1'}{E_2}} \and
@@ -96,10 +97,10 @@
     {\LetSendIn{\alpha \knd \kappa}{E_1}{\rho}{E_2} \ctrlstep[l] \LetSendIn{\alpha \knd \kappa}{E_1'}{\rho}{E_2}} \and
 
     \infer[SendTyV]{~}
-    {\LetSendIn{\alpha \knd \kappa}{\Ret{\say{t}}}{\rho}{E} \ctrlstep[t \sendsto \rho] \subst{E}{\alpha}{t}} \and
+    {\LetSendIn{\alpha \knd \kappa}{\Ret{\say{t}}}{\rho}{E} \ctrlstep[L;t \sendsto \rho] \subst{E}{\alpha}{t}} \and
 
     \infer[RecvTy]{~}
-    {\LetRecvIn{\alpha \knd \kappa}{L}{E} \ctrlstep[L';t \sendsto] \subst{E}{\alpha}{t}} \and
+    {\LetRecvIn{\alpha \knd \kappa}{L}{E} \ctrlstep[L';t \sendsto \{L\}] \subst{E}{\alpha}{t}} \and
 
     \infer[AmIL]{~}
     {\AmI{L}{E_1}{E_2} \ctrlstep[\iota] E_1} \and
@@ -108,6 +109,64 @@
     {\AmI{L}{E_1}{E_2} \ctrlstep[\iota] E_2} \and
 \end{mathparpagebreakable}
 
+\paragraph{Control Systems}
+\label{sec:control-lang-semantics}
+We can compose control programs in parallel over each location as a \emph{system}.
+In particular, a system $\Pi$ is a map from each location $\Locations$ to a control program.
+For a given location $L \in \Locations$, the program that $L$ is running in the system $\Pi$ is denoted as $\Pi(L)$.
+The \emph{system update} $\subst{\Pi}{L}{E}$ is $\Pi$ with $\Pi(L)$ replaced by $E$, and the control program at every other location unchanged:
+\begin{mathpar}
+  \subst{\Pi}{L}{E}(L') \defeq
+    \begin{cases}
+      E & L = L'\\
+      \Pi(L') & L \neq L'
+    \end{cases}
+\end{mathpar}
+Likewise the multiple system update $\subst{\Pi}{\rho}{\Pi'}$ is $\Pi$ with $\Pi(L)$ replaced by $\Pi'(L)$ for each $L \in \rho$, and other locations unchanged.
+\begin{mathpar}
+  \subst{\Pi}{\rho}{\Pi'}(L) \defeq
+    \begin{cases}
+      \Pi'(L) & L \in \rho\\
+      \Pi(L) & L \notin \rho
+    \end{cases}
+\end{mathpar}
+
+We can lift the control language semantics to a semantics for systems by asking that a subset of locations make a step, and that the labels used in these steps match.
+This system semantics is also labeled, with system labels $l_S$ shown in Figure \ref{fig:system-semantics}.
+While the control program labels only show one side of a send or receive, the system labels reflect both sides, and the semantics of the system ensure that the send and receive messages match.
+
+\begin{figure}
+  \begin{syntax}
+    \category[System Label]{l_S}
+    \alternative{\iota} \alternative{\iotasync} \alternative{L_1;v \sendsto L_2} \alternative{L_1;d \sendsto L_2} \alternative{L;t \sendsto \rho}
+  \end{syntax}
+  \textbf{System Steps}
+  \begin{mathpar}
+    \infer[Internal]{\Pi(L) \ctrlstep[\iota] E}
+    {\Pi \systemstep[\iota] \subst{\Pi}{L}{E}}
+    \and
+    \infer[Synchronized Internal]{\forall L \in \Locations,~ \Pi(L) \ctrlstep[\iotasync] \Pi'(L)}
+    {\Pi \systemstep[\iotasync] \Pi'}
+    \and
+    \infer[Comm]{L_1 \neq L_2 \\
+    \Pi(L_1) \ctrlsteploc[v \sendsto L_2]{L_1} E_1 \\
+    \Pi(L_2) \ctrlsteploc[L_1;v \sendsto]{L_2} E_2}
+    {\Pi \systemstep[L_1;v \sendsto L_2] \subst*{\Pi}{{L_1}{E_1}{L_2}{E_2}}}
+    \and
+    \infer[Choice]{L_1 \neq L_2 \\
+    \Pi(L_1) \ctrlsteploc[d \sendsto L_2]{L_1} E_1 \\
+    \Pi(L_2) \ctrlsteploc[L_1;d \sendsto]{L_2} E_2}
+    {\Pi \systemstep[L_1;d \sendsto L_2] \subst*{\Pi}{{L_1}{E_1}{L_2}{E_2}}}
+    \and
+    \infer[CommTy]{L_1 \notin \rho \\
+    \Pi(L_1) \ctrlsteploc[t \sendsto \rho]{L_1} E_1 \\
+    \forall L \in \rho,~ \Pi(L) \ctrlstep[L_1;t \sendsto] \Pi'(L)}
+    {\Pi \systemstep[L_1;t \sendsto \rho] \subst*{\Pi}{{L_1}{E_1}{\rho}{\Pi'}}}
+    \and
+  \end{mathpar}
+  \caption{System Semantics}
+  \label{fig:system-semantics}
+\end{figure}
 
 %%% Local Variables:
 %%% mode: latex

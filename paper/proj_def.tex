@@ -21,7 +21,8 @@
 		\begin{cases}
 			\epp{C}{L} & L = \ell_1 = \ell_2 ~\text{or}~ L \neq \ell_1, \ell_2 \\
 			\ChooseFor{d}{\ell}{\epp{C}{L}} & L = \ell_1 \neq \ell_2 \\
-			\AllowChoice*{\ell}{\epp{C}{L}} & L = \ell_2 \neq \ell_1
+			\AllowChoice{\ell}{\epp{C}{L}}{\CtrlNone} & L = \ell_2 \neq \ell_1 ~\text{and}~ d = \Left \\
+      \AllowChoice{\ell}{\CtrlNone}{\epp{C}{L}} & L = \ell_2 \neq \ell_1 ~\text{and}~ d = \Right
 		\end{cases} \and
 	\epp{\ITE{C}{C_1}{C_2}}{L} =
 		\begin{cases}

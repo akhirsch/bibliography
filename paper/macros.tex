@@ -68,6 +68,7 @@
 \newcommand{\fv}[1]{\ensuremath{\text{FV}({#1})}}
 \newcommand{\maybelessnd}{\leq_{\text{?nd}}}
 \newcommand{\lessnd}{\leq_{\text{nd}}}
+\newcommand{\iotasync}{\iota_{\text{sync}}}
 
 \newcommand{\defeq}{\ensuremath{\stackrel{\text{\normalfont\tiny def}}{=}}}
 
@@ -205,6 +206,8 @@
 \newcommand{\manystep}{\raw@step{}{*}{c}}
 \newcommand{\localstep}[1][]{\raw@step{#1}{}{e}}
 \newcommand{\ctrlstep}[1][]{\raw@step{#1}{}{E[L]}}
+\newcommand{\ctrlsteploc}[2][]{\raw@step{#1}{}{E[{#2}]}}
+\newcommand{\systemstep}[1][]{\raw@step{#1}{}{S}}
 \newcommand{\rewrite}{\Rrightarrow}
 
 \newcommand{\raw@nstep}[3]{\mathrel{%
