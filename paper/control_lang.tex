@@ -10,13 +10,17 @@
     \category[Control Expression]{E}
     \alternative{X} \alternative{\CtrlFail} \alternative{\Ret{e}} \alternative{\CtrlSeq{E_1}{E_2}} \alternative{\CtrlFun{X}{E}} \alternative{\CtrlRec{X}{E}} \alternative{E_1~E_2} \\
     \alternative{\SendTo{E}{\ell}} \alternative{\RecvFrom{\ell}} \\
-    \alternative{\ChooseFor{d}{\ell}{E}} \alternative{\AllowChoice{\ell}{E_1}{E_2}} \\
+    \alternative{\ChooseFor{d}{\ell}{E}} \alternative{\AllowChoice{\ell}{?E_1}{?E_2}} \\
     \alternative{\CtrlITE{E}{E_1}{E_2}} \\
     \alternative{\CtrlTFun{\alpha}{E}} \alternative{E~t} \\
     \alternative{\CtrlLetIn{\Ret{x}}{E_1}{E_2}}\\
     \alternative{\LetSendIn{\alpha \knd *_\ell}{E_1}{\rho}{E_2}} \alternative{\LetRecvIn{\alpha \knd *_\ell}{\ell}{E}}\\
     \alternative{\LetSendIn{\alpha \knd *_e}{E_1}{\rho}{E_2}} \alternative{\LetRecvIn{\alpha \knd *_e}{\ell}{E}}\\
     \alternative{\AmI{\ell}{E_1}{E_2}}
+
+    \category[Possible Control Expression]{?E}
+    \alternative{\CtrlNone}
+    \alternative{E}
 
     \category[Systems]{\Pi}
     \alternative{L_1 \triangleright E_1 \;\|\; \ldots \;\|\; L_n \triangleright E_n}
