@@ -1,95 +1,109 @@
 \subsection{Operational Semantics}
 \label{sec:oper-semantics}
-\todo say that pn and spn came from Modular Compilation paper
+
+\begin{syntax}
+  \category[Redices]{R}
+  \alternative{\RDone{L}{e_1}{e_2}}
+  \alternative{\RArg{R}}
+  \alternative{\RFun{R}}
+  \alternative{\RApp}
+  \alternative{\RRec}\\
+  \alternative{\RSend{R}{L}}
+  \alternative{\RSendV{L_1}{v}{L_2}}
+  \alternative{\RSync{L_1}{d}{L_2}}\\
+  \alternative{\RIf{L}{R}}
+  \alternative{\RIfTrue{L}}
+  \alternative{\RIfFalse{L}}\\
+  \alternative{\RTFun{R}}
+  \alternative{\RTApp}\\
+  \alternative{\RLet{L}{v}}
+  \alternative{\RTellLet{L}{t}{\rho}}
+\end{syntax}
 
 \begin{mathparpagebreakable}
-	\pn{*} = \Locations \and
-	\pn{*_\ell} = \Locations \and
-	\pn{*_s} = \Locations \and
-	\pn{*_e} = \varnothing
+  \rloc{\RDone{L}{e_1}{e_2}} = \{L\} \and
+  \rloc{\RArg{R}} = \rloc{R} \and
+  \rloc{\RFun{R}} = \rloc{R} \and
+  \rloc{\RApp} = \Locations \and
+  \rloc{\RRec} = \Locations \and
+  \rloc{\RSend{R}{L}} = \{L\} \cup \rloc{R} \and
+  \rloc{\RSendV{L_1}{v}{L_2}} = \{L_1,L_2\} \and
+  \rloc{\RSync{L_1}{d}{L_2}} = \{L_1,L_2\} \and
+  \rloc{\RIf{L}{R}} = \rloc{R} \and
+  \rloc{\RIfTrue{L}} = \{L\} \and
+  \rloc{\RIfFalse{L}} = \{L\} \and
+  \rloc{\RTFun{R}} = \rloc{R} \and
+  \rloc{\RTApp} = \Locations \and
+  \rloc{\RLet{L}{v}} = \{L\} \and
+  \rloc{\RTellLet{L}{t}{\rho}} = \{L\} \cup \rho
 \end{mathparpagebreakable}
 
 \begin{mathparpagebreakable}
-	\pn{\alpha} = \varnothing \and
-	\pn{t_e @ \ell} = \pn{\ell} \and
-	\pn{\tau_1 \to \tau_2} = \pn{\tau_1} \cup \pn{\tau_2} \and
-	\pn{\forall \alpha \knd \kappa.\tau} = \pn{\kappa} \cup \pn{\tau} \and
-	\pn{L} = \{L\} \and
-	\pn{\varnothing} = \varnothing \and
-	\pn{\{\ell\}} = \pn{\ell} \and
-	\pn{\rho_1 \cup \rho_2} = \pn{\rho_1} \cup \pn{\rho_2}
+  \infer[DoneE]{e_1 \localstep e_2}
+  {L.e_1 \step{\RDone{L}{e_1}{e_2}} L.e_2} \and
+
+  \infer[AppFun]{C_1 \step{R} C_1'}
+  {C_1~C_2 \step{\RFun{R}} C_1'~C_2} \and
+
+  \infer[AppArg]{C_2 \step{R} C_2'}
+  {C_1~C_2 \step{\RArg{R}} C_1~C_2'} \and
+
+  \infer[App]{\text{Value}(V)}
+  {(\lambda X \ty \tau.C)~V \step{\RApp} \subst{C}{X}{V}} \and
+
+  \infer[Rec]{~}
+  {\mu X \ty \tau.C \step{\RRec} \subst{C}{X}{\mu X \ty \tau.C}} \and
+
+  \infer[SendE]{C \step{R} C' \\
+    L_1 \notin \rloc{R}}
+  {C \ChorSend[L_1] L_2 \step{\RSend{R}{L_1}} C' \ChorSend[L_1] L_2} \and
+
+  \infer[SendV]{\text{Value}(v) \\
+    L_1, L_2 \notin \rloc{R}}
+  {L_1.v \ChorSend[L_1] L_2 \step{\RSendV{L_1}{v}{L_2}} L_2.v} \and
+
+  \infer[SyncI]{C \step{R} C' \\
+    L_1, L_2 \notin \rloc{R}}
+  {\syncs{L_1}{d}{L_2} \seq C \step{R} \syncs{L_1}{d}{L_2} \seq C'} \and
+
+  \infer[Sync]{~}
+  {\syncs{L_1}{d}{L_2} \seq C \step{\RSync{L_1}{d}{L_2}} C} \and
+
+  \infer[IfE]{C \step{R} C'}
+  {\ITE[L]{C}{C_1}{C_2} \step{\RIf{L}{R}} \ITE[L]{C'}{C_1}{C_2}} \and
+
+  \infer[IfI]{C_1 \step{R} C_1' \\
+    C_2 \step{R} C_2' \\
+    L \notin \rloc{R}}
+  {\ITE[L]{C}{C_1}{C_2} \step{R} \ITE[L]{C}{C_1'}{C_2'}} \and
+
+  \infer[IfT]{~}
+  {\ITE[L]{L.\True}{C_1}{C_2} \step{\RIfTrue{L}} C_1} \and
+
+  \infer[IfF]{~}
+  {\ITE[L]{L.\False}{C_1}{C_2} \step{\RIfFalse{L}} C_2} \and
+
+  \infer[LocalLetArg]{C_1 \step{R} C_1'}
+  {\LetIn{L.x \ty t_e}{C_1}{C_2} \step{\RArg{R}} \LetIn{L.x \ty t_e}{C_1'}{C_2}} \and
+
+  \infer[LocalLetI]{C_2 \step{R} C_2' \\
+    L \notin \rloc{R}}
+  {\LetIn{L.x \ty t_e}{C_1}{C_2} \step{R} \LetIn{L.x \ty t_e}{C_1}{C_2'}} \and
+
+  \infer[LocalLet]{\text{Value}(v)}
+  {\LetIn{L.x \ty t_e}{L.v}{C} \step{\RLet{L}{v}} \subst{C}{L.x}{v}} \and
+
+  \infer[TellLetArg]{C_1 \step{R} C_1'}
+  {\LetTellIn{\alpha \knd \kappa}{L}{C_1}{\rho}{C_2} \step{\RArg{R}} \LetTellIn{\alpha \knd \kappa}{L}{C_1'}{\rho}{C_2}} \and
+
+  \infer[TellLetI]{C_2 \step{R} C_2' \\
+    L \notin \rloc{R} \\
+    \rho \cap \rloc{R} = \varnothing}
+  {\LetTellIn{\alpha \knd \kappa}{L}{C_1}{\rho}{C_2} \step{R} \LetTellIn{\alpha \knd \kappa}{L}{C_1}{\rho}{C_2'}} \and
+
+  \infer[TellLet]{\text{Value}(v)}
+  {\LetTellIn{\alpha \knd \kappa}{L}{\say{t}}{\rho}{C} \step{\RTellLet{L}{t}{\rho}} \subst{C}{\alpha}{t}} \and
 \end{mathparpagebreakable}
-
-\begin{mathparpagebreakable}
-	\pn{X} = \varnothing \and
-	\pn{\ell.e} = \pn{\ell} \and
-	\pn{\lambda X \ty \tau.C} = \pn{\tau} \cup \pn{C} \and
-	\pn{\mu X \ty \tau.C} = \pn{\tau} \cup \pn{C} \and
-	\pn{\app{F}{C}} = \pn{F} \cup \pn{C} \and
-	\pn{\send{C}{\ell_1}{\ell_2}} = \pn{C} \cup \pn{\ell_1} \cup \pn{\ell_2} \and
-	\pn{\send{\ell_1[d]}{}{\ell_2};C} = \pn{\ell_1} \cup \pn{\ell_2} \cup \pn{C} \and
-	\pn{\ITE{C}{C_1}{C_2}} = \pn{\ell} \cup \pn{C} \cup \pn{C_1} \cup \pn{C_2} \and
-	\pn{\Lambda \alpha \knd \kappa.C} = \pn{\kappa} \cup \pn{C} \and
-	\pn{\app{C}{t}} = \pn{C} \cup \pn{t} \and
-	\pn{\LetIn{\ell.x \ty t_e}{C_1}{C_2}} = \pn{\ell} \cup \pn{C_1} \cup \pn{C_2} \and
-	\pn{\LetTellIn{\alpha}{\ell}{C_1 \knd *_\ell}{\rho}{C_2}} = \pn{\ell} \cup \pn{C_1} \cup \pn{\rho} \cup \pn{C_2} \and
-	\pn{\LetTellIn{\alpha}{\ell}{C_1 \knd *_e}{\rho}{C_2}} = \pn{\ell} \cup \pn{C_1} \cup \pn{\rho} \cup \pn{C_2}
-\end{mathparpagebreakable}
-
-\begin{mathparpagebreakable}
-	\spn{X} = \varnothing \and
-	\spn{\ell.e} = \varnothing \and
-	\spn{\lambda X \ty \tau.C} = \spn{C} \and
-	\spn{\mu X \ty \tau.C} = \spn{C} \and
-	\spn{\app{F}{C}} = \spn{F} \cup \spn{C} \and
-	\spn{\send{C}{\ell_1}{\ell_2}} = \spn{C} \cup \pn{\ell_1} \cup \pn{\ell_2} \and
-	\spn{\send{\ell_1[d]}{}{\ell_2};C} = \pn{\ell_1} \cup \pn{\ell_2} \cup \spn{C} \and
-	\spn{\ITE{C}{C_1}{C_2}} = \spn{C} \cup \spn{C_1} \cup \spn{C_2} \and
-	\spn{\Lambda \alpha \knd \kappa.C} = \spn{C} \and
-	\spn{\app{C}{t}} = \spn{C} \and
-	\spn{\LetIn{\ell.x \ty t_e}{C_1}{C_2}} = \spn{C_1} \cup \spn{C_2} \and
-	\spn{\LetTellIn{\alpha}{\ell}{C_1 \knd *_\ell}{\rho}{C_2}} = \pn{\ell} \cup \spn{C_1} \cup \pn{\rho} \cup \spn{C_2} \and
-	\spn{\LetTellIn{\alpha}{\ell}{C_1 \knd *_e}{\rho}{C_2}} = \pn{\ell} \cup \spn{C_1} \cup \pn{\rho} \cup \spn{C_2}
-\end{mathparpagebreakable}
-
-\begin{mathparpagebreakable}
-	\infer[R-AbsR]{X \notin \fv{C_2}}
-	{\app{\app{(\lambda X \ty \tau.F)}{C_1}}{C_2} \rewrite \app{(\lambda X \ty \tau.(\app{F}{C_2}))}{C_1}} \and
-
-	\infer[R-AbsL]{X \notin \fv{F} \\
-		\spn{F} \cap \pn{C_1} = \varnothing}
-	{\app{F}{(\app{(\lambda X \ty \tau.C_1)}{C_2})} \rewrite \app{(\lambda X \ty \tau.(\app{F}{C_1}))}{C_2}} \and
-
-	\infer[R-SyncR]{}
-	{\app{(\send{\ell_1[d]}{}{\ell_2};F)}{C} \rewrite \send{\ell_1[d]}{}{\ell_2};(\app{F}{C})} \and
-
-	\infer[R-SyncL]{\spn{F} \cap \pn{C} = \varnothing}
-	{\app{F}{(\send{\ell_1[d]}{}{\ell_2};C)} \rewrite \send{\ell_1[d]}{}{\ell_2};(\app{F}{C})} \and
-
-	\infer[R-IfR]{}
-	{\app{(\ITE{C_1}{F_1}{F_2})}{C_2} \rewrite \ITE{C_1}{(\app{F_1}{C_2})}{(\app{F_2}{C_2})}} \and
-
-	\infer[R-IfL]{\spn{F} \cap \pn{C} = \varnothing}
-	{\app{F}{(\ITE{C}{C_1}{C_2})} \rewrite \ITE{C}{(\app{F}{C_1})}{(\app{F}{C_2})}} \and
-
-	\infer[R-LetR]{\ell.x \notin \fv{C_2}}
-	{\app{(\LetIn{\ell.x \ty t_e}{C_1}{F})}{C_2} \rewrite \LetIn{\ell.x \ty t_e}{C_1}{(\app{F}{C_2})}} \and
-
-	\infer[R-LetL]{\ell.x \notin \fv{F} \\
-	\spn{F} \cap \pn{C_1} = \varnothing}
-	{\app{F}{(\LetIn{\ell.x \ty t_e}{C_1}{C_2})} \rewrite \LetIn{\ell.x \ty t_e}{C_1}{(\app{F}{C_2})}} \and
-
-	\infer[R-LetTellR]{\alpha \notin \fv{C_2}}
-	{\app{(\LetTellIn{\alpha}{\ell}{C_1 \knd \kappa}{\rho}{F})}{C_2} \rewrite \LetTellIn{\alpha}{\ell}{C_1 \knd \kappa}{\rho}{(\app{F}{C_2})}} \and
-
-	\infer[R-LetTellL]{\ell.x \notin \fv{F} \\
-	\spn{F} \cap \pn{C_1} = \varnothing}
-	{\app{F}{(\LetTellIn{\alpha}{\ell}{C_1 \knd \kappa}{\rho}{C_2})} \rewrite \LetTellIn{\alpha}{\ell}{C_1 \knd \kappa}{\rho}{(\app{F}{C_2})}} \and
-
-	\infer[R-Alpha]{Y ~\text{fresh in}~ C}
-	{\lambda X \ty \tau.C \rewrite \lambda Y \ty \tau.\subst{C}{X}{Y}}
-\end{mathparpagebreakable}
-
 
 % \begin{figure}[h]
 %   \begin{syntax}

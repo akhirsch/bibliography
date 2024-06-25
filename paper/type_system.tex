@@ -107,7 +107,7 @@ This allows choreographic expressions of the form $t_e @ \ell$ to be used within
     \chortyped{\Gamma}{\Delta}{\Sigma}{C_1}{\Loc @ \ell} \\
     \chortyped{\Gamma, \alpha \knd *_\ell}{\Delta}{\Sigma}{C_2}{\tau} \\
     }
-  {\chortyped{\Gamma}{\Delta}{\Sigma}{\LetTellIn{\alpha}{\ell}{C_1 \knd *_\ell}{\rho}{C_2}}{\tau}} \and
+  {\chortyped{\Gamma}{\Delta}{\Sigma}{\LetTellIn{\alpha \knd *_\ell}{\ell}{C_1}{\rho}{C_2}}{\tau}} \and
 \end{mathparpagebreakable}
 
   \caption{Selected Typing Rules}
@@ -118,7 +118,7 @@ Parametric polymorphism is handled in a manner identical to System F: one can in
 The bound type-variable $\alpha$ can then be used in the body of the abstraction, as in the term $\Lambda \alpha \knd *_\ell.C \ChorSend[L] \alpha$ which sends a value $C \ty t_e @ L$ to an arbitrary location $\alpha$.
 
 The tell-let binding allows for dynamically generated location names and local types to be used in the choreographic program.
-Specifically, if $C_1 \ty \Loc @ \ell$ is a location name stored at $\ell$, then the expression $\LetTellIn{\alpha}{\ell}{C_1 \knd *_\ell}{\rho}{C_2}$ allows the \emph{type variable} $\alpha \knd *_\ell$ to be used in the subexpression $C_2$.
+Specifically, if $C_1 \ty \Loc @ \ell$ is a location name stored at $\ell$, then the expression $\LetTellIn{\alpha \knd *_\ell}{\ell}{C_1}{\rho}{C_2}$ allows the \emph{type variable} $\alpha \knd *_\ell$ to be used in the subexpression $C_2$.
 One needs to be careful in creating a typing rule for this expression; implementing it na\"ively can introduce unsoundness or a dependency of types on values into the type system.
 Specifically, while the subexpression $C_2$ may use the newly bound location, its type may not depend on it, as reflected in the rule \textsc{TellLetLoc}.
 

@@ -28,7 +28,7 @@
 			\CtrlITE{\epp{C}{L}}{\epp{C_1}{L}}{\epp{C_2}{L}} & L = \ell \\
 			\epp{C_1}{L} \sqcup \epp{C_2}{L} & L \neq \ell
 		\end{cases} \and
-	\epp{\Lambda \alpha \knd *_\ell . C}{L} = \AmI{\ell}{\epp{\subst{C}{\alpha}{L}}{L}}{\epp{C}{L}} \and
+	\epp{\Lambda \alpha \knd *_\ell . C}{L} = \Lambda \alpha.\AmI{\alpha}{\epp{\subst{C}{\alpha}{L}}{L}}{\epp{C}{L}} \and
 	\epp{\Lambda \alpha \knd \kappa . C}{L} = \Lambda \alpha.\epp{C}{L} ~\text{if}~\kappa \neq *_\ell \and
 	\epp{C~t}{L} = \ctrlapp{{\epp{C}{L}}}{t} \and
 	\epp{\LetIn{\ell.x \ty t_e}{C_1}{C_2}}{L} =

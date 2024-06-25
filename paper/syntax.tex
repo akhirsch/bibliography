@@ -9,11 +9,12 @@ Both choreographic and local type variables, including location variables, are d
 
 \todo Explain location and type abstraction $\Lambda \alpha \knd \kappa.C$
 
-\todo Explain tell-let binding $\LetTellIn{\alpha}{\ell}{C_1 \knd *_\ell}{\rho}{C_2}$
+\todo Explain tell-let binding $\LetTellIn{\alpha \knd *_\ell}{\ell}{C_1}{\rho}{C_2}$
 
 \paragraph{Location Substitution}
 While substitution and variable renaming in \langname can mostly be handled in standard ways, care must be taken to implement \emph{location substitution} correctly.
 For instance, consider the following example with a variable location $\alpha$ and concrete location $L$. Note that because $\alpha$ and $L$ are distinct, the local variables $\alpha.x$ and $L.x$ are also distinct.
+\todo Align these better
 \begin{mathpar}
 \LetIn{\alpha.x \ty \Int}{\alpha.2}{~}\\
 \LetIn{L.x \ty \Int}{L.3}{~}\\
@@ -55,20 +56,20 @@ The condition that $\ell.y, \ell'.y \notin \fv{C_2}$ in the first clause of the 
 
   \abstractCategory[Choreographic Variables]{X, Y, \ldots}
 
-  \category[Choreographies]{C, F}
+  \category[Choreographies]{C}
   \alternative{X}
   \alternative{\ell.e}
   \alternative{\Fun{X \ty \tau}{C}}
   \alternative{\Rec{X \ty \tau}{C}}
-  \alternative{F~C}\\
+  \alternative{C_1~C_2}\\
   \alternative{C \ChorSend[\ell_1] \ell_2}
   \alternative{\syncs{\ell_1}{d}{\ell_2} \seq C}\\
   \alternative{\ITE{C}{C_1}{C_2}}\\
   \alternative{\TFun{\alpha \knd \kappa}{C}}
   \alternative{C~t}\\
   \alternative{\LetIn{\ell.x \ty t_e}{C_1}{C_2}}\\
-  \alternative{\LetTellIn{\alpha}{\ell}{C_1 \knd *_\ell}{\rho}{C_2}}\\
-  \alternative{\LetTellIn{\alpha}{\ell}{C_1 \knd *_e}{\rho}{C_2}}
+  \alternative{\LetTellIn{\alpha \knd *_\ell}{\ell}{C_1}{\rho}{C_2}}\\
+  \alternative{\LetTellIn{\alpha \knd *_e}{\ell}{C_1}{\rho}{C_2}}
   \end{syntax}
 
   \caption{Syntax of Choreographies}

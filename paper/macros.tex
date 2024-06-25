@@ -120,6 +120,7 @@
 \newcommand{\Tell}[3][\loc]{{#1}.\TellN~{#2}~\To~{#3}}
 \newcommand{\LetTellIn}[5]{\LetN~ {#1} \ChorDef \Tell[#2]{#3}{#4}~\In~{#5}}
 
+%% Control Language
 \newcommand{\CtrlCol}[1]{{\color{RedOrange}#1}}
 \newcommand{\FontCtrl}[1]{\mathtt{\CtrlCol{#1}}}
 
@@ -195,7 +196,7 @@
 \newcommand{\manystep}{\raw@step{}{*}{c}}
 \newcommand{\localstep}[1][]{\raw@step{#1}{}{e}}
 \newcommand{\ctrlstep}[1][]{\raw@step{#1}{}{E[L]}}
-\newcommand{\rewrite}{\mathrel{\leadsto}}
+\newcommand{\rewrite}{\Rrightarrow}
 
 \newcommand{\raw@nstep}[3]{\mathrel{%
   \if\relax\detokenize{#1}\relax
@@ -226,6 +227,25 @@
 \newcommand\chortyped[5]{\ensuremath{#1;#2;#3 \proves #4 : #5}}
 \newcommand\chorctxwf[2]{\ensuremath{#1 \proves #2}}
 
+
+%% Redices
+\newcommand{\RDone}[3]{{#1}.({#2} \Rightarrow {#3})}
+\newcommand{\RArg}[1]{\text{Arg}({#1})}
+\newcommand{\RFun}[1]{\text{Fun}({#1})}
+\newcommand{\RApp}{\text{App}}
+\newcommand{\RSend}[2]{{#1} \ChorSend[#2]}
+\newcommand{\RSendV}[3]{{#1}.{#2} \sendsto {#3}}
+\newcommand{\RSync}[3]{{#1}[{#2}] \sendsto {#3}}
+\newcommand{\RIf}[2]{\text{if}_{#1}~{#2}}
+\newcommand{\RIfTrue}[1]{\text{if}_{#1}~\text{true}}
+\newcommand{\RIfFalse}[1]{\text{if}_{#1}~\text{false}}
+\newcommand{\RTFun}[1]{\text{TFun}({#1})}
+\newcommand{\RTApp}{\text{TApp}}
+\newcommand{\RLet}[2]{\LetN~{#1} \ChorDef {#2}}
+\newcommand{\RTellLet}[3]{\Tell[#1]{#2}{#3}}
+\newcommand{\RRec}{\text{Rec}}
+
+\newcommand{\rloc}[1]{\text{loc}({#1})}
 
 %%% Local Variables:
 %%% mode: latex
