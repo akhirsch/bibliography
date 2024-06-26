@@ -7,6 +7,7 @@ open import Data.Product renaming (proj₁ to fst; proj₂ to snd) hiding (map)
 open import Data.Product.Properties
 open import Data.Bool
 open import Data.Nat
+open import Data.Nat.Properties
 open import Data.List
 open import Data.List.Properties
 open import Data.Maybe renaming (map to mmap)
@@ -58,6 +59,11 @@ projTyVar (true ∷ Γ) = Keep (projTyVar Γ)
 projTyVar (false ∷ Γ) zero = zero
 projTyVar (false ∷ Γ) (suc x) = projTyVar Γ x
 
+projTyVar-0 : (Γ : List Bool) → projTyVar Γ 0 ≡ 0
+projTyVar-0 [] = refl
+projTyVar-0 (true ∷ Γ) = refl
+projTyVar-0 (false ∷ Γ) = refl
+
 ⊢projTyVar : ∀{Γ κₑ x} →
              Γ c⊢ₜvar x ∶ LocKnd κₑ →
              projKndCtx Γ e⊢ₜvar projTyVar (map isLocKnd Γ) x ∶ κₑ
@@ -80,6 +86,7 @@ projTyVec Γ [] = []
 projTyVec Γ ((e , k) ∷ es) =
   (projTy (replicate k true ++ Γ) e , k) ∷ projTyVec Γ es
 
+-- Kinding is preserved by type projection
 ⊢projTy : ∀{Γ κₑ t} →
             Γ c⊢ₜ t ∶ LocKnd κₑ →
             projKndCtx Γ e⊢ₜ projTy (map isLocKnd Γ) t ∶ κₑ
@@ -106,6 +113,88 @@ projTyVec Γ ((e , k) ∷ es) =
           ∙ map-const true Γₑ'
           ∙ cong (flip replicate true)
             (sym $ length-map LocKnd Γₑ')))
+
+-- Type projection is injective
+projTyVar-inj : ∀{κₑ x y} (Γ : ChorKndCtx) →
+                Γ c⊢ₜvar x ∶ LocKnd κₑ →
+                Γ c⊢ₜvar y ∶ LocKnd κₑ →
+                projTyVar (map isLocKnd Γ) x ≡ projTyVar (map isLocKnd Γ) y →
+                x ≡ y
+projTyVar-inj (LocKnd κₑ ∷ Γ) ⊢ₜ0 ⊢ₜ0 p = refl
+projTyVar-inj (LocKnd κₑ ∷ Γ) (⊢ₜS ⊢x) (⊢ₜS ⊢y) p =
+  cong suc $ projTyVar-inj Γ ⊢x ⊢y $ suc-injective p
+projTyVar-inj (Bnd κₑ ∷ Γ) (⊢ₜS ⊢x) (⊢ₜS ⊢y) p =
+  cong suc $ projTyVar-inj Γ ⊢x ⊢y p
+projTyVar-inj (* ∷ Γ) (⊢ₜS ⊢x) (⊢ₜS ⊢y) p =
+  cong suc $ projTyVar-inj Γ ⊢x ⊢y p
+projTyVar-inj (*ₗ ∷ Γ) (⊢ₜS ⊢x) (⊢ₜS ⊢y) p =
+  cong suc $ projTyVar-inj Γ ⊢x ⊢y p
+projTyVar-inj (*ₛ ∷ Γ) (⊢ₜS ⊢x) (⊢ₜS ⊢y) p =
+  cong suc $ projTyVar-inj Γ ⊢x ⊢y p
+
+projTy-inj : ∀{Γ κₑ t1 t2} →
+              Γ c⊢ₜ t1 ∶ LocKnd κₑ →
+              Γ c⊢ₜ t2 ∶ LocKnd κₑ →
+              projTy (map isLocKnd Γ) t1 ≡ projTy (map isLocKnd Γ) t2 →
+              t1 ≡ t2
+projTyVec-inj : ∀{Γ Σₑ ts1 ts2} →
+                Γ c⊢ₜvec ts1 ∶ map LocKndΣ Σₑ →
+                Γ c⊢ₜvec ts2 ∶ map LocKndΣ Σₑ →
+                projTyVec (map isLocKnd Γ) ts1 ≡ projTyVec (map isLocKnd Γ) ts2 →
+                ts1 ≡ ts2
+
+projTy-inj {Γ} {t1 = tyVar x1} {tyVar x2} (⊢ₜvar ⊢x1) (⊢ₜvar ⊢x2) p =
+  cong tyVar $ projTyVar-inj Γ ⊢x1 ⊢x2 $ tyVar-inj ⅀ₑₖ p
+projTy-inj {t1 = tyVar x1} {tyConstr (EmbLocalTyS sₑ) ts2} ⊢t1 ⊢t2 ()
+projTy-inj {t1 = tyVar x1} {tyConstr (LocalS κₑ) ts2} ⊢t1 ()
+projTy-inj {t1 = tyVar x1} {tyConstr AtS ts2} ⊢t1()
+projTy-inj {t1 = tyVar x1} {tyConstr FunS ts2} ⊢t1 ()
+projTy-inj {t1 = tyVar x1} {tyConstr (AllS κ ∀κ) ts2} ⊢t1 ()
+projTy-inj {t1 = tyVar x1} {tyConstr (LitLocS L) ts2}⊢t1 ()
+projTy-inj {t1 = tyVar x1} {tyConstr EmpS ts2} ⊢t1 ()
+projTy-inj {t1 = tyVar x1} {tyConstr SngS ts2} ⊢t1 ()
+projTy-inj {t1 = tyVar x1} {tyConstr UnionS ts2} ⊢t1 ()
+projTy-inj {t1 = tyConstr (LocalS κₑ) ts1} ()
+projTy-inj {t1 = tyConstr AtS ts1} ()
+projTy-inj {t1 = tyConstr FunS ts1} ()
+projTy-inj {t1 = tyConstr (AllS κ ∀κ) ts1} ()
+projTy-inj {t1 = tyConstr (LitLocS L) ts1} ()
+projTy-inj {t1 = tyConstr EmpS ts1} ()
+projTy-inj {t1 = tyConstr SngS ts1} ()
+projTy-inj {t1 = tyConstr UnionS ts1} ()
+projTy-inj {Γ} {t1 = tyConstr (EmbLocalTyS s1ₑ) ts1} {tyConstr (EmbLocalTyS s2ₑ) ts2}
+  (⊢ₜtyConstr .(EmbLocalTyS s1ₑ) ⊢ts1) ⊢t2 p with ⊢ₜtyConstr-elim C⅀ₖ ⊢t2
+... | (⊢ts2 , q , r) =
+  let s1≡s2 : s1ₑ ≡ s2ₑ
+      s1≡s2 = tyConstr-inj ⅀ₑₖ p .fst
+  in cong₂ tyConstr
+    (cong EmbLocalTyS s1≡s2)
+    (projTyVec-inj ⊢ts1
+      (subst (λ x → Γ c⊢ₜvec ts2 ∶ map LocKndΣ (𝕃 .⅀ₑ .⅀ₖ .TySig x .fst)) (sym s1≡s2) ⊢ts2)
+      (tyConstr-inj ⅀ₑₖ p .snd))
+
+projTyVec-inj {ts1 = []} {[]} ⊢ts1 ⊢ts2 p = refl
+projTyVec-inj {Γ} {(Γₑ' , κₑ) ∷ Σₑ}
+  {ts1 = (t1 , .(length (map LocKnd Γₑ'))) ∷ ts1} {(t2 , .(length (map LocKnd Γₑ'))) ∷ ts2}
+  (⊢t1 ⊢ₜ∷ ⊢ts1) (⊢t2 ⊢ₜ∷ ⊢ts2) p =
+    let eq : replicate (length (map LocKnd Γₑ')) true ++ map isLocKnd Γ ≡
+             map isLocKnd (map LocKnd Γₑ' ++ Γ)
+        eq =
+          replicate (length (injKndCtx Γₑ')) true ++ map isLocKnd Γ
+            ≡⟨ (cong (λ x → replicate x true ++ map isLocKnd Γ) $
+                length-map LocKnd Γₑ') ⟩
+          replicate (length Γₑ') true ++ map isLocKnd Γ
+            ≡⟨ (sym $ cong (_++ map isLocKnd Γ) $ isLocKnd∘injKndCtx≡true Γₑ') ⟩
+          map isLocKnd (injKndCtx Γₑ') ++ map isLocKnd Γ
+            ≡⟨ (sym $ map-++-commute isLocKnd (injKndCtx Γₑ') Γ) ⟩
+          map isLocKnd (injKndCtx Γₑ' ++ Γ) ∎
+    in cong₃ (λ x y z → (x , y) ∷ z)
+      (projTy-inj ⊢t1 ⊢t2 $
+        (subst (λ x → projTy x t1 ≡ projTy x t2) eq
+          (tyCons-inj ⅀ₑₖ p .fst)))
+      (tyCons-inj ⅀ₑₖ p .snd .fst)
+      (projTyVec-inj ⊢ts1 ⊢ts2 $ tyCons-inj ⅀ₑₖ p .snd .snd)
+
 
 --------------------
 -- TYPE INJECTION --
@@ -623,6 +712,14 @@ Drop-injTyRen {κₑ} Γ1 Γ2 ξ x =
         ξ (projTyVar (map isLocKnd (injKndCtx Γ1)) x)) ⟩
   suc (ξ (projTyVar (map isLocKnd (injKndCtx Γ1)) x)) ∎
 
+Drop*-injTyRen : (Γ1 Γ2 : KndCtxₑ) (ξ : Ren)
+                 (Γₑ' : KndCtxₑ) →
+                 injTyRen Γ1 (Γₑ' ++ Γ2) (Drop* ξ (length Γₑ')) ≗
+                 Drop* (injTyRen Γ1 Γ2 ξ) (length Γₑ')
+Drop*-injTyRen Γ1 Γ2 ξ [] x = refl
+Drop*-injTyRen Γ1 Γ2 ξ (κₑ ∷ Γₑ') x =
+  cong suc $ Drop*-injTyRen Γ1 Γ2 ξ Γₑ' x
+
 Keep-injTyRen : ∀{κₑ} (Γ1 Γ2 : KndCtxₑ) (ξ : Ren) →
                 injTyRen (κₑ ∷ Γ1) (κₑ ∷ Γ2) (Keep ξ) ≗
                 Keep (injTyRen Γ1 Γ2 ξ)
@@ -630,7 +727,7 @@ Keep-injTyRen Γ1 Γ2 ξ zero = refl
 Keep-injTyRen {κₑ} Γ1 Γ2 ξ (suc x) =
   Drop-injTyRen {κₑ} Γ1 Γ2 ξ x
 
-Keep*-injTyRen : (Γ1 Γ2 : KndCtxₑ) (ξ : Ren) →
+Keep*-injTyRen : (Γ1 Γ2 : KndCtxₑ) (ξ : Ren)
                  (Γₑ' : KndCtxₑ) →
                  injTyRen (Γₑ' ++ Γ1) (Γₑ' ++ Γ2) (Keep* ξ (length Γₑ')) ≗
                  Keep* (injTyRen Γ1 Γ2 ξ) (length Γₑ')
@@ -660,13 +757,12 @@ inj∘ren≗injRen∘injTyVar {κₑ ∷ Γ1} {Γ2} {suc x} ξ (⊢ₜS ⊢x) =
   inj∘ren≗injRen∘injTyVar {Γ1} {Γ2} (ξ ∘ suc) ⊢x
 
 inj∘ren≗injRen∘injTyVar'
-  : ∀{Γ1 Γ2} →
-    (ξ : Ren) →
+  : (Γ1 Γ2 : KndCtxₑ) (ξ : Ren) →
     ξ ≗ injTyRen Γ1 Γ2 ξ
-inj∘ren≗injRen∘injTyVar' {[]} {Γ2} ξ x = refl
-inj∘ren≗injRen∘injTyVar' {κₑ ∷ Γ1} {Γ2} ξ zero = refl
-inj∘ren≗injRen∘injTyVar' {κₑ ∷ Γ1} {Γ2} ξ (suc x) =
-  cong (ξ ∘ suc) (inj∘ren≗injRen∘injTyVar' {Γ1} {Γ2} id x)
+inj∘ren≗injRen∘injTyVar' [] Γ2 ξ x = refl
+inj∘ren≗injRen∘injTyVar' (κₑ ∷ Γ1) Γ2 ξ zero = refl
+inj∘ren≗injRen∘injTyVar' (κₑ ∷ Γ1) Γ2 ξ (suc x) =
+  cong (ξ ∘ suc) (inj∘ren≗injRen∘injTyVar' Γ1 Γ2 id x)
 
 inj∘ren≗injRen∘injTy
   : ∀{Γ1 Γ2 ξ t κₑ} →
@@ -968,6 +1064,58 @@ inj∘sub≗injSub∘injTyVec {Γ1} {Γ2} {σ} {(t , _) ∷ ts} {(Δₑ , κₑ)
     subTy C⅀ₖ (TyKeepSub* C⅀ₖ (injTySub Γ1 Γ2 σ) (length Δₑ)) (injTy t) ∎)
     (inj∘sub≗injSub∘injTyVec ⊢σ ⊢ts)
 
+-- regain ∘ inj ∘ ⟨proj ξ⟩ ≗ ⟨ξ⟩ ∘ regain ∘ inj
+regain∘inj∘projRen≗ren∘regain∘inj
+  : ∀{Γ1 Γ2 ξ t κₑ} →
+    TYREN C⅀ₖ ξ Γ1 Γ2 →
+    projKndCtx Γ1 e⊢ₜ t ∶ κₑ →
+    regainTy (map isLocKnd Γ2) (injTy (renTy ⅀ₑₖ (projTyRen Γ1 Γ2 ξ) t)) ≡
+    renTy C⅀ₖ ξ (regainTy (map isLocKnd Γ1) (injTy t))
+regain∘inj∘projRen≗ren∘regain∘inj {Γ1} {Γ2} {ξ} {t} {κₑ} ⊢ξ ⊢t =
+  regainTy (map isLocKnd Γ2)
+    (injTy (renTy ⅀ₑₖ (projTyRen Γ1 Γ2 ξ) t))
+    ≡⟨ (cong (regainTy (map isLocKnd Γ2)) $
+          inj∘ren≗injRen∘injTy (⊢projTyRen ⊢ξ) ⊢t) ⟩
+  renTy C⅀ₖ (regainTyVar (map isLocKnd Γ2))
+    (renTy C⅀ₖ
+      (injTyRen (projKndCtx Γ1) (projKndCtx Γ2) (projTyRen Γ1 Γ2 ξ))
+      (injTy t))
+    ≡⟨ renTy• C⅀ₖ
+          (regainTyVar (map isLocKnd Γ2))
+          (injTyRen (projKndCtx Γ1) (projKndCtx Γ2) (projTyRen Γ1 Γ2 ξ))
+          (injTy t) ⟩
+  renTy C⅀ₖ
+    (regainTyVar (map isLocKnd Γ2) ∘ projTyVar (map isLocKnd Γ2)
+      ∘ ξ ∘ regainTyVar (map isLocKnd Γ1) ∘ projTyVar (map isLocKnd (map LocKnd (projKndCtx Γ1))))
+    (injTy t)
+    ≡⟨ ⊢renTy-≗TyRen C⅀ₖ
+          (λ {x} {κ} ⊢x →
+            regain∘inj∘projTyVar≗id {κₑ = var∈injCtx ⊢x .fst} $
+            ⊢ξ $ ⊢regainTyVar $ ⊢injTyVar $
+            subst (λ y → y e⊢ₜvar projTyVar (map isLocKnd (injKndCtx (projKndCtx Γ1))) x ∶ fst (var∈injCtx ⊢x))
+              (proj∘injKndCtx≗id (projKndCtx Γ1)) $
+              ⊢projTyVar $ subst (λ y → injKndCtx (projKndCtx Γ1) c⊢ₜvar x ∶ y)
+                  (var∈injCtx ⊢x .snd)
+                  ⊢x)
+          (⊢injTy ⊢t) ⟩
+  renTy C⅀ₖ
+    (ξ ∘ regainTyVar (map isLocKnd Γ1) ∘ projTyVar (map isLocKnd (map LocKnd (projKndCtx Γ1))))
+    (injTy t)
+    ≡⟨ (cong (λ x → renTy C⅀ₖ (ξ ∘ regainTyVar (map isLocKnd Γ1) ∘ projTyVar x) (injTy t)) $
+        isLocKnd∘injKndCtx≡true (projKndCtx Γ1)) ⟩
+  renTy C⅀ₖ
+    (ξ ∘ regainTyVar (map isLocKnd Γ1) ∘ projTyVar (replicate (length (projKndCtx Γ1)) true))
+    (injTy t)
+    ≡⟨ renTy-ext C⅀ₖ
+        (λ x → cong (ξ ∘ regainTyVar (map isLocKnd Γ1)) $ 
+            proj∘injTyVar≗id (length (projKndCtx Γ1)) x)
+        (injTy t) ⟩
+  renTy C⅀ₖ
+    (ξ ∘ regainTyVar (map isLocKnd Γ1))
+    (injTy t)
+    ≡⟨ (sym $ renTy• C⅀ₖ ξ (regainTyVar (map isLocKnd Γ1)) (injTy t)) ⟩
+  renTy C⅀ₖ ξ (regainTy (map isLocKnd Γ1) (injTy t)) ∎
+
 -- regain ∘ inj ∘ ⟨proj σ⟩ ≗ ⟨σ⟩ ∘ regain ∘ inj
 regain∘inj∘projSub≗sub∘regain∘inj
   : ∀{Γ1 Γ2 σ t κₑ} →
@@ -1079,3 +1227,81 @@ proj∘regain∘injTyVec≗id {Γ} {(Γₑ' , κₑ') ∷ Σₑ'} {(tₑ , .(len
             subst (λ x → x e⊢ₜ tₑ ∶ κₑ') eq2 ⊢tₑ) ⟩
     tₑ ∎)
     (proj∘regain∘injTyVec≗id ⊢tsₑ)
+
+
+regain∘projTyVar≗id
+  : ∀{Γ x κₑ} →
+    Γ c⊢ₜvar x ∶ LocKnd κₑ →
+    regainTyVar (map isLocKnd Γ) (projTyVar (map isLocKnd Γ) x)
+    ≡ x
+regain∘projTyVar≗id {LocKnd κₑ ∷ Γ} {zero} ⊢ₜ0 = refl
+regain∘projTyVar≗id {LocKnd κₑ ∷ Γ} {suc x} (⊢ₜS ⊢x) =
+  cong suc $ regain∘projTyVar≗id ⊢x
+regain∘projTyVar≗id {Bnd κₑ ∷ Γ} {suc x} (⊢ₜS ⊢x) =
+  cong suc $ regain∘projTyVar≗id ⊢x
+regain∘projTyVar≗id {* ∷ Γ} {suc x} (⊢ₜS ⊢x) =
+  cong suc $ regain∘projTyVar≗id ⊢x
+regain∘projTyVar≗id {*ₗ ∷ Γ} {suc x} (⊢ₜS ⊢x) =
+  cong suc $ regain∘projTyVar≗id ⊢x
+regain∘projTyVar≗id {*ₛ ∷ Γ} {suc x} (⊢ₜS ⊢x) =
+  cong suc $ regain∘projTyVar≗id ⊢x
+
+Γₑ⊢x∶Loc : ∀{Γₑ x κ} →
+           injKndCtx Γₑ c⊢ₜvar x ∶ κ →
+           Σ[ κₑ ∈ _ ] (κ ≡ LocKnd κₑ)
+Γₑ⊢x∶Loc {κₑ ∷ Γₑ} ⊢ₜ0 = κₑ , refl
+Γₑ⊢x∶Loc {κₑ ∷ Γₑ} (⊢ₜS ⊢x) = Γₑ⊢x∶Loc ⊢x
+
+regain∘inj∘projTyRenVar≗id
+  : ∀{Γₑ Γ ξ} →
+    TYREN C⅀ₖ ξ (injKndCtx Γₑ) Γ →
+    ∀{x κ} →
+    injKndCtx Γₑ c⊢ₜvar x ∶ κ →
+    regainTyVar (map isLocKnd Γ)
+      ((injTyRen Γₑ (projKndCtx Γ)
+        (projTyRen (injKndCtx Γₑ) Γ ξ)) x)
+    ≡ ξ x
+regain∘inj∘projTyRenVar≗id {Γₑ} {Γ} {ξ} ⊢ξ {x} ⊢x with Γₑ⊢x∶Loc ⊢x
+... | (κₑ , refl) =
+  regainTyVar (map isLocKnd Γ)
+    (projTyVar (map isLocKnd Γ)
+      (ξ (regainTyVar (map isLocKnd (injKndCtx Γₑ))
+        (projTyVar (map isLocKnd (injKndCtx Γₑ)) x))))
+    ≡⟨ (cong (λ y →
+          regainTyVar (map isLocKnd Γ)
+            (projTyVar (map isLocKnd Γ)
+              (ξ (regainTyVar y
+                (projTyVar y x))))) $
+          isLocKnd∘injKndCtx≡true Γₑ) ⟩
+  regainTyVar (map isLocKnd Γ)
+    (projTyVar (map isLocKnd Γ)
+      (ξ (regainTyVar (replicate (length Γₑ) true)
+        (projTyVar (replicate (length Γₑ) true) x))))
+    ≡⟨ (cong (λ y →
+          regainTyVar (map isLocKnd Γ)
+            (projTyVar (map isLocKnd Γ)
+              (ξ (regainTyVar (replicate (length Γₑ) true) y)))) $
+        proj∘injTyVar≗id (length Γₑ) x) ⟩
+  regainTyVar (map isLocKnd Γ)
+    (projTyVar (map isLocKnd Γ)
+      (ξ (regainTyVar (replicate (length Γₑ) true) x)))
+    ≡⟨ (cong (λ y →
+          regainTyVar (map isLocKnd Γ)
+            (projTyVar (map isLocKnd Γ)
+              (ξ y))) $
+        regainTyVar-true≗id (length Γₑ) x) ⟩
+  regainTyVar (map isLocKnd Γ)
+    (projTyVar (map isLocKnd Γ)
+      (ξ x))
+    ≡⟨ regain∘projTyVar≗id (⊢ξ ⊢x) ⟩
+  ξ x ∎
+
+⊢injTyRen-ext
+  : ∀{Γ1 Γ2 ξ1 ξ2} →
+    ≗TyRen ⅀ₑₖ Γ1 ξ1 ξ2 →
+    ≗TyRen C⅀ₖ (injKndCtx Γ1) (injTyRen Γ1 Γ2 ξ1) (injTyRen Γ1 Γ2 ξ2)
+⊢injTyRen-ext {Γ1} ξ1≗ξ2 {x} ⊢x with Γₑ⊢x∶Loc ⊢x
+... | (κₑ , refl) = ξ1≗ξ2 $
+  subst (_e⊢ₜvar projTyVar (map isLocKnd (map LocKnd Γ1)) x ∶ κₑ)
+    (proj∘injKndCtx≗id Γ1)
+    (⊢projTyVar ⊢x)

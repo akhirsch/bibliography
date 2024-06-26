@@ -309,9 +309,9 @@ Local : (κₑ : Kndₑ) (tₑ : CTy) (ℓ : CTy) → CTy
 Local κₑ tₑ ℓ = tyConstr (LocalS κₑ) ((tₑ , 0) ∷ (ℓ , 0) ∷ [])
 
 ⊢Local : ∀{Γ κₑ tₑ ℓ} →
-      Γ c⊢ₜ tₑ ∶ LocKnd κₑ →
-      Γ c⊢ₜ ℓ ∶ *ₗ →
-      Γ c⊢ₜ Local κₑ tₑ ℓ ∶ Bnd κₑ
+          Γ c⊢ₜ tₑ ∶ LocKnd κₑ →
+          Γ c⊢ₜ ℓ ∶ *ₗ →
+          Γ c⊢ₜ Local κₑ tₑ ℓ ∶ Bnd κₑ
 ⊢Local {κₑ = κₑ} ⊢tₑ ⊢ℓ = ⊢ₜtyConstr (LocalS κₑ) (⊢tₑ ⊢ₜ∷ ⊢ℓ ⊢ₜ∷ ⊢ₜ[])
 
 ⊢Local⁻ : ∀{Γ κₑ tₑ ℓ} →
