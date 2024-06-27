@@ -164,8 +164,7 @@ While the control program labels only show one side of a send or receive, the sy
     \Pi(L_2) \ctrlsteploc[L_1;d \sendsto]{L_2} E_2}
     {\Pi \systemstep[L_1;d \sendsto L_2] \subst*{\Pi}{{L_1}{E_1}{L_2}{E_2}}}
     \and
-    \infer[CommTy]{L_1 \notin \rho \\
-    \Pi(L_1) \ctrlsteploc[t \sendsto \rho]{L_1} E_1 \\
+    \infer[CommTy]{\Pi(L_1) \ctrlsteploc[t \sendsto \rho]{L_1} E_1 \\
     \forall L \in \rho,~ \Pi(L) \ctrlstep[L_1;t \sendsto] \Pi'(L)}
     {\Pi \systemstep[L_1;t \sendsto \rho] \subst*{\Pi}{{L_1}{E_1}{\rho}{\Pi'}}}
     \and

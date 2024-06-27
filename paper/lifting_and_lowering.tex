@@ -6,7 +6,7 @@ For all control expressions $E$, $E \lessnd E$.
 
 \begin{lem}[Local Substitution Preserves $\lessnd$]
 \label{lem:lessnd-subst}
-If $E_1 \lessnd E_2$, then for any local variable $x$ and local value $e$, $\subst{E_1}{x}{e} \lessnd \subst{E_2}{x}{e}$.
+If $E_1 \lessnd E_2$, then for any local variable $x$ and local expression $e$, $\subst{E_1}{x}{e} \lessnd \subst{E_2}{x}{e}$.
 \end{lem}
 
 \begin{lem}[Values are Deterministic]
@@ -75,11 +75,11 @@ We proceed by induction on the control step $E_1 \ctrlstep[\iota] E_1'$.
   Therefore $E_{2,2}$ suffices.
 \end{description}
 
-\begin{lem}[Internal Synchronized Control Step Lifting]
-  \label{lem:internal-sync-control-lifting}
-  If $E_1 \lessnd E_2$ and $E_1 \ctrlstep[\iotasync] E_1'$, there is some $E_2'$ such that $E_1' \lessnd E_2'$ and $E_2 \ctrlstep[\iotasync] E_2'$.
-  \end{lem}
-  We proceed by induction on the control step $E_1 \ctrlstep[\iotasync] E_1'$.
+\begin{lem}[Synchronized Internal Control Step Lifting]
+\label{lem:internal-sync-control-lifting}
+If $E_1 \lessnd E_2$ and $E_1 \ctrlstep[\iotasync] E_1'$, there is some $E_2'$ such that $E_1' \lessnd E_2'$ and $E_2 \ctrlstep[\iotasync] E_2'$.
+\end{lem}
+We proceed by induction on the control step $E_1 \ctrlstep[\iotasync] E_1'$.
 \begin{description}
   \item[\textsc{Seq}, \textsc{AppFun}, \textsc{Send}, \textsc{AppTFun}, \textsc{LetRet}, \textsc{SendTy}]
     Analogous to the corresponding cases in Lemma \ref{lem:internal-control-lifting}, replacing $\iota$ with $\iotasync$.
@@ -94,6 +94,35 @@ We proceed by induction on the control step $E_1 \ctrlstep[\iota] E_1'$.
     By examination of $\lessnd$ we have $E_2 = (\CtrlTFun{\alpha}{E})~t$, and so $\subst{E}{\alpha}{t}$ suffices.
 \end{description}
 
+\begin{lem}[Send Control Step Lifting]
+\label{lem:send-control-lifting}
+If
+\begin{itemize}
+  \item $E_1 \ctrlsteploc[v \sendsto L_2]{L_1} E_1'$,
+  \item $E_1 \lessnd E_{1 \leq}$,
+  \item $E_2 \ctrlsteploc[L_1;v \sendsto]{L_2} E_2'$,
+  \item $E_2 \lessnd E_{2 \leq}$, and
+  \item $L_1 \neq L_2$,
+\end{itemize}
+then there is some $E_{1 \leq}'$ and $E_{2 \leq}'$ such that
+\begin{itemize}
+  \item $E_{1 \leq} \ctrlsteploc[v \sendsto L_2]{L_1} E_{1 \leq}'$,
+  \item $E_1' \lessnd E_{1 \leq}'$,
+  \item $E_{2 \leq} \ctrlsteploc[L_1;v \sendsto]{L_2} E_{2 \leq}'$, and
+  \item $E_2' \lessnd E_{2 \leq}'$.
+\end{itemize}
+\end{lem}
+We proceed by induction on both control steps.
+\begin{description}
+  \item[\textsc{Seq}, \textsc{AppFun}, \textsc{Send}, \textsc{AppTFun}, \textsc{LetRet}, \textsc{SendTy}]
+    When either of the steps have one of the preceding cases, the proof is analogous to the corresponding case in Lemma \ref{lem:internal-control-lifting}.
+  \item[\textsc{SendV} and \textsc{Recv}]
+    Consider the case when $E_1 = \SendTo{\Ret{v}}{L2}$ and $E_2 = \RecvFrom{L1}$.
+    By examination of $\lessnd$, $E_1$ and $E_2$ are only related to themselves, so $E_{1 \leq}' = \CtrlFail$ and $E_{2 \leq}' = \Ret{v}$ are satisfactory.
+\end{description}
+
+\todo
+\ashley{I want to restate the theorem here, and I need a clean solution to keep the numbering correct}
 \label{sec:lifting-proof}
 \paragraph{Proof of \textsc{Lifting}}
 Suppose that $\Pi_1 \lessnd \Pi_2$ and $\Pi_1 \systemstep[l_S] \Pi_1'$.
@@ -109,6 +138,10 @@ We proceed by case analysis of the system step.
     Then as $\Pi_1(L) \lessnd \Pi_2(L)$ for each $L$, by Lemma \ref{lem:internal-sync-control-lifting} there is some $\Pi_2'$ such that $\Pi_1'(L) \lessnd \Pi_2'(L)$ and $\Pi_2(L) \systemstep[\iotasync] \Pi_2'(L)$ for each $L$, as desired.
   \item[\textsc{Comm}]
     Suppose that $\Pi_1(L_1) \ctrlsteploc[v \sendsto L_2]{L_1} E_1$ and $\Pi_1(L_2) \ctrlsteploc[L_1;v \sendsto]{L_2} E_2$.
-  \item[\textsc{Choice}] \todo
-  \item[\textsc{CommTy}] \todo
+    Let $E_1'$ and $E_2'$ be the control expressions yielded by applying Lemma \ref{lem:send-control-lifting}.
+    Then $\subst*{\Pi_2}{{L_1}{E_1'}{L_2}{E_2'}}$ satisfies the theorem.
+  \item[\textsc{Choice}]
+    Analogous to the \textsc{Comm} case.
+  \item[\textsc{CommTy}]
+    Analogous to the \textsc{Comm} case.
 \end{description}
