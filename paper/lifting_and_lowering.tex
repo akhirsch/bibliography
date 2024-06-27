@@ -24,13 +24,13 @@ We proceed by induction on the control step $E_1 \ctrlstep[\iota] E_1'$.
     Let $E_1 = \Ret{e}$ and $E_1' = \Ret{e'}$, where $e \localstep e'$.
     By examination of $\lessnd$ we have $E_2 = \Ret{e}$, so $\Ret{e'}$ suffices.
   \item[\textsc{Seq}]
-    Let $E_1 = \CtrlSeq{E_{1,1}}{E_{2,1}}$ and $E_1' = \CtrlSeq{E_{1,1}'}{E_{2,1}}$ where $E_{1,1} \ctrlstep[\iota] E_{1,1}'$.
-    By examination of $\lessnd$ we have $E_2 = \CtrlSeq{E_{1,2}}{E_{2,2}}$ where $E_{1,1} \lessnd E_{1,2}$ and $E_{2,1} \lessnd E_{2,2}$.
+    Let $E_1 = E_{1,1} \CtrlSeq E_{2,1}$ and $E_1' = E_{1,1}' \CtrlSeq E_{2,1}$ where $E_{1,1} \ctrlstep[\iota] E_{1,1}'$.
+    By examination of $\lessnd$ we have $E_2 = E_{1,2} \CtrlSeq E_{2,2}$ where $E_{1,1} \lessnd E_{1,2}$ and $E_{2,1} \lessnd E_{2,2}$.
     By induction there is some $E_{1,2}'$ such that $E_{1,2}' \lessnd E_{1,1}'$ and $E_{1,2} \ctrlstep[\iota] E_{1,2}'$.
-    Therefore $\CtrlSeq{E_{1,2}'}{E_{2,2}}$ suffices.
+    Therefore $E_{1,2}' \CtrlSeq E_{2,2}$ suffices.
   \item[\textsc{SeqV}]
-    Let $E_1 = \CtrlSeq{V}{E_1}$ and $E_1' = V$.
-    By examination of $\lessnd$ and Lemma \ref{lem:values-determined} we have $E_2 = \CtrlSeq{V}{E_2}$ where $E_1 \lessnd E_2$.
+    Let $E_1 = V \CtrlSeq E_1$ and $E_1' = V$.
+    By examination of $\lessnd$ and Lemma \ref{lem:values-determined} we have $E_2 = V \CtrlSeq E_2$ where $E_1 \lessnd E_2$.
     Therefore $V$ suffices.
   \item[\textsc{AppFun}]    
     Let $E_1 = E_{1,1}~E_{2,1}$ and $E_1' = E_{1,1}'~E_{2,1}$ where $E_{1,1} \ctrlstep[\iota] E_{1,1}'$.

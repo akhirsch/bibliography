@@ -16,7 +16,7 @@ If there is no matching pattern below, then $E_1 \ctrlmerge E_2$ is undefined.
   \and
   \Ret{e} \ctrlmerge \Ret{e} \defeq \Ret{e}
   \and
-  (\CtrlSeq{E_{1,1}}{E_{1,2}}) \ctrlmerge (\CtrlSeq{E_{2,1}}{E_{2,2}}) \defeq \CtrlSeq{E_{1,1} \ctrlmerge E_{2,1}}{E_{1,2} \ctrlmerge E_{2,2}}
+  (E_{1,1} \CtrlSeq E_{1,2}) \ctrlmerge (E_{2,1} \CtrlSeq E_{2,2}) \defeq E_{1,1} \ctrlmerge E_{2,1} \CtrlSeq E_{1,2} \ctrlmerge E_{2,2}
   \and
   (\CtrlFun{X}{E_1}) \ctrlmerge (\CtrlFun{X}{E_2}) \defeq \CtrlFun{X}{E_1 \ctrlmerge E_2}
   \and

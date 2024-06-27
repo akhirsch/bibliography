@@ -94,7 +94,7 @@
 %\newcommand{\ChorCol}[1]{#1}
 \newcommand{\FontChoreo}[1]{\programfont{\ChorCol{#1}}}
 %% Choreography Names
-\newcommand{\seq}{\mathrel{;}}
+\newcommand{\seq}{\mathrel{\ChorCol{;}}}
 %\newcommand{\ChorSend}[1][\loc]{\mathrel{\color{ChorColor}\sendsto}}
 \newcommand{\ColSend}{\mathrel{\ChorCol{\sendsto}}}
 \newcommand{\ChorSend}[1][\ell]{\mathrel{\mathchoice%
@@ -145,14 +145,14 @@
 \newcommand{\Ret}[1]{\FontCtrl{ret}({#1})}
 \newcommand{\SendTo}[2]{\FontCtrl{send}~{#1}~\FontCtrl{to}~{#2}}
 \newcommand{\RecvFrom}[1]{\FontCtrl{receive}~\FontCtrl{from}~{#1}}
-\newcommand{\ChooseFor}[3]{\FontCtrl{choose}~{#1}~\FontCtrl{for}~{#2};~{#3}}
+\newcommand{\ChooseFor}[3]{\FontCtrl{choose}~{#1}~\FontCtrl{for}~{#2} \CtrlSeq {#3}}
 % \newcommand{\AllowChoice}[3]{\FontCtrl{allow}~{#1}~\FontCtrl{choice} \mid \CtrlLeft \Rightarrow {#2} \mid \CtrlRight \Rightarrow {#3}}
 % \WithSuffix\newcommand\AllowChoice*[2]{\FontCtrl{allow}~{#1}~\FontCtrl{choice} \mid d \Rightarrow {#2}}
 \newcommand{\AllowChoice}[3]{\FontCtrl{allow}~{#1}~\FontCtrl{choice}~(\CtrlLeft \Rightarrow {#2}) ~ (\CtrlRight \Rightarrow {#3})}
 \newcommand{\LetRecvIn}[3]{\FontCtrl{receive}~{#1}~\FontCtrl{from}~{#2}~\CtrlIn~{#3}}
-\newcommand{\LetSendIn}[4]{\FontCtrl{send}~{#1}~\CtrlDef~{#2}~\FontCtrl{to}~{#3}~\CtrlIn~{#4}}
+\newcommand{\LetSendIn}[4]{\FontCtrl{send}~{#1} \CtrlDef {#2}~\FontCtrl{to}~{#3}~\CtrlIn~{#4}}
 \newcommand{\AmI}[3]{\FontCtrl{AmI}~{#1}~\FontCtrl{then}~{#2}~\FontCtrl{else}~{#3}}
-\newcommand{\CtrlSeq}[2]{{#1}~\CtrlCol{\seq}~{#2}}
+\newcommand{\CtrlSeq}{\mathrel{\CtrlCol{;}}}
 \newcommand{\IAm}[1]{\text{IAm}~{#1}}
 
 \newcommand{\LocalLangFont}[1]{\programfont{#1}}
@@ -260,6 +260,7 @@
 \newcommand{\RTellLet}[3]{\Tell[#1]{#2}{#3}}
 \newcommand{\RRec}{\text{Rec}}
 
+\newcommand{\cloc}{\operatorname{cloc}}
 \newcommand{\rloc}[1]{\text{loc}({#1})}
 
 %%% Local Variables:

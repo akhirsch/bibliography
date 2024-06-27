@@ -8,14 +8,14 @@
 \begin{figure}
   \begin{syntax}
     \category[Control Expression]{E}
-    \alternative{X} \alternative{\CtrlFail} \alternative{\Ret{e}} \alternative{\CtrlSeq{E_1}{E_2}} \alternative{\CtrlFun{X}{E}} \alternative{\CtrlRec{X}{E}} \alternative{E_1~E_2} \\
+    \alternative{X} \alternative{\CtrlFail} \alternative{\Ret{e}} \alternative{E_1 \CtrlSeq E_2} \alternative{\CtrlFun{X}{E}} \alternative{\CtrlRec{X}{E}} \alternative{E_1~E_2} \\
     \alternative{\SendTo{E}{\ell}} \alternative{\RecvFrom{\ell}} \\
     \alternative{\ChooseFor{d}{\ell}{E}} \alternative{\AllowChoice{\ell}{?E_1}{?E_2}} \\
     \alternative{\CtrlITE{E}{E_1}{E_2}} \\
     \alternative{\CtrlTFun{\alpha}{E}} \alternative{E~t} \\
     \alternative{\CtrlLetIn{\Ret{x}}{E_1}{E_2}}\\
-    \alternative{\LetSendIn{\alpha \knd *_\ell}{E_1}{\rho}{E_2}} \alternative{\LetRecvIn{\alpha \knd *_\ell}{\ell}{E}}\\
-    \alternative{\LetSendIn{\alpha \knd *_e}{E_1}{\rho}{E_2}} \alternative{\LetRecvIn{\alpha \knd *_e}{\ell}{E}}\\
+    \alternative{\LetSendIn{\alpha}{E_1}{\rho}{E_2}} \alternative{\LetRecvIn{\alpha}{\ell}{E}}\\
+%    \alternative{\LetSendIn{\alpha \knd *_e}{E_1}{\rho}{E_2}} \alternative{\LetRecvIn{\alpha \knd *_e}{\ell}{E}}\\
     \alternative{\AmI{\ell}{E_1}{E_2}}
 
     \category[Control Expression Values]{V}
@@ -46,80 +46,80 @@ This isn't essential, just makes things easier for label merging and AmI.
 
 \begin{mathparpagebreakable}
     \infer[RetE]{e_1 \localstep e_2}
-    {\Ret{e_1} \ctrlstep[\iota] \Ret{e_2}} \and
-
+    {\Ret{e_1} \ctrlstep[\iota] \Ret{e_2}}
+    \and
     \infer[Seq]{E_1 \ctrlstep[l] E_1'}
-    {\CtrlSeq{E_1}{E_2} \ctrlstep[l] \CtrlSeq{E_1'}{E_2}} \and
-
+    {E_1 \CtrlSeq E_2 \ctrlstep[l] E_1' \CtrlSeq E_2}
+    \and
     \infer[SeqV]{\text{Value}(V)}
-    {\CtrlSeq{V}{E} \ctrlstep[\iota] E} \and
-
+    {V \CtrlSeq E \ctrlstep[\iota] E}
+    \and
     \infer[AppFun]{E_1 \ctrlstep[l] E_1'}
-    {E_1~E_2 \ctrlstep[l] E_1'~E_2} \and
-
+    {E_1~E_2 \ctrlstep[l] E_1'~E_2}
+    \and
     \infer[AppArg]{\text{Value}(V) \\
       E \ctrlstep[l] E'}
-    {V~E \ctrlstep[l] V~E'} \and
-
+    {V~E \ctrlstep[l] V~E'}
+    \and
     \infer[App]{\text{Value}(V)}
-    {(\CtrlFun{X}{E})~V \ctrlstep[\iotasync] \subst{E}{X}{V}} \and
-
+    {(\CtrlFun{X}{E})~V \ctrlstep[\iotasync] \subst{E}{X}{V}}
+    \and
     \infer[Rec]{~}
-    {\mu X.E \ctrlstep[\iotasync] \subst{E}{X}{\mu X.E}} \and
-   
+    {\mu X.E \ctrlstep[\iotasync] \subst{E}{X}{\mu X.E}}
+    \and
     \infer[Send]{E \ctrlstep[l] E'}
-    {\SendTo{E}{L'} \ctrlstep[l] \SendTo{E'}{L'}} \and
-
+    {\SendTo{E}{L'} \ctrlstep[l] \SendTo{E'}{L'}}
+    \and
     \infer[SendV]{\text{Value}(v) \\
       L' \neq L}
-    {\SendTo{\Ret{v}}{L'} \ctrlstep[v \sendsto L'] \CtrlFail} \and
-
+    {\SendTo{\Ret{v}}{L'} \ctrlstep[v \sendsto L'] \CtrlFail}
+    \and
     \infer[Recv]{\text{Value}(v) \\
       L' \neq L}
-    {\RecvFrom{L'} \ctrlstep[L';v \sendsto] \Ret{v}} \and
-
+    {\RecvFrom{L'} \ctrlstep[L';v \sendsto] \Ret{v}}
+    \and
     \infer[Choose]{L' \neq L}
-    {\ChooseFor{d}{L'}{E} \ctrlstep[d \sendsto L'] E} \and
-
+    {\ChooseFor{d}{L'}{E} \ctrlstep[d \sendsto L'] E}
+    \and
     \infer[AllowChoiceL]{L' \neq L}
-    {\AllowChoice{L'}{E_1}{E_2} \ctrlstep[L';\Left \sendsto] E_1} \and
-
+    {\AllowChoice{L'}{E_1}{E_2} \ctrlstep[L';\Left \sendsto] E_1}
+    \and
     \infer[AllowChoiceR]{L' \neq L}
-    {\AllowChoice{L'}{E_1}{E_2} \ctrlstep[L';\Right \sendsto] E_2} \and
-
+    {\AllowChoice{L'}{E_1}{E_2} \ctrlstep[L';\Right \sendsto] E_2}
+    \and
     \infer[If]{E \ctrlstep[l] E'}
-    {\CtrlITE{E}{E_1}{E_2} \ctrlstep[l] \CtrlITE{E'}{E_1}{E_2}} \and
-    
+    {\CtrlITE{E}{E_1}{E_2} \ctrlstep[l] \CtrlITE{E'}{E_1}{E_2}}
+    \and
     \infer[IfT]{~}
-    {\CtrlITE{\Ret{\True}}{E_1}{E_2} \ctrlstep[\iota] E_1} \and
-
+    {\CtrlITE{\Ret{\True}}{E_1}{E_2} \ctrlstep[\iota] E_1}
+    \and
     \infer[IfF]{~}
-    {\CtrlITE{\Ret{\False}}{E_1}{E_2} \ctrlstep[\iota] E_2} \and
-
+    {\CtrlITE{\Ret{\False}}{E_1}{E_2} \ctrlstep[\iota] E_2}
+    \and
     \infer[AppTFun]{E \ctrlstep[l] E'}
-    {E~t \ctrlstep[l] E'~t} \and
-
+    {E~t \ctrlstep[l] E'~t}
+    \and
     \infer[AppT]{~}
-    {(\CtrlTFun{\alpha}{E})~t \ctrlstep[\iotasync] \subst{E}{\alpha}{t}} \and
-
+    {(\CtrlTFun{\alpha}{E})~t \ctrlstep[\iotasync] \subst{E}{\alpha}{t}}
+    \and
     \infer[LetRet]{E_1 \ctrlstep[l] E_1'}
-    {\CtrlLetIn{\Ret{x}}{E_1}{E_2} \ctrlstep[l] \CtrlLetIn{\Ret{x}}{E_1'}{E_2}} \and
-
+    {\CtrlLetIn{\Ret{x}}{E_1}{E_2} \ctrlstep[l] \CtrlLetIn{\Ret{x}}{E_1'}{E_2}}
+    \and
     \infer[LetRetV]{\text{Value}(v)}
-    {\CtrlLetIn{\Ret{x}}{\Ret{v}}{E} \ctrlstep[\iota] \subst{E}{x}{v}} \and
-
+    {\CtrlLetIn{\Ret{x}}{\Ret{v}}{E} \ctrlstep[\iota] \subst{E}{x}{v}}
+    \and
     \infer[SendTy]{E_1 \ctrlstep[l] E_1'}
-    {\LetSendIn{\alpha \knd \kappa}{E_1}{\rho}{E_2} \ctrlstep[l] \LetSendIn{\alpha \knd \kappa}{E_1'}{\rho}{E_2}} \and
-
+    {\LetSendIn{\alpha \knd \kappa}{E_1}{\rho}{E_2} \ctrlstep[l] \LetSendIn{\alpha \knd \kappa}{E_1'}{\rho}{E_2}}
+    \and
     \infer[SendTyV]{~}
-    {\LetSendIn{\alpha \knd \kappa}{\Ret{\say{t}}}{\rho}{E} \ctrlstep[L;t \sendsto \rho] \subst{E}{\alpha}{t}} \and
-
+    {\LetSendIn{\alpha \knd \kappa}{\Ret{\say{t}}}{\rho}{E} \ctrlstep[L;t \sendsto \rho] \subst{E}{\alpha}{t}}
+    \and
     \infer[RecvTy]{~}
-    {\LetRecvIn{\alpha \knd \kappa}{L}{E} \ctrlstep[L';t \sendsto \{L\}] \subst{E}{\alpha}{t}} \and
-
+    {\LetRecvIn{\alpha \knd \kappa}{L}{E} \ctrlstep[L';t \sendsto \{L\}] \subst{E}{\alpha}{t}}
+    \and
     \infer[AmIL]{~}
-    {\AmI{L}{E_1}{E_2} \ctrlstep[\iota] E_1} \and
-
+    {\AmI{L}{E_1}{E_2} \ctrlstep[\iota] E_1}
+    \and
     \infer[AmIR]{L' \neq L}
     {\AmI{L'}{E_1}{E_2} \ctrlstep[\iota] E_2} \and
 \end{mathparpagebreakable}
