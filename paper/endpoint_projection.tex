@@ -6,7 +6,15 @@
 \todo Note that it generalizes traditional EPP because locations in programs may be variables, citation of Alice \& Bob 
 
 \input{control_lang}
-\input{proj_def}
+
+\subsection{Endpoint Projection}
+\todo Explain epp. Form of compilation that gives each location their part of the choreography. Say that epp is partial for us because control program merging is partial. Note that merging is used in if-then-else projection.
+
+\todo Explain epp. for systems
+\begin{mathpar}
+  \epp{C}{\Locations} = L \mapsto \epp{C}{L}
+\end{mathpar}
+
 \input{proj_correct}
 
 %%% Local Variables:

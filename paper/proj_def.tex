@@ -1,4 +1,4 @@
-\subsection{Definition of Endpoint Projection}
+\subsection{Endpoint Projection}
 \label{sec:proj-def}
 
 \begin{mathparpagebreakable}
@@ -20,14 +20,14 @@
 	\epp{\syncs{\ell_1}{d}{\ell_2} \seq C}{L} =
 		\begin{cases}
 			\epp{C}{L} & L = \ell_1 = \ell_2 ~\text{or}~ L \neq \ell_1, \ell_2 \\
-			\ChooseFor{d}{\ell}{\epp{C}{L}} & L = \ell_1 \neq \ell_2 \\
-			\AllowChoice{\ell}{\epp{C}{L}}{\CtrlNone} & L = \ell_2 \neq \ell_1 ~\text{and}~ d = \Left \\
-      \AllowChoice{\ell}{\CtrlNone}{\epp{C}{L}} & L = \ell_2 \neq \ell_1 ~\text{and}~ d = \Right
+			\ChooseFor{d}{\ell_2}{\epp{C}{L}} & L = \ell_1 \neq \ell_2 \\
+			\AllowChoice{\ell_1}{\epp{C}{L}}{\CtrlNone} & L = \ell_2 \neq \ell_1 ~\text{and}~ d = \Left \\
+      \AllowChoice{\ell_1}{\CtrlNone}{\epp{C}{L}} & L = \ell_2 \neq \ell_1 ~\text{and}~ d = \Right
 		\end{cases} \and
 	\epp{\ITE{C}{C_1}{C_2}}{L} =
 		\begin{cases}
 			\CtrlITE{\epp{C}{L}}{\epp{C_1}{L}}{\epp{C_2}{L}} & L = \ell \\
-			\epp{C_1}{L} \sqcup \epp{C_2}{L} & L \neq \ell
+			\CtrlSeq{\epp{C}{L}}{\epp{C_1}{L} \ctrlmerge \epp{C_2}{L}} & L \neq \ell
 		\end{cases} \and
 	\epp{\TFun{\alpha \knd *_\ell}{C}}{L} = \CtrlTFun{\alpha}{\AmI{\alpha}{\epp{\subst{C}{\alpha}{L}}{L}}{\epp{C}{L}}} \and
 	\epp{\TFun{\alpha \knd \kappa}{C}}{L} = \CtrlTFun{\alpha}{\epp{C}{L}} ~\text{if}~\kappa \neq *_\ell \and

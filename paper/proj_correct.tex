@@ -1,5 +1,24 @@
-\subsection{Correctness of Endpoint Projection}
+\subsection{Properties of Endpoint Projection}
 \label{sec:proj-correct}
+\todo talk about less-nondeterminism relation
+
+The less-nondeterminism relation can then be extended pointwise to systems.
+That is,
+\begin{mathpar}
+  \Pi_1 \lessnd \Pi_2 \defeq \forall L \in \Locations,~ \Pi_1(L) \lessnd \Pi_2(L).
+\end{mathpar}
+The following theorem explains the utility of $\lessnd$ in relation to the system semantics.
+Specifically, it says that (1) a more-nondeterministic system can always take the same steps as a less-nondeterministic system, and (2) a less-nondeterministic system can always take the same steps as a more-nondeterministic system so long as the less-nondeterministic system results from projecting a choreography.
+
+\begin{thm}[Lifting and Lowering System Steps Across $\lessnd$]
+  \label{thm:lifting-and-lowering}
+  If $\Pi_1 \lessnd \Pi_2$, then the following are both true:
+  \begin{itemize}
+    \item[\textsc{Lifting}] If $\Pi_1 \systemstep[l_S] \Pi_1'$, then there is some $\Pi_2'$ such that $\Pi_1' \lessnd \Pi_2'$ and $\Pi_2 \systemstep[l_S] \Pi_2'$.
+    \item[\textsc{Lowering}] If $\Pi_2 \systemstep[l_S] \Pi_2'$ and $\Pi_1 = \epp{C}{\Locations}$, then there is some $\Pi_1'$ such that $\Pi_1' \lessnd \Pi_2'$ and $\Pi_1 \systemstep[l_S] \Pi_1'$.
+  \end{itemize}
+\end{thm}
+
 \todo theorem that is actually wanted
 
 \todo extent of what is proven by agda

@@ -36,7 +36,7 @@ If there is no matching pattern below, then $E_1 \ctrlmerge E_2$ is undefined.
   \and
   (\CtrlTFun{\alpha}{E_1}) \ctrlmerge (\CtrlTFun{\alpha}{E_2}) \defeq \CtrlTFun{\alpha}{E_1 \ctrlmerge E_2}
   \and
-  (E_1~t) \ctrlmerge (E_1~t) \defeq (E_1 \ctrlmerge E_2)~t
+  (E_1~t) \ctrlmerge (E_2~t) \defeq (E_1 \ctrlmerge E_2)~t
   \and
   (\CtrlLetIn{\Ret{x}}{E_{1,1}}{E_{1,2}}) \ctrlmerge (\CtrlLetIn{\Ret{x}}{E_{2,1}}{E_{2,2}}) \defeq \CtrlLetIn{\Ret{x}}{E_{1,1} \ctrlmerge E_{2,1}}{E_{1,2} \ctrlmerge E_{2,2}}
   \and

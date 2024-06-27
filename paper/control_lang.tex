@@ -18,6 +18,10 @@
     \alternative{\LetSendIn{\alpha \knd *_e}{E_1}{\rho}{E_2}} \alternative{\LetRecvIn{\alpha \knd *_e}{\ell}{E}}\\
     \alternative{\AmI{\ell}{E_1}{E_2}}
 
+    \category[Control Expression Values]{V}
+    \alternative{\CtrlFail} \alternative{\Ret{v}} \alternative{\CtrlFun{X}{E}}
+    \alternative{\CtrlTFun{\alpha}{E}}
+
     \category[Possible Control Expression]{?E}
     \alternative{\CtrlNone}
     \alternative{E}
@@ -48,14 +52,14 @@ This isn't essential, just makes things easier for label merging and AmI.
     {\CtrlSeq{E_1}{E_2} \ctrlstep[l] \CtrlSeq{E_1'}{E_2}} \and
 
     \infer[SeqV]{\text{Value}(V)}
-    {\CtrlSeq{V}{E_2} \ctrlstep[\iota] E_2} \and
+    {\CtrlSeq{V}{E} \ctrlstep[\iota] E} \and
 
     \infer[AppFun]{E_1 \ctrlstep[l] E_1'}
     {E_1~E_2 \ctrlstep[l] E_1'~E_2} \and
 
     \infer[AppArg]{\text{Value}(V) \\
-      E_2 \ctrlstep[l] E_2'}
-    {V~E_2 \ctrlstep[l] V~E_2'} \and
+      E \ctrlstep[l] E'}
+    {V~E \ctrlstep[l] V~E'} \and
 
     \infer[App]{\text{Value}(V)}
     {(\CtrlFun{X}{E})~V \ctrlstep[\iotasync] \subst{E}{X}{V}} \and
@@ -66,25 +70,27 @@ This isn't essential, just makes things easier for label merging and AmI.
     \infer[Send]{E \ctrlstep[l] E'}
     {\SendTo{E}{L'} \ctrlstep[l] \SendTo{E'}{L'}} \and
 
-    \infer[SendV]{\text{Value}(v)}
+    \infer[SendV]{\text{Value}(v) \\
+      L' \neq L}
     {\SendTo{\Ret{v}}{L'} \ctrlstep[v \sendsto L'] \CtrlFail} \and
 
-    \infer[Recv]{\text{Value}(v)}
+    \infer[Recv]{\text{Value}(v) \\
+      L' \neq L}
     {\RecvFrom{L'} \ctrlstep[L';v \sendsto] \Ret{v}} \and
 
-    \infer[Choose]{~}
+    \infer[Choose]{L' \neq L}
     {\ChooseFor{d}{L'}{E} \ctrlstep[d \sendsto L'] E} \and
 
-    \infer[AllowChoiceL]{~}
+    \infer[AllowChoiceL]{L' \neq L}
     {\AllowChoice{L'}{E_1}{E_2} \ctrlstep[\Left \sendsto L] E_1} \and
 
-    \infer[AllowChoiceR]{~}
+    \infer[AllowChoiceR]{L' \neq L}
     {\AllowChoice{L'}{E_1}{E_2} \ctrlstep[\Right \sendsto L] E_2} \and
 
-    \infer[AppTyFun]{E \ctrlstep[l] E'}
+    \infer[AppTFun]{E \ctrlstep[l] E'}
     {E~t \ctrlstep[l] E'~t} \and
 
-    \infer[AppTy]{~}
+    \infer[AppT]{~}
     {(\CtrlFun{\alpha}{E})~t \ctrlstep[\iotasync] \subst{E}{\alpha}{t}} \and
 
     \infer[LetRet]{E_1 \ctrlstep[l] E_1'}
@@ -105,8 +111,8 @@ This isn't essential, just makes things easier for label merging and AmI.
     \infer[AmIL]{~}
     {\AmI{L}{E_1}{E_2} \ctrlstep[\iota] E_1} \and
 
-    \infer[AmIR]{L \neq L'}
-    {\AmI{L}{E_1}{E_2} \ctrlstep[\iota] E_2} \and
+    \infer[AmIR]{L' \neq L}
+    {\AmI{L'}{E_1}{E_2} \ctrlstep[\iota] E_2} \and
 \end{mathparpagebreakable}
 
 \paragraph{Control Systems}
@@ -170,7 +176,7 @@ While the control program labels only show one side of a send or receive, the sy
 
 \subsection{Control Program Merging}
 \label{sec:control-merge}
-
+\todo Talk about merging operator 
 
 %%% Local Variables:
 %%% mode: latex
