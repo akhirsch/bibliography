@@ -82,16 +82,25 @@ This isn't essential, just makes things easier for label merging and AmI.
     {\ChooseFor{d}{L'}{E} \ctrlstep[d \sendsto L'] E} \and
 
     \infer[AllowChoiceL]{L' \neq L}
-    {\AllowChoice{L'}{E_1}{E_2} \ctrlstep[\Left \sendsto L] E_1} \and
+    {\AllowChoice{L'}{E_1}{E_2} \ctrlstep[L';\Left \sendsto] E_1} \and
 
     \infer[AllowChoiceR]{L' \neq L}
-    {\AllowChoice{L'}{E_1}{E_2} \ctrlstep[\Right \sendsto L] E_2} \and
+    {\AllowChoice{L'}{E_1}{E_2} \ctrlstep[L';\Right \sendsto] E_2} \and
+
+    \infer[If]{E \ctrlstep[l] E'}
+    {\CtrlITE{E}{E_1}{E_2} \ctrlstep[l] \CtrlITE{E'}{E_1}{E_2}} \and
+    
+    \infer[IfT]{~}
+    {\CtrlITE{\Ret{\True}}{E_1}{E_2} \ctrlstep[\iota] E_1} \and
+
+    \infer[IfF]{~}
+    {\CtrlITE{\Ret{\False}}{E_1}{E_2} \ctrlstep[\iota] E_2} \and
 
     \infer[AppTFun]{E \ctrlstep[l] E'}
     {E~t \ctrlstep[l] E'~t} \and
 
     \infer[AppT]{~}
-    {(\CtrlFun{\alpha}{E})~t \ctrlstep[\iotasync] \subst{E}{\alpha}{t}} \and
+    {(\CtrlTFun{\alpha}{E})~t \ctrlstep[\iotasync] \subst{E}{\alpha}{t}} \and
 
     \infer[LetRet]{E_1 \ctrlstep[l] E_1'}
     {\CtrlLetIn{\Ret{x}}{E_1}{E_2} \ctrlstep[l] \CtrlLetIn{\Ret{x}}{E_1'}{E_2}} \and

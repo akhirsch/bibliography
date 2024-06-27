@@ -21,8 +21,8 @@ If $E_1 \lessnd E_2$ and $E_1 \ctrlstep[\iota] E_1'$, there is some $E_2'$ such 
 We proceed by induction on the control step $E_1 \ctrlstep[\iota] E_1'$.
 \begin{description}
   \item[\textsc{RetE}]
-    Let $E_1 = \Ret{e_1}$ and $E_1' = \Ret{e_1'}$, where $e_1 \localstep e_1'$.
-    By examination of $\lessnd$ we have $E_2 = \Ret{e_1}$, so $\Ret{e_1'}$ suffices.
+    Let $E_1 = \Ret{e}$ and $E_1' = \Ret{e'}$, where $e \localstep e'$.
+    By examination of $\lessnd$ we have $E_2 = \Ret{e}$, so $\Ret{e'}$ suffices.
   \item[\textsc{Seq}]
     Let $E_1 = \CtrlSeq{E_{1,1}}{E_{2,1}}$ and $E_1' = \CtrlSeq{E_{1,1}'}{E_{2,1}}$ where $E_{1,1} \ctrlstep[\iota] E_{1,1}'$.
     By examination of $\lessnd$ we have $E_2 = \CtrlSeq{E_{1,2}}{E_{2,2}}$ where $E_{1,1} \lessnd E_{1,2}$ and $E_{2,1} \lessnd E_{2,2}$.
@@ -46,6 +46,16 @@ We proceed by induction on the control step $E_1 \ctrlstep[\iota] E_1'$.
     Let $E_1 = \SendTo{E_1}{L'}$ and $E_1' = \SendTo{E_1'}{L'}$, where $E_1 \ctrlstep[\iota] E_1'$.
     By examination of $\lessnd$ we have $E_2 = \SendTo{E_2}{L'}$, where $E_1 \lessnd E_2$.
     By induction there is some $E_2'$ such that $E_1' \lessnd E_2'$ and $E_2 \ctrlstep[\iota] E_2'$, so $\SendTo{E_2'}{L'}$ suffices.
+  \item[\textsc{If}]
+    Let $E_1 = \CtrlITE{E_1}{E_{1,1}}{E_{2,1}}$ and $E_1' = \CtrlITE{E_1'}{E_{1,1}}{E_{2,1}}$, where $E_1 \ctrlstep[\iota] E_1'$.
+    By examination of $\lessnd$ we have $E_2 = \CtrlITE{E_2}{E_{1,2}}{E_{2,2}}$, where $E_1 \lessnd E_2$, $E_{1,1} \lessnd E_{1,2}$, and $E_{2,1} \lessnd E_{2,2}$.
+    By induction there is some $E_2'$ such that $E_1' \lessnd E_2'$ and $E_2 \ctrlstep[\iota] E_2'$, so $\CtrlITE{E_2'}{E_{1,2}}{E_{2,2}}$ suffices.
+  \item[\textsc{IfT}]
+    Let $E_1 = \CtrlITE{\Ret{\True}}{E_{1,1}}{E_{2,1}}$ and $E_1' = E_{1,1}$.
+    By examination of $\lessnd$ we have $E_2 = \CtrlITE{\Ret{\True}}{E_{1,2}}{E_{2,2}}$, where $E_{1,1} \lessnd E_{1,2}$, and $E_{2,1} \lessnd E_{2,2}$.
+    Therefore $E_{1,2}$ suffices.
+  \item[\textsc{IfF}]
+    Symmetric to the case for \textsc{IfT}.
   \item[\textsc{AppTFun}]    
     Let $E_1 = E_1~t$ and $E_1' = E_1'~E_t$ where $E_1 \ctrlstep[\iota] E_1'$.
     By examination of $\lessnd$ we have $E_2 = E_2~t$ where $E_1 \lessnd E_2$.
@@ -81,7 +91,7 @@ If $E_1 \lessnd E_2$ and $E_1 \ctrlstep[\iotasync] E_1'$, there is some $E_2'$ s
 \end{lem}
 We proceed by induction on the control step $E_1 \ctrlstep[\iotasync] E_1'$.
 \begin{description}
-  \item[\textsc{Seq}, \textsc{AppFun}, \textsc{Send}, \textsc{AppTFun}, \textsc{LetRet}, \textsc{SendTy}]
+  \item[\textsc{Seq}, \textsc{AppFun}, \textsc{Send}, \textsc{If}, \textsc{AppTFun}, \textsc{LetRet}, \textsc{SendTy}]
     Analogous to the corresponding cases in Lemma \ref{lem:internal-control-lifting}, replacing $\iota$ with $\iotasync$.
   \item[\textsc{App}]
     Let $E_1 = (\CtrlFun{X}{E})~V$ and $E_1' = \subst{E}{X}{V}$.
@@ -114,13 +124,43 @@ then there is some $E_{1 \leq}'$ and $E_{2 \leq}'$ such that
 \end{lem}
 We proceed by induction on both control steps.
 \begin{description}
-  \item[\textsc{Seq}, \textsc{AppFun}, \textsc{Send}, \textsc{AppTFun}, \textsc{LetRet}, \textsc{SendTy}]
-    When either of the steps have one of the preceding cases, the proof is analogous to the corresponding case in Lemma \ref{lem:internal-control-lifting}.
+  \item[\textsc{Seq}, \textsc{AppFun}, \textsc{Send}, \textsc{If}, \textsc{AppTFun}, \textsc{LetRet}, \textsc{SendTy}]
+    When either of the steps have one of these cases, the proof is analogous to the corresponding case in Lemma \ref{lem:internal-control-lifting}.
   \item[\textsc{SendV} and \textsc{Recv}]
     Consider the case when $E_1 = \SendTo{\Ret{v}}{L2}$ and $E_2 = \RecvFrom{L1}$.
     By examination of $\lessnd$, $E_1$ and $E_2$ are only related to themselves, so $E_{1 \leq}' = \CtrlFail$ and $E_{2 \leq}' = \Ret{v}$ are satisfactory.
 \end{description}
 
+\begin{lem}[Choice Control Step Lifting]
+\label{lem:choice-control-lifting}
+If
+\begin{itemize}
+  \item $E_1 \ctrlsteploc[d \sendsto L_2]{L_1} E_1'$,
+  \item $E_1 \lessnd E_{1 \leq}$,
+  \item $E_2 \ctrlsteploc[L_1;d \sendsto]{L_2} E_2'$,
+  \item $E_2 \lessnd E_{2 \leq}$, and
+  \item $L_1 \neq L_2$,
+\end{itemize}
+then there is some $E_{1 \leq}'$ and $E_{2 \leq}'$ such that
+\begin{itemize}
+  \item $E_{1 \leq} \ctrlsteploc[d \sendsto L_2]{L_1} E_{1 \leq}'$,
+  \item $E_1' \lessnd E_{1 \leq}'$,
+  \item $E_{2 \leq} \ctrlsteploc[L_1;d \sendsto]{L_2} E_{2 \leq}'$, and
+  \item $E_2' \lessnd E_{2 \leq}'$.
+\end{itemize}
+\end{lem}
+We proceed by induction on both control steps.
+\begin{description}
+  \item[\textsc{Seq}, \textsc{AppFun}, \textsc{Send}, \textsc{If}, \textsc{AppTFun}, \textsc{LetRet}, \textsc{SendTy}]
+    When either of the steps have one of these cases, the proof is analogous to the corresponding case in Lemma \ref{lem:internal-control-lifting}.
+  \item[\textsc{Choose} and \textsc{AllowChoiceL}]
+    Consider the case when $E_1 = \ChooseFor{\Left}{L2}{E}$ and $E_2 = \AllowChoice{L1}{E_1}{E_2}$.
+    By examination of $\lessnd$, $E_{1 \leq} = \ChooseFor{\Left}{L2}{E_{\leq}}$ where $E \lessnd E_{\leq}$, and $E_{2 \leq} = \AllowChoice{L1}{E_T}{E_F}$, where $E_1 \lessnd E_T$ and $E_1 \lessnd E_F$.
+    Therefore it suffices to choose $E_{1 \leq}' = E_{\leq}$ and $E_{2 \leq}' = E_T$.
+  \item[\textsc{Choose} and \textsc{AllowChoiceR}]
+    Symmetric to the \textsc{AllowChoiceL} case.
+\end{description}
+  
 \todo
 \ashley{I want to restate the theorem here, and I need a clean solution to keep the numbering correct}
 \label{sec:lifting-proof}
@@ -141,7 +181,105 @@ We proceed by case analysis of the system step.
     Let $E_1'$ and $E_2'$ be the control expressions yielded by applying Lemma \ref{lem:send-control-lifting}.
     Then $\subst*{\Pi_2}{{L_1}{E_1'}{L_2}{E_2'}}$ satisfies the theorem.
   \item[\textsc{Choice}]
-    Analogous to the \textsc{Comm} case.
+    Suppose that $\Pi_1(L_1) \ctrlsteploc[d \sendsto L_2]{L_1} E_1$ and $\Pi_1(L_2) \ctrlsteploc[L_1;d \sendsto]{L_2} E_2$.
+    Let $E_1'$ and $E_2'$ be the control expressions yielded by applying Lemma \ref{lem:choice-control-lifting}.
+    Then $\subst*{\Pi_2}{{L_1}{E_1'}{L_2}{E_2'}}$ satisfies the theorem.
   \item[\textsc{CommTy}]
     Analogous to the \textsc{Comm} case.
+\end{description}
+
+\begin{lem}[Choice Control Step Lowering]
+\label{lem:choice-control-lowering}
+For every choreography $C$ and distinct locations $L_1 \neq L_2$, if
+\begin{itemize}
+  \item $E_{1 \leq} \ctrlsteploc[d \sendsto L_2]{L_1} E_{1 \leq}'$,
+  \item $\epp{C}{L_1} \lessnd E_{1 \leq}$,
+  \item $E_{2 \leq} \ctrlsteploc[L_1;d \sendsto]{L_2} E_{2 \leq}'$, and
+  \item $\epp{C}{L_2} \lessnd E_{2 \leq}$,
+\end{itemize}
+then there is some $E_1'$ and $E_2'$ such that
+\begin{itemize}
+  \item $\epp{C}{L_1} \ctrlsteploc[d \sendsto L_2]{L_1} E_1'$,
+  \item $E_1' \lessnd E_{1 \leq}'$,
+  \item $\epp{C}{L_2} \ctrlsteploc[L_1;d \sendsto]{L_2} E_2'$, and
+  \item $E_2' \lessnd E_{2 \leq}'$.
+\end{itemize}
+\end{lem}
+We proceed by induction on the choreography $C$ and the control steps.
+\begin{description}
+  \item[--]
+    Let $C = C_1~C_2$.
+    In this case, the control steps may either be \textsc{AppFun} or \textsc{AppArg}.
+    We can apply induction separately on the function or argument, depending on the step, and keep the other part of the control expression the same.
+  \item[--]
+    Let $C = C' \ChorSend[L_a] L_b$.
+    Because the control steps are synchronizations, neither $L_b = L_1$ nor $L_b = L_2$.
+    In the case that $L_a = L_1$, the first control step must be \textsc{Send}.
+    We can apply induction to $C'$ to yield some $E_1'$ and $E_2'$, where then $\SendTo{E_1'}{L_b}$ and $E_2'$ are satisfactory.
+    The case when $L_a = L_2$ is symmetric.
+    If both $L_a \neq L_1$ and $L_a \neq L_2$, we can directly apply induction to $C$.
+  \item[--]
+    Let $C = \syncs{L_a}{d}{L_b} \seq C'$.
+    Because both the left and right case must be present in order to take an \textsc{AllowChoiceL} or \textsc{AllowChoiceR} step, we must have that $L_a \neq L_1, L_2$ and $L_b \neq L_1, L_2$.
+    Therefore we can directly apply induction to $C'$ to yield the required $E_1'$ and $E_2'$.
+  \item[--]
+    Let $C = \ITE{C}{C_1}{C_2}$.
+  \item[--]
+    Let $C = C'~t$.
+    In this case, the control steps must be \textsc{AppTFun}.
+    Therefore we can apply induction to $C'$ to yield $E_1'$ and $E_2'$, with $E_1'~t$ and $E_2'~t$ sufficing for this case.
+  \item[--]
+    Let $C = \LetIn{L'.x \ty t_e}{C_1}{C_2}$.
+    \begin{description}
+      \item[--]
+        Suppose that $L_1, L_2 \neq L'$.
+        Then the control steps must both be \textsc{Seq}, and we can apply induction to $C_1$ to satisfy this case.
+      \item[--]
+        Suppose that $L_1 = L'$ and $L_2 \neq L'$.
+        Then the control steps must be \textsc{LetRet} and \textsc{Seq}, respectively.
+        In this case we can apply induction to $C_1$ to satisfy this case.
+      \item[--]
+        The case when $L_1 \neq L'$ and $L_2 = L'$ is symmetric to the previous.
+    \end{description}
+  \item[--]
+    Let $C = \LetTellIn{\alpha}{L'}{C_1 \knd *_\ell}{\rho}{C_2}$.
+    \begin{description}
+      \item[--]
+        Suppose that $L' = L_1 \in \rho$, and $L_2 \in \rho$.
+      \item[--]
+        Suppose that $L' = L_1 \in \rho$, and $L_2 \notin \rho$.
+      \item[--]
+        Suppose that $L' \neq L_1 \in \rho$, and $L_2 \in \rho$.
+      \item[--]
+        Suppose that $L' \neq L_1 \in \rho$, and $L_2 \notin \rho$.
+      \item[--]
+        Suppose that $L' = L_1 \notin \rho$, and $L_2 \in \rho$.
+      \item[--]
+        Suppose that $L' = L_1 \notin \rho$, and $L_2 \notin \rho$.
+      \item[--]
+        Suppose that $L' \neq L_1 \notin \rho$, and $L_2 \in \rho$.
+      \item[--]
+        Suppose that $L' \neq L_1 \notin \rho$, and $L_2 \notin \rho$.
+    \end{description}
+  \item[--]
+    Let $C = \LetTellIn{\alpha}{L'}{C_1 \knd *_e}{\rho}{C_2}$.
+\end{description}
+
+\label{sec:lowering-proof}
+\paragraph{Proof of \textsc{Lowering}}
+Suppose that $\Pi_1 \lessnd \Pi_2$, $\Pi_2 \systemstep[l_S] \Pi_2'$, and $\Pi_1 = \epp{C}{\Locations}$.
+We proceed by case analysis of the system step.
+\begin{description}
+  \item[\textsc{Internal}]
+    Analogous to the corresponding case in the \textsc{Lifting} proof.
+  \item[\textsc{Synchronized Internal}]
+    Analogous to the corresponding case in the \textsc{Lifting} proof.
+  \item[\textsc{Comm}]
+    Analogous to the corresponding case in the \textsc{Lifting} proof.
+  \item[\textsc{Choice}]
+    Suppose that $\Pi_2(L_1) \ctrlsteploc[d \sendsto L_2]{L_1} E_1$ and $\Pi_2(L_2) \ctrlsteploc[L_1;d \sendsto]{L_2} E_2$.
+    Let $E_1'$ and $E_2'$ be the control expressions yielded by applying Lemma \ref{lem:choice-control-lowering}.
+    Then $\subst*{\Pi_1}{{L_1}{E_1'}{L_2}{E_2'}}$ satisfies the theorem.
+  \item[\textsc{CommTy}]
+  Analogous to the corresponding case in the \textsc{Lifting} proof.
 \end{description}
