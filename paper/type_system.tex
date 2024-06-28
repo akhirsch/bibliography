@@ -38,6 +38,7 @@ These three types have the following kinding rules:
   \infer[TyAbs]{\chorkinded{\Gamma, \alpha \knd \kappa}{\tau}{*}}
     {\chorkinded{\Gamma}{\forall \alpha \knd \kappa.\tau}{*}} \and 
 \end{mathpar}
+\ethan{Why is the first premise \textsc{TyAt} not $\Gamma \proves t_e :: *_e$?}
 For example, the type of a choreographic program which sends a value of type $\eta$ from $\alpha$ to $\beta$, for any possible local type $\eta$ and locations $\alpha$ and $\beta$, can be written as follows:
 \begin{mathpar}
   \forall \eta \knd *_e.\forall \alpha \knd *_\ell.\forall \beta \knd *_\ell.\eta @ \alpha \to \eta @ \beta
@@ -114,8 +115,8 @@ This allows choreographic expressions of the form $t_e @ \ell$ to be used within
   \label{fig:selected-type-rules}
 \end{figure}
 
-Parametric polymorphism is handled in a manner identical to System F: one can introduce a type variable using the \emph{type abstraction} expression $\Lambda \alpha \knd \kappa.C$, where $\kappa$ can be any of the four kinds.
-The bound type-variable $\alpha$ can then be used in the body of the abstraction, as in the term $\Lambda \alpha \knd *_\ell.C \ChorSend[L] \alpha$ which sends a value $C \ty t_e @ L$ to an arbitrary location $\alpha$.
+Parametric polymorphism is handled in a manner identical to System F: one can introduce a type variable using the \emph{type abstraction} expression $\TFun{\alpha \knd \kappa}{C}$, where $\kappa$ can be any of the four kinds.
+The bound type-variable $\alpha$ can then be used in the body of the abstraction, as in the term $\TFun{\alpha \knd *_\ell}{C \ChorSend[L] \alpha}$ which sends a value $C : t_e @ L$ to an arbitrary location $\alpha$.
 
 The tell-let binding allows for dynamically generated location names and local types to be used in the choreographic program.
 Specifically, if $C_1 \ty \Loc @ \ell$ is a location name stored at $\ell$, then the expression $\LetTellIn{\alpha \knd *_\ell}{\ell}{C_1}{\rho}{C_2}$ allows the \emph{type variable} $\alpha \knd *_\ell$ to be used in the subexpression $C_2$.
