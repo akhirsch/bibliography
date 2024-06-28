@@ -122,14 +122,14 @@ then there is some $E_{1 \leq}'$ and $E_{2 \leq}'$ such that
   \item $E_2' \lessnd E_{2 \leq}'$.
 \end{itemize}
 \end{lem}
-We proceed by induction on both control steps.
-\begin{description}
-  \item[\textsc{Seq}, \textsc{AppFun}, \textsc{Send}, \textsc{If}, \textsc{AppTFun}, \textsc{LetRet}, \textsc{SendTy}]
-    When either of the steps have one of these cases, the proof is analogous to the corresponding case in Lemma \ref{lem:internal-control-lifting}.
-  \item[\textsc{SendV} and \textsc{Recv}]
-    Consider the case when $E_1 = \SendTo{\Ret{v}}{L2}$ and $E_2 = \RecvFrom{L1}$.
-    By examination of $\lessnd$, $E_1$ and $E_2$ are only related to themselves, so $E_{1 \leq}' = \CtrlFail$ and $E_{2 \leq}' = \Ret{v}$ are satisfactory.
-\end{description}
+% We proceed by induction on both control steps.
+% \begin{description}
+%   \item[\textsc{Seq}, \textsc{AppFun}, \textsc{Send}, \textsc{If}, \textsc{AppTFun}, \textsc{LetRet}, \textsc{SendTy}]
+%     When either of the steps have one of these cases, the proof is analogous to the corresponding case in Lemma \ref{lem:internal-control-lifting}.
+%   \item[\textsc{SendV} and \textsc{Recv}]
+%     Consider the case when $E_1 = \SendTo{\Ret{v}}{L2}$ and $E_2 = \RecvFrom{L1}$.
+%     By examination of $\lessnd$, $E_1$ and $E_2$ are only related to themselves, so $E_{1 \leq}' = \CtrlFail$ and $E_{2 \leq}' = \Ret{v}$ are satisfactory.
+% \end{description}
 
 \begin{lem}[Choice Control Step Lifting]
 \label{lem:choice-control-lifting}
