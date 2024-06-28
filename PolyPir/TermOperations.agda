@@ -29,7 +29,6 @@ open import Types
 open import Kinding
 open import Terms
 open import Typing
-open import TypeEquality
 open import PolyPir.LocalLang
 
 module PolyPir.TermOperations
@@ -45,135 +44,7 @@ module PolyPir.TermOperations
 open import PolyPir.ChorTypes Loc ≡-dec-Loc 𝕃
 open import PolyPir.TypeOperations Loc ≡-dec-Loc 𝕃
 open import PolyPir.ChorTerms Loc ≡-dec-Loc 𝕃
-
-≡-dec-ChorKnd : DecidableEquality ChorKnd
-≡-dec-ChorKnd (LocKnd κ1ₑ) (LocKnd κ2ₑ)
-  with 𝕃 .≡-dec-Kndₑ κ1ₑ κ2ₑ
-... | yes p = yes $ cong LocKnd p
-... | no ¬p = no λ{ refl → ¬p refl }
-≡-dec-ChorKnd (LocKnd κₑ) (Bnd κₑ₁) = no (λ ())
-≡-dec-ChorKnd (LocKnd κₑ) * = no (λ ())
-≡-dec-ChorKnd (LocKnd κₑ) *ₗ = no (λ ())
-≡-dec-ChorKnd (LocKnd κₑ) *ₛ = no (λ ())
-≡-dec-ChorKnd (Bnd κₑ) (LocKnd κₑ₁) = no (λ ())
-≡-dec-ChorKnd (Bnd κ1ₑ) (Bnd κ2ₑ)
-  with 𝕃 .≡-dec-Kndₑ κ1ₑ κ2ₑ
-... | yes p = yes $ cong Bnd p
-... | no ¬p = no λ{ refl → ¬p refl }
-≡-dec-ChorKnd (Bnd κₑ) * = no (λ ())
-≡-dec-ChorKnd (Bnd κₑ) *ₗ = no (λ ())
-≡-dec-ChorKnd (Bnd κₑ) *ₛ = no (λ ())
-≡-dec-ChorKnd * (LocKnd κₑ) = no (λ ())
-≡-dec-ChorKnd * (Bnd κₑ) = no (λ ())
-≡-dec-ChorKnd * * = yes refl
-≡-dec-ChorKnd * *ₗ = no (λ ())
-≡-dec-ChorKnd * *ₛ = no (λ ())
-≡-dec-ChorKnd *ₗ (LocKnd κₑ) = no (λ ())
-≡-dec-ChorKnd *ₗ (Bnd κₑ) = no (λ ())
-≡-dec-ChorKnd *ₗ * = no (λ ())
-≡-dec-ChorKnd *ₗ *ₗ = yes refl
-≡-dec-ChorKnd *ₗ *ₛ = no (λ ())
-≡-dec-ChorKnd *ₛ (LocKnd κₑ) = no (λ ())
-≡-dec-ChorKnd *ₛ (Bnd κₑ) = no (λ ())
-≡-dec-ChorKnd *ₛ * = no (λ ())
-≡-dec-ChorKnd *ₛ *ₗ = no (λ ())
-≡-dec-ChorKnd *ₛ *ₛ = yes refl
-
-≡-dec-ChorTySymb : DecidableEquality ChorTySymb
-≡-dec-ChorTySymb (EmbLocalTyS s1ₑ) (EmbLocalTyS s2ₑ)
-  with 𝕃 .≡-dec-TySymbₑ s1ₑ s2ₑ
-... | yes p = yes $ cong EmbLocalTyS p
-... | no ¬p = no λ{ refl → ¬p refl }
-≡-dec-ChorTySymb (EmbLocalTyS sₑ) (LocalS κₑ) = no (λ ())
-≡-dec-ChorTySymb (EmbLocalTyS sₑ) AtS = no (λ ())
-≡-dec-ChorTySymb (EmbLocalTyS sₑ) FunS = no (λ ())
-≡-dec-ChorTySymb (EmbLocalTyS sₑ) (AllS κ ∀κ) = no (λ ())
-≡-dec-ChorTySymb (EmbLocalTyS sₑ) (LitLocS L) = no (λ ())
-≡-dec-ChorTySymb (EmbLocalTyS sₑ) EmpS = no (λ ())
-≡-dec-ChorTySymb (EmbLocalTyS sₑ) SngS = no (λ ())
-≡-dec-ChorTySymb (EmbLocalTyS sₑ) UnionS = no (λ ())
-≡-dec-ChorTySymb (LocalS κₑ) (EmbLocalTyS sₑ) = no (λ ())
-≡-dec-ChorTySymb (LocalS κ1ₑ) (LocalS κ2ₑ)
-  with 𝕃 .≡-dec-Kndₑ κ1ₑ κ2ₑ
-... | yes p = yes $ cong LocalS p
-... | no ¬p = no λ{ refl → ¬p refl }
-≡-dec-ChorTySymb (LocalS κₑ) AtS = no (λ ())
-≡-dec-ChorTySymb (LocalS κₑ) FunS = no (λ ())
-≡-dec-ChorTySymb (LocalS κₑ) (AllS κ ∀κ) = no (λ ())
-≡-dec-ChorTySymb (LocalS κₑ) (LitLocS L) = no (λ ())
-≡-dec-ChorTySymb (LocalS κₑ) EmpS = no (λ ())
-≡-dec-ChorTySymb (LocalS κₑ) SngS = no (λ ())
-≡-dec-ChorTySymb (LocalS κₑ) UnionS = no (λ ())
-≡-dec-ChorTySymb AtS (EmbLocalTyS sₑ) = no (λ ())
-≡-dec-ChorTySymb AtS (LocalS κₑ) = no (λ ())
-≡-dec-ChorTySymb AtS AtS = yes refl
-≡-dec-ChorTySymb AtS FunS = no (λ ())
-≡-dec-ChorTySymb AtS (AllS κ ∀κ) = no (λ ())
-≡-dec-ChorTySymb AtS (LitLocS L) = no (λ ())
-≡-dec-ChorTySymb AtS EmpS = no (λ ())
-≡-dec-ChorTySymb AtS SngS = no (λ ())
-≡-dec-ChorTySymb AtS UnionS = no (λ ())
-≡-dec-ChorTySymb FunS (EmbLocalTyS sₑ) = no (λ ())
-≡-dec-ChorTySymb FunS (LocalS κₑ) = no (λ ())
-≡-dec-ChorTySymb FunS AtS = no (λ ())
-≡-dec-ChorTySymb FunS FunS = yes refl
-≡-dec-ChorTySymb FunS (AllS κ ∀κ) = no (λ ())
-≡-dec-ChorTySymb FunS (LitLocS L) = no (λ ())
-≡-dec-ChorTySymb FunS EmpS = no (λ ())
-≡-dec-ChorTySymb FunS SngS = no (λ ())
-≡-dec-ChorTySymb FunS UnionS = no (λ ())
-≡-dec-ChorTySymb (AllS κ ∀κ) (EmbLocalTyS sₑ) = no (λ ())
-≡-dec-ChorTySymb (AllS κ ∀κ) (LocalS κₑ) = no (λ ())
-≡-dec-ChorTySymb (AllS κ ∀κ) AtS = no (λ ())
-≡-dec-ChorTySymb (AllS κ ∀κ) FunS = no (λ ())
-≡-dec-ChorTySymb (AllS κ1 ∀κ1) (AllS κ2 ∀κ2) with ≡-dec-ChorKnd κ1 κ2
-... | yes refl = yes $ cong (AllS κ1) $ canAbstract-isProp κ1 ∀κ1 ∀κ2
-... | no  ¬p   = no λ{ refl → ¬p refl }
-≡-dec-ChorTySymb (AllS κ ∀κ) (LitLocS L) = no (λ ())
-≡-dec-ChorTySymb (AllS κ ∀κ) EmpS = no (λ ())
-≡-dec-ChorTySymb (AllS κ ∀κ) SngS = no (λ ())
-≡-dec-ChorTySymb (AllS κ ∀κ) UnionS = no (λ ())
-≡-dec-ChorTySymb (LitLocS L) (EmbLocalTyS sₑ) = no (λ ())
-≡-dec-ChorTySymb (LitLocS L) (LocalS κₑ) = no (λ ())
-≡-dec-ChorTySymb (LitLocS L) AtS = no (λ ())
-≡-dec-ChorTySymb (LitLocS L) FunS = no (λ ())
-≡-dec-ChorTySymb (LitLocS L) (AllS κ ∀κ) = no (λ ())
-≡-dec-ChorTySymb (LitLocS L1) (LitLocS L2) with ≡-dec-Loc L1 L2
-... | yes p = yes $ cong LitLocS p
-... | no ¬p = no λ{ refl → ¬p refl }
-≡-dec-ChorTySymb (LitLocS L) EmpS = no (λ ())
-≡-dec-ChorTySymb (LitLocS L) SngS = no (λ ())
-≡-dec-ChorTySymb (LitLocS L) UnionS = no (λ ())
-≡-dec-ChorTySymb EmpS (EmbLocalTyS sₑ) = no (λ ())
-≡-dec-ChorTySymb EmpS (LocalS κₑ) = no (λ ())
-≡-dec-ChorTySymb EmpS AtS = no (λ ())
-≡-dec-ChorTySymb EmpS FunS = no (λ ())
-≡-dec-ChorTySymb EmpS (AllS κ ∀κ) = no (λ ())
-≡-dec-ChorTySymb EmpS (LitLocS L) = no (λ ())
-≡-dec-ChorTySymb EmpS EmpS = yes refl
-≡-dec-ChorTySymb EmpS SngS = no (λ ())
-≡-dec-ChorTySymb EmpS UnionS = no (λ ())
-≡-dec-ChorTySymb SngS (EmbLocalTyS sₑ) = no (λ ())
-≡-dec-ChorTySymb SngS (LocalS κₑ) = no (λ ())
-≡-dec-ChorTySymb SngS AtS = no (λ ())
-≡-dec-ChorTySymb SngS FunS = no (λ ())
-≡-dec-ChorTySymb SngS (AllS κ ∀κ) = no (λ ())
-≡-dec-ChorTySymb SngS (LitLocS L) = no (λ ())
-≡-dec-ChorTySymb SngS EmpS = no (λ ())
-≡-dec-ChorTySymb SngS SngS = yes refl
-≡-dec-ChorTySymb SngS UnionS = no (λ ())
-≡-dec-ChorTySymb UnionS (EmbLocalTyS sₑ) = no (λ ())
-≡-dec-ChorTySymb UnionS (LocalS κₑ) = no (λ ())
-≡-dec-ChorTySymb UnionS AtS = no (λ ())
-≡-dec-ChorTySymb UnionS FunS = no (λ ())
-≡-dec-ChorTySymb UnionS (AllS κ ∀κ) = no (λ ())
-≡-dec-ChorTySymb UnionS (LitLocS L) = no (λ ())
-≡-dec-ChorTySymb UnionS EmpS = no (λ ())
-≡-dec-ChorTySymb UnionS SngS = no (λ ())
-≡-dec-ChorTySymb UnionS UnionS = yes refl
-
-≡-dec-CTy : DecidableEquality CTy
-≡-dec-CTy = ≡-dec-Ty C⅀ₖ ≡-dec-ChorTySymb
+open import PolyPir.ChorEquality Loc ≡-dec-Loc 𝕃
 
 -- Predicate for whether a type is of the form tₑ @ ℓ
 isAtTy : CTy → CTyp → Set
@@ -1391,3 +1262,25 @@ injVec ξ ℓ ((e , m , n) ∷ es) =
     (eq4 $ ⊢⇒⊢typ (𝕃 .⅀ₑ) ⊢e)
     (sym $ length-map LocKnd Γₑ'))
   refl
+
+inj-injective : ∀{ξ} →
+                Injective _≡_ _≡_ ξ →
+                (ℓ : CTy) →
+                Injective _≡_ _≡_ (inj ξ ℓ)
+injVec-injective : ∀{ξ} →
+                  Injective _≡_ _≡_ ξ →
+                  (ℓ : CTy) →
+                  Injective _≡_ _≡_ (injVec ξ ℓ)                
+inj-injective ξ-inj ℓ {var x1} {var .x1} refl = refl 
+inj-injective {ξ} ξ-inj ℓ {constr s1 ts1 es1} {constr s2 ts2 es2} p with constr-inj C⅀ p
+... | refl , r , s =
+  cong₂ (constr s1)
+    (injTyVec-inj $ renTyVec-inj C⅀ₖ ξ-inj $ tyCons-inj C⅀ₖ r .snd .snd)
+    (injVec-injective ξ-inj ℓ s)
+
+injVec-injective ξ-inj ℓ {[]} {[]} refl = refl
+injVec-injective ξ-inj ℓ {(e1 , m1 , n1) ∷ es1} {(e2 , m2 , n2) ∷ es2} p with tmCons-inj C⅀ p
+... | (q , refl , refl , r) =
+  cong₂ (λ x y → (x , m1 , n2) ∷ y)
+    (inj-injective (Keep*-inj ξ-inj m1) (renTy C⅀ₖ (Drop* id m1) ℓ) q)
+    (injVec-injective ξ-inj ℓ r)

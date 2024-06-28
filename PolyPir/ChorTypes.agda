@@ -43,11 +43,12 @@ Kndₑ     = ⅀ₑₖ .Knd
 KndCtxₑ  = List Kndₑ
 TySymbₑ  = ⅀ₑₖ .TySymb
 TySigₑ   = ⅀ₑₖ .TySig
+Tyₑ      = Ty ⅀ₑₖ
 
 _e⊢ₜvar_∶_ : List Kndₑ → ℕ → Kndₑ → Set
 _e⊢ₜvar_∶_ = varKinded ⅀ₑₖ
 
-_e⊢ₜ_∶_ : List Kndₑ → Ty ⅀ₑₖ → Kndₑ → Set
+_e⊢ₜ_∶_ : List Kndₑ → Tyₑ → Kndₑ → Set
 _e⊢ₜ_∶_ = kinded ⅀ₑₖ
 
 _e⊢ₜvec_∶_ : List Kndₑ → TyVec ⅀ₑₖ → List (KndCtxₑ × Kndₑ) → Set
@@ -393,3 +394,17 @@ Union ρ1 ρ2 = tyConstr UnionS ((ρ1 , 0) ∷ (ρ2 , 0) ∷ [])
         Γ c⊢ₜ ρ2 ∶ *ₛ →
         Γ c⊢ₜ Union ρ1 ρ2 ∶ *ₛ
 ⊢Union ⊢ρ1 ⊢ρ2 = ⊢ₜtyConstr UnionS (⊢ρ1 ⊢ₜ∷ ⊢ρ2 ⊢ₜ∷ ⊢ₜ[])
+
+LitSet : (ρ : List Loc) → CTy
+LitSet [] = Emp
+LitSet (L ∷ ρ) =
+  Union
+    (Sng (LitLoc L))
+    (LitSet ρ)
+
+⊢LitSet : ∀{Γ} (ρ : List Loc) → Γ c⊢ₜ LitSet ρ ∶ *ₛ
+⊢LitSet [] = ⊢Emp
+⊢LitSet (L ∷ ρ) =
+  ⊢Union
+    (⊢Sng (⊢LitLoc L))
+    (⊢LitSet ρ)

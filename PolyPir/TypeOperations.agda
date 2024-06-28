@@ -74,7 +74,7 @@ projTyVar-0 (false ∷ Γ) = refl
 ⊢projTyVar {*ₗ ∷ Γ} (⊢ₜS ⊢x) = ⊢projTyVar ⊢x
 ⊢projTyVar {*ₛ ∷ Γ} (⊢ₜS ⊢x) = ⊢projTyVar ⊢x
 
-projTy : (Γ : List Bool) → CTy → Ty ⅀ₑₖ
+projTy : (Γ : List Bool) → CTy → Tyₑ
 projTyVec : (Γ : List Bool) → CTyVec → TyVec ⅀ₑₖ
 
 projTy Γ (tyVar x) = tyVar (projTyVar Γ x)
@@ -210,7 +210,7 @@ then there is a corresponding choreographic type
 inj Γₑ ⊢ inj t : κₑ
 in the injected context
 -}
-injTy : Ty ⅀ₑₖ → CTy
+injTy : Tyₑ → CTy
 injTyVec : TyVec ⅀ₑₖ → CTyVec
 
 injTy (tyVar x) = tyVar x
@@ -1305,3 +1305,18 @@ regain∘inj∘projTyRenVar≗id {Γₑ} {Γ} {ξ} ⊢ξ {x} ⊢x with Γₑ⊢x
   subst (_e⊢ₜvar projTyVar (map isLocKnd (map LocKnd Γ1)) x ∶ κₑ)
     (proj∘injKndCtx≗id Γ1)
     (⊢projTyVar ⊢x)
+
+injTy-inj : Injective _≡_ _≡_ injTy
+injTyVec-inj : Injective _≡_ _≡_ injTyVec
+
+injTy-inj {tyVar x1} {tyVar .x1} refl = refl
+injTy-inj {tyConstr s1 ts1} {tyConstr s2 ts2} p with tyConstr-inj C⅀ₖ p
+... | refl , r = cong₂ tyConstr refl (injTyVec-inj r)
+
+injTyVec-inj {[]} {[]} refl = refl
+injTyVec-inj {(t1 , k1) ∷ ts1} {(t2 , k2) ∷ ts2} p with tyCons-inj C⅀ₖ p
+... | (q , r , s) =
+  cong₃ (tyCons ⅀ₑₖ)
+    (injTy-inj q)
+    r
+    (injTyVec-inj s)

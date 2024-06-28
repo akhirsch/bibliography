@@ -20,6 +20,8 @@ open import Types
 open import Kinding
 open import Terms
 open import Typing
+open import TypeEquality
+open import TermEquality
 
 module PolyPir.LocalLang where
 
@@ -35,25 +37,28 @@ record LocalLang (Loc : Set) : Set₁ where
     -- Type constructor symbols have decidable equality
     ≡-dec-TySymbₑ : DecidableEquality (⅀ₑ .⅀ₖ .TySymb)
 
+    -- Term constructor symbols have decidable equality
+    ≡-dec-TmSymbₑ : DecidableEquality (⅀ₑ .TmSymb)
+
     -- Kind of local types
     TyKnd : ⅀ₑ .⅀ₖ .Knd
 
     -- Semantics
-    _⇒ₑ_ : Tm ⅀ₑ → Tm ⅀ₑ → Set
+    Stepₑ : Tm ⅀ₑ → Tm ⅀ₑ → Set
     -- Values
     Valₑ : Tm ⅀ₑ → Set
     -- Only well-typed ground-terms can be values
     ⊢Valₑ : ∀{e} → Valₑ e → Σ[ t ∈ _ ] (typed ⅀ₑ [] [] e t)
     -- Values cannot step
-    valNoStepₑ : ∀{e1 e2} → Valₑ e1 → ¬ (e1 ⇒ₑ e2)
+    valNoStepₑ : ∀{e1 e2} → Valₑ e1 → ¬ (Stepₑ e1 e2)
     -- We have type safety
-    preservationₑ : ∀{e1 e2 t} →
-                    typed ⅀ₑ [] [] e1 t →
-                    e1 ⇒ₑ e2 →
-                    typed ⅀ₑ [] [] e2 t
-    progressₑ : ∀{e1 t} →
+    Preservationₑ : ∀{Γ Δ e1 e2 t} →
+                    typed ⅀ₑ Γ Δ e1 t →
+                    Stepₑ e1 e2 →
+                    typed ⅀ₑ Γ Δ e2 t
+    Progressₑ : ∀{e1 t} →
                 typed ⅀ₑ [] [] e1 t →
-                (Valₑ e1) ⊎ (Σ[ e2 ∈ Tm ⅀ₑ ] e1 ⇒ₑ e2)
+                (Valₑ e1) ⊎ (Σ[ e2 ∈ Tm ⅀ₑ ] Stepₑ e1 e2)
 
     -- Boolean type
     Boolₑ : Ty (⅀ₑ .⅀ₖ)
@@ -76,12 +81,24 @@ record LocalLang (Loc : Set) : Set₁ where
     ⊢litLocₑ : (L : Loc) → typed ⅀ₑ [] [] (litLocₑ L) (TyKnd , Locₑ)
     litLoc-Valₑ : (L : Loc) → Valₑ (litLocₑ L)
     -- The only ground location values are literals
-    invertLocₑ : ∀{e} → typed ⅀ₑ [] [] e (TyKnd , Locₑ) → Valₑ e → Σ[ L ∈ Loc ] (e ≡ litLocₑ L)
+    invertLocₑ : ∀{e} →
+                 typed ⅀ₑ [] [] e (TyKnd , Locₑ) →
+                 Valₑ e →
+                 Σ[ L ∈ Loc ] (e ≡ litLocₑ L)
 
     -- Type for representations of local types
     TyRepₑ : Ty (⅀ₑ .⅀ₖ)
     ⊢TyRepₑ : kinded (⅀ₑ .⅀ₖ) [] TyRepₑ TyKnd
-    Elₑ : ∀{e} → typed ⅀ₑ [] [] e (TyKnd , TyRepₑ) → Valₑ e →
-          Σ[ t ∈ Ty (⅀ₑ .⅀ₖ) ] kinded (⅀ₑ .⅀ₖ) [] t TyKnd
+    Elₑ : Tm ⅀ₑ → Ty (⅀ₑ .⅀ₖ)
+    ⊢Elₑ : ∀{e} →
+           typed ⅀ₑ [] [] e (TyKnd , TyRepₑ) →
+           Valₑ e →
+           kinded (⅀ₑ .⅀ₖ) [] (Elₑ e) TyKnd
+
+  ≡-dec-Tyₑ : DecidableEquality (Ty (⅀ₑ .⅀ₖ))
+  ≡-dec-Tyₑ = ≡-dec-Ty (⅀ₑ .⅀ₖ) ≡-dec-TySymbₑ
+
+  ≡-dec-Tmₑ : DecidableEquality (Tm ⅀ₑ)
+  ≡-dec-Tmₑ = ≡-dec-Tm ⅀ₑ ≡-dec-TySymbₑ ≡-dec-TmSymbₑ
 
 open LocalLang public
