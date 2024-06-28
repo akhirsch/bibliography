@@ -56,7 +56,7 @@ E ::= X | () | ret(e)
     | choose d for ℓ; E
     | allow ℓ choice (L ⇒ ?E1) (R ⇒ ?E1)
     | if E then E1 else E2
-    | Λα∷κ.E | E t
+    | Λα.E | E t
     | let ret(x) := E1 in E2
     | send α∷κ := E1 to ρ in E2
     | recv α∷κ from ℓ in E
@@ -87,6 +87,19 @@ data Ctrl where
   RecvTy : (κ : ChorKnd) (ℓ : CTy) (E : Ctrl) → Ctrl
   AmI : (ℓ : CTy) (E1 E2 : Ctrl) → Ctrl
 
+
+{-
+Control expression values
+
+V ::= () | Ret v | λX.E | Λα.E
+-}
+data CtrlVal : Ctrl → Set where
+  ValUnit : CtrlVal Unit
+  ValRet : ∀{v} (v-Val : 𝕃 .Valₑ v) → CtrlVal (Ret v)
+  ValAbs : (E : Ctrl) → CtrlVal (CtrlAbs E)
+  ValTAbs : (E : Ctrl) → CtrlVal (CtrlTAbs E)
+
+-- Renaming and substitution operations
 renCtrl : Ren → Ctrl → Ctrl
 renCtrl? : Ren → ?Ctrl → ?Ctrl
 
@@ -239,7 +252,7 @@ data _≼_ where
             E11 ≼? E21 →
             E12 ≼? E22 →
             Allow ℓ E11 E12 ≼ Allow ℓ E21 E22
-  ≼ITE : ∀{E1 E2 E11 E12 E21 E22} →
+  ≼ITE : ∀{E1 E11 E12 E2 E21 E22} →
          E1 ≼ E2 →
          E11 ≼ E21 →
          E12 ≼ E22 →
@@ -369,6 +382,19 @@ data _≼_ where
 ≼?-localSub σ ？≼？ = ？≼？
 ≼?-localSub σ (?≼′ E) = ?≼′ (localSub σ E)
 ≼?-localSub σ (′≼′ p) = ′≼′ (≼-localSub σ p)
+
+-- Control values are determined
+V≼ : ∀{V E} → CtrlVal V → V ≼ E → E ≡ V
+V≼ ValUnit ≼Unit = refl
+V≼ (ValRet v-Val) (≼Ret _) = refl
+V≼ (ValAbs E) (≼Abs .E) = refl
+V≼ (ValTAbs E) (≼TAbs .E) = refl
+
+≼V : ∀{V E} → CtrlVal V → E ≼ V → E ≡ V
+≼V ValUnit ≼Unit = refl
+≼V (ValRet v-Val) (≼Ret _) = refl
+≼V (ValAbs E) (≼Abs .E) = refl
+≼V (ValTAbs E) (≼TAbs .E) = refl
 
 pure : ∀{a} {A : Set a} → A → Maybe A
 pure = just
@@ -513,12 +539,9 @@ _ ⊔ _ = nothing
 ⊔?-idempotent ？ = refl
 ⊔?-idempotent (′ E) = cong (λ x → ⦇ ′ x ⦈) (⊔-idempotent E)
 
-data CtrlVal : Ctrl → Set where
-  ValUnit : CtrlVal Unit
-  ValRet : ∀{v} → 𝕃 .Valₑ v → CtrlVal (Ret v)
-  ValAbs : (E : Ctrl) → CtrlVal (CtrlAbs E)
-  ValTAbs : (E : Ctrl) → CtrlVal (CtrlTAbs E)
-
+{-
+Control expression semantics
+-}
 data CtrlLabel : Set where
   ιL ιSyncL : CtrlLabel
   SendL : (v : Tmₑ) (L : Loc) → CtrlLabel
@@ -529,6 +552,7 @@ data CtrlLabel : Set where
   RecvLocL : (L : Loc) (L' : Loc) → CtrlLabel
   SendTyL : (t : Tyₑ) (ρ : List Loc) → CtrlLabel
   RecvTyL : (L : Loc) (t : Tyₑ) → CtrlLabel
+
 
 data _⇒E[_⨾_]_ : Ctrl → CtrlLabel → Loc → Ctrl → Set where
   RetStep : ∀{L e1 e2} →
@@ -548,6 +572,7 @@ data _⇒E[_⨾_]_ : Ctrl → CtrlLabel → Loc → Ctrl → Set where
                 E ⇒E[ l ⨾ L ] E' →
                 CtrlApp V E ⇒E[ l ⨾ L ] CtrlApp V E'
   AppStep : ∀{L E V} →
+            CtrlVal V →
             CtrlApp (CtrlAbs E) V ⇒E[ ιSyncL ⨾ L ] subCtrl (var ▸ V) E
   RecStep : ∀{L E} →
             CtrlRec E ⇒E[ ιSyncL ⨾ L ] subCtrl (var ▸ CtrlRec E) E
@@ -617,3 +642,155 @@ data _⇒E[_⨾_]_ : Ctrl → CtrlLabel → Loc → Ctrl → Set where
   AmIRStep : ∀{L ℓ E1 E2} →
              ℓ ≢ LitLoc L →
              AmI ℓ E1 E2 ⇒E[ ιL ⨾ L ] E2
+
+ι-Lift
+  : ∀{L E1 E1' E2} → 
+    E1 ≼ E2 →
+    E1 ⇒E[ ιL ⨾ L ] E1' →
+    Σ[ E2' ∈ Ctrl ]
+    E1' ≼ E2' ×
+    E2 ⇒E[ ιL ⨾ L ] E2'
+ι-Lift (≼Ret e1) (RetStep {e2 = e2} e1⇒e2) =
+  Ret e2 ,
+  ≼Ret e2 ,
+  RetStep e1⇒e2
+ι-Lift (≼Seq {E11} {E12} {E21} {E22} E11≼E21 E12≼E22) (SeqStep {E1' = E11'} E11⇒E11')
+  with ι-Lift E11≼E21 E11⇒E11'
+... | (E12' , E11'≼E12' , E21⇒E12') =
+  Seq E12' E22 ,
+  ≼Seq E11'≼E12' E12≼E22 ,
+  SeqStep E21⇒E12'
+ι-Lift (≼Seq {V} {E} {V'} {E'} V≼V' E≼E') (SeqVStep {V = V} V-Val)
+  with V≼ V-Val V≼V'
+... | refl = 
+  E' , 
+  E≼E' ,
+  SeqVStep V-Val
+ι-Lift (≼App {E11} {E12} {E21} {E22} E11≼E21 E12≼E22)
+  (AppFunStep {E1' = E11'} E11⇒E11') with ι-Lift E11≼E21 E11⇒E11'
+... | (E , p , q) =
+    CtrlApp E E22 ,
+    ≼App p E12≼E22 ,
+    AppFunStep q
+ι-Lift (≼App {E11} {E12} {E21} {E22} E11≼E21 E12≼E22) (AppArgStep E11-Val E12⇒E12')
+  with V≼ E11-Val E11≼E21 | ι-Lift E12≼E22 E12⇒E12'
+... | refl | (E2' , r , s) =
+  CtrlApp E21 E2' ,
+  ≼App E11≼E21 r ,
+  AppArgStep E11-Val s
+ι-Lift (≼Send {E1} {E2} E1≼E2 ℓ) (SendStep E1⇒E1') with ι-Lift E1≼E2 E1⇒E1'
+... | (E , p , q) =
+  SendTo E ℓ ,
+  ≼Send p ℓ ,
+  SendStep q
+ι-Lift (≼ITE {E11} {E12} {E13} {E21} {E22} {E23} E11≼E21 E12≼E22 E13≼E23) (IfStep E11⇒E11')
+  with ι-Lift E11≼E21 E11⇒E11'
+... | (E , p , q) =
+  CtrlITE E E22 E23 ,
+  ≼ITE p E12≼E22 E13≼E23 ,
+  IfStep q
+ι-Lift (≼ITE {.(Ret (𝕃 .ttₑ))} {E12} {E13} {.(Ret (𝕃 .ttₑ))} {E22} {E23} (≼Ret .(𝕃 .ttₑ)) E12≼E22 E13≼E23) IfTStep =
+  E22 ,
+  E12≼E22 ,
+  IfTStep
+ι-Lift (≼ITE {.(Ret (𝕃 .ffₑ))} {E12} {E13} {.(Ret (𝕃 .ffₑ))} {E22} {E23} (≼Ret .(𝕃 .ffₑ)) E12≼E22 E13≼E23) IfFStep =
+  E23 ,
+  E13≼E23 ,
+  IfFStep
+ι-Lift (≼TApp {E1} {E2} E1≼E2 t) (AppTFunStep E1⇒E1') with ι-Lift E1≼E2 E1⇒E1'
+... | (E , p , q) =
+  CtrlTApp E t ,
+  ≼TApp p t ,
+  AppTFunStep q
+ι-Lift (≼LetRet {E11} {E12} {E21} {E22} E11≼E21 E12≼E22) (LetRetStep E11⇒E11')
+  with ι-Lift E11≼E21 E11⇒E11'
+... | (E , p , q) =
+  LetRet E E22 ,
+  ≼LetRet p E12≼E22 ,
+  LetRetStep q
+ι-Lift (≼LetRet {E11} {E12} {E21} {E22} (≼Ret v) E12≼E22) (LetRetVStep v-Val) =
+  localSub (var ▸ v) E22 ,
+  ≼-localSub (var ▸ v) E12≼E22 ,
+  LetRetVStep v-Val
+ι-Lift (≼SendTy {E11} {E12} {E21} {E22} κ E11≼E21 ρ E12≼E22) (SendTyStep E11⇒E11')
+  with ι-Lift E11≼E21 E11⇒E11'
+... | (E , p , q) =
+  SendTy κ E ρ E22 ,
+  ≼SendTy κ p ρ E12≼E22 ,
+  SendTyStep q
+ι-Lift {L} (≼AmI {E11} {E12} {E21} {E22} .(LitLoc L) E11≼E21 E12≼E22) AmILStep =
+  E21 ,
+  E11≼E21 ,
+  AmILStep
+ι-Lift (≼AmI {E11} {E12} {E21} {E22} ℓ E11≼E21 E12≼E22) (AmIRStep ℓ≢L) =
+  E22 ,
+  E12≼E22 ,
+  AmIRStep ℓ≢L
+
+ιSync-Lift
+  : ∀{L E1 E1' E2} → 
+    E1 ≼ E2 →
+    E1 ⇒E[ ιSyncL ⨾ L ] E1' →
+    Σ[ E2' ∈ Ctrl ]
+    E1' ≼ E2' ×
+    E2 ⇒E[ ιSyncL ⨾ L ] E2'
+ιSync-Lift (≼Seq {E11} {E12} {E21} {E22} E11≼E21 E12≼E22) (SeqStep E11⇒E11')
+  with ιSync-Lift E11≼E21 E11⇒E11'
+... | (E12' , E11'≼E12' , E21⇒E12') =
+  Seq E12' E22 ,
+  ≼Seq E11'≼E12' E12≼E22 ,
+  SeqStep E21⇒E12'
+ιSync-Lift (≼App {E11} {E12} {E21} {E22} E11≼E21 E12≼E22) (AppFunStep E11⇒E11')
+  with ιSync-Lift E11≼E21 E11⇒E11'
+... | (E , p , q) =
+    CtrlApp E E22 ,
+    ≼App p E12≼E22 ,
+    AppFunStep q
+ιSync-Lift (≼App {E11} {E12} {E21} {E22} E11≼E21 E12≼E22) (AppArgStep E11-Val E12⇒E12')
+  with V≼ E11-Val E11≼E21 | ιSync-Lift E12≼E22 E12⇒E12'
+... | refl | (E2' , r , s) =
+  CtrlApp E21 E2' ,
+  ≼App E11≼E21 r ,
+  AppArgStep E11-Val s
+ιSync-Lift (≼App {.(CtrlAbs E)} {V} {.(CtrlAbs E)} {V'} (≼Abs .E) V≼V') (AppStep {E = E} {.V} V-Val) with V≼ V-Val V≼V'
+... | refl =
+  subCtrl (var ▸ V) E ,
+  ≼-refl (subCtrl (var ▸ V) E) ,
+  AppStep {E = E} {V} V-Val
+ιSync-Lift (≼Rec E) RecStep =
+  subCtrl (var ▸ CtrlRec E) E ,
+  ≼-refl (subCtrl (var ▸ CtrlRec E) E) ,
+  RecStep
+ιSync-Lift (≼Send {E1} {E2} E1≼E2 ℓ) (SendStep E1⇒E1') with ιSync-Lift E1≼E2 E1⇒E1'
+... | (E , p , q) =
+  SendTo E ℓ ,
+  ≼Send p ℓ ,
+  SendStep q
+ιSync-Lift (≼ITE {E11} {E12} {E13} {E21} {E22} {E23} E11≼E21 E12≼E22 E13≼E23) (IfStep E11⇒E11')
+  with ιSync-Lift E11≼E21 E11⇒E11'
+... | (E , p , q) =
+  CtrlITE E E22 E23 ,
+  ≼ITE p E12≼E22 E13≼E23 ,
+  IfStep q
+ιSync-Lift (≼TApp {E1} {E2} E1≼E2 t) (AppTFunStep E1⇒E1') with ιSync-Lift E1≼E2 E1⇒E1'
+... | (E , p , q) =
+  CtrlTApp E t ,
+  ≼TApp p t ,
+  AppTFunStep q
+ιSync-Lift (≼TApp {.(CtrlTAbs E)} {.(CtrlTAbs E)} (≼TAbs .E) t) (AppTStep {E = E} {t}) =
+  tySubCtrl (tyVar ▸ t) E ,
+  ≼-refl (tySubCtrl (tyVar ▸ t) E) ,
+  AppTStep {E = E} {t}
+ιSync-Lift (≼LetRet {E11} {E12} {E21} {E22} E11≼E21 E12≼E22) (LetRetStep E11⇒E11')
+  with ιSync-Lift E11≼E21 E11⇒E11'
+... | (E , p , q) =
+  LetRet E E22 ,
+  ≼LetRet p E12≼E22 ,
+  LetRetStep q
+ιSync-Lift (≼SendTy {E11} {E12} {E21} {E22} κ E11≼E21 ρ E12≼E22) (SendTyStep E11⇒E11')
+  with ιSync-Lift E11≼E21 E11⇒E11'
+... | (E , p , q) =
+  SendTy κ E ρ E22 ,
+  ≼SendTy κ p ρ E12≼E22 ,
+  SendTyStep q
+

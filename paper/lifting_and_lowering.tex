@@ -18,91 +18,91 @@ If $V$ is a control expression value and $V \lessnd E$ or $E \lessnd V$, then $E
 \label{lem:internal-control-lifting}
 If $E_1 \lessnd E_2$ and $E_1 \ctrlstep[\iota] E_1'$, there is some $E_2'$ such that $E_1' \lessnd E_2'$ and $E_2 \ctrlstep[\iota] E_2'$.
 \end{lem}
-We proceed by induction on the control step $E_1 \ctrlstep[\iota] E_1'$.
-\begin{description}
-  \item[\textsc{RetE}]
-    Let $E_1 = \Ret{e}$ and $E_1' = \Ret{e'}$, where $e \localstep e'$.
-    By examination of $\lessnd$ we have $E_2 = \Ret{e}$, so $\Ret{e'}$ suffices.
-  \item[\textsc{Seq}]
-    Let $E_1 = E_{1,1} \CtrlSeq E_{2,1}$ and $E_1' = E_{1,1}' \CtrlSeq E_{2,1}$ where $E_{1,1} \ctrlstep[\iota] E_{1,1}'$.
-    By examination of $\lessnd$ we have $E_2 = E_{1,2} \CtrlSeq E_{2,2}$ where $E_{1,1} \lessnd E_{1,2}$ and $E_{2,1} \lessnd E_{2,2}$.
-    By induction there is some $E_{1,2}'$ such that $E_{1,2}' \lessnd E_{1,1}'$ and $E_{1,2} \ctrlstep[\iota] E_{1,2}'$.
-    Therefore $E_{1,2}' \CtrlSeq E_{2,2}$ suffices.
-  \item[\textsc{SeqV}]
-    Let $E_1 = V \CtrlSeq E_1$ and $E_1' = V$.
-    By examination of $\lessnd$ and Lemma \ref{lem:values-determined} we have $E_2 = V \CtrlSeq E_2$ where $E_1 \lessnd E_2$.
-    Therefore $V$ suffices.
-  \item[\textsc{AppFun}]    
-    Let $E_1 = E_{1,1}~E_{2,1}$ and $E_1' = E_{1,1}'~E_{2,1}$ where $E_{1,1} \ctrlstep[\iota] E_{1,1}'$.
-    By examination of $\lessnd$ we have $E_2 = E_{1,2}~E_{2,2}$ where $E_{1,1} \lessnd E_{1,2}$ and $E_{2,1} \lessnd E_{2,2}$.
-    By induction there is some $E_{1,2}'$ such that $E_{1,2}' \lessnd E_{1,1}'$ and $E_{1,2} \ctrlstep[\iota] E_{1,2}'$.
-    Therefore $E_{1,2}'~E_{2,2}$ suffices.
-  \item[\textsc{AppArg}]
-    Let $E_1 = V~E_1$ and $E_1' = V~E_1'$, where $E_1 \ctrlstep[\iota] E_1'$.
-    By examination of $\lessnd$ and and Lemma \ref{lem:values-determined} we have $E_2 = V~E_2$ where $E_1 \lessnd E_2$.
-    By induction there is some $E_2'$ such that $E_1' \lessnd E_2'$ and $E_2 \ctrlstep[\iota] E_2'$.
-    Therefore $V~E_2'$ suffices.
-  \item[\textsc{Send}]
-    Let $E_1 = \SendTo{E_1}{L'}$ and $E_1' = \SendTo{E_1'}{L'}$, where $E_1 \ctrlstep[\iota] E_1'$.
-    By examination of $\lessnd$ we have $E_2 = \SendTo{E_2}{L'}$, where $E_1 \lessnd E_2$.
-    By induction there is some $E_2'$ such that $E_1' \lessnd E_2'$ and $E_2 \ctrlstep[\iota] E_2'$, so $\SendTo{E_2'}{L'}$ suffices.
-  \item[\textsc{If}]
-    Let $E_1 = \CtrlITE{E_1}{E_{1,1}}{E_{2,1}}$ and $E_1' = \CtrlITE{E_1'}{E_{1,1}}{E_{2,1}}$, where $E_1 \ctrlstep[\iota] E_1'$.
-    By examination of $\lessnd$ we have $E_2 = \CtrlITE{E_2}{E_{1,2}}{E_{2,2}}$, where $E_1 \lessnd E_2$, $E_{1,1} \lessnd E_{1,2}$, and $E_{2,1} \lessnd E_{2,2}$.
-    By induction there is some $E_2'$ such that $E_1' \lessnd E_2'$ and $E_2 \ctrlstep[\iota] E_2'$, so $\CtrlITE{E_2'}{E_{1,2}}{E_{2,2}}$ suffices.
-  \item[\textsc{IfT}]
-    Let $E_1 = \CtrlITE{\Ret{\True}}{E_{1,1}}{E_{2,1}}$ and $E_1' = E_{1,1}$.
-    By examination of $\lessnd$ we have $E_2 = \CtrlITE{\Ret{\True}}{E_{1,2}}{E_{2,2}}$, where $E_{1,1} \lessnd E_{1,2}$, and $E_{2,1} \lessnd E_{2,2}$.
-    Therefore $E_{1,2}$ suffices.
-  \item[\textsc{IfF}]
-    Symmetric to the case for \textsc{IfT}.
-  \item[\textsc{AppTFun}]    
-    Let $E_1 = E_1~t$ and $E_1' = E_1'~E_t$ where $E_1 \ctrlstep[\iota] E_1'$.
-    By examination of $\lessnd$ we have $E_2 = E_2~t$ where $E_1 \lessnd E_2$.
-    By induction there is some $E_2'$ such that $E_1' \lessnd E_2'$ and $E_2 \ctrlstep[\iota] E_2'$.
-    Therefore $E_2'~t$ suffices.
-  \item[\textsc{LetRet}]    
-    Let $E_1 = \CtrlLetIn{\Ret{x}}{E_{1,1}}{E_{2,1}}$ and $E_1' = \CtrlLetIn{\Ret{x}}{E_{1,1}'}{E_{2,1}}$ where $E_{1,1} \ctrlstep[\iota] E_{1,1}'$.
-    By examination of $\lessnd$ we have $E_2 = \CtrlLetIn{\Ret{x}}{E_{2,1}}{E_{2,2}}$ where $E_{1,1} \lessnd E_{1,2}$ and $E_{2,1} \lessnd E_{2,2}$.
-    By induction there is some $E_{2,1}'$ such that $E_{1,1}' \lessnd E_{2,1}'$ and $E_{2,1} \ctrlstep[\iota] E_{2,1}'$.
-    Therefore $\CtrlLetIn{\Ret{x}}{E_{2,1}'}{E_{2,2}}$ suffices.
-  \item[\textsc{LetRetV}]    
-    Let $E_1 = \CtrlLetIn{\Ret{x}}{\Ret{v}}{E_1}$ and $E_1' = \subst{E_1}{x}{v}$.
-    By examination of $\lessnd$ we have $E_2 = \CtrlLetIn{\Ret{x}}{\Ret{v}}{E_2}$ where $E_1 \lessnd E_2$.
-    By Lemma \ref{lem:lessnd-subst} $\subst{E_1}{x}{v} \lessnd \subst{E_2}{x}{v}$, so $\subst{E_2}{x}{v}$ suffices.
-  \item[\textsc{SendTy}]
-    Let $E_1 = \LetSendIn{\alpha \knd \kappa}{E_{1,1}}{\rho}{E_{2,1}}$ and $E_1' = \LetSendIn{\alpha \knd \kappa}{E_{1,1}'}{\rho}{E_{2,1}}$, where $E_{1,1} \ctrlstep[\iota] E_{1,1}'$.
-    By examination of $\lessnd$ we have $E_2 = \LetSendIn{\alpha \knd \kappa}{E_{1,2}}{\rho}{E_{2,2}}$ where $E_{1,1} \lessnd E_{2,1}$ and $E_{2,1} \lessnd E_{2,2}$.
-    By induction there is some $E_{1,2}'$ such that $E_{1,1}' \lessnd E_{1,2}'$ and $E_{1,2} \ctrlstep[\iota] E_{1,2}'$.
-    Therefore $\LetSendIn{\alpha \knd \kappa}{E_{1,2}'}{\rho}{E_{2,2}}$ suffices.
-  \item[\textsc{AmIL}]
-    Let $E_1 = \AmI{L}{E_{1,1}}{E_{2,1}}$ and $E_1' = E_{1,1}$.
-    By examination of $\lessnd$ we have $E_2 = \AmI{L}{E_{1,2}}{E_{2,2}}$ where $E_{1,1} \lessnd E_{1,2}$ and $E_{2,1} \lessnd E_{2,2}$.
-    Therefore $E_{1,2}$ suffices.
-  \item[\textsc{AmIR}]
-  Let $E_1 = \AmI{L'}{E_{1,1}}{E_{2,1}}$ and $E_1' = E_{2,1}$.
-  By examination of $\lessnd$ we have $E_2 = \AmI{L'}{E_{1,2}}{E_{2,2}}$ where $E_{1,1} \lessnd E_{1,2}$ and $E_{2,1} \lessnd E_{2,2}$.
-  Therefore $E_{2,2}$ suffices.
-\end{description}
+% We proceed by induction on the control step $E_1 \ctrlstep[\iota] E_1'$.
+% \begin{description}
+%   \item[\textsc{RetE}]
+%     Let $E_1 = \Ret{e}$ and $E_1' = \Ret{e'}$, where $e \localstep e'$.
+%     By examination of $\lessnd$ we have $E_2 = \Ret{e}$, so $\Ret{e'}$ suffices.
+%   \item[\textsc{Seq}]
+%     Let $E_1 = E_{1,1} \CtrlSeq E_{2,1}$ and $E_1' = E_{1,1}' \CtrlSeq E_{2,1}$ where $E_{1,1} \ctrlstep[\iota] E_{1,1}'$.
+%     By examination of $\lessnd$ we have $E_2 = E_{1,2} \CtrlSeq E_{2,2}$ where $E_{1,1} \lessnd E_{1,2}$ and $E_{2,1} \lessnd E_{2,2}$.
+%     By induction there is some $E_{1,2}'$ such that $E_{1,2}' \lessnd E_{1,1}'$ and $E_{1,2} \ctrlstep[\iota] E_{1,2}'$.
+%     Therefore $E_{1,2}' \CtrlSeq E_{2,2}$ suffices.
+%   \item[\textsc{SeqV}]
+%     Let $E_1 = V \CtrlSeq E_1$ and $E_1' = V$.
+%     By examination of $\lessnd$ and Lemma \ref{lem:values-determined} we have $E_2 = V \CtrlSeq E_2$ where $E_1 \lessnd E_2$.
+%     Therefore $V$ suffices.
+%   \item[\textsc{AppFun}]    
+%     Let $E_1 = E_{1,1}~E_{2,1}$ and $E_1' = E_{1,1}'~E_{2,1}$ where $E_{1,1} \ctrlstep[\iota] E_{1,1}'$.
+%     By examination of $\lessnd$ we have $E_2 = E_{1,2}~E_{2,2}$ where $E_{1,1} \lessnd E_{1,2}$ and $E_{2,1} \lessnd E_{2,2}$.
+%     By induction there is some $E_{1,2}'$ such that $E_{1,2}' \lessnd E_{1,1}'$ and $E_{1,2} \ctrlstep[\iota] E_{1,2}'$.
+%     Therefore $E_{1,2}'~E_{2,2}$ suffices.
+%   \item[\textsc{AppArg}]
+%     Let $E_1 = V~E_1$ and $E_1' = V~E_1'$, where $E_1 \ctrlstep[\iota] E_1'$.
+%     By examination of $\lessnd$ and and Lemma \ref{lem:values-determined} we have $E_2 = V~E_2$ where $E_1 \lessnd E_2$.
+%     By induction there is some $E_2'$ such that $E_1' \lessnd E_2'$ and $E_2 \ctrlstep[\iota] E_2'$.
+%     Therefore $V~E_2'$ suffices.
+%   \item[\textsc{Send}]
+%     Let $E_1 = \SendTo{E_1}{L'}$ and $E_1' = \SendTo{E_1'}{L'}$, where $E_1 \ctrlstep[\iota] E_1'$.
+%     By examination of $\lessnd$ we have $E_2 = \SendTo{E_2}{L'}$, where $E_1 \lessnd E_2$.
+%     By induction there is some $E_2'$ such that $E_1' \lessnd E_2'$ and $E_2 \ctrlstep[\iota] E_2'$, so $\SendTo{E_2'}{L'}$ suffices.
+%   \item[\textsc{If}]
+%     Let $E_1 = \CtrlITE{E_1}{E_{1,1}}{E_{2,1}}$ and $E_1' = \CtrlITE{E_1'}{E_{1,1}}{E_{2,1}}$, where $E_1 \ctrlstep[\iota] E_1'$.
+%     By examination of $\lessnd$ we have $E_2 = \CtrlITE{E_2}{E_{1,2}}{E_{2,2}}$, where $E_1 \lessnd E_2$, $E_{1,1} \lessnd E_{1,2}$, and $E_{2,1} \lessnd E_{2,2}$.
+%     By induction there is some $E_2'$ such that $E_1' \lessnd E_2'$ and $E_2 \ctrlstep[\iota] E_2'$, so $\CtrlITE{E_2'}{E_{1,2}}{E_{2,2}}$ suffices.
+%   \item[\textsc{IfT}]
+%     Let $E_1 = \CtrlITE{\Ret{\True}}{E_{1,1}}{E_{2,1}}$ and $E_1' = E_{1,1}$.
+%     By examination of $\lessnd$ we have $E_2 = \CtrlITE{\Ret{\True}}{E_{1,2}}{E_{2,2}}$, where $E_{1,1} \lessnd E_{1,2}$, and $E_{2,1} \lessnd E_{2,2}$.
+%     Therefore $E_{1,2}$ suffices.
+%   \item[\textsc{IfF}]
+%     Symmetric to the case for \textsc{IfT}.
+%   \item[\textsc{AppTFun}]    
+%     Let $E_1 = E_1~t$ and $E_1' = E_1'~E_t$ where $E_1 \ctrlstep[\iota] E_1'$.
+%     By examination of $\lessnd$ we have $E_2 = E_2~t$ where $E_1 \lessnd E_2$.
+%     By induction there is some $E_2'$ such that $E_1' \lessnd E_2'$ and $E_2 \ctrlstep[\iota] E_2'$.
+%     Therefore $E_2'~t$ suffices.
+%   \item[\textsc{LetRet}]    
+%     Let $E_1 = \CtrlLetIn{\Ret{x}}{E_{1,1}}{E_{2,1}}$ and $E_1' = \CtrlLetIn{\Ret{x}}{E_{1,1}'}{E_{2,1}}$ where $E_{1,1} \ctrlstep[\iota] E_{1,1}'$.
+%     By examination of $\lessnd$ we have $E_2 = \CtrlLetIn{\Ret{x}}{E_{2,1}}{E_{2,2}}$ where $E_{1,1} \lessnd E_{1,2}$ and $E_{2,1} \lessnd E_{2,2}$.
+%     By induction there is some $E_{2,1}'$ such that $E_{1,1}' \lessnd E_{2,1}'$ and $E_{2,1} \ctrlstep[\iota] E_{2,1}'$.
+%     Therefore $\CtrlLetIn{\Ret{x}}{E_{2,1}'}{E_{2,2}}$ suffices.
+%   \item[\textsc{LetRetV}]    
+%     Let $E_1 = \CtrlLetIn{\Ret{x}}{\Ret{v}}{E_1}$ and $E_1' = \subst{E_1}{x}{v}$.
+%     By examination of $\lessnd$ we have $E_2 = \CtrlLetIn{\Ret{x}}{\Ret{v}}{E_2}$ where $E_1 \lessnd E_2$.
+%     By Lemma \ref{lem:lessnd-subst} $\subst{E_1}{x}{v} \lessnd \subst{E_2}{x}{v}$, so $\subst{E_2}{x}{v}$ suffices.
+%   \item[\textsc{SendTy}]
+%     Let $E_1 = \LetSendIn{\alpha \knd \kappa}{E_{1,1}}{\rho}{E_{2,1}}$ and $E_1' = \LetSendIn{\alpha \knd \kappa}{E_{1,1}'}{\rho}{E_{2,1}}$, where $E_{1,1} \ctrlstep[\iota] E_{1,1}'$.
+%     By examination of $\lessnd$ we have $E_2 = \LetSendIn{\alpha \knd \kappa}{E_{1,2}}{\rho}{E_{2,2}}$ where $E_{1,1} \lessnd E_{2,1}$ and $E_{2,1} \lessnd E_{2,2}$.
+%     By induction there is some $E_{1,2}'$ such that $E_{1,1}' \lessnd E_{1,2}'$ and $E_{1,2} \ctrlstep[\iota] E_{1,2}'$.
+%     Therefore $\LetSendIn{\alpha \knd \kappa}{E_{1,2}'}{\rho}{E_{2,2}}$ suffices.
+%   \item[\textsc{AmIL}]
+%     Let $E_1 = \AmI{L}{E_{1,1}}{E_{2,1}}$ and $E_1' = E_{1,1}$.
+%     By examination of $\lessnd$ we have $E_2 = \AmI{L}{E_{1,2}}{E_{2,2}}$ where $E_{1,1} \lessnd E_{1,2}$ and $E_{2,1} \lessnd E_{2,2}$.
+%     Therefore $E_{1,2}$ suffices.
+%   \item[\textsc{AmIR}]
+%   Let $E_1 = \AmI{L'}{E_{1,1}}{E_{2,1}}$ and $E_1' = E_{2,1}$.
+%   By examination of $\lessnd$ we have $E_2 = \AmI{L'}{E_{1,2}}{E_{2,2}}$ where $E_{1,1} \lessnd E_{1,2}$ and $E_{2,1} \lessnd E_{2,2}$.
+%   Therefore $E_{2,2}$ suffices.
+% \end{description}
 
 \begin{lem}[Synchronized Internal Control Step Lifting]
 \label{lem:internal-sync-control-lifting}
 If $E_1 \lessnd E_2$ and $E_1 \ctrlstep[\iotasync] E_1'$, there is some $E_2'$ such that $E_1' \lessnd E_2'$ and $E_2 \ctrlstep[\iotasync] E_2'$.
 \end{lem}
-We proceed by induction on the control step $E_1 \ctrlstep[\iotasync] E_1'$.
-\begin{description}
-  \item[\textsc{Seq}, \textsc{AppFun}, \textsc{Send}, \textsc{If}, \textsc{AppTFun}, \textsc{LetRet}, \textsc{SendTy}]
-    Analogous to the corresponding cases in Lemma \ref{lem:internal-control-lifting}, replacing $\iota$ with $\iotasync$.
-  \item[\textsc{App}]
-    Let $E_1 = (\CtrlFun{X}{E})~V$ and $E_1' = \subst{E}{X}{V}$.
-    By examination of $\lessnd$ and Lemma \ref{lem:values-determined} we have $E_2 = (\CtrlFun{X}{E})~V$, and so $\subst{E}{X}{V}$ suffices.
-  \item[\textsc{Rec}]
-    Let $E_1 = \CtrlRec{X}{E}$ and $E_1' = \subst{E}{X}{\CtrlRec{X}{E}}$.
-    By examination of $\lessnd$ we have $E_2 = \CtrlRec{X}{E}$, and so $\subst{E}{X}{\CtrlRec{X}{E}}$ suffices.
-  \item[\textsc{AppT}]
-    Let $E_1 = (\CtrlTFun{\alpha}{E})~t$ and $E_1' = \subst{E}{\alpha}{t}$.
-    By examination of $\lessnd$ we have $E_2 = (\CtrlTFun{\alpha}{E})~t$, and so $\subst{E}{\alpha}{t}$ suffices.
-\end{description}
+% We proceed by induction on the control step $E_1 \ctrlstep[\iotasync] E_1'$.
+% \begin{description}
+%   \item[\textsc{Seq}, \textsc{AppFun}, \textsc{Send}, \textsc{If}, \textsc{AppTFun}, \textsc{LetRet}, \textsc{SendTy}]
+%     Analogous to the corresponding cases in Lemma \ref{lem:internal-control-lifting}, replacing $\iota$ with $\iotasync$.
+%   \item[\textsc{App}]
+%     Let $E_1 = (\CtrlFun{X}{E})~V$ and $E_1' = \subst{E}{X}{V}$.
+%     By examination of $\lessnd$ and Lemma \ref{lem:values-determined} we have $E_2 = (\CtrlFun{X}{E})~V$, and so $\subst{E}{X}{V}$ suffices.
+%   \item[\textsc{Rec}]
+%     Let $E_1 = \CtrlRec{X}{E}$ and $E_1' = \subst{E}{X}{\CtrlRec{X}{E}}$.
+%     By examination of $\lessnd$ we have $E_2 = \CtrlRec{X}{E}$, and so $\subst{E}{X}{\CtrlRec{X}{E}}$ suffices.
+%   \item[\textsc{AppT}]
+%     Let $E_1 = (\CtrlTFun{\alpha}{E})~t$ and $E_1' = \subst{E}{\alpha}{t}$.
+%     By examination of $\lessnd$ we have $E_2 = (\CtrlTFun{\alpha}{E})~t$, and so $\subst{E}{\alpha}{t}$ suffices.
+% \end{description}
 
 \begin{lem}[Send Control Step Lifting]
 \label{lem:send-control-lifting}
