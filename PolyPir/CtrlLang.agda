@@ -10,6 +10,8 @@ open import Data.Bool.Properties renaming (_≟_ to ≡-dec-Bool)
 open import Data.Nat hiding (_⊔_) renaming (_≟_ to ≡-dec-ℕ)
 open import Data.List
 open import Data.List.Properties
+open import Data.Vec renaming (lookup to vlookup; length to vlength)
+open import Data.Fin
 open import Data.Maybe renaming (map to mmap)
 open import Data.Sum renaming (inj₁ to inl; inj₂ to inr) hiding (map)
 open import Relation.Nullary
@@ -174,7 +176,7 @@ tySubCtrl σ (Allow ℓ ?E1 ?E2) =
 tySubCtrl σ (CtrlITE E E1 E2) =
   CtrlITE (tySubCtrl σ E) (tySubCtrl σ E1) (tySubCtrl σ E2)
 tySubCtrl σ (CtrlTAbs E) = CtrlTAbs (tySubCtrl σ E)
-tySubCtrl σ (CtrlTApp E t) = CtrlTApp (tySubCtrl σ E) t
+tySubCtrl σ (CtrlTApp E t) = CtrlTApp (tySubCtrl σ E) (subTy C⅀ₖ σ t)
 tySubCtrl σ (LetRet E1 E2) = LetRet (tySubCtrl σ E1) (tySubCtrl σ E2)
 tySubCtrl σ (SendTy κ E1 ρ E2) =
   SendTy κ (tySubCtrl σ E1) (subTy C⅀ₖ σ ρ) (tySubCtrl σ E2)
@@ -346,6 +348,31 @@ data _≼_ where
 ≼?-trans (?≼′ E1) (′≼′ {E2 = E2} E1≼E2) = ?≼′ E2
 ≼?-trans (′≼′ E1≼E2) (′≼′ E2≼E3) = ′≼′ (≼-trans E1≼E2 E2≼E3)
 
+≼-irrefl : ∀{E1 E2} → E1 ≼ E2 → E2 ≼ E1 → E1 ≡ E2
+≼?-irrefl : ∀{E1 E2} → E1 ≼? E2 → E2 ≼? E1 → E1 ≡ E2
+
+≼-irrefl (≼var x) (≼var .x) = refl
+≼-irrefl ≼Unit ≼Unit = refl
+≼-irrefl (≼Ret e) (≼Ret .e) = refl
+≼-irrefl (≼Seq p1 q1) (≼Seq p2 q2) = cong₂ Seq (≼-irrefl p1 p2) (≼-irrefl q1 q2)
+≼-irrefl (≼Abs E) (≼Abs .E) = refl
+≼-irrefl (≼Rec E) (≼Rec .E) = refl
+≼-irrefl (≼App p1 q1) (≼App p2 q2) = cong₂ CtrlApp (≼-irrefl p1 p2) (≼-irrefl q1 q2)
+≼-irrefl (≼Send p1 ℓ) (≼Send p2 .ℓ) = cong₂ SendTo (≼-irrefl p1 p2) refl
+≼-irrefl (≼Recv ℓ) (≼Recv .ℓ) = refl
+≼-irrefl (≼Choose d ℓ p1) (≼Choose .d .ℓ p2) = cong (Choose d ℓ) (≼-irrefl p1 p2)
+≼-irrefl (≼Allow ℓ p1 q1) (≼Allow .ℓ p2 q2) = cong₂ (Allow ℓ) (≼?-irrefl p1 p2) (≼?-irrefl q1 q2)
+≼-irrefl (≼ITE p1 q1 r1) (≼ITE p2 q2 r2) = cong₃ CtrlITE (≼-irrefl p1 p2) (≼-irrefl q1 q2) (≼-irrefl r1 r2)
+≼-irrefl (≼TAbs E) (≼TAbs .E) = refl
+≼-irrefl (≼TApp p1 t) (≼TApp p2 .t) = cong₂ CtrlTApp (≼-irrefl p1 p2) refl
+≼-irrefl (≼LetRet p1 q1) (≼LetRet p2 q2) = cong₂ LetRet (≼-irrefl p1 p2) (≼-irrefl q1 q2)
+≼-irrefl (≼SendTy κ p1 ρ q1) (≼SendTy .κ p2 .ρ q2) = cong₃ (SendTy κ) (≼-irrefl p1 p2) refl (≼-irrefl q1 q2)
+≼-irrefl (≼RecvTy κ ℓ p1) (≼RecvTy .κ .ℓ p2) = cong (RecvTy κ ℓ) (≼-irrefl p1 p2)
+≼-irrefl (≼AmI ℓ p1 q1) (≼AmI .ℓ p2 q2) = cong₂ (AmI ℓ) (≼-irrefl p1 p2) (≼-irrefl q1 q2)
+
+≼?-irrefl ？≼？ ？≼？ = refl
+≼?-irrefl (′≼′ p) (′≼′ q) = cong ′_ $ ≼-irrefl p q
+
 ≼-localSub
   : ∀{E1 E2} (σ : ℕ → Tmₑ) →
     E1 ≼ E2 →
@@ -382,6 +409,39 @@ data _≼_ where
 ≼?-localSub σ ？≼？ = ？≼？
 ≼?-localSub σ (?≼′ E) = ?≼′ (localSub σ E)
 ≼?-localSub σ (′≼′ p) = ′≼′ (≼-localSub σ p)
+
+≼-tySubCtrl
+  : ∀{E1 E2} (σ : ℕ → CTy) →
+    E1 ≼ E2 →
+    tySubCtrl σ E1 ≼ tySubCtrl σ E2
+≼?-tySubCtrl
+  : ∀{E1 E2} (σ : ℕ → CTy) →
+    E1 ≼? E2 →
+    tySubCtrl? σ E1 ≼? tySubCtrl? σ E2
+
+≼-tySubCtrl σ (≼var x) = ≼var x
+≼-tySubCtrl σ ≼Unit = ≼Unit
+≼-tySubCtrl σ (≼Ret e) = ≼Ret e
+≼-tySubCtrl σ (≼Seq p q) =
+  ≼Seq (≼-tySubCtrl σ p) (≼-tySubCtrl σ q)
+≼-tySubCtrl σ (≼Abs E) = ≼Abs (tySubCtrl σ E)
+≼-tySubCtrl σ (≼Rec E) = ≼Rec (tySubCtrl σ E)
+≼-tySubCtrl σ (≼App p q) = ≼App (≼-tySubCtrl σ p) (≼-tySubCtrl σ q)
+≼-tySubCtrl σ (≼Send p ℓ) = ≼Send (≼-tySubCtrl σ p) (subTy C⅀ₖ σ ℓ)
+≼-tySubCtrl σ (≼Recv ℓ) = ≼Recv (subTy C⅀ₖ σ ℓ)
+≼-tySubCtrl σ (≼Choose d ℓ p) = ≼Choose d (subTy C⅀ₖ σ ℓ) (≼-tySubCtrl σ p)
+≼-tySubCtrl σ (≼Allow ℓ p q) = ≼Allow (subTy C⅀ₖ σ ℓ) (≼?-tySubCtrl σ p) (≼?-tySubCtrl σ q)
+≼-tySubCtrl σ (≼ITE p q r) = ≼ITE (≼-tySubCtrl σ p) (≼-tySubCtrl σ q) (≼-tySubCtrl σ r)
+≼-tySubCtrl σ (≼TAbs E) = ≼TAbs (tySubCtrl σ E)
+≼-tySubCtrl σ (≼TApp p t) = ≼TApp (≼-tySubCtrl σ p) (subTy C⅀ₖ σ t)
+≼-tySubCtrl σ (≼LetRet p q) = ≼LetRet (≼-tySubCtrl σ p) (≼-tySubCtrl σ q)
+≼-tySubCtrl σ (≼SendTy κ p ρ q) = ≼SendTy κ (≼-tySubCtrl σ p) (subTy C⅀ₖ σ ρ) (≼-tySubCtrl σ q)
+≼-tySubCtrl σ (≼RecvTy κ ℓ p) = ≼RecvTy κ (subTy C⅀ₖ σ ℓ) (≼-tySubCtrl σ p)
+≼-tySubCtrl σ (≼AmI ℓ p q) = ≼AmI (subTy C⅀ₖ σ ℓ) (≼-tySubCtrl σ p) (≼-tySubCtrl σ q)
+
+≼?-tySubCtrl σ ？≼？ = ？≼？
+≼?-tySubCtrl σ (?≼′ E) = ?≼′ (tySubCtrl σ E)
+≼?-tySubCtrl σ (′≼′ E1≼E2) = ′≼′ (≼-tySubCtrl σ E1≼E2)
 
 -- Control values are determined
 V≼ : ∀{V E} → CtrlVal V → V ≼ E → E ≡ V
@@ -548,11 +608,10 @@ data CtrlLabel : Set where
   RecvL : (L : Loc) (v : Tmₑ) → CtrlLabel
   SendSyncL : (d : Bool) (L : Loc) → CtrlLabel
   RecvSyncL : (L : Loc) (d : Bool) → CtrlLabel
-  SendLocL : (L' : Loc) (ρ : List Loc) → CtrlLabel
-  RecvLocL : (L : Loc) (L' : Loc) → CtrlLabel
+  SendLocL : (Lv : Loc) (ρ : List Loc) → CtrlLabel
+  RecvLocL : (L : Loc) (Lv : Loc) → CtrlLabel
   SendTyL : (t : Tyₑ) (ρ : List Loc) → CtrlLabel
   RecvTyL : (L : Loc) (t : Tyₑ) → CtrlLabel
-
 
 data _⇒E[_⨾_]_ : Ctrl → CtrlLabel → Loc → Ctrl → Set where
   RetStep : ∀{L e1 e2} →
@@ -1044,3 +1103,118 @@ Sync-Lift (≼SendTy {E11} {E12} {E21} {E22} κ E11≼E21 ρ E12≼E22)
   SendTy κ E1≼' ρ E22 , E2≼' ,
   ≼SendTy κ E1'≼E1≼' ρ E12≼E22 , E2'≼E2≼' ,
   SendTyStep E1≼⇒E1≼' , E2≼⇒E2≼'
+
+RecvLoc-Lift
+  : ∀{Lv L1 L E E' E≼} → 
+    E ≼ E≼ →
+    E ⇒E[ RecvLocL L1 Lv ⨾ L ] E' →
+    Σ[ E≼' ∈ Ctrl ]
+    E' ≼ E≼' ×
+    E≼ ⇒E[ RecvLocL L1 Lv ⨾ L ] E≼'
+RecvLoc-Lift (≼Seq {E11} {E12} {E21} {E22} E11≼E21 E12≼E22) (SeqStep E⇒E')
+  with RecvLoc-Lift E11≼E21 E⇒E'
+... | (E≼' , E'≼E<' , E≼⇒E≼') = Seq E≼' E22 , ≼Seq E'≼E<' E12≼E22 , SeqStep E≼⇒E≼'
+RecvLoc-Lift (≼App {E11} {E12} {E21} {E22} E11≼E21 E12≼E22) (AppFunStep E⇒E')
+  with RecvLoc-Lift E11≼E21 E⇒E'
+... | (E≼' , E'≼E<' , E≼⇒E≼') = CtrlApp E≼' E22 , ≼App E'≼E<' E12≼E22 , AppFunStep E≼⇒E≼'
+RecvLoc-Lift (≼App {E11} {E12} {E21} {E22} E11≼E21 E12≼E22) (AppArgStep E11-Val E⇒E')
+  with V≼ E11-Val E11≼E21 | RecvLoc-Lift E12≼E22 E⇒E'
+... | refl | (E≼' , E'≼E<' , E≼⇒E≼') = CtrlApp E11 E≼' , ≼App (≼-refl E11) E'≼E<' , AppArgStep E11-Val E≼⇒E≼'
+RecvLoc-Lift (≼Send {E1} {E2} E1≼E2 ℓ) (SendStep E⇒E')
+  with RecvLoc-Lift E1≼E2 E⇒E'
+... | (E≼' , E'≼E<' , E≼⇒E≼') = SendTo E≼' ℓ , ≼Send E'≼E<' ℓ , SendStep E≼⇒E≼'
+RecvLoc-Lift (≼ITE {E11} {E12} {E13} {E21} {E22} {E23} E11≼E21 E12≼E22 E13≼E23) (IfStep E⇒E')
+  with RecvLoc-Lift E11≼E21 E⇒E'
+... | (E≼' , E'≼E<' , E≼⇒E≼') = CtrlITE E≼' E22 E23 , ≼ITE E'≼E<' E12≼E22 E13≼E23 , IfStep E≼⇒E≼'
+RecvLoc-Lift (≼TApp {E1} {E2} E1≼E2 t) (AppTFunStep E⇒E')
+  with RecvLoc-Lift E1≼E2 E⇒E'
+... | (E≼' , E'≼E<' , E≼⇒E≼') = CtrlTApp E≼' t , ≼TApp E'≼E<' t , AppTFunStep E≼⇒E≼'
+RecvLoc-Lift (≼LetRet {E11} {E12} {E21} {E22} E11≼E21 E12≼E22) (LetRetStep E⇒E')
+  with RecvLoc-Lift E11≼E21 E⇒E'
+... | (E≼' , E'≼E<' , E≼⇒E≼') = LetRet E≼' E22 , ≼LetRet E'≼E<' E12≼E22 , LetRetStep E≼⇒E≼'
+RecvLoc-Lift (≼SendTy {E11} {E12} {E21} {E22} κ E11≼E21 ρ E12≼E22) (SendTyStep E⇒E')
+  with RecvLoc-Lift E11≼E21 E⇒E'
+... | (E≼' , E'≼E<' , E≼⇒E≼') = SendTy κ E≼' ρ E22 , ≼SendTy κ E'≼E<' ρ E12≼E22 , SendTyStep E≼⇒E≼'
+RecvLoc-Lift {Lv = Lv} (≼RecvTy {E1} {E2} *ₗ .(LitLoc _) E1≼E2) (RecvTyLocStep L1≢L) = 
+  tySubCtrl (tyVar ▸ LitLoc Lv) E2 , ≼-tySubCtrl (tyVar ▸ LitLoc Lv) E1≼E2 , RecvTyLocStep L1≢L
+
+SendLoc-Lift
+  : ∀{Lv L1 ρ ρ' E1 E1' E1≼} {Π Π' Π≼ : Vec Ctrl (length ρ)} → 
+    E1 ≼ E1≼ →
+    (∀ i → lookup ρ i ≢ L1 → vlookup Π i ≼ vlookup Π≼ i) →
+    E1 ⇒E[ SendLocL Lv ρ' ⨾ L1 ] E1' →
+    (∀ i → lookup ρ i ≢ L1 → vlookup Π i ⇒E[ RecvLocL L1 Lv ⨾ lookup ρ i ] vlookup Π' i) →
+    Σ[ E1≼' ∈ Ctrl ] Σ[ E2≼' ∈ Vec Ctrl (length ρ) ]
+    E1' ≼ E1≼' ×
+    (∀ i → lookup ρ i ≢ L1 → vlookup Π' i ≼ vlookup E2≼' i) ×
+    E1≼ ⇒E[ SendLocL Lv ρ' ⨾ L1 ] E1≼' ×
+    (∀ i → lookup ρ i ≢ L1 → vlookup Π≼ i ⇒E[ RecvLocL L1 Lv ⨾ lookup ρ i ] vlookup E2≼' i)
+SendLoc-Lift {ρ = ρ} {ρ'} {Π = Π} {Π'} {Π≼} (≼Seq {E11} {E12} {E21} {E22} E11≼E21 E12≼E22) p (SeqStep q) r
+  with SendLoc-Lift {ρ = ρ} {ρ'} {Π = Π} {Π'} {Π≼} E11≼E21 p q r
+... | (E1≼' , E2≼' , E1'≼E1≼' , E2'≼E2≼' , E1≼⇒E1≼' , E2≼⇒E2≼') =
+  Seq E1≼' E22 , E2≼' ,
+  ≼Seq E1'≼E1≼' E12≼E22 , E2'≼E2≼' ,
+  SeqStep E1≼⇒E1≼' , E2≼⇒E2≼'
+SendLoc-Lift {ρ = ρ} {ρ'} {Π = Π} {Π'} {Π≼} (≼App {E11} {E12} {E21} {E22} E11≼E21 E12≼E22) p (AppFunStep q) r
+  with SendLoc-Lift {ρ = ρ} {ρ'} {Π = Π} {Π'} {Π≼} E11≼E21 p q r
+... | (E1≼' , E2≼' , E1'≼E1≼' , E2'≼E2≼' , E1≼⇒E1≼' , E2≼⇒E2≼') = 
+  CtrlApp E1≼' E22 , E2≼' ,
+  ≼App E1'≼E1≼' E12≼E22 , E2'≼E2≼' ,
+  AppFunStep E1≼⇒E1≼' , E2≼⇒E2≼'
+SendLoc-Lift {ρ = ρ} {ρ'} {Π = Π} {Π'} {Π≼} (≼App {E11} {E12} {E21} {E22} E11≼E21 E12≼E22) p (AppArgStep E11-Val q) r
+  with V≼ E11-Val E11≼E21 | SendLoc-Lift {ρ = ρ} {ρ'} {Π = Π} {Π'} {Π≼} E12≼E22 p q r
+... | refl | (E1≼' , E2≼' , E1'≼E1≼' , E2'≼E2≼' , E1≼⇒E1≼' , E2≼⇒E2≼') = 
+  CtrlApp E21 E1≼' , E2≼' ,
+  ≼App E11≼E21 E1'≼E1≼' , E2'≼E2≼' ,
+  AppArgStep E11-Val E1≼⇒E1≼' , E2≼⇒E2≼'
+SendLoc-Lift {ρ = ρ} {ρ'} {Π = Π} {Π'} {Π≼} (≼Send {E1} {E2} E1≼E2 ℓ) p (SendStep q) r
+  with SendLoc-Lift {ρ = ρ} {ρ'} {Π = Π} {Π'} {Π≼} E1≼E2 p q r
+... | (E1≼' , E2≼' , E1'≼E1≼' , E2'≼E2≼' , E1≼⇒E1≼' , E2≼⇒E2≼') = 
+  SendTo E1≼' ℓ , E2≼' ,
+  ≼Send E1'≼E1≼' ℓ , E2'≼E2≼' ,
+  SendStep E1≼⇒E1≼' , E2≼⇒E2≼'
+SendLoc-Lift {ρ = ρ} {ρ'} {Π = Π} {Π'} {Π≼} (≼ITE {E11} {E12} {E13} {E21} {E22} {E23} E11≼E21 E12≼E22 E13≼E23) p (IfStep q) r
+  with SendLoc-Lift {ρ = ρ} {ρ'} {Π = Π} {Π'} {Π≼} E11≼E21 p q r
+... | (E1≼' , E2≼' , E1'≼E1≼' , E2'≼E2≼' , E1≼⇒E1≼' , E2≼⇒E2≼') = 
+  CtrlITE E1≼' E22 E23 , E2≼' ,
+  ≼ITE E1'≼E1≼' E12≼E22 E13≼E23 , E2'≼E2≼' ,
+  IfStep E1≼⇒E1≼' , E2≼⇒E2≼'
+SendLoc-Lift {ρ = ρ} {ρ'} {Π = Π} {Π'} {Π≼} (≼TApp {E1} {E2} E1≼E2 t) p (AppTFunStep q) r
+  with SendLoc-Lift {ρ = ρ} {ρ'} {Π = Π} {Π'} {Π≼} E1≼E2 p q r
+... | (E1≼' , E2≼' , E1'≼E1≼' , E2'≼E2≼' , E1≼⇒E1≼' , E2≼⇒E2≼') = 
+  CtrlTApp E1≼' t , E2≼' ,
+  ≼TApp E1'≼E1≼' t , E2'≼E2≼' ,
+  AppTFunStep E1≼⇒E1≼' , E2≼⇒E2≼'
+SendLoc-Lift {ρ = ρ} {ρ'} {Π = Π} {Π'} {Π≼} (≼LetRet {E11} {E12} {E21} {E22} E11≼E21 E12≼E22) p (LetRetStep q) r
+  with SendLoc-Lift {ρ = ρ} {ρ'} {Π = Π} {Π'} {Π≼} E11≼E21 p q r
+... | (E1≼' , E2≼' , E1'≼E1≼' , E2'≼E2≼' , E1≼⇒E1≼' , E2≼⇒E2≼') = 
+  LetRet E1≼' E22 , E2≼' ,
+  ≼LetRet E1'≼E1≼' E12≼E22 , E2'≼E2≼' ,
+  LetRetStep E1≼⇒E1≼' , E2≼⇒E2≼'
+SendLoc-Lift {ρ = ρ} {Π = Π} {Π'} {Π≼} (≼SendTy {E11} {E12} {E21} {E22} κ E11≼E21 ρ' E12≼E22) p (SendTyStep q) r
+ with SendLoc-Lift {ρ = ρ} {Π = Π} {Π'} {Π≼} E11≼E21 p q r
+... | (E1≼' , E2≼' , E1'≼E1≼' , E2'≼E2≼' , E1≼⇒E1≼' , E2≼⇒E2≼') = 
+  SendTy κ E1≼' ρ' E22 , E2≼' ,
+  ≼SendTy κ E1'≼E1≼' ρ' E12≼E22 , E2'≼E2≼' ,
+  SendTyStep E1≼⇒E1≼' , E2≼⇒E2≼'
+SendLoc-Lift {Lv} {L1} {[]} {ρ'} (≼SendTy {_} {E1} {_} {E2} *ₗ (≼Ret _) .(LitSet ρ') E1≼E2) p SendTyLocStep q =
+  tySubCtrl (tyVar ▸ LitLoc Lv) E2 , [] ,
+  ≼-tySubCtrl (tyVar ▸ LitLoc Lv) E1≼E2 , (λ ()) ,
+  SendTyLocStep , λ ()
+SendLoc-Lift {Lv} {L1} {L ∷ ρ} {ρ'} {Π = E ∷ Π} {E' ∷ Π'} {E≼ ∷ Π≼}
+  (≼SendTy {_} {E1} {_} {E2} *ₗ (≼Ret _) .(LitSet ρ') E1≼E2) p SendTyLocStep q
+  with ≡-dec-Loc L L1 | SendLoc-Lift {ρ = ρ} {Π = Π} {Π'} {Π≼} (≼SendTy *ₗ (≼Ret _) (LitSet ρ') E1≼E2) (p ∘ suc) SendTyLocStep (q ∘ suc)
+... | yes L≡L1 | (E1≼' , E2≼' , E1'≼E1≼' , E2'≼E2≼' , E1≼⇒E1≼' , E2≼⇒E2≼') =
+  E1≼' , Unit ∷ E2≼' ,
+  E1'≼E1≼' , (λ{ zero L≢L1 → ⊥-elim $ L≢L1 L≡L1
+               ; (suc i) ρi≢L1 → E2'≼E2≼' i ρi≢L1 }) ,
+  E1≼⇒E1≼' , (λ{ zero L≢L1 → ⊥-elim $ L≢L1 L≡L1
+               ; (suc i) ρi≢L1 → E2≼⇒E2≼' i ρi≢L1 })
+... | no L≢L1 | (E1≼' , E2≼' , E1'≼E1≼' , E2'≼E2≼' , E1≼⇒E1≼' , E2≼⇒E2≼')
+  with RecvLoc-Lift  (p zero L≢L1) (q zero L≢L1)
+... | (E≼' , E'≼E≼' , E≼⇒E≼') =
+  E1≼' , E≼' ∷ E2≼' ,
+  E1'≼E1≼' , (λ{ zero L≢L1 → E'≼E≼'
+               ; (suc i) ρi≢L1 → E2'≼E2≼' i ρi≢L1 }) ,
+  E1≼⇒E1≼' , λ{ zero L≢L1 → E≼⇒E≼'
+               ; (suc i) ρi≢L1 → E2≼⇒E2≼' i ρi≢L1 }
