@@ -9,12 +9,12 @@
   
 \PassOptionsToPackage{prologue,dvipsnames}{xcolor} % to enable dvipsnames option in xcolor package
 \ifanon
-  \documentclass[acmsmall,review,anonymous]{acmart}
+  \documentclass[acmsmall,screen,review,anonymous]{acmart}
 \else
   \iftr
-    \documentclass[acmsmall,nonacm]{acmart}
+    \documentclass[acmsmall,screen,nonacm]{acmart}
   \else
-    \documentclass[acmsmall]{acmart}
+    \documentclass[acmsmall,screen]{acmart}
   \fi
 \fi
 
@@ -121,12 +121,10 @@
 \maketitle
 
 \input{sections}
-\iftr
-  \bibliography{../bibliography/main}
-\fi  
-  \appendix
-  \section*{Appendices}
-  \input{appendices}
+\bibliography{../bibliography/main}
+\appendix
+\section*{Appendices}
+\input{appendices}
 
 \end{document}  
 
