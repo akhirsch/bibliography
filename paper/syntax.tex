@@ -12,37 +12,47 @@ Both choreographic and local type variables, including location variables, are d
 \todo Explain tell-let binding $\LetTellIn{\alpha \knd *_\ell}{\ell}{C_1}{\rho}{C_2}$
 
 \paragraph{Location Substitution}
-While substitution and variable renaming in \langname can mostly be handled in standard ways, care must be taken to implement \emph{location substitution} correctly.
-For instance, consider the following example with a variable location $\alpha$ and concrete location $L$. Note that because $\alpha$ and $L$ are distinct, the local variables $\alpha.x$ and $L.x$ are also distinct.
-\todo Align these better
-\begin{mathpar}
-\LetIn{\alpha.x \ty \Int}{\alpha.2}{~}\\
-\LetIn{L.x \ty \Int}{L.3}{~}\\
-\LetIn{\alpha.y}{L.x \ChorSend[L] \alpha}{\alpha.(x + y)}
-\end{mathpar}
-\ashley{This section may be too detailed? Maybe just define it correctly and show how it works correctly on the example}
+\ethan{I cut this discussion down and cleaned it up a bit.
+  It also feels like the wrong place, but it needs to be somewhere.}
+While substitution and variable renaming can largely be handled in the standard way,
+care must be taken when substituting \emph{locations} to avoid variable capture that is not otherwise possible.
+Consider the following choreography with a location variable~$\alpha$ and concrete location~$L$.
+$$\begin{array}{l}
+  C = \begin{array}[t]{@{}l@{}}
+    \LetN~\begin{array}[t]{@{}l@{}}
+      \alpha.x\ty\Int \ChorDef \alpha.2 \\
+      L.x\ty\Int \ChorDef L.3 \\
+      \alpha.y \ChorDef L.x \ChorSend[L] \alpha \\
+    \end{array} \\
+    \In~\alpha.(x + y)
+  \end{array}
+\end{array}$$
+Note that because $\alpha$ and $L$ are distinct, the local variables $\alpha.x$ and $L.x$ are also distinct,
+so this choreography should always produce $\alpha.5$ regardless of the concrete location~$\alpha$.
 
-Suppose now we want to substitute $L$ in for the variable location $\alpha$ in the program.
-One might think that since the location variable $\alpha$ on its own does not clash with any other variables, we may do the substitution na\"ively.
-However, in doing so we end up with the following program
-\begin{mathpar}
-\LetIn{L.x \ty \Int}{L.2}{~}\\
-\LetIn{L.x \ty \Int}{L.3}{~}\\
-\LetIn{L.y}{L.x \ChorSend[L] L}{L.(x + y)}
-\end{mathpar}
-which can reduce to $L.6$ because of the capture of $L.x$; clearly not what was intended.
-In order to rectify this problem of namespace capture, substitution of locations on local-let expressions is defined as
-\begin{mathpar}
-\subst{(\LetIn{\ell.x \ty t_e}{C_1}{C_2})}{\alpha}{\ell'} =
-  \begin{cases}
-    \LetIn{\ell'.y \ty t_e}{\subst{C_1}{\alpha}{\ell'}}{~}\\
-    \subst{\subst{C_2}{\ell.x}{\ell.y}}{\alpha}{\ell'} & \ell = \alpha ~\text{and}~ \ell.y, \ell'.y \notin \fv{C_2} \\
-    \LetIn{\ell.x \ty t_e}{\subst{C_1}{\alpha}{\ell'}}{~}\\
-    \subst{C_2}{\alpha}{\ell'} & \ell \neq \alpha \\
-  \end{cases}
-\end{mathpar}
-where substitution of local variables $\subst{C}{\ell.x}{e}$ is defined in a standard capture-avoiding manner.
-The condition that $\ell.y, \ell'.y \notin \fv{C_2}$ in the first clause of the definition is critical, and ensures that no variables are mistakenly captured by the location substitution.
+Now suppose~$\alpha$ resolves to~$L$.
+How do we define $\subst{C}{\alpha}{L}$?
+One might naively think that, since~$\alpha$ does not clash with any other variables, we can simply replace all instances of~$\alpha$ with~$L$.
+However, doing so changes the meaning of the program as the previously-distinct local variables $\alpha.x$ and $L.x$ collapse.
+The variable $\alpha.x$ is incorrectly captured by the definition of $L.x$ and the choreography would wrongly evaluate to~$L.6$.
+
+To avoid this namespace capture, substitutions of locations in local let expressions must rename variables as follows,
+similarly to standard capture-avoiding substitution in $\lambda$-calculus.
+Notationally, we write $\hsubst{C}{\ell}{x}{e}$ to denote standard capture-avoiding substitution of the local variable~$x$ at the location (or location variable)~$\ell$.
+\begin{align*}
+  \subst{(\LetIn{\alpha.x\ty t}{C_1}{C_2})}{\alpha}{\ell} & = \LetIn*{\ell.x\ty t}{\subst{C_1}{\alpha}{\ell}}{\subst{C_2}{\alpha}{\ell}}
+  && \text{if}~\ell.x \notin \fv(C_2)
+  \\[1ex]
+  \subst{(\LetIn{\alpha.x\ty t}{C_1}{C_2})}{\alpha}{\ell}
+  & = \LetIn*{\ell.y\ty t}{\subst{C_1}{\alpha}{\ell}}{\subst{\hsubst{C_2}{\alpha}{x}{y}}{\alpha}{\ell}}
+  && \begin{array}{@{}l@{}}
+    \text{if}~\ell.x \in \fv(C_2), \\
+    \text{and}~\alpha.y,\ell.y \notin \fv(C_2)
+  \end{array}
+  \\[1ex]
+  \subst{(\LetIn{\beta.x\ty t}{C_1}{C_2})}{\alpha}{\ell} & = \LetIn*{\beta.x\ty t}{\subst{C_1}{\alpha}{\ell}}{\subst{C_2}{\alpha}{\ell}}
+  && \text{if}~\alpha \neq \beta
+\end{align*}
 
 \begin{figure}[h]
   \begin{syntax}

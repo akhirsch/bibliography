@@ -30,9 +30,9 @@ Each node should be able to execute \emph{local} programs in an expression-based
 \langname is generic over the choice of local language, requiring only that it obey typical syntactic and typing rules, have a sound type system and semantics, and include the components described below.
 
 First, we require that the language consist of a set of expressions which may include variables and expressions which bind variables.
-The free-variables of an expression are denoted by $\text{FV}(e)$.
+The free-variables of an expression are denoted by $\fv(e)$.
 
-The local language must have a notion of variable substitution satisfying standard properties such as substitution of variables $\subst{x}{x}{e} = e$, substitution along the identity $\subst{e}{x}{x} = e$, and compositionality of substitutions $\subst{\subst{e}{x_1}{e_1}}{x_2}{e_2} = \subst{\subst{e}{x_2}{e_2}}{x_1}{(\subst{e_1}{x_2}{e_2})}$ for $x_1 \notin \text{FV}(e_2)$.
+The local language must have a notion of variable substitution satisfying standard properties such as substitution of variables $\subst{x}{x}{e} = e$, substitution along the identity $\subst{e}{x}{x} = e$, and compositionality of substitutions $\subst{\subst{e}{x_1}{e_1}}{x_2}{e_2} = \subst{\subst{e}{x_2}{e_2}}{x_1}{(\subst{e_1}{x_2}{e_2})}$ for $x_1 \notin \fv(e_2)$.
 
 Types are reflected in the local language, along with type variables and binding thereof, and must satisfy identical substitutive properties.
 As shown in Example \ref{ex:st-lambda}, type variables need not be used in a nontrivial manner or bound in any types or expressions, and the type system may ultimately be \emph{simply-typed}.

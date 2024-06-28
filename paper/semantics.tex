@@ -52,7 +52,7 @@
   {(\Fun{X \ty \tau}{C})~V \step{\RApp} \subst{C}{X}{V}}
   \and
   \infer[Rec]{~}
-  {\mu X \ty \tau.C \step{\RRec} \subst{C}{X}{\mu X \ty \tau.C}}
+  {\Rec{X \ty \tau}{C} \step{\RRec} \subst{C}{X}{\Rec{X \ty \tau}{C}}}
   \and
   \infer[Send]{C \step{R} C'}
   {C \ChorSend[L_1] L_2 \step{\RSend{R}{L_1}} C' \ChorSend[L_1] L_2}

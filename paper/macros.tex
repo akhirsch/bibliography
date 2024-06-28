@@ -1,3 +1,23 @@
+\newcounter{numlevels}
+\makeatletter
+\NewDocumentCommand{\newMLP}{smO{0}om}{
+  \IfBooleanTF{#1}{
+    \IfValueTF{#4}{
+      \WithSuffix\newcommand#2*[#3][#4]
+    }{
+      \WithSuffix\newcommand#2*[#3]
+    }
+  }{
+    \IfValueTF{#4}{
+      \newcommand{#2}[#3][#4]
+    }{
+      \newcommand{#2}[#3]
+    }
+  }
+  {\ifthenelse{\value{numlevels} > 0}{\begin{array}[t]{@{}l@{}}}{\begin{array}{l}}\addtocounter{numlevels}{1}#5\addtocounter{numlevels}{-1}\end{array}}
+}
+\makeatother
+
 % Notes
 \newcommand{\newcommenter}[3]{%
   \ifdraft
@@ -65,7 +85,7 @@
 \newcommand{\tpat}{\raisebox{1pt}{\footnotesize\ensuremath{@}}}
 \newcommand{\pn}[1]{\ensuremath{\text{PN}({#1})}}
 \newcommand{\spn}[1]{\ensuremath{\text{SPN}({#1})}}
-\newcommand{\fv}[1]{\ensuremath{\text{FV}({#1})}}
+\newcommand{\fv}{\operatorname{fv}}
 \newcommand{\maybelessnd}{\leq_{\text{?nd}}}
 \newcommand{\lessnd}{\leq_{\text{nd}}}
 \newcommand{\iotasync}{\iota_{\text{sync}}}
@@ -119,7 +139,9 @@
 \newcommand{\To}{\FontChoreo{to}}
 
 \newcommand{\LetIn}[3]{\LetN~{#1} \ChorDef {#2}~\In~{#3}}
+\newMLP*{\LetIn}[3]{\LetN~{#1} \ChorDef {#2} \\ \In~{#3}}
 \newcommand{\ITE}[4][\ell]{\IfN_{#1}~{#2}~\ThenN~{#3}~\ElseN~{#4}}
+\newMLP*{\ITE}[4][\ell]{\IfN_{#1}~{#2} \\ \ThenN~{#3} \\ \ElseN~{#4}}
 \newcommand{\Fun}[2]{\FunN{#1}\ldotp {#2}}
 \newcommand{\Rec}[2]{\ChorCol{\mu}{#1}\ldotp {#2}}
 \newcommand{\TFun}[2]{\TFunN{#1}\ldotp {#2}}

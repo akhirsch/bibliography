@@ -53,10 +53,10 @@
 \end{mathparpagebreakable}
 
 \begin{mathparpagebreakable}
-	\infer[R-AbsR]{X \notin \fv{C_2}}
+	\infer[R-AbsR]{X \notin \fv(C_2)}
 	{\app{\app{(\lambda X \ty \tau.F)}{C_1}}{C_2} \rewrite \app{(\lambda X \ty \tau.(\app{F}{C_2}))}{C_1}} \and
 
-	\infer[R-AbsL]{X \notin \fv{F} \\
+	\infer[R-AbsL]{X \notin \fv(F) \\
 		\spn{F} \cap \pn{C_1} = \varnothing}
 	{\app{F}{(\app{(\lambda X \ty \tau.C_1)}{C_2})} \rewrite \app{(\lambda X \ty \tau.(\app{F}{C_1}))}{C_2}} \and
 
@@ -72,17 +72,17 @@
 	\infer[R-IfL]{\spn{F} \cap \pn{C} = \varnothing}
 	{\app{F}{(\ITE{C}{C_1}{C_2})} \rewrite \ITE{C}{(\app{F}{C_1})}{(\app{F}{C_2})}} \and
 
-	\infer[R-LetR]{\ell.x \notin \fv{C_2}}
+	\infer[R-LetR]{\ell.x \notin \fv(C_2)}
 	{\app{(\LetIn{\ell.x \ty t_e}{C_1}{F})}{C_2} \rewrite \LetIn{\ell.x \ty t_e}{C_1}{(\app{F}{C_2})}} \and
 
-	\infer[R-LetL]{\ell.x \notin \fv{F} \\
+	\infer[R-LetL]{\ell.x \notin \fv(F) \\
 	\spn{F} \cap \pn{C_1} = \varnothing}
 	{\app{F}{(\LetIn{\ell.x \ty t_e}{C_1}{C_2})} \rewrite \LetIn{\ell.x \ty t_e}{C_1}{(\app{F}{C_2})}} \and
 
-	\infer[R-LetTellR]{\alpha \notin \fv{C_2}}
+	\infer[R-LetTellR]{\alpha \notin \fv(C_2)}
 	{\app{(\LetTellIn{\alpha}{\ell}{C_1 \knd \kappa}{\rho}{F})}{C_2} \rewrite \LetTellIn{\alpha}{\ell}{C_1 \knd \kappa}{\rho}{(\app{F}{C_2})}} \and
 
-	\infer[R-LetTellL]{\ell.x \notin \fv{F} \\
+	\infer[R-LetTellL]{\ell.x \notin \fv(F) \\
 	\spn{F} \cap \pn{C_1} = \varnothing}
 	{\app{F}{(\LetTellIn{\alpha}{\ell}{C_1 \knd \kappa}{\rho}{C_2})} \rewrite \LetTellIn{\alpha}{\ell}{C_1 \knd \kappa}{\rho}{(\app{F}{C_2})}} \and
 
