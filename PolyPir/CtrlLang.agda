@@ -794,8 +794,7 @@ data _⇒E[_⨾_]_ : Ctrl → CtrlLabel → Loc → Ctrl → Set where
   ≼SendTy κ p ρ E12≼E22 ,
   SendTyStep q
 
-
-ιSend-Lift
+Send-Lift
   : ∀{v L1 L2 E1 E1' E1≼ E2 E2' E2≼} → 
     E1 ≼ E1≼ →
     E2 ≼ E2≼ →
@@ -807,112 +806,240 @@ data _⇒E[_⨾_]_ : Ctrl → CtrlLabel → Loc → Ctrl → Set where
     E2' ≼ E2≼' ×
     E1≼ ⇒E[ SendL v L2 ⨾ L1 ] E1≼' ×
     E2≼ ⇒E[ RecvL L1 v ⨾ L2 ] E2≼'
-ιSend-Lift {E2 = E2} {E2'} {E2≼} (≼Seq {E11} {E12} {E21} {E22} E11≼E21 E12≼E22)
-  p (SeqStep q) r L1≢L2 with ιSend-Lift E11≼E21 p q r L1≢L2
+Send-Lift {E2 = E2} {E2'} {E2≼} (≼Seq {E11} {E12} {E21} {E22} E11≼E21 E12≼E22)
+  p (SeqStep q) r L1≢L2 with Send-Lift E11≼E21 p q r L1≢L2
 ... | (E1≼' , E2≼' , E1'≼E1≼' , E2'≼E2≼' , E1≼⇒E1≼' , E2≼⇒E2≼') =
   Seq E1≼' E22 , E2≼' ,
   ≼Seq E1'≼E1≼' E12≼E22 , E2'≼E2≼' ,
   SeqStep E1≼⇒E1≼' , E2≼⇒E2≼'
-ιSend-Lift (≼App {E11} {E12} {E21} {E22} E11≼E21 E12≼E22)
-  p (AppFunStep q) r L1≢L2 with ιSend-Lift E11≼E21 p q r L1≢L2
+Send-Lift (≼App {E11} {E12} {E21} {E22} E11≼E21 E12≼E22)
+  p (AppFunStep q) r L1≢L2 with Send-Lift E11≼E21 p q r L1≢L2
 ... | (E1≼' , E2≼' , E1'≼E1≼' , E2'≼E2≼' , E1≼⇒E1≼' , E2≼⇒E2≼') = 
   CtrlApp E1≼' E22 , E2≼' ,
   ≼App E1'≼E1≼' E12≼E22 , E2'≼E2≼' ,
   AppFunStep E1≼⇒E1≼' , E2≼⇒E2≼'
-ιSend-Lift (≼App {E11} {E12} {E21} {E22} E11≼E21 E12≼E22)
+Send-Lift (≼App {E11} {E12} {E21} {E22} E11≼E21 E12≼E22)
   p (AppArgStep E11-Val q) r L1≢L2
-  with V≼ E11-Val E11≼E21 | ιSend-Lift E12≼E22 p q r L1≢L2
+  with V≼ E11-Val E11≼E21 | Send-Lift E12≼E22 p q r L1≢L2
 ... | refl | (E1≼' , E2≼' , E1'≼E1≼' , E2'≼E2≼' , E1≼⇒E1≼' , E2≼⇒E2≼') = 
   CtrlApp E21 E1≼' , E2≼' ,
   ≼App E11≼E21 E1'≼E1≼' , E2'≼E2≼' ,
   AppArgStep E11-Val E1≼⇒E1≼' , E2≼⇒E2≼'
-ιSend-Lift (≼Send {E1} {E2} E1≼E2 ℓ) p (SendStep q) r L1≢L2
-  with ιSend-Lift E1≼E2 p q r L1≢L2
+Send-Lift (≼Send {E1} {E2} E1≼E2 ℓ) p (SendStep q) r L1≢L2
+  with Send-Lift E1≼E2 p q r L1≢L2
 ... | (E1≼' , E2≼' , E1'≼E1≼' , E2'≼E2≼' , E1≼⇒E1≼' , E2≼⇒E2≼') = 
   SendTo E1≼' ℓ , E2≼' ,
   ≼Send E1'≼E1≼' ℓ , E2'≼E2≼' ,
   SendStep E1≼⇒E1≼' , E2≼⇒E2≼'
-ιSend-Lift {.v} {L1} {L2} (≼Send {.(Ret v)} {.(Ret v)} (≼Ret .v) .(LitLoc L2))
+Send-Lift {.v} {L1} {L2} (≼Send {.(Ret v)} {.(Ret v)} (≼Ret .v) .(LitLoc L2))
   (≼Seq {E11} {E12} {E21} {E22} E11≼E21 E12≼E22) (SendVStep {v = v} v-Val L2≢L1) (SeqStep p) L1≢L2
-  with ιSend-Lift (≼Send (≼Ret v) (LitLoc L2)) E11≼E21 (SendVStep v-Val L2≢L1) p L1≢L2
+  with Send-Lift (≼Send (≼Ret v) (LitLoc L2)) E11≼E21 (SendVStep v-Val L2≢L1) p L1≢L2
 ... | (E1≼' , E2≼' , E1'≼E1≼' , E2'≼E2≼' , E1≼⇒E1≼' , E2≼⇒E2≼') = 
   Unit , Seq E2≼' E22 ,
   ≼Unit , ≼Seq E2'≼E2≼' E12≼E22 ,
   SendVStep v-Val L2≢L1 , SeqStep E2≼⇒E2≼'
-ιSend-Lift {.v} {L1} {L2} (≼Send {.(Ret v)} {.(Ret v)} (≼Ret .v) .(LitLoc L2))
+Send-Lift {.v} {L1} {L2} (≼Send {.(Ret v)} {.(Ret v)} (≼Ret .v) .(LitLoc L2))
   (≼App {E11} {E12} {E21} {E22} E11≼E21 E12≼E22) (SendVStep {v = v} v-Val L2≢L1) (AppFunStep p) L1≢L2
-  with ιSend-Lift (≼Send (≼Ret v) (LitLoc L2)) E11≼E21 (SendVStep v-Val L2≢L1) p L1≢L2
+  with Send-Lift (≼Send (≼Ret v) (LitLoc L2)) E11≼E21 (SendVStep v-Val L2≢L1) p L1≢L2
 ... | (E1≼' , E2≼' , E1'≼E1≼' , E2'≼E2≼' , E1≼⇒E1≼' , E2≼⇒E2≼') = 
   Unit , CtrlApp E2≼' E22 ,
   ≼Unit , ≼App E2'≼E2≼' E12≼E22 ,
   SendVStep v-Val L2≢L1 , AppFunStep E2≼⇒E2≼'
-ιSend-Lift {.v} {L1} {L2} (≼Send {.(Ret v)} {.(Ret v)} (≼Ret .v) .(LitLoc L2))
+Send-Lift {.v} {L1} {L2} (≼Send {.(Ret v)} {.(Ret v)} (≼Ret .v) .(LitLoc L2))
   (≼App {E11} {E12} {E21} {E22} E11≼E21 E12≼E22) (SendVStep {v = v} v-Val L2≢L1) (AppArgStep E11-Val p) L1≢L2
-  with V≼ E11-Val E11≼E21 | ιSend-Lift (≼Send (≼Ret v) (LitLoc L2)) E12≼E22 (SendVStep v-Val L2≢L1) p L1≢L2
+  with V≼ E11-Val E11≼E21 | Send-Lift (≼Send (≼Ret v) (LitLoc L2)) E12≼E22 (SendVStep v-Val L2≢L1) p L1≢L2
 ... | refl | (E1≼' , E2≼' , E1'≼E1≼' , E2'≼E2≼' , E1≼⇒E1≼' , E2≼⇒E2≼') = 
   Unit , CtrlApp E21 E2≼' ,
   ≼Unit , ≼App E11≼E21 E2'≼E2≼' ,
   SendVStep v-Val L2≢L1 , AppArgStep E11-Val E2≼⇒E2≼'  
-ιSend-Lift {.v} {L1} {L2} (≼Send {.(Ret v)} {.(Ret v)} (≼Ret .v) .(LitLoc L2))
+Send-Lift {.v} {L1} {L2} (≼Send {.(Ret v)} {.(Ret v)} (≼Ret .v) .(LitLoc L2))
   (≼Send {E1} {E2} E1≼E2 ℓ) (SendVStep {v = v} v-Val L2≢L1) (SendStep p) L1≢L2
-  with ιSend-Lift (≼Send (≼Ret v) (LitLoc L2)) E1≼E2 (SendVStep v-Val L2≢L1) p L1≢L2
+  with Send-Lift (≼Send (≼Ret v) (LitLoc L2)) E1≼E2 (SendVStep v-Val L2≢L1) p L1≢L2
 ... | (E1≼' , E2≼' , E1'≼E1≼' , E2'≼E2≼' , E1≼⇒E1≼' , E2≼⇒E2≼') = 
   Unit , SendTo E2≼' ℓ ,
   ≼Unit , ≼Send E2'≼E2≼' ℓ ,
   SendVStep v-Val L2≢L1 , SendStep E2≼⇒E2≼'
-ιSend-Lift {.v} {L1} {L2} (≼Send {.(Ret v)} {.(Ret v)} (≼Ret .v) .(LitLoc L2))
+Send-Lift {.v} {L1} {L2} (≼Send {.(Ret v)} {.(Ret v)} (≼Ret .v) .(LitLoc L2))
   (≼Recv .(LitLoc _)) (SendVStep {v = v} v-Val L2≢L1) (RecvStep _ _) L1≢L2 =
   Unit , Ret v ,
   ≼Unit , ≼Ret v ,
   SendVStep v-Val L2≢L1 , RecvStep v-Val L1≢L2
-ιSend-Lift {.v} {L1} {L2} (≼Send {.(Ret v)} {.(Ret v)} (≼Ret .v) .(LitLoc L2))
+Send-Lift {.v} {L1} {L2} (≼Send {.(Ret v)} {.(Ret v)} (≼Ret .v) .(LitLoc L2))
   (≼ITE {E11} {E12} {E13} {E21} {E22} {E23} E11≼E21 E12≼E22 E13≼E23) (SendVStep {v = v} v-Val L2≢L1) (IfStep p) L1≢L2
-  with ιSend-Lift (≼Send (≼Ret v) (LitLoc L2)) E11≼E21 (SendVStep v-Val L2≢L1) p L1≢L2
+  with Send-Lift (≼Send (≼Ret v) (LitLoc L2)) E11≼E21 (SendVStep v-Val L2≢L1) p L1≢L2
 ... | (E1≼' , E2≼' , E1'≼E1≼' , E2'≼E2≼' , E1≼⇒E1≼' , E2≼⇒E2≼') = 
   Unit , CtrlITE E2≼' E22 E23 ,
   ≼Unit , ≼ITE E2'≼E2≼' E12≼E22 E13≼E23 ,
   SendVStep v-Val L2≢L1 , IfStep E2≼⇒E2≼'
-ιSend-Lift {.v} {L1} {L2} (≼Send {.(Ret v)} {.(Ret v)} (≼Ret .v) .(LitLoc L2))
+Send-Lift {.v} {L1} {L2} (≼Send {.(Ret v)} {.(Ret v)} (≼Ret .v) .(LitLoc L2))
   (≼TApp {E1} {E2} E1≼E2 t) (SendVStep {v = v} v-Val L2≢L1) (AppTFunStep p) L1≢L2
-  with ιSend-Lift (≼Send (≼Ret v) (LitLoc L2)) E1≼E2 (SendVStep v-Val L2≢L1) p L1≢L2
+  with Send-Lift (≼Send (≼Ret v) (LitLoc L2)) E1≼E2 (SendVStep v-Val L2≢L1) p L1≢L2
 ... | (E1≼' , E2≼' , E1'≼E1≼' , E2'≼E2≼' , E1≼⇒E1≼' , E2≼⇒E2≼') = 
   Unit , CtrlTApp E2≼' t ,
   ≼Unit , ≼TApp E2'≼E2≼' t ,
   SendVStep v-Val L2≢L1 , AppTFunStep E2≼⇒E2≼'
-ιSend-Lift {.v} {L1} {L2} (≼Send {.(Ret v)} {.(Ret v)} (≼Ret .v) .(LitLoc L2))
+Send-Lift {.v} {L1} {L2} (≼Send {.(Ret v)} {.(Ret v)} (≼Ret .v) .(LitLoc L2))
   (≼LetRet {E11} {E12} {E21} {E22} E11≼E21 E12≼E22) (SendVStep {v = v} v-Val L2≢L1) (LetRetStep p) L1≢L2
-  with ιSend-Lift (≼Send (≼Ret v) (LitLoc L2)) E11≼E21 (SendVStep v-Val L2≢L1) p L1≢L2
+  with Send-Lift (≼Send (≼Ret v) (LitLoc L2)) E11≼E21 (SendVStep v-Val L2≢L1) p L1≢L2
 ... | (E1≼' , E2≼' , E1'≼E1≼' , E2'≼E2≼' , E1≼⇒E1≼' , E2≼⇒E2≼') =
   Unit , LetRet E2≼' E22 ,
   ≼Unit , ≼LetRet E2'≼E2≼' E12≼E22 ,
   SendVStep v-Val L2≢L1 , LetRetStep E2≼⇒E2≼'
-ιSend-Lift {.v} {L1} {L2} (≼Send {.(Ret v)} {.(Ret v)} (≼Ret .v) .(LitLoc L2))
+Send-Lift {.v} {L1} {L2} (≼Send {.(Ret v)} {.(Ret v)} (≼Ret .v) .(LitLoc L2))
   (≼SendTy {E11} {E12} {E21} {E22} κ E11≼E21 ρ E12≼E22) (SendVStep {v = v} v-Val L2≢L1) (SendTyStep p) L1≢L2
-  with ιSend-Lift (≼Send (≼Ret v) (LitLoc L2)) E11≼E21 (SendVStep v-Val L2≢L1) p L1≢L2
+  with Send-Lift (≼Send (≼Ret v) (LitLoc L2)) E11≼E21 (SendVStep v-Val L2≢L1) p L1≢L2
 ... | (E1≼' , E2≼' , E1'≼E1≼' , E2'≼E2≼' , E1≼⇒E1≼' , E2≼⇒E2≼') = 
   Unit , SendTy κ E2≼' ρ E22 ,
   ≼Unit , ≼SendTy κ E2'≼E2≼' ρ E12≼E22 ,
   SendVStep v-Val L2≢L1 , SendTyStep E2≼⇒E2≼'  
-ιSend-Lift (≼ITE {E11} {E12} {E13} {E21} {E22} {E23} E11≼E21 E12≼E22 E13≼E23)
-  p (IfStep q) r L1≢L2 with ιSend-Lift E11≼E21 p q r L1≢L2
+Send-Lift (≼ITE {E11} {E12} {E13} {E21} {E22} {E23} E11≼E21 E12≼E22 E13≼E23)
+  p (IfStep q) r L1≢L2 with Send-Lift E11≼E21 p q r L1≢L2
 ... | (E1≼' , E2≼' , E1'≼E1≼' , E2'≼E2≼' , E1≼⇒E1≼' , E2≼⇒E2≼') = 
   CtrlITE E1≼' E22 E23 , E2≼' ,
   ≼ITE E1'≼E1≼' E12≼E22 E13≼E23 , E2'≼E2≼' ,
   IfStep E1≼⇒E1≼' , E2≼⇒E2≼' 
-ιSend-Lift (≼TApp {E1} {E2} E1≼E2 t) p (AppTFunStep q) r L1≢L2
-  with ιSend-Lift E1≼E2 p q r L1≢L2
+Send-Lift (≼TApp {E1} {E2} E1≼E2 t) p (AppTFunStep q) r L1≢L2
+  with Send-Lift E1≼E2 p q r L1≢L2
 ... | (E1≼' , E2≼' , E1'≼E1≼' , E2'≼E2≼' , E1≼⇒E1≼' , E2≼⇒E2≼') = 
   CtrlTApp E1≼' t , E2≼' ,
   ≼TApp E1'≼E1≼' t , E2'≼E2≼' ,
   AppTFunStep E1≼⇒E1≼' , E2≼⇒E2≼'
-ιSend-Lift (≼LetRet {E11} {E12} {E21} {E22} E11≼E21 E12≼E22)
-  p (LetRetStep q) r L1≢L2 with ιSend-Lift E11≼E21 p q r L1≢L2
+Send-Lift (≼LetRet {E11} {E12} {E21} {E22} E11≼E21 E12≼E22)
+  p (LetRetStep q) r L1≢L2 with Send-Lift E11≼E21 p q r L1≢L2
 ... | (E1≼' , E2≼' , E1'≼E1≼' , E2'≼E2≼' , E1≼⇒E1≼' , E2≼⇒E2≼') = 
   LetRet E1≼' E22 , E2≼' ,
   ≼LetRet E1'≼E1≼' E12≼E22 , E2'≼E2≼' ,
   LetRetStep E1≼⇒E1≼' , E2≼⇒E2≼'
-ιSend-Lift (≼SendTy {E11} {E12} {E21} {E22} κ E11≼E21 ρ E12≼E22)
-  p (SendTyStep q) r L1≢L2 with ιSend-Lift E11≼E21 p q r L1≢L2
+Send-Lift (≼SendTy {E11} {E12} {E21} {E22} κ E11≼E21 ρ E12≼E22)
+  p (SendTyStep q) r L1≢L2 with Send-Lift E11≼E21 p q r L1≢L2
+... | (E1≼' , E2≼' , E1'≼E1≼' , E2'≼E2≼' , E1≼⇒E1≼' , E2≼⇒E2≼') = 
+  SendTy κ E1≼' ρ E22 , E2≼' ,
+  ≼SendTy κ E1'≼E1≼' ρ E12≼E22 , E2'≼E2≼' ,
+  SendTyStep E1≼⇒E1≼' , E2≼⇒E2≼'
+
+Sync-Lift
+  : ∀{d L1 L2 E1 E1' E1≼ E2 E2' E2≼} → 
+    E1 ≼ E1≼ →
+    E2 ≼ E2≼ →
+    E1 ⇒E[ SendSyncL d L2 ⨾ L1 ] E1' →
+    E2 ⇒E[ RecvSyncL L1 d ⨾ L2 ] E2' →
+    L1 ≢ L2 →
+    Σ[ E1≼' ∈ Ctrl ] Σ[ E2≼' ∈ Ctrl ]
+    E1' ≼ E1≼' ×
+    E2' ≼ E2≼' ×
+    E1≼ ⇒E[ SendSyncL d L2 ⨾ L1 ] E1≼' ×
+    E2≼ ⇒E[ RecvSyncL L1 d ⨾ L2 ] E2≼'
+Sync-Lift {E2 = E2} {E2'} {E2≼} (≼Seq {E11} {E12} {E21} {E22} E11≼E21 E12≼E22)
+  p (SeqStep q) r L1≢L2 with Sync-Lift E11≼E21 p q r L1≢L2
+... | (E1≼' , E2≼' , E1'≼E1≼' , E2'≼E2≼' , E1≼⇒E1≼' , E2≼⇒E2≼') =
+  Seq E1≼' E22 , E2≼' ,
+  ≼Seq E1'≼E1≼' E12≼E22 , E2'≼E2≼' ,
+  SeqStep E1≼⇒E1≼' , E2≼⇒E2≼'
+Sync-Lift (≼App {E11} {E12} {E21} {E22} E11≼E21 E12≼E22)
+  p (AppFunStep q) r L1≢L2 with Sync-Lift E11≼E21 p q r L1≢L2
+... | (E1≼' , E2≼' , E1'≼E1≼' , E2'≼E2≼' , E1≼⇒E1≼' , E2≼⇒E2≼') = 
+  CtrlApp E1≼' E22 , E2≼' ,
+  ≼App E1'≼E1≼' E12≼E22 , E2'≼E2≼' ,
+  AppFunStep E1≼⇒E1≼' , E2≼⇒E2≼'
+Sync-Lift (≼App {E11} {E12} {E21} {E22} E11≼E21 E12≼E22)
+  p (AppArgStep E11-Val q) r L1≢L2
+  with V≼ E11-Val E11≼E21 | Sync-Lift E12≼E22 p q r L1≢L2
+... | refl | (E1≼' , E2≼' , E1'≼E1≼' , E2'≼E2≼' , E1≼⇒E1≼' , E2≼⇒E2≼') = 
+  CtrlApp E21 E1≼' , E2≼' ,
+  ≼App E11≼E21 E1'≼E1≼' , E2'≼E2≼' ,
+  AppArgStep E11-Val E1≼⇒E1≼' , E2≼⇒E2≼'
+Sync-Lift (≼Send {E1} {E2} E1≼E2 ℓ) p (SendStep q) r L1≢L2
+  with Sync-Lift E1≼E2 p q r L1≢L2
+... | (E1≼' , E2≼' , E1'≼E1≼' , E2'≼E2≼' , E1≼⇒E1≼' , E2≼⇒E2≼') = 
+  SendTo E1≼' ℓ , E2≼' ,
+  ≼Send E1'≼E1≼' ℓ , E2'≼E2≼' ,
+  SendStep E1≼⇒E1≼' , E2≼⇒E2≼'
+Sync-Lift {d} {L1} {L2} (≼Choose .d .(LitLoc L2) E1≼E1≼)
+  (≼Seq {E11} {E12} {E21} {E22} E11≼E21 E12≼E22) (ChooseStep L2≢L1) (SeqStep p) L1≢L2
+  with Sync-Lift (≼Choose d (LitLoc L2) E1≼E1≼) E11≼E21 (ChooseStep L2≢L1) p L1≢L2
+... | (E1≼' , E2≼' , E1'≼E1≼' , E2'≼E2≼' , E1≼⇒E1≼' , E2≼⇒E2≼') = 
+  E1≼' , Seq E2≼' E22 ,
+  E1'≼E1≼' , ≼Seq E2'≼E2≼' E12≼E22 ,
+  E1≼⇒E1≼' , SeqStep E2≼⇒E2≼'
+Sync-Lift {d} {L1} {L2} (≼Choose .d .(LitLoc L2) E1≼E1≼)
+  (≼App {E11} {E12} {E21} {E22} E11≼E21 E12≼E22) (ChooseStep L2≢L1) (AppFunStep p) L1≢L2
+  with Sync-Lift (≼Choose d (LitLoc L2) E1≼E1≼) E11≼E21 (ChooseStep L2≢L1) p L1≢L2
+... | (E1≼' , E2≼' , E1'≼E1≼' , E2'≼E2≼' , E1≼⇒E1≼' , E2≼⇒E2≼') = 
+  E1≼' , CtrlApp E2≼' E22 ,
+  E1'≼E1≼' , ≼App E2'≼E2≼' E12≼E22 ,
+  E1≼⇒E1≼' , AppFunStep E2≼⇒E2≼'
+Sync-Lift {d} {L1} {L2} (≼Choose .d .(LitLoc L2) E1≼E1≼)
+  (≼App {E11} {E12} {E21} {E22} E11≼E21 E12≼E22) (ChooseStep L2≢L1) (AppArgStep E11-Val p) L1≢L2
+  with V≼ E11-Val E11≼E21 | Sync-Lift (≼Choose d (LitLoc L2) E1≼E1≼) E12≼E22 (ChooseStep L2≢L1) p L1≢L2
+... | refl | (E1≼' , E2≼' , E1'≼E1≼' , E2'≼E2≼' , E1≼⇒E1≼' , E2≼⇒E2≼') = 
+  E1≼' , CtrlApp E21 E2≼' ,
+  E1'≼E1≼' , ≼App E11≼E21 E2'≼E2≼' ,
+  E1≼⇒E1≼' , AppArgStep E11-Val E2≼⇒E2≼'
+Sync-Lift {d} {L1} {L2} (≼Choose .d .(LitLoc L2) E1≼E1≼)
+  (≼Send {E1} {E2} E1≼E2 ℓ) (ChooseStep L2≢L1) (SendStep p) L1≢L2
+  with Sync-Lift (≼Choose d (LitLoc L2) E1≼E1≼) E1≼E2 (ChooseStep L2≢L1) p L1≢L2
+... | (E1≼' , E2≼' , E1'≼E1≼' , E2'≼E2≼' , E1≼⇒E1≼' , E2≼⇒E2≼') = 
+  E1≼' , SendTo E2≼' ℓ ,
+  E1'≼E1≼' , ≼Send E2'≼E2≼' ℓ ,
+  E1≼⇒E1≼' , SendStep E2≼⇒E2≼'
+Sync-Lift {.true} {L1} {L2} (≼Choose {E1} {E2} .true .(LitLoc L2) E1≼E2)
+  (≼Allow {′ E11} {′ E12} {′ E21} {′ E22} .(LitLoc L1) (′≼′ E11≼E21) (′≼′ E12≼E22)) (ChooseStep L2≢L1) (AllowLStep L1≢L2') L1≢L2 =
+    E2 , E21 ,
+    E1≼E2 , E11≼E21 ,
+    ChooseStep L2≢L1 , AllowLStep L1≢L2
+Sync-Lift {.false} {L1} {L2} (≼Choose {E1} {E2} .false .(LitLoc L2) E1≼E2)
+  (≼Allow {′ E11} {′ E12} {′ E21} {′ E22} .(LitLoc L1) (′≼′ E11≼E21) (′≼′ E12≼E22)) (ChooseStep L2≢L1) (AllowRStep L1≢L2') L1≢L2 =
+    E2 , E21 ,
+    E1≼E2 , E11≼E21 ,
+    ChooseStep L2≢L1 , AllowRStep L1≢L2
+Sync-Lift {d} {L1} {L2} (≼Choose .d .(LitLoc L2) E1≼E1≼)
+  (≼ITE {E11} {E12} {E13} {E21} {E22} {E23} E11≼E21 E12≼E22 E13≼E23) (ChooseStep L2≢L1) (IfStep p) L1≢L2
+  with Sync-Lift (≼Choose d (LitLoc L2) E1≼E1≼) E11≼E21 (ChooseStep L2≢L1) p L1≢L2
+... | (E1≼' , E2≼' , E1'≼E1≼' , E2'≼E2≼' , E1≼⇒E1≼' , E2≼⇒E2≼') = 
+  E1≼' , CtrlITE E2≼' E22 E23 ,
+  E1'≼E1≼' , ≼ITE E2'≼E2≼' E12≼E22 E13≼E23 ,
+  E1≼⇒E1≼' , IfStep E2≼⇒E2≼'
+Sync-Lift {d} {L1} {L2} (≼Choose .d .(LitLoc L2) E1≼E1≼)
+  (≼TApp {E1} {E2} E1≼E2 t) (ChooseStep L2≢L1) (AppTFunStep p) L1≢L2
+  with Sync-Lift (≼Choose d (LitLoc L2) E1≼E1≼) E1≼E2 (ChooseStep L2≢L1) p L1≢L2
+... | (E1≼' , E2≼' , E1'≼E1≼' , E2'≼E2≼' , E1≼⇒E1≼' , E2≼⇒E2≼') = 
+  E1≼' , CtrlTApp E2≼' t ,
+  E1'≼E1≼' , ≼TApp E2'≼E2≼' t ,
+  E1≼⇒E1≼' , AppTFunStep E2≼⇒E2≼'
+Sync-Lift {d} {L1} {L2} (≼Choose .d .(LitLoc L2) E1≼E1≼)
+  (≼LetRet {E11} {E12} {E21} {E22} E11≼E21 E12≼E22) (ChooseStep L2≢L1) (LetRetStep p) L1≢L2
+  with Sync-Lift (≼Choose d (LitLoc L2) E1≼E1≼) E11≼E21 (ChooseStep L2≢L1) p L1≢L2
+... | (E1≼' , E2≼' , E1'≼E1≼' , E2'≼E2≼' , E1≼⇒E1≼' , E2≼⇒E2≼') = 
+  E1≼' , LetRet E2≼' E22 ,
+  E1'≼E1≼' , ≼LetRet E2'≼E2≼' E12≼E22 ,
+  E1≼⇒E1≼' , LetRetStep E2≼⇒E2≼'
+Sync-Lift {d} {L1} {L2} (≼Choose .d .(LitLoc L2) E1≼E1≼)
+  (≼SendTy {E11} {E12} {E21} {E22} κ E11≼E21 ρ E12≼E22) (ChooseStep L2≢L1) (SendTyStep p) L1≢L2
+  with Sync-Lift (≼Choose d (LitLoc L2) E1≼E1≼) E11≼E21 (ChooseStep L2≢L1) p L1≢L2
+... | (E1≼' , E2≼' , E1'≼E1≼' , E2'≼E2≼' , E1≼⇒E1≼' , E2≼⇒E2≼') = 
+  E1≼' , SendTy κ E2≼' ρ E22 ,
+  E1'≼E1≼' , ≼SendTy κ E2'≼E2≼' ρ E12≼E22 ,
+  E1≼⇒E1≼' , SendTyStep E2≼⇒E2≼'
+Sync-Lift (≼ITE {E11} {E12} {E13} {E21} {E22} {E23} E11≼E21 E12≼E22 E13≼E23)
+  p (IfStep q) r L1≢L2 with Sync-Lift E11≼E21 p q r L1≢L2
+... | (E1≼' , E2≼' , E1'≼E1≼' , E2'≼E2≼' , E1≼⇒E1≼' , E2≼⇒E2≼') = 
+  CtrlITE E1≼' E22 E23 , E2≼' ,
+  ≼ITE E1'≼E1≼' E12≼E22 E13≼E23 , E2'≼E2≼' ,
+  IfStep E1≼⇒E1≼' , E2≼⇒E2≼' 
+Sync-Lift (≼TApp {E1} {E2} E1≼E2 t) p (AppTFunStep q) r L1≢L2
+  with Sync-Lift E1≼E2 p q r L1≢L2
+... | (E1≼' , E2≼' , E1'≼E1≼' , E2'≼E2≼' , E1≼⇒E1≼' , E2≼⇒E2≼') = 
+  CtrlTApp E1≼' t , E2≼' ,
+  ≼TApp E1'≼E1≼' t , E2'≼E2≼' ,
+  AppTFunStep E1≼⇒E1≼' , E2≼⇒E2≼'
+Sync-Lift (≼LetRet {E11} {E12} {E21} {E22} E11≼E21 E12≼E22)
+  p (LetRetStep q) r L1≢L2 with Sync-Lift E11≼E21 p q r L1≢L2
+... | (E1≼' , E2≼' , E1'≼E1≼' , E2'≼E2≼' , E1≼⇒E1≼' , E2≼⇒E2≼') = 
+  LetRet E1≼' E22 , E2≼' ,
+  ≼LetRet E1'≼E1≼' E12≼E22 , E2'≼E2≼' ,
+  LetRetStep E1≼⇒E1≼' , E2≼⇒E2≼'
+Sync-Lift (≼SendTy {E11} {E12} {E21} {E22} κ E11≼E21 ρ E12≼E22)
+  p (SendTyStep q) r L1≢L2 with Sync-Lift E11≼E21 p q r L1≢L2
 ... | (E1≼' , E2≼' , E1'≼E1≼' , E2'≼E2≼' , E1≼⇒E1≼' , E2≼⇒E2≼') = 
   SendTy κ E1≼' ρ E22 , E2≼' ,
   ≼SendTy κ E1'≼E1≼' ρ E12≼E22 , E2'≼E2≼' ,

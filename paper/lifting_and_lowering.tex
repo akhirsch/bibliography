@@ -149,17 +149,17 @@ then there is some $E_{1 \leq}'$ and $E_{2 \leq}'$ such that
   \item $E_2' \lessnd E_{2 \leq}'$.
 \end{itemize}
 \end{lem}
-We proceed by induction on both control steps.
-\begin{description}
-  \item[\textsc{Seq}, \textsc{AppFun}, \textsc{Send}, \textsc{If}, \textsc{AppTFun}, \textsc{LetRet}, \textsc{SendTy}]
-    When either of the steps have one of these cases, the proof is analogous to the corresponding case in Lemma \ref{lem:internal-control-lifting}.
-  \item[\textsc{Choose} and \textsc{AllowChoiceL}]
-    Consider the case when $E_1 = \ChooseFor{\Left}{L2}{E}$ and $E_2 = \AllowChoice{L1}{E_1}{E_2}$.
-    By examination of $\lessnd$, $E_{1 \leq} = \ChooseFor{\Left}{L2}{E_{\leq}}$ where $E \lessnd E_{\leq}$, and $E_{2 \leq} = \AllowChoice{L1}{E_T}{E_F}$, where $E_1 \lessnd E_T$ and $E_1 \lessnd E_F$.
-    Therefore it suffices to choose $E_{1 \leq}' = E_{\leq}$ and $E_{2 \leq}' = E_T$.
-  \item[\textsc{Choose} and \textsc{AllowChoiceR}]
-    Symmetric to the \textsc{AllowChoiceL} case.
-\end{description}
+% We proceed by induction on both control steps.
+% \begin{description}
+%   \item[\textsc{Seq}, \textsc{AppFun}, \textsc{Send}, \textsc{If}, \textsc{AppTFun}, \textsc{LetRet}, \textsc{SendTy}]
+%     When either of the steps have one of these cases, the proof is analogous to the corresponding case in Lemma \ref{lem:internal-control-lifting}.
+%   \item[\textsc{Choose} and \textsc{AllowChoiceL}]
+%     Consider the case when $E_1 = \ChooseFor{\Left}{L2}{E}$ and $E_2 = \AllowChoice{L1}{E_1}{E_2}$.
+%     By examination of $\lessnd$, $E_{1 \leq} = \ChooseFor{\Left}{L2}{E_{\leq}}$ where $E \lessnd E_{\leq}$, and $E_{2 \leq} = \AllowChoice{L1}{E_T}{E_F}$, where $E_1 \lessnd E_T$ and $E_1 \lessnd E_F$.
+%     Therefore it suffices to choose $E_{1 \leq}' = E_{\leq}$ and $E_{2 \leq}' = E_T$.
+%   \item[\textsc{Choose} and \textsc{AllowChoiceR}]
+%     Symmetric to the \textsc{AllowChoiceL} case.
+% \end{description}
   
 \todo
 \ashley{I want to restate the theorem here, and I need a clean solution to keep the numbering correct}
