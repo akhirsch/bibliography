@@ -36,27 +36,25 @@ One might naively think that, since~$\alpha$ does not clash with any other varia
 However, doing so changes the meaning of the program as the previously-distinct local variables $\alpha.x$ and $L.x$ collapse.
 The variable $\alpha.x$ is incorrectly captured by the definition of $L.x$ and the choreography would wrongly evaluate to~$L.6$.
 
-To avoid this namespace capture, location substitution in local let expressions must rename variables when names collide.
-In particular, if the location we are substituting \emph{in} binds a variable that is already used by the variable we are substituting \emph{out},
-we rename the newly bound variable to avoid any collision.
-Notationally, we write $\hsubst{C}{\ell}{x}{e}$ to denote standard capture-avoiding substitution of the local variable~$x$ at the location (or location variable)~$\ell$,
-allowing us to define safe location substitution as follows.
+To avoid this namespace capture, location substitution in local let expressions must rename variables
+whose names collide with any variable referenced by the new location (both bound and free) in the body of the let.
+To define the substitution properly, we let $\vars_\ell(C)$ be the set of variables referenced at location~$\ell$ (or location variable) in choreography~$C$.
+We also write $\hsubst{C}{\ell}{x}{e}$ to denote standard capture-avoiding substitution of the local variable~$x$ at the location~$\ell$.
+Safe location substitution for let statements is then defined as follows.
 \begin{align*}
   \subst{(\LetIn{\alpha.x\ty t}{C_1}{C_2})}{\alpha}{\ell} & = \LetIn*{\ell.x\ty t}{\subst{C_1}{\alpha}{\ell}}{\subst{C_2}{\alpha}{\ell}}
-  &&
+  && \text{if}~x \notin \vars_\ell(C_2)
   \\[1ex]
-  \subst{(\LetIn{\ell.x\ty t}{C_1}{C_2})}{\alpha}{\ell} & = \LetIn*{\ell.x\ty t}{\subst{C_1}{\alpha}{\ell}}{\subst{C_2}{\alpha}{\ell}}
-  && \text{if}~\alpha.x \notin \fv(C_2)
-  \\[1ex]
-  \subst{(\LetIn{\ell.x\ty t}{C_1}{C_2})}{\alpha}{\ell}
-  & = \LetIn*{\ell.y\ty t}{\subst{C_1}{\alpha}{\ell}}{\subst{\hsubst{C_2}{\ell}{x}{y}}{\alpha}{\ell}}
+  \subst{(\LetIn{\alpha.x\ty t}{C_1}{C_2})}{\alpha}{\ell}
+  & = \LetIn*{\ell.y\ty t}{\subst{C_1}{\alpha}{\ell}}{\subst{\hsubst{C_2}{\alpha}{x}{y}}{\alpha}{\ell}}
   && \begin{array}{@{}l@{}}
-    \text{if}~\alpha.x \in \fv(C_2) \\
-    \text{and}~\alpha.y, \ell.y \notin \fv(C_2)
+    \text{if}~x \in \vars_\ell(C_2), \\
+    y \notin \vars_\ell(C_2), \\
+    \text{and}~\alpha.y \notin \fv(C_2)
   \end{array}
   \\[1ex]
   \subst{(\LetIn{\beta.x\ty t}{C_1}{C_2})}{\alpha}{\ell} & = \LetIn*{\beta.x\ty t}{\subst{C_1}{\alpha}{\ell}}{\subst{C_2}{\alpha}{\ell}}
-  && \text{if}~\alpha \neq \beta~\text{and}~\beta \neq \ell
+  && \text{if}~\alpha \neq \beta
 \end{align*}
 
 \begin{figure}[h]
