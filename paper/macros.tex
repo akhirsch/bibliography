@@ -110,6 +110,11 @@
 \newcommand{\Loc}{\programfont{loc}}
 \newcommand{\Empty}{\ensuremath{\mathbf{0}}}
 
+\newcommand{\ChoiceCol}[1]{{\color{YellowOrange}#1}}
+\newcommand{\FontChoice}[1]{\mathbf{\ChoiceCol{#1}}}
+\newcommand{\Left}{\FontChoice{L}}
+\newcommand{\Right}{\FontChoice{R}}
+
 \newcommand{\ChorCol}[1]{{\color{RoyalBlue}#1}}
 %\newcommand{\ChorCol}[1]{#1}
 \newcommand{\FontChoreo}[1]{\programfont{\ChorCol{#1}}}
@@ -129,8 +134,6 @@
 \newcommand{\IfN}{\FontChoreo{if}}
 \newcommand{\ThenN}{\FontChoreo{then}}
 \newcommand{\ElseN}{\FontChoreo{else}}
-\newcommand{\Left}{\FontChoreo{L}}
-\newcommand{\Right}{\FontChoreo{R}}
 \newcommand{\FunN}{\ChorCol{\lambda}}
 \newcommand{\TFunN}{\ChorCol{\Lambda}}
 \newcommand{\ChorDef}{\mathrel{\ChorCol{\coloneqq}}}
@@ -154,8 +157,8 @@
 
 \newcommand{\CtrlDef}{\mathrel{\CtrlCol{\coloneqq}}}
 \newcommand{\CtrlIn}{\FontCtrl{in}}
-\newcommand{\CtrlLeft}{\FontCtrl{L}}
-\newcommand{\CtrlRight}{\FontCtrl{R}}
+\newcommand{\CtrlLeft}{\Left}
+\newcommand{\CtrlRight}{\Right}
 \newcommand{\CtrlFunN}{\CtrlCol{\lambda}}
 \newcommand{\CtrlTFunN}{\CtrlCol{\Lambda}}
 
