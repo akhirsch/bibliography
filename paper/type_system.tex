@@ -27,7 +27,7 @@ Specifically, a program which takes as input a type $t$ of kind $\kappa$ (from a
 
 These three types have the following kinding rules:
 \begin{mathpar}
-  \infer[TyAt]{\localkinded{\proj{\Gamma}{\Locations}}{t_e} \\
+  \infer[TyAt]{\chorkinded{\Gamma}{t_e}{*_e} \\
     \chorkinded{\Gamma}{\ell}{*_\ell}}
     {\chorkinded{\Gamma}{t_e @ \ell}{*}} \and
 
@@ -39,6 +39,7 @@ These three types have the following kinding rules:
     {\chorkinded{\Gamma}{\forall \alpha \knd \kappa.\tau}{*}} \and 
 \end{mathpar}
 \ethan{Why is the first premise \textsc{TyAt} not $\Gamma \proves t_e :: *_e$?}
+\ashley{Should be, not sure why this was different than in the full type rules!}
 For example, the type of a choreographic program which sends a value of type $\eta$ from $\alpha$ to $\beta$, for any possible local type $\eta$ and locations $\alpha$ and $\beta$, can be written as follows:
 \begin{mathpar}
   \forall \eta \knd *_e.\forall \alpha \knd *_\ell.\forall \beta \knd *_\ell.\eta @ \alpha \to \eta @ \beta

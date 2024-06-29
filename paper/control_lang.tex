@@ -8,11 +8,13 @@
 \begin{figure}
   \begin{syntax}
     \category[Control Expression]{E}
-    \alternative{X} \alternative{\CtrlFail} \alternative{\Ret{e}} \alternative{E_1 \CtrlSeq E_2} \alternative{\CtrlFun{X}{E}} \alternative{\CtrlRec{X}{E}} \alternative{E_1~E_2} \\
-    \alternative{\SendTo{E}{\ell}} \alternative{\RecvFrom{\ell}} \\
-    \alternative{\ChooseFor{d}{\ell}{E}} \alternative{\AllowChoice{\ell}{?E_1}{?E_2}} \\
-    \alternative{\CtrlITE{E}{E_1}{E_2}} \\
+    \alternative{X} \alternative{\CtrlFail} \alternative{\Ret{e}} \alternative{E_1 \CtrlSeq E_2} \\
+    \alternative{\CtrlFun{X}{E}} \alternative{E_1~E_2} \alternative{\CtrlRec{X}{E}} \\
     \alternative{\CtrlTFun{\alpha}{E}} \alternative{E~t} \\
+    \alternative{\SendTo{E}{\ell}} \alternative{\RecvFrom{\ell}} \\
+    \alternative{\ChooseFor{d}{\ell}{E}} \\
+    \alternative{\AllowChoice{\ell}{?E_1}{?E_2}} \\
+    \alternative{\CtrlITE{E}{E_1}{E_2}} \\
     \alternative{\CtrlLetIn{\Ret{x}}{E_1}{E_2}}\\
     \alternative{\LetSendIn{\alpha}{E_1}{\rho}{E_2}} \alternative{\LetRecvIn{\alpha}{\ell}{E}}\\
 %    \alternative{\LetSendIn{\alpha \knd *_e}{E_1}{\rho}{E_2}} \alternative{\LetRecvIn{\alpha \knd *_e}{\ell}{E}}\\
@@ -35,97 +37,81 @@
 
 \paragraph{Operational Semantics}
 \label{sec:control-lang-semantics}
-
-\todo Labeled operational semantics $E_1 \ctrlstep[l] E_2$, \emph{parameterized at a specific location} $L$ (different from Pirouette).
-This isn't essential, just makes things easier for label merging and AmI.
+We give the control language an operational semantics via a labeled transition system $E_1 \ctrlstep[l] E_2$, where $l$ is the label, and $L$ is the location at which the control program is executing.
+Specifically, we have reduction rules of the form $E_1 \ctrlreduce[l] E_2$ which can be applied using structural congruence rules given by a set of evaluation contexts $\eta$.
 
 \begin{syntax}
-  \category[Label]{l}
+  \category[Labels]{l}
   \alternative{\iota} \alternative{v \sendsto L} \alternative{L;v \sendsto} \alternative{d \sendsto L} \alternative{L;d \sendsto} \alternative{t \sendsto \rho} \alternative{L;t \sendsto}
+
+  \category[Evaluation Contexts]{\eta}
+  \alternative{\hole} \alternative{\eta \CtrlSeq E} \alternative{\eta~E}\alternative{E~\eta} \alternative{\eta~t} \\
+  \alternative{\SendTo{\eta}{L}} \\
+  \alternative{\CtrlITE{\eta}{E_1}{E_2}} \\
+  \alternative{\CtrlLetIn{\Ret{x}}{\eta}{E}} \\
+  \alternative{\LetSendIn{\alpha \knd \kappa}{\eta}{\rho}{E}}
 \end{syntax}
 
 \begin{mathparpagebreakable}
-    \infer[RetE]{e_1 \localstep e_2}
-    {\Ret{e_1} \ctrlstep[\iota] \Ret{e_2}}
+    \infer[]{E_1 \ctrlreduce[\iota] E_2}
+    {\eta[E_1] \ctrlstep[\iota] \eta[E_2]}
     \and
-    \infer[Seq]{E_1 \ctrlstep[l] E_1'}
-    {E_1 \CtrlSeq E_2 \ctrlstep[l] E_1' \CtrlSeq E_2}
+    \infer[RetE]{e_1 \localstep e_2}
+    {\Ret{e_1} \ctrlreduce[\iota] \Ret{e_2}}
     \and
     \infer[SeqV]{\text{Value}(V)}
-    {V \CtrlSeq E \ctrlstep[\iota] E}
-    \and
-    \infer[AppFun]{E_1 \ctrlstep[l] E_1'}
-    {E_1~E_2 \ctrlstep[l] E_1'~E_2}
-    \and
-    \infer[AppArg]{\text{Value}(V) \\
-      E \ctrlstep[l] E'}
-    {V~E \ctrlstep[l] V~E'}
+    {V \CtrlSeq E \ctrlreduce[\iota] E}
     \and
     \infer[App]{\text{Value}(V)}
-    {(\CtrlFun{X}{E})~V \ctrlstep[\iotasync] \subst{E}{X}{V}}
+    {(\CtrlFun{X}{E})~V \ctrlreduce[\iotasync] \subst{E}{X}{V}}
     \and
     \infer[Rec]{~}
-    {\mu X.E \ctrlstep[\iotasync] \subst{E}{X}{\mu X.E}}
-    \and
-    \infer[Send]{E \ctrlstep[l] E'}
-    {\SendTo{E}{L'} \ctrlstep[l] \SendTo{E'}{L'}}
+    {\mu X.E \ctrlreduce[\iotasync] \subst{E}{X}{\mu X.E}}
     \and
     \infer[SendV]{\text{Value}(v) \\
       L' \neq L}
-    {\SendTo{\Ret{v}}{L'} \ctrlstep[v \sendsto L'] \CtrlFail}
+    {\SendTo{\Ret{v}}{L'} \ctrlreduce[v \sendsto L'] \CtrlFail}
     \and
     \infer[Recv]{\text{Value}(v) \\
       L' \neq L}
-    {\RecvFrom{L'} \ctrlstep[L';v \sendsto] \Ret{v}}
+    {\RecvFrom{L'} \ctrlreduce[L';v \sendsto] \Ret{v}}
     \and
     \infer[Choose]{L' \neq L}
-    {\ChooseFor{d}{L'}{E} \ctrlstep[d \sendsto L'] E}
+    {\ChooseFor{d}{L'}{E} \ctrlreduce[d \sendsto L'] E}
     \and
     \infer[AllowChoiceL]{L' \neq L}
-    {\AllowChoice{L'}{E_1}{E_2} \ctrlstep[L';\Left \sendsto] E_1}
+    {\AllowChoice{L'}{E_1}{E_2} \ctrlreduce[L';\Left \sendsto] E_1}
     \and
     \infer[AllowChoiceR]{L' \neq L}
-    {\AllowChoice{L'}{E_1}{E_2} \ctrlstep[L';\Right \sendsto] E_2}
-    \and
-    \infer[If]{E \ctrlstep[l] E'}
-    {\CtrlITE{E}{E_1}{E_2} \ctrlstep[l] \CtrlITE{E'}{E_1}{E_2}}
+    {\AllowChoice{L'}{E_1}{E_2} \ctrlreduce[L';\Right \sendsto] E_2}
     \and
     \infer[IfT]{~}
-    {\CtrlITE{\Ret{\True}}{E_1}{E_2} \ctrlstep[\iota] E_1}
+    {\CtrlITE{\Ret{\True}}{E_1}{E_2} \ctrlreduce[\iota] E_1}
     \and
     \infer[IfF]{~}
-    {\CtrlITE{\Ret{\False}}{E_1}{E_2} \ctrlstep[\iota] E_2}
-    \and
-    \infer[AppTFun]{E \ctrlstep[l] E'}
-    {E~t \ctrlstep[l] E'~t}
+    {\CtrlITE{\Ret{\False}}{E_1}{E_2} \ctrlreduce[\iota] E_2}
     \and
     \infer[AppT]{~}
-    {(\CtrlTFun{\alpha}{E})~t \ctrlstep[\iotasync] \subst{E}{\alpha}{t}}
-    \and
-    \infer[LetRet]{E_1 \ctrlstep[l] E_1'}
-    {\CtrlLetIn{\Ret{x}}{E_1}{E_2} \ctrlstep[l] \CtrlLetIn{\Ret{x}}{E_1'}{E_2}}
+    {(\CtrlTFun{\alpha}{E})~t \ctrlreduce[\iotasync] \subst{E}{\alpha}{t}}
     \and
     \infer[LetRetV]{\text{Value}(v)}
-    {\CtrlLetIn{\Ret{x}}{\Ret{v}}{E} \ctrlstep[\iota] \subst{E}{x}{v}}
-    \and
-    \infer[SendTy]{E_1 \ctrlstep[l] E_1'}
-    {\LetSendIn{\alpha \knd \kappa}{E_1}{\rho}{E_2} \ctrlstep[l] \LetSendIn{\alpha \knd \kappa}{E_1'}{\rho}{E_2}}
+    {\CtrlLetIn{\Ret{x}}{\Ret{v}}{E} \ctrlreduce[\iota] \subst{E}{x}{v}}
     \and
     \infer[SendTyV]{~}
-    {\LetSendIn{\alpha \knd \kappa}{\Ret{\say{t}}}{\rho}{E} \ctrlstep[L;t \sendsto \rho] \subst{E}{\alpha}{t}}
+    {\LetSendIn{\alpha \knd \kappa}{\Ret{\say{t}}}{\rho}{E} \ctrlreduce[t \sendsto \rho] \subst{E}{\alpha}{t}}
     \and
-    \infer[RecvTy]{~}
-    {\LetRecvIn{\alpha \knd \kappa}{L}{E} \ctrlstep[L';t \sendsto \{L\}] \subst{E}{\alpha}{t}}
+    \infer[RecvTy]{L' \neq L}
+    {\LetRecvIn{\alpha \knd \kappa}{L'}{E} \ctrlreduce[L';t \sendsto] \subst{E}{\alpha}{t}}
     \and
     \infer[AmIL]{~}
-    {\AmI{L}{E_1}{E_2} \ctrlstep[\iota] E_1}
+    {\AmI{L}{E_1}{E_2} \ctrlreduce[\iota] E_1}
     \and
     \infer[AmIR]{L' \neq L}
-    {\AmI{L'}{E_1}{E_2} \ctrlstep[\iota] E_2} \and
+    {\AmI{L'}{E_1}{E_2} \ctrlreduce[\iota] E_2} \and
 \end{mathparpagebreakable}
 
 \paragraph{Control Systems}
-\label{sec:control-lang-semantics}
+\label{sec:system-semantics}
 We can compose control programs in parallel over each location as a \emph{system}.
 In particular, a system $\Pi$ is a map from each location $\Locations$ to a control program.
 For a given location $L \in \Locations$, the program that $L$ is running in the system $\Pi$ is denoted as $\Pi(L)$.
@@ -174,7 +160,7 @@ While the control program labels only show one side of a send or receive, the sy
     {\Pi \systemstep[L_1;d \sendsto L_2] \subst*{\Pi}{{L_1}{E_1}{L_2}{E_2}}}
     \and
     \infer[CommTy]{\Pi(L_1) \ctrlsteploc[t \sendsto \rho]{L_1} E_1 \\
-    \forall L \in \rho,~ \Pi(L) \ctrlstep[L_1;t \sendsto] \Pi'(L)}
+    \forall L \in \rho \setminus L_1,~ \Pi(L) \ctrlstep[L_1;t \sendsto] \Pi'(L)}
     {\Pi \systemstep[L_1;t \sendsto \rho] \subst*{\Pi}{{L_1}{E_1}{\rho}{\Pi'}}}
     \and
   \end{mathpar}
