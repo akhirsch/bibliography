@@ -9,9 +9,6 @@ open import Data.Bool
 open import Data.Bool.Properties renaming (_≟_ to ≡-dec-Bool)
 open import Data.Nat hiding (_⊔_) renaming (_≟_ to ≡-dec-ℕ)
 open import Data.List
-open import Data.List.Properties
-open import Data.Vec renaming (lookup to vlookup; length to vlength)
-open import Data.Fin
 open import Data.Maybe renaming (map to mmap)
 open import Data.Sum renaming (inj₁ to inl; inj₂ to inr) hiding (map)
 open import Relation.Nullary
@@ -75,7 +72,7 @@ data Ctrl where
   Unit : Ctrl
   Ret : (e : Tmₑ) → Ctrl
   Seq : (E1 E2 : Ctrl) → Ctrl
-  CtrlAbs CtrlRec : (E : Ctrl) → Ctrl
+  CtrlLam CtrlFix : (E : Ctrl) → Ctrl
   CtrlApp : (E1 E2 : Ctrl) → Ctrl
   SendTo : (E : Ctrl) (ℓ : CTy) → Ctrl
   Recv : (ℓ : CTy) → Ctrl
@@ -88,6 +85,7 @@ data Ctrl where
   SendTy : (κ : ChorKnd) (E1 : Ctrl) (ρ : CTy) (E2 : Ctrl) → Ctrl
   RecvTy : (κ : ChorKnd) (ℓ : CTy) (E : Ctrl) → Ctrl
   AmI : (ℓ : CTy) (E1 E2 : Ctrl) → Ctrl
+  AmIIn : (ρ : CTy) (E1 E2 : Ctrl) → Ctrl
 
 
 {-
@@ -98,7 +96,7 @@ V ::= () | Ret v | λX.E | Λα.E
 data CtrlVal : Ctrl → Set where
   ValUnit : CtrlVal Unit
   ValRet : ∀{v} (v-Val : 𝕃 .Valₑ v) → CtrlVal (Ret v)
-  ValAbs : (E : Ctrl) → CtrlVal (CtrlAbs E)
+  ValAbs : (E : Ctrl) → CtrlVal (CtrlLam E)
   ValTAbs : (E : Ctrl) → CtrlVal (CtrlTAbs E)
 
 -- Renaming and substitution operations
@@ -109,8 +107,8 @@ renCtrl ξ (var x) = var (ξ x)
 renCtrl ξ Unit = Unit
 renCtrl ξ (Ret e) = Ret e
 renCtrl ξ (Seq E1 E2) = Seq (renCtrl ξ E1) (renCtrl ξ E2)
-renCtrl ξ (CtrlAbs E) = CtrlAbs (renCtrl (Keep ξ) E)
-renCtrl ξ (CtrlRec E) = CtrlRec (renCtrl (Keep ξ) E)
+renCtrl ξ (CtrlLam E) = CtrlLam (renCtrl (Keep ξ) E)
+renCtrl ξ (CtrlFix E) = CtrlFix (renCtrl (Keep ξ) E)
 renCtrl ξ (CtrlApp E1 E2) = CtrlApp (renCtrl ξ E1) (renCtrl ξ E2)
 renCtrl ξ (SendTo E ℓ) = SendTo (renCtrl ξ E) ℓ
 renCtrl ξ (Recv ℓ) = Recv ℓ
@@ -126,6 +124,7 @@ renCtrl ξ (SendTy κ E1 ρ E2) =
   SendTy κ (renCtrl ξ E1) ρ (renCtrl ξ E2)
 renCtrl ξ (RecvTy κ ℓ E) = RecvTy κ ℓ (renCtrl ξ E)
 renCtrl ξ (AmI ℓ E1 E2) = AmI ℓ (renCtrl ξ E1) (renCtrl ξ E2)
+renCtrl ξ (AmIIn ρ E1 E2) = AmIIn ρ (renCtrl ξ E1) (renCtrl ξ E2)
 
 renCtrl? ξ ？ = ？
 renCtrl? ξ (′ E) = ′ (renCtrl ξ E)
@@ -137,8 +136,8 @@ subCtrl σ (var x) = σ x
 subCtrl σ Unit = Unit
 subCtrl σ (Ret e) = Ret e
 subCtrl σ (Seq E1 E2) = Seq (subCtrl σ E1) (subCtrl σ E2)
-subCtrl σ (CtrlAbs E) = CtrlAbs (subCtrl (renCtrl (Keep id) ∘ σ) E)
-subCtrl σ (CtrlRec E) = CtrlRec (subCtrl (renCtrl (Keep id) ∘ σ) E)
+subCtrl σ (CtrlLam E) = CtrlLam (subCtrl (renCtrl (Keep id) ∘ σ) E)
+subCtrl σ (CtrlFix E) = CtrlFix (subCtrl (renCtrl (Keep id) ∘ σ) E)
 subCtrl σ (CtrlApp E1 E2) = CtrlApp (subCtrl σ E1) (subCtrl σ E2)
 subCtrl σ (SendTo E ℓ) = SendTo (subCtrl σ E) ℓ
 subCtrl σ (Recv ℓ) = Recv ℓ
@@ -154,9 +153,39 @@ subCtrl σ (SendTy κ E1 ρ E2) =
   SendTy κ (subCtrl σ E1) ρ (subCtrl σ E2)
 subCtrl σ (RecvTy κ ℓ E) = RecvTy κ ℓ (subCtrl σ E)
 subCtrl σ (AmI ℓ E1 E2) = AmI ℓ (subCtrl σ E1) (subCtrl σ E2)
+subCtrl σ (AmIIn ρ E1 E2) = AmIIn ρ (subCtrl σ E1) (subCtrl σ E2)
 
 subCtrl? σ ？ = ？
 subCtrl? σ (′ E) = ′ (subCtrl σ E)
+
+tyRenCtrl : (ℕ → ℕ) → Ctrl → Ctrl
+tyRenCtrl? : (ℕ → ℕ) → ?Ctrl → ?Ctrl
+
+tyRenCtrl ξ (var x) = var x
+tyRenCtrl ξ Unit = Unit
+tyRenCtrl ξ (Ret e) = Ret e
+tyRenCtrl ξ (Seq E1 E2) = Seq (tyRenCtrl ξ E1) (tyRenCtrl ξ E2)
+tyRenCtrl ξ (CtrlLam E) = CtrlLam (tyRenCtrl ξ E)
+tyRenCtrl ξ (CtrlFix E) = CtrlFix (tyRenCtrl ξ E)
+tyRenCtrl ξ (CtrlApp E1 E2) = CtrlApp (tyRenCtrl ξ E1) (tyRenCtrl ξ E2)
+tyRenCtrl ξ (SendTo E ℓ) = SendTo (tyRenCtrl ξ E) (renTy C⅀ₖ ξ ℓ)
+tyRenCtrl ξ (Recv ℓ) = Recv (renTy C⅀ₖ ξ ℓ)
+tyRenCtrl ξ (Choose d ℓ E) = Choose d (renTy C⅀ₖ ξ ℓ) (tyRenCtrl ξ E)
+tyRenCtrl ξ (Allow ℓ ?E1 ?E2) =
+  Allow (renTy C⅀ₖ ξ ℓ) (tyRenCtrl? ξ ?E1) (tyRenCtrl? ξ ?E2)
+tyRenCtrl ξ (CtrlITE E E1 E2) =
+  CtrlITE (tyRenCtrl ξ E) (tyRenCtrl ξ E1) (tyRenCtrl ξ E2)
+tyRenCtrl ξ (CtrlTAbs E) = CtrlTAbs (tyRenCtrl (Keep ξ) E)
+tyRenCtrl ξ (CtrlTApp E t) = CtrlTApp (tyRenCtrl ξ E) (renTy C⅀ₖ ξ t)
+tyRenCtrl ξ (LetRet E1 E2) = LetRet (tyRenCtrl ξ E1) (tyRenCtrl ξ E2)
+tyRenCtrl ξ (SendTy κ E1 ρ E2) =
+  SendTy κ (tyRenCtrl ξ E1) (renTy C⅀ₖ ξ ρ) (tyRenCtrl ξ E2)
+tyRenCtrl ξ (RecvTy κ ℓ E) = RecvTy κ (renTy C⅀ₖ ξ ℓ) (tyRenCtrl (Keep ξ) E)
+tyRenCtrl ξ (AmI ℓ E1 E2) = AmI (renTy C⅀ₖ ξ ℓ) (tyRenCtrl ξ E1) (tyRenCtrl ξ E2)
+tyRenCtrl ξ (AmIIn ρ E1 E2) = AmIIn (renTy C⅀ₖ ξ ρ) (tyRenCtrl ξ E1) (tyRenCtrl ξ E2)
+
+tyRenCtrl? ξ ？ = ？
+tyRenCtrl? ξ (′ E) = ′ (tyRenCtrl ξ E)
 
 tySubCtrl : (ℕ → CTy) → Ctrl → Ctrl
 tySubCtrl? : (ℕ → CTy) → ?Ctrl → ?Ctrl
@@ -165,8 +194,8 @@ tySubCtrl σ (var x) = var x
 tySubCtrl σ Unit = Unit
 tySubCtrl σ (Ret e) = Ret e
 tySubCtrl σ (Seq E1 E2) = Seq (tySubCtrl σ E1) (tySubCtrl σ E2)
-tySubCtrl σ (CtrlAbs E) = CtrlAbs (tySubCtrl σ E)
-tySubCtrl σ (CtrlRec E) = CtrlRec (tySubCtrl σ E)
+tySubCtrl σ (CtrlLam E) = CtrlLam (tySubCtrl σ E)
+tySubCtrl σ (CtrlFix E) = CtrlFix (tySubCtrl σ E)
 tySubCtrl σ (CtrlApp E1 E2) = CtrlApp (tySubCtrl σ E1) (tySubCtrl σ E2)
 tySubCtrl σ (SendTo E ℓ) = SendTo (tySubCtrl σ E) (subTy C⅀ₖ σ ℓ)
 tySubCtrl σ (Recv ℓ) = Recv (subTy C⅀ₖ σ ℓ)
@@ -175,13 +204,14 @@ tySubCtrl σ (Allow ℓ ?E1 ?E2) =
   Allow (subTy C⅀ₖ σ ℓ) (tySubCtrl? σ ?E1) (tySubCtrl? σ ?E2)
 tySubCtrl σ (CtrlITE E E1 E2) =
   CtrlITE (tySubCtrl σ E) (tySubCtrl σ E1) (tySubCtrl σ E2)
-tySubCtrl σ (CtrlTAbs E) = CtrlTAbs (tySubCtrl σ E)
+tySubCtrl σ (CtrlTAbs E) = CtrlTAbs (tySubCtrl (TyKeepSub C⅀ₖ σ) E)
 tySubCtrl σ (CtrlTApp E t) = CtrlTApp (tySubCtrl σ E) (subTy C⅀ₖ σ t)
 tySubCtrl σ (LetRet E1 E2) = LetRet (tySubCtrl σ E1) (tySubCtrl σ E2)
 tySubCtrl σ (SendTy κ E1 ρ E2) =
   SendTy κ (tySubCtrl σ E1) (subTy C⅀ₖ σ ρ) (tySubCtrl σ E2)
-tySubCtrl σ (RecvTy κ ℓ E) = RecvTy κ (subTy C⅀ₖ σ ℓ) (tySubCtrl σ E)
+tySubCtrl σ (RecvTy κ ℓ E) = RecvTy κ (subTy C⅀ₖ σ ℓ) (tySubCtrl (TyKeepSub C⅀ₖ σ) E)
 tySubCtrl σ (AmI ℓ E1 E2) = AmI (subTy C⅀ₖ σ ℓ) (tySubCtrl σ E1) (tySubCtrl σ E2)
+tySubCtrl σ (AmIIn ρ E1 E2) = AmIIn (subTy C⅀ₖ σ ρ) (tySubCtrl σ E1) (tySubCtrl σ E2)
 
 tySubCtrl? σ ？ = ？
 tySubCtrl? σ (′ E) = ′ (tySubCtrl σ E)
@@ -193,8 +223,8 @@ localSub σ (var x) = var x
 localSub σ Unit = Unit
 localSub σ (Ret e) = Ret (sub (𝕃 .⅀ₑ) σ e)
 localSub σ (Seq E1 E2) = Seq (localSub σ E1) (localSub σ E2)
-localSub σ (CtrlAbs E) = CtrlAbs (localSub σ E)
-localSub σ (CtrlRec E) = CtrlRec (localSub σ E)
+localSub σ (CtrlLam E) = CtrlLam (localSub σ E)
+localSub σ (CtrlFix E) = CtrlFix (localSub σ E)
 localSub σ (CtrlApp E1 E2) =
   CtrlApp (localSub σ E1) (localSub σ E2)
 localSub σ (SendTo E ℓ) = SendTo (localSub σ E) ℓ
@@ -212,6 +242,7 @@ localSub σ (SendTy κ E1 ρ E2) =
   SendTy κ (localSub σ E1) ρ (localSub σ E2)
 localSub σ (RecvTy κ ℓ E) = RecvTy κ ℓ (localSub σ E)
 localSub σ (AmI ℓ E1 E2) = AmI ℓ (localSub σ E1) (localSub σ E2)
+localSub σ (AmIIn ρ E1 E2) = AmIIn ρ (localSub σ E1) (localSub σ E2)
 
 localSub? σ ？ = ？
 localSub? σ (′ E) = ′ (localSub σ E)
@@ -234,8 +265,8 @@ data _≼_ where
          E11 ≼ E21 →
          E12 ≼ E22 →
          Seq E11 E12 ≼ Seq E21 E22
-  ≼Abs : (E : Ctrl) → CtrlAbs E ≼ CtrlAbs E
-  ≼Rec : (E : Ctrl) → CtrlRec E ≼ CtrlRec E
+  ≼Abs : (E : Ctrl) → CtrlLam E ≼ CtrlLam E
+  ≼Rec : (E : Ctrl) → CtrlFix E ≼ CtrlFix E
   ≼App : ∀{E11 E12 E21 E22} →
          E11 ≼ E21 →
          E12 ≼ E22 →
@@ -284,6 +315,11 @@ data _≼_ where
           E11 ≼ E21 →
           E12 ≼ E22 →
           AmI ℓ E11 E12 ≼ AmI ℓ E21 E22
+  ≼AmIIn : ∀{E11 E12 E21 E22} →
+            (ρ : CTy) →
+            E11 ≼ E21 →
+            E12 ≼ E22 →
+            AmIIn ρ E11 E12 ≼ AmIIn ρ E21 E22
         
 ≼-refl : (E : Ctrl) → E ≼ E
 ≼?-refl : (E : ?Ctrl) → E ≼? E
@@ -292,8 +328,8 @@ data _≼_ where
 ≼-refl Unit = ≼Unit
 ≼-refl (Ret e) = ≼Ret e 
 ≼-refl (Seq E1 E2) = ≼Seq (≼-refl E1) (≼-refl E2)
-≼-refl (CtrlAbs E) = ≼Abs E
-≼-refl (CtrlRec E) = ≼Rec E
+≼-refl (CtrlLam E) = ≼Abs E
+≼-refl (CtrlFix E) = ≼Rec E
 ≼-refl (CtrlApp E1 E2) = ≼App (≼-refl E1) (≼-refl E2)
 ≼-refl (SendTo E ℓ) = ≼Send (≼-refl E) ℓ
 ≼-refl (Recv ℓ) = ≼Recv ℓ
@@ -306,6 +342,7 @@ data _≼_ where
 ≼-refl (SendTy κ E1 ρ E2) = ≼SendTy κ (≼-refl E1) ρ (≼-refl E2)
 ≼-refl (RecvTy κ ℓ E) = ≼RecvTy κ ℓ (≼-refl E)
 ≼-refl (AmI ℓ E1 E2) = ≼AmI ℓ (≼-refl E1) (≼-refl E2)
+≼-refl (AmIIn ρ E1 E2) = ≼AmIIn ρ (≼-refl E1) (≼-refl E2)
 
 ≼?-refl ？ = ？≼？
 ≼?-refl (′ E) = ′≼′ (≼-refl E)
@@ -342,6 +379,8 @@ data _≼_ where
   ≼RecvTy κ ℓ (≼-trans E1≼E2 E2≼E3)
 ≼-trans (≼AmI ℓ E1≼E2 E1≼E3) (≼AmI .ℓ E2≼E3 E2≼E4) =
   ≼AmI ℓ (≼-trans E1≼E2 E2≼E3) (≼-trans E1≼E3 E2≼E4)
+≼-trans (≼AmIIn ρ E1≼E2 E1≼E3) (≼AmIIn .ρ E2≼E3 E2≼E4) =
+  ≼AmIIn ρ (≼-trans E1≼E2 E2≼E3) (≼-trans E1≼E3 E2≼E4)
 
 ≼?-trans ？≼？ ？≼？ = ？≼？ 
 ≼?-trans ？≼？ (?≼′ E) = ?≼′ E
@@ -369,6 +408,7 @@ data _≼_ where
 ≼-irrefl (≼SendTy κ p1 ρ q1) (≼SendTy .κ p2 .ρ q2) = cong₃ (SendTy κ) (≼-irrefl p1 p2) refl (≼-irrefl q1 q2)
 ≼-irrefl (≼RecvTy κ ℓ p1) (≼RecvTy .κ .ℓ p2) = cong (RecvTy κ ℓ) (≼-irrefl p1 p2)
 ≼-irrefl (≼AmI ℓ p1 q1) (≼AmI .ℓ p2 q2) = cong₂ (AmI ℓ) (≼-irrefl p1 p2) (≼-irrefl q1 q2)
+≼-irrefl (≼AmIIn ρ p1 q1) (≼AmIIn .ρ p2 q2) = cong₂ (AmIIn ρ) (≼-irrefl p1 p2) (≼-irrefl q1 q2)
 
 ≼?-irrefl ？≼？ ？≼？ = refl
 ≼?-irrefl (′≼′ p) (′≼′ q) = cong ′_ $ ≼-irrefl p q
@@ -405,6 +445,8 @@ data _≼_ where
   ≼RecvTy κ ℓ (≼-localSub σ p)
 ≼-localSub σ (≼AmI ℓ p q) =
   ≼AmI ℓ (≼-localSub σ p) (≼-localSub σ q)
+≼-localSub σ (≼AmIIn ρ p q) =
+  ≼AmIIn ρ (≼-localSub σ p) (≼-localSub σ q)
 
 ≼?-localSub σ ？≼？ = ？≼？
 ≼?-localSub σ (?≼′ E) = ?≼′ (localSub σ E)
@@ -432,12 +474,13 @@ data _≼_ where
 ≼-tySubCtrl σ (≼Choose d ℓ p) = ≼Choose d (subTy C⅀ₖ σ ℓ) (≼-tySubCtrl σ p)
 ≼-tySubCtrl σ (≼Allow ℓ p q) = ≼Allow (subTy C⅀ₖ σ ℓ) (≼?-tySubCtrl σ p) (≼?-tySubCtrl σ q)
 ≼-tySubCtrl σ (≼ITE p q r) = ≼ITE (≼-tySubCtrl σ p) (≼-tySubCtrl σ q) (≼-tySubCtrl σ r)
-≼-tySubCtrl σ (≼TAbs E) = ≼TAbs (tySubCtrl σ E)
+≼-tySubCtrl σ (≼TAbs E) = ≼TAbs (tySubCtrl (TyKeepSub C⅀ₖ σ) E) -- ≼TAbs (tySubCtrl σ E)
 ≼-tySubCtrl σ (≼TApp p t) = ≼TApp (≼-tySubCtrl σ p) (subTy C⅀ₖ σ t)
 ≼-tySubCtrl σ (≼LetRet p q) = ≼LetRet (≼-tySubCtrl σ p) (≼-tySubCtrl σ q)
 ≼-tySubCtrl σ (≼SendTy κ p ρ q) = ≼SendTy κ (≼-tySubCtrl σ p) (subTy C⅀ₖ σ ρ) (≼-tySubCtrl σ q)
-≼-tySubCtrl σ (≼RecvTy κ ℓ p) = ≼RecvTy κ (subTy C⅀ₖ σ ℓ) (≼-tySubCtrl σ p)
+≼-tySubCtrl σ (≼RecvTy κ ℓ p) = ≼RecvTy κ (subTy C⅀ₖ σ ℓ) (≼-tySubCtrl (TyKeepSub C⅀ₖ σ) p)
 ≼-tySubCtrl σ (≼AmI ℓ p q) = ≼AmI (subTy C⅀ₖ σ ℓ) (≼-tySubCtrl σ p) (≼-tySubCtrl σ q)
+≼-tySubCtrl σ (≼AmIIn ρ p q) = ≼AmIIn (subTy C⅀ₖ σ ρ) (≼-tySubCtrl σ p) (≼-tySubCtrl σ q)
 
 ≼?-tySubCtrl σ ？≼？ = ？≼？
 ≼?-tySubCtrl σ (?≼′ E) = ?≼′ (tySubCtrl σ E)
@@ -481,8 +524,8 @@ Ret e1 ⊔ Ret e2 with ≡-dec-Tmₑ 𝕃 e1 e2
 ... | yes _ = just (Ret e1)
 ... | no  _ = nothing
 Seq E11 E21 ⊔ Seq E12 E22 = ⦇ Seq (E11 ⊔ E12) (E21 ⊔ E22) ⦈
-CtrlAbs E1 ⊔ CtrlAbs E2 = ⦇ CtrlAbs (E1 ⊔ E2) ⦈ 
-CtrlRec E1 ⊔ CtrlRec E2 = ⦇ CtrlRec (E1 ⊔ E2) ⦈
+CtrlLam E1 ⊔ CtrlLam E2 = ⦇ CtrlLam (E1 ⊔ E2) ⦈ 
+CtrlFix E1 ⊔ CtrlFix E2 = ⦇ CtrlFix (E1 ⊔ E2) ⦈
 CtrlApp E11 E21 ⊔ CtrlApp E12 E22 = ⦇ CtrlApp (E11 ⊔ E12) (E21 ⊔ E22) ⦈
 SendTo E1 ℓ1 ⊔ SendTo E2 ℓ2 with ≡-dec-CTy ℓ1 ℓ2
 ... | yes p = ⦇ SendTo (E1 ⊔ E2) (just ℓ1) ⦈
@@ -517,6 +560,9 @@ RecvTy κ1 ℓ1 E1 ⊔ RecvTy κ2 ℓ2 E2 with ≡-dec-ChorKnd κ1 κ2 | ≡-dec
 AmI ℓ1 E11 E21 ⊔ AmI ℓ2 E12 E22 with ≡-dec-CTy ℓ1 ℓ2
 ... | yes p = ⦇ AmI (just ℓ1) (E11 ⊔ E12) (E21 ⊔ E22) ⦈
 ... | no ¬p = nothing
+AmIIn ρ1 E11 E21 ⊔ AmIIn ρ2 E12 E22 with ≡-dec-CTy ρ1 ρ2
+... | yes p = ⦇ AmIIn (just ρ1) (E11 ⊔ E12) (E21 ⊔ E22) ⦈
+... | no ¬p = nothing
 _ ⊔ _ = nothing
 
 ？ ⊔? ?E2 = just ?E2 
@@ -537,10 +583,10 @@ _ ⊔ _ = nothing
   cong₂ (λ x y → ⦇ Seq x y ⦈) 
     (⊔-idempotent E1)
     (⊔-idempotent E2)
-⊔-idempotent (CtrlAbs E) =
-  cong (λ x → ⦇ CtrlAbs x ⦈) (⊔-idempotent E)
-⊔-idempotent (CtrlRec E) =
-  cong (λ x → ⦇ CtrlRec x ⦈) (⊔-idempotent E)
+⊔-idempotent (CtrlLam E) =
+  cong (λ x → ⦇ CtrlLam x ⦈) (⊔-idempotent E)
+⊔-idempotent (CtrlFix E) =
+  cong (λ x → ⦇ CtrlFix x ⦈) (⊔-idempotent E)
 ⊔-idempotent (CtrlApp E1 E2) =
   cong₂ (λ x y → ⦇ CtrlApp x y ⦈) 
     (⊔-idempotent E1)
@@ -595,6 +641,130 @@ _ ⊔ _ = nothing
     (⊔-idempotent E1)
     (⊔-idempotent E2)
 ... | no ¬p = ⊥-elim $ ¬p refl
+⊔-idempotent (AmIIn ρ E1 E2) with ≡-dec-CTy ρ ρ
+... | yes p =
+  cong₂ (λ x y → ⦇ AmIIn (just ρ) x y ⦈)
+    (⊔-idempotent E1)
+    (⊔-idempotent E2)
+... | no ¬p = ⊥-elim $ ¬p refl
 
 ⊔?-idempotent ？ = refl
 ⊔?-idempotent (′ E) = cong (λ x → ⦇ ′ x ⦈) (⊔-idempotent E)
+
+-- Whether a type variable occurs freely in a control expression
+notFreeTyInCtrl : ℕ → Ctrl → Set
+notFreeTyIn?Ctrl : ℕ → ?Ctrl → Set
+
+notFreeTyInCtrl x (var y) = ⊤
+notFreeTyInCtrl x Unit = ⊤
+notFreeTyInCtrl x (Ret e) = notFreeTyInTm (𝕃 .⅀ₑ) x e
+notFreeTyInCtrl x (Seq E1 E2) =
+  notFreeTyInCtrl x E1 × notFreeTyInCtrl x E2
+notFreeTyInCtrl x (CtrlLam E) =
+  notFreeTyInCtrl x E
+notFreeTyInCtrl x (CtrlFix E) =
+  notFreeTyInCtrl x E
+notFreeTyInCtrl x (CtrlApp E1 E2) =
+  notFreeTyInCtrl x E1 × notFreeTyInCtrl x E2
+notFreeTyInCtrl x (SendTo E ℓ) =
+  notFreeTyInCtrl x E × notFreeInTy C⅀ₖ x ℓ
+notFreeTyInCtrl x (Recv ℓ) = notFreeInTy C⅀ₖ x ℓ
+notFreeTyInCtrl x (Choose d ℓ E) =
+  notFreeInTy C⅀ₖ x ℓ × notFreeTyInCtrl x E
+notFreeTyInCtrl x (Allow ℓ ?E1 ?E2) =
+    notFreeInTy C⅀ₖ x ℓ ×
+    notFreeTyIn?Ctrl x ?E1 ×
+    notFreeTyIn?Ctrl x ?E2
+notFreeTyInCtrl x (CtrlITE E E1 E2) =
+  notFreeTyInCtrl x E ×
+  notFreeTyInCtrl x E1 ×
+  notFreeTyInCtrl x E2
+notFreeTyInCtrl x (CtrlTAbs E) =
+  notFreeTyInCtrl (suc x) E
+notFreeTyInCtrl x (CtrlTApp E t) =
+  notFreeTyInCtrl x E ×
+  notFreeInTy C⅀ₖ x t
+notFreeTyInCtrl x (LetRet E1 E2) =
+  notFreeTyInCtrl x E1 ×
+  notFreeTyInCtrl x E2
+notFreeTyInCtrl x (SendTy κ E1 ρ E2) =
+  notFreeTyInCtrl x E1 ×
+  notFreeInTy C⅀ₖ x ρ ×
+  notFreeTyInCtrl (suc x) E2
+notFreeTyInCtrl x (RecvTy κ ℓ E) =
+  notFreeInTy C⅀ₖ x ℓ ×
+  notFreeTyInCtrl (suc x) E
+notFreeTyInCtrl x (AmI ℓ E1 E2) =
+  notFreeInTy C⅀ₖ x ℓ ×
+  notFreeTyInCtrl x E1 ×
+  notFreeTyInCtrl x E2
+notFreeTyInCtrl x (AmIIn ρ E1 E2) =
+  notFreeInTy C⅀ₖ x ρ ×
+  notFreeTyInCtrl x E1 ×
+  notFreeTyInCtrl x E2
+
+notFreeTyIn?Ctrl x ？ = ⊤
+notFreeTyIn?Ctrl x (′ E) = notFreeTyInCtrl x E
+
+infixr 2 _?×_
+_?×_ : ∀{a b} {A : Set a} {B : Set b} →
+       Dec A → Dec B → Dec (A × B)
+_?×_ (yes x) (yes y) = yes (x , y)
+_?×_ (yes x) (no ¬y) = no λ{ (_ , y) → ¬y y }
+_?×_ (no ¬x) _       = no λ{ (x , _) → ¬x x }
+
+?notFreeTyInCtrl : (x : ℕ) (E : Ctrl) → Dec (notFreeTyInCtrl x E)
+?notFreeTyIn?Ctrl : (x : ℕ) (E : ?Ctrl) → Dec (notFreeTyIn?Ctrl x E)
+
+?notFreeTyInCtrl x (var y) = yes tt
+?notFreeTyInCtrl x Unit = yes tt
+?notFreeTyInCtrl x (Ret e) = ?notFreeTyInTm (𝕃 .⅀ₑ) x e
+?notFreeTyInCtrl x (Seq E1 E2) =
+  ?notFreeTyInCtrl x E1 ?×
+  ?notFreeTyInCtrl x E2
+?notFreeTyInCtrl x (CtrlLam E) = ?notFreeTyInCtrl x E
+?notFreeTyInCtrl x (CtrlFix E) = ?notFreeTyInCtrl x E
+?notFreeTyInCtrl x (CtrlApp E1 E2) =
+  ?notFreeTyInCtrl x E1 ?×
+  ?notFreeTyInCtrl x E2
+?notFreeTyInCtrl x (SendTo E ℓ) =
+  ?notFreeTyInCtrl x E ?×
+  ?notFreeInTy C⅀ₖ x ℓ
+?notFreeTyInCtrl x (Recv ℓ) = ?notFreeInTy C⅀ₖ x ℓ
+?notFreeTyInCtrl x (Choose d ℓ E) =
+  ?notFreeInTy C⅀ₖ x ℓ ?×
+  ?notFreeTyInCtrl x E
+?notFreeTyInCtrl x (Allow ℓ ?E1 ?E2) =
+  ?notFreeInTy C⅀ₖ x ℓ ?×
+  ?notFreeTyIn?Ctrl x ?E1 ?×
+  ?notFreeTyIn?Ctrl x ?E2
+?notFreeTyInCtrl x (CtrlITE E E1 E2) =
+  ?notFreeTyInCtrl x E ?×
+  ?notFreeTyInCtrl x E1 ?×
+  ?notFreeTyInCtrl x E2
+?notFreeTyInCtrl x (CtrlTAbs E) =
+  ?notFreeTyInCtrl (suc x) E
+?notFreeTyInCtrl x (CtrlTApp E t) =
+  ?notFreeTyInCtrl x E ?×
+  ?notFreeInTy C⅀ₖ x t
+?notFreeTyInCtrl x (LetRet E1 E2) =
+  ?notFreeTyInCtrl x E1 ?×
+  ?notFreeTyInCtrl x E2
+?notFreeTyInCtrl x (SendTy κ E1 ρ E2) =
+  ?notFreeTyInCtrl x E1 ?×
+  ?notFreeInTy C⅀ₖ x ρ ?×
+  ?notFreeTyInCtrl (suc x) E2
+?notFreeTyInCtrl x (RecvTy κ ℓ E) =
+  ?notFreeInTy C⅀ₖ x ℓ ?×
+  ?notFreeTyInCtrl (suc x) E
+?notFreeTyInCtrl x (AmI ℓ E1 E2) =
+  ?notFreeInTy C⅀ₖ x ℓ ?×
+  ?notFreeTyInCtrl x E1 ?×
+  ?notFreeTyInCtrl x E2
+?notFreeTyInCtrl x (AmIIn ρ E1 E2) =
+  ?notFreeInTy C⅀ₖ x ρ ?×
+  ?notFreeTyInCtrl x E1 ?×
+  ?notFreeTyInCtrl x E2
+
+?notFreeTyIn?Ctrl x ？ = yes tt
+?notFreeTyIn?Ctrl x (′ E) = ?notFreeTyInCtrl x E

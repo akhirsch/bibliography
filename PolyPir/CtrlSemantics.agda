@@ -9,10 +9,6 @@ open import Data.Bool
 open import Data.Bool.Properties renaming (_≟_ to ≡-dec-Bool)
 open import Data.Nat hiding (_⊔_) renaming (_≟_ to ≡-dec-ℕ)
 open import Data.List
-open import Data.List.Properties
-open import Data.Vec renaming (lookup to vlookup; length to vlength)
-open import Data.Fin
-open import Data.Maybe renaming (map to mmap)
 open import Data.Sum renaming (inj₁ to inl; inj₂ to inr) hiding (map)
 open import Relation.Nullary
 open import Relation.Binary hiding (_⇒_)
@@ -70,9 +66,9 @@ data _⟶E[_⨾_]_ : Ctrl → CtrlLabel → Loc → Ctrl → Set where
              Seq V E ⟶E[ ιL ⨾ L ] E
   AppStep : ∀{L E V} →
             CtrlVal V →
-            CtrlApp (CtrlAbs E) V ⟶E[ ιSyncL ⨾ L ] subCtrl (var ▸ V) E
+            CtrlApp (CtrlLam E) V ⟶E[ ιSyncL ⨾ L ] subCtrl (var ▸ V) E
   RecStep : ∀{L E} →
-            CtrlRec E ⟶E[ ιSyncL ⨾ L ] subCtrl (var ▸ CtrlRec E) E
+            CtrlFix E ⟶E[ ιSyncL ⨾ L ] subCtrl (var ▸ CtrlFix E) E
   SendVStep : ∀{L L' v} →
               𝕃 .Valₑ v →
               L' ≢ L →
@@ -225,7 +221,7 @@ then there is some E2' such that
 -- E1' ≼ E2'
 -- E2 ⟶[l⨾L] E2'
 
-E1 ⟶E[l⨾L] E2'
+E1 ⟶E[l⨾L] E1'
 ≼          ≼
 E2 ⟶E[l⨾L] E2'
 -}
@@ -247,7 +243,7 @@ then there is some E2' such that
 -- E1' ≼ E2'
 -- E2 ⇒[l⨾L] E2'
 
-E1 ⇒E[l⨾L] E2'
+E1 ⇒E[l⨾L] E1'
 ≼          ≼
 E2 ⇒E[l⨾L] E2'
 -}
@@ -312,7 +308,7 @@ E2 ⇒E[l⨾L] E2'
 ⇒-Lifts-ι = η-Lifts ⟶-Lifts-ι
 
 ⟶-Lifts-ιSync : ∀{L} → ⟶-Lifts ιSyncL L
-⟶-Lifts-ιSync (≼Rec E) RecStep = subCtrl (var ▸ CtrlRec E) E , ≼-refl _ , RecStep
+⟶-Lifts-ιSync (≼Rec E) RecStep = subCtrl (var ▸ CtrlFix E) E , ≼-refl _ , RecStep
 ⟶-Lifts-ιSync (≼App (≼Abs E) q) (AppStep {V = V} V-Val) with V≼ V-Val q
 ... | refl = subCtrl (var ▸ V) E , ≼-refl _ , AppStep V-Val
 ⟶-Lifts-ιSync (≼TApp (≼TAbs E) t) AppTStep =
