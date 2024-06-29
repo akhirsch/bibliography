@@ -44,6 +44,37 @@ open import PolyPir.TermOperations Loc ≡-dec-Loc 𝕃
 open import PolyPir.ChorEquality Loc ≡-dec-Loc 𝕃
 open import PolyPir.CtrlLang Loc ≡-dec-Loc 𝕃
 
+data _∈ₛ_ (L : Loc) : CTy → Set where
+  ∈Sng : L ∈ₛ Sng (LitLoc L)
+  ∈Union₁ : ∀{ρ1} → L ∈ₛ ρ1 → (ρ2 : CTy) → L ∈ₛ Union ρ1 ρ2
+  ∈Union₂ : ∀{ρ2} → (ρ1 : CTy) → L ∈ₛ ρ2 → L ∈ₛ Union ρ1 ρ2
+
+_?∈ₛ_ : (L : Loc) (ρ : CTy) → Dec (L ∈ₛ ρ)
+L ?∈ₛ tyVar x = no λ ()
+L ?∈ₛ tyConstr (EmbLocalTyS sₑ) ts = no λ ()
+L ?∈ₛ tyConstr (LocalS κₑ) ts = no λ ()
+L ?∈ₛ tyConstr AtS ts = no λ ()
+L ?∈ₛ tyConstr FunS ts = no λ ()
+L ?∈ₛ tyConstr (AllS κ ∀κ) ts = no λ ()
+L ?∈ₛ tyConstr (LitLocS L') ts = no λ ()
+L ?∈ₛ tyConstr EmpS ts = no λ ()
+L ?∈ₛ tyConstr SngS [] = no λ ()
+L ?∈ₛ tyConstr SngS ((t , zero) ∷ []) with ≡-dec-CTy (LitLoc L) t
+... | yes refl = yes ∈Sng
+... | no  ¬p   = no λ{ ∈Sng → ¬p refl }
+L ?∈ₛ tyConstr SngS ((t , suc k) ∷ []) = no λ ()
+L ?∈ₛ tyConstr SngS (tk1 ∷ tk2 ∷ ts) = no λ ()
+L ?∈ₛ tyConstr UnionS [] = no λ ()
+L ?∈ₛ tyConstr UnionS (tk1 ∷ []) = no λ ()
+L ?∈ₛ tyConstr UnionS ((t1 , 0) ∷ (t2 , 0) ∷ []) with L ?∈ₛ t1 | L ?∈ₛ t2
+... | yes p | _     = yes (∈Union₁ p t2)
+... | no ¬p | yes q = yes (∈Union₂ t1 q)
+... | no ¬p | no ¬q = no λ{ (∈Union₁ p ρ2) → ¬p p
+                          ; (∈Union₂ ρ1 q) → ¬q q }
+L ?∈ₛ tyConstr UnionS ((t1 , 0) ∷ (t2 , suc x) ∷ []) = no λ ()
+L ?∈ₛ tyConstr UnionS ((t1 , suc x) ∷ (t2 , k2) ∷ []) = no λ ()
+L ?∈ₛ tyConstr UnionS (tk1 ∷ tk2 ∷ tk3 ∷ ts) = no λ ()
+
 -- Control language labels
 data CtrlLabel : Set where
   ιL ιSyncL : CtrlLabel
@@ -120,6 +151,12 @@ data _⟶E[_⨾_]_ : Ctrl → CtrlLabel → Loc → Ctrl → Set where
   AmIRStep : ∀{L ℓ E1 E2} →
              ℓ ≢ LitLoc L →
              AmI ℓ E1 E2 ⟶E[ ιL ⨾ L ] E2
+  AmIInLStep : ∀{L ρ E1 E2} →
+               L ∈ₛ ρ →
+               AmIIn ρ E1 E2 ⟶E[ ιL ⨾ L ] E1
+  AmIInRStep : ∀{L ρ E1 E2} →
+               ¬ (L ∈ₛ ρ) →
+               AmIIn ρ E1 E2 ⟶E[ ιL ⨾ L ] E2
 
 {-
 Evaluation contexts
@@ -303,6 +340,10 @@ E2 ⇒E[l⨾L] E2'
   _ , E11≼E21 , AmILStep
 ⟶-Lifts-ι (≼AmI ℓ E11≼E21 E12≼E22) (AmIRStep ℓ≢L) =
   _ , E12≼E22 , AmIRStep ℓ≢L
+⟶-Lifts-ι (≼AmIIn ρ E11≼E21 E12≼E22) (AmIInLStep L∈ρ) =
+  _ , E11≼E21 , AmIInLStep L∈ρ
+⟶-Lifts-ι (≼AmIIn ρ E11≼E21 E12≼E22) (AmIInRStep L∉ρ) =
+  _ , E12≼E22 , AmIInRStep L∉ρ
 
 ⇒-Lifts-ι : ∀{L} → ⇒-Lifts ιL L
 ⇒-Lifts-ι = η-Lifts ⟶-Lifts-ι
