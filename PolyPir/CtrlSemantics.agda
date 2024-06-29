@@ -44,37 +44,6 @@ open import PolyPir.TermOperations Loc ≡-dec-Loc 𝕃
 open import PolyPir.ChorEquality Loc ≡-dec-Loc 𝕃
 open import PolyPir.CtrlLang Loc ≡-dec-Loc 𝕃
 
-data _∈ₛ_ (L : Loc) : CTy → Set where
-  ∈Sng : L ∈ₛ Sng (LitLoc L)
-  ∈Union₁ : ∀{ρ1} → L ∈ₛ ρ1 → (ρ2 : CTy) → L ∈ₛ Union ρ1 ρ2
-  ∈Union₂ : ∀{ρ2} → (ρ1 : CTy) → L ∈ₛ ρ2 → L ∈ₛ Union ρ1 ρ2
-
-_?∈ₛ_ : (L : Loc) (ρ : CTy) → Dec (L ∈ₛ ρ)
-L ?∈ₛ tyVar x = no λ ()
-L ?∈ₛ tyConstr (EmbLocalTyS sₑ) ts = no λ ()
-L ?∈ₛ tyConstr (LocalS κₑ) ts = no λ ()
-L ?∈ₛ tyConstr AtS ts = no λ ()
-L ?∈ₛ tyConstr FunS ts = no λ ()
-L ?∈ₛ tyConstr (AllS κ ∀κ) ts = no λ ()
-L ?∈ₛ tyConstr (LitLocS L') ts = no λ ()
-L ?∈ₛ tyConstr EmpS ts = no λ ()
-L ?∈ₛ tyConstr SngS [] = no λ ()
-L ?∈ₛ tyConstr SngS ((t , zero) ∷ []) with ≡-dec-CTy (LitLoc L) t
-... | yes refl = yes ∈Sng
-... | no  ¬p   = no λ{ ∈Sng → ¬p refl }
-L ?∈ₛ tyConstr SngS ((t , suc k) ∷ []) = no λ ()
-L ?∈ₛ tyConstr SngS (tk1 ∷ tk2 ∷ ts) = no λ ()
-L ?∈ₛ tyConstr UnionS [] = no λ ()
-L ?∈ₛ tyConstr UnionS (tk1 ∷ []) = no λ ()
-L ?∈ₛ tyConstr UnionS ((t1 , 0) ∷ (t2 , 0) ∷ []) with L ?∈ₛ t1 | L ?∈ₛ t2
-... | yes p | _     = yes (∈Union₁ p t2)
-... | no ¬p | yes q = yes (∈Union₂ t1 q)
-... | no ¬p | no ¬q = no λ{ (∈Union₁ p ρ2) → ¬p p
-                          ; (∈Union₂ ρ1 q) → ¬q q }
-L ?∈ₛ tyConstr UnionS ((t1 , 0) ∷ (t2 , suc x) ∷ []) = no λ ()
-L ?∈ₛ tyConstr UnionS ((t1 , suc x) ∷ (t2 , k2) ∷ []) = no λ ()
-L ?∈ₛ tyConstr UnionS (tk1 ∷ tk2 ∷ tk3 ∷ ts) = no λ ()
-
 -- Control language labels
 data CtrlLabel : Set where
   ιL ιSyncL : CtrlLabel
@@ -111,12 +80,12 @@ data _⟶E[_⨾_]_ : Ctrl → CtrlLabel → Loc → Ctrl → Set where
   ChooseStep : ∀{L L' d E} →
                L' ≢ L →
                Choose d (LitLoc L') E ⟶E[ SendSyncL d L' ⨾ L ] E
-  AllowLStep : ∀{L L' E1 E2} →
+  AllowLStep : ∀{L L' E1 ?E2} →
                 L' ≢ L →
-                Allow (LitLoc L') (′ E1) (′ E2) ⟶E[ RecvSyncL L' true ⨾ L ] E1
-  AllowRStep : ∀{L L' E1 E2} →
+                Allow (LitLoc L') (′ E1) ?E2 ⟶E[ RecvSyncL L' true ⨾ L ] E1
+  AllowRStep : ∀{L L' ?E1 E2} →
                 L' ≢ L →
-                Allow (LitLoc L') (′ E1) (′ E2) ⟶E[ RecvSyncL L' false ⨾ L ] E2
+                Allow (LitLoc L') ?E1 (′ E2) ⟶E[ RecvSyncL L' false ⨾ L ] E2
   IfTStep : ∀{L E1 E2} →
             CtrlITE (Ret (𝕃 .ttₑ)) E1 E2 ⟶E[ ιL ⨾ L ] E1
   IfFStep : ∀{L E1 E2} →
@@ -307,21 +276,36 @@ E2 ⇒E[l⨾L] E2'
 ... | (E2' , p2 , q2) = E2' , p2 , ηStep [•] q2
 η-Lifts-impl f (SeqCtx η E2) (≼Seq p q) step
   with η-Lifts-impl f η p step
-... | (.(evalCtx η' _) , p2 , ηStep η' step') = Seq _ _ , ≼Seq p2 q , ηStep (SeqCtx η' _) step'
-η-Lifts-impl f (IfCtx η E1 E2) (≼ITE p q r) step with η-Lifts-impl f η p step
-... | (.(evalCtx η' _) , p2 , ηStep η' step') = CtrlITE _ _ _ , ≼ITE p2 q r , ηStep (IfCtx η' _ _) step'
-η-Lifts-impl f (SendCtx η ℓ) (≼Send p .ℓ) step with η-Lifts-impl f η p step
-... | (.(evalCtx η' _) , p2 , ηStep η' step') = SendTo _ ℓ , ≼Send p2 ℓ , ηStep (SendCtx η' ℓ) step'
-η-Lifts-impl f (FunCtx η E2) (≼App p q) step with η-Lifts-impl f η p step
-... | (.(evalCtx η' _) , p2 , ηStep η' step') = CtrlApp _ _ , ≼App p2 q , ηStep (FunCtx η' _) step'
-η-Lifts-impl f (ArgCtx E1 η) (≼App p q) step with η-Lifts-impl f η q step
-... | .(evalCtx η' _) , p2 , ηStep η' step' = CtrlApp _ _ , ≼App p p2 , ηStep (ArgCtx _ η') step'
-η-Lifts-impl f (TFunCtx η t) (≼TApp p .t) step with η-Lifts-impl f η p step
-... | .(evalCtx η' _) , p2 , ηStep η' step' = CtrlTApp _ t , ≼TApp p2 t , ηStep (TFunCtx η' t) step'
-η-Lifts-impl f (LetRetCtx η E2) (≼LetRet p q) step with η-Lifts-impl f η p step
-... | .(evalCtx η' _) , p2 , ηStep η' step' = LetRet _ _ , ≼LetRet p2 q , ηStep (LetRetCtx η' _) step'
-η-Lifts-impl f (SendTyCtx κ η ρ E2) (≼SendTy .κ p .ρ q) step with η-Lifts-impl f η p step
-... | .(evalCtx η' _) , p2 , ηStep η' step' = SendTy κ _ ρ _ , ≼SendTy κ p2 ρ q , ηStep (SendTyCtx κ η' ρ _) step'
+... | (.(evalCtx η' _) , p2 , ηStep η' step') =
+  Seq _ _ , ≼Seq p2 q , ηStep (SeqCtx η' _) step'
+η-Lifts-impl f (IfCtx η E1 E2) (≼ITE p q r) step
+  with η-Lifts-impl f η p step
+... | (.(evalCtx η' _) , p2 , ηStep η' step') =
+  CtrlITE _ _ _ , ≼ITE p2 q r , ηStep (IfCtx η' _ _) step'
+η-Lifts-impl f (SendCtx η ℓ) (≼Send p .ℓ) step
+  with η-Lifts-impl f η p step
+... | (.(evalCtx η' _) , p2 , ηStep η' step') =
+  SendTo _ ℓ , ≼Send p2 ℓ , ηStep (SendCtx η' ℓ) step'
+η-Lifts-impl f (FunCtx η E2) (≼App p q) step
+  with η-Lifts-impl f η p step
+... | (.(evalCtx η' _) , p2 , ηStep η' step') =
+  CtrlApp _ _ , ≼App p2 q , ηStep (FunCtx η' _) step'
+η-Lifts-impl f (ArgCtx E1 η) (≼App p q) step
+  with η-Lifts-impl f η q step
+... | .(evalCtx η' _) , p2 , ηStep η' step' =
+  CtrlApp _ _ , ≼App p p2 , ηStep (ArgCtx _ η') step'
+η-Lifts-impl f (TFunCtx η t) (≼TApp p .t) step
+  with η-Lifts-impl f η p step
+... | .(evalCtx η' _) , p2 , ηStep η' step' =
+  CtrlTApp _ t , ≼TApp p2 t , ηStep (TFunCtx η' t) step'
+η-Lifts-impl f (LetRetCtx η E2) (≼LetRet p q) step
+  with η-Lifts-impl f η p step
+... | .(evalCtx η' _) , p2 , ηStep η' step' =
+  LetRet _ _ , ≼LetRet p2 q , ηStep (LetRetCtx η' _) step'
+η-Lifts-impl f (SendTyCtx κ η ρ E2) (≼SendTy .κ p .ρ q) step
+  with η-Lifts-impl f η p step
+... | .(evalCtx η' _) , p2 , ηStep η' step' =
+  SendTy κ _ ρ _ , ≼SendTy κ p2 ρ q , ηStep (SendTyCtx κ η' ρ _) step'
 
 η-Lifts : ∀{l L} → ⟶-Lifts l L → ⇒-Lifts l L
 η-Lifts f p (ηStep η q) = η-Lifts-impl f η p q
@@ -379,9 +363,9 @@ E2 ⇒E[l⨾L] E2'
 ⇒-Lifts-SendSync = η-Lifts ⟶-Lifts-SendSync
 
 ⟶-Lifts-RecvSync : ∀{d L1 L2} → ⟶-Lifts (RecvSyncL L1 d) L2
-⟶-Lifts-RecvSync (≼Allow .(LitLoc _) (′≼′ p) (′≼′ q)) (AllowLStep L1≢L2) =
+⟶-Lifts-RecvSync (≼Allow .(LitLoc _) (′≼′ p) q) (AllowLStep L1≢L2) =
   _ , p , AllowLStep L1≢L2
-⟶-Lifts-RecvSync (≼Allow .(LitLoc _) (′≼′ p) (′≼′ q)) (AllowRStep L1≢L2) =
+⟶-Lifts-RecvSync (≼Allow .(LitLoc _) p (′≼′ q)) (AllowRStep L1≢L2) =
   _ , q , AllowRStep L1≢L2
 
 ⇒-Lifts-RecvSync : ∀{d L1 L2} → ⇒-Lifts (RecvSyncL L1 d) L2
@@ -414,3 +398,176 @@ E2 ⇒E[l⨾L] E2'
 
 ⇒-Lifts-RecvTy : ∀{L1 L2 tₑ} → ⇒-Lifts (RecvTyL L1 tₑ) L2
 ⇒-Lifts-RecvTy = η-Lifts ⟶-Lifts-RecvTy
+
+{-
+⟶ lowers the label l at location L if whenever we
+have a E1, E2, and E2' such that
+-- E1 ≼ E2
+-- E2 ⟶[l⨾L] E2'
+then there is some E1' such that
+-- E1' ≼ E2'
+-- E1 ⟶[l⨾L] E1'
+
+E1 ⟶E[l⨾L] E1'
+≼          ≼
+E2 ⟶E[l⨾L] E2'
+-}
+⟶-Lowers : CtrlLabel → Loc → Set
+⟶-Lowers l L =
+  ∀{E1 E2 E2'} →
+  E1 ≼ E2 →
+  E2 ⟶E[ l ⨾ L ] E2' →
+  Σ[ E1' ∈ Ctrl ]
+  E1' ≼ E2' ×
+  E1 ⟶E[ l ⨾ L ] E1'
+
+{-
+⇒ lowers the label l at location L if whenever we
+have a E1, E2, and E2' such that
+-- E1 ≼ E2
+-- E2 ⇒[l⨾L] E2'
+then there is some E1' such that
+-- E1' ≼ E2'
+-- E1 ⇒[l⨾L] E1'
+
+E1 ⇒E[l⨾L] E1'
+≼          ≼
+E2 ⇒E[l⨾L] E2'
+-}
+⇒-Lowers : CtrlLabel → Loc → Set
+⇒-Lowers l L =
+  ∀{E1 E2 E2'} →
+  E1 ≼ E2 →
+  E2 ⇒E[ l ⨾ L ] E2' →
+  Σ[ E1' ∈ Ctrl ]
+  E1' ≼ E2' ×
+  E1 ⇒E[ l ⨾ L ] E1'
+
+-- If ⟶ lowers l at L, then ⇒ lowers l at L
+η-Lowers-impl
+  : ∀{l L E1 E2 E2'} →
+    ⟶-Lowers l L →
+    (η : CtrlECtx) →
+    E1 ≼ evalCtx η E2 →
+    E2 ⟶E[ l ⨾ L ] E2' →
+    Σ[ E1' ∈ Ctrl ]
+    E1' ≼ evalCtx η E2' ×
+    E1 ⇒E[ l ⨾ L ] E1'
+η-Lowers-impl f [•] p step with f p step
+... | (E2' , p2 , q2) = E2' , p2 , ηStep [•] q2
+η-Lowers-impl f (SeqCtx η E2) (≼Seq p q) step
+  with η-Lowers-impl f η p step
+... | (.(evalCtx η' _) , p2 , ηStep η' step') =
+  Seq _ _ , ≼Seq p2 q , ηStep (SeqCtx η' _) step'
+η-Lowers-impl f (IfCtx η E1 E2) (≼ITE p q r) step
+  with η-Lowers-impl f η p step
+... | (.(evalCtx η' _) , p2 , ηStep η' step') =
+  CtrlITE _ _ _ , ≼ITE p2 q r , ηStep (IfCtx η' _ _) step'
+η-Lowers-impl f (SendCtx η ℓ) (≼Send p .ℓ) step
+  with η-Lowers-impl f η p step
+... | (.(evalCtx η' _) , p2 , ηStep η' step') =
+  SendTo _ ℓ , ≼Send p2 ℓ , ηStep (SendCtx η' ℓ) step'
+η-Lowers-impl f (FunCtx η E2) (≼App p q) step
+  with η-Lowers-impl f η p step
+... | (.(evalCtx η' _) , p2 , ηStep η' step') =
+  CtrlApp _ _ , ≼App p2 q , ηStep (FunCtx η' _) step'
+η-Lowers-impl f (ArgCtx E1 η) (≼App p q) step
+  with η-Lowers-impl f η q step
+... | .(evalCtx η' _) , p2 , ηStep η' step' =
+  CtrlApp _ _ , ≼App p p2 , ηStep (ArgCtx _ η') step'
+η-Lowers-impl f (TFunCtx η t) (≼TApp p .t) step with η-Lowers-impl f η p step
+... | .(evalCtx η' _) , p2 , ηStep η' step' =
+  CtrlTApp _ t , ≼TApp p2 t , ηStep (TFunCtx η' t) step'
+η-Lowers-impl f (LetRetCtx η E2) (≼LetRet p q) step with η-Lowers-impl f η p step
+... | .(evalCtx η' _) , p2 , ηStep η' step' =
+  LetRet _ _ , ≼LetRet p2 q , ηStep (LetRetCtx η' _) step'
+η-Lowers-impl f (SendTyCtx κ η ρ E2) (≼SendTy .κ p .ρ q) step
+  with η-Lowers-impl f η p step
+... | .(evalCtx η' _) , p2 , ηStep η' step' =
+  SendTy κ _ ρ _ , ≼SendTy κ p2 ρ q , ηStep (SendTyCtx κ η' ρ _) step'
+
+η-Lowers : ∀{l L} → ⟶-Lowers l L → ⇒-Lowers l L
+η-Lowers f p (ηStep η q) = η-Lowers-impl f η p q
+
+⟶-Lowers-ι : ∀{L} → ⟶-Lowers ιL L
+⟶-Lowers-ι (≼Ret e1) (RetStep {e2 = e2} e1⇒e2) = Ret e2 , ≼Ret e2 , RetStep e1⇒e2
+⟶-Lowers-ι (≼Seq E11≼E21 E12≼E22) (SeqVStep E11-Val)
+  with ≼V E11-Val E11≼E21
+... | refl = _ , E12≼E22 , SeqVStep E11-Val
+⟶-Lowers-ι (≼ITE (≼Ret .(𝕃 .ttₑ)) E12≼E22 E13≼E23) IfTStep =
+  _ , E12≼E22 , IfTStep
+⟶-Lowers-ι (≼ITE (≼Ret .(𝕃 .ffₑ)) E12≼E22 E13≼E23) IfFStep =
+  _ , E13≼E23 , IfFStep
+⟶-Lowers-ι (≼LetRet (≼Ret v) E1≼E2) (LetRetVStep v-Val) =
+  _ , ≼-localSub (var ▸ v) E1≼E2 , LetRetVStep v-Val
+⟶-Lowers-ι (≼AmI .(LitLoc _) E11≼E21 E12≼E22) AmILStep =
+  _ , E11≼E21 , AmILStep
+⟶-Lowers-ι (≼AmI ℓ E11≼E21 E12≼E22) (AmIRStep ℓ≢L) =
+  _ , E12≼E22 , AmIRStep ℓ≢L
+⟶-Lowers-ι (≼AmIIn ρ E11≼E21 E12≼E22) (AmIInLStep L∈ρ) =
+  _ , E11≼E21 , AmIInLStep L∈ρ
+⟶-Lowers-ι (≼AmIIn ρ E11≼E21 E12≼E22) (AmIInRStep L∉ρ) =
+  _ , E12≼E22 , AmIInRStep L∉ρ
+
+⇒-Lowers-ι : ∀{L} → ⇒-Lowers ιL L
+⇒-Lowers-ι = η-Lowers ⟶-Lowers-ι
+
+⟶-Lowers-ιSync : ∀{L} → ⟶-Lowers ιSyncL L
+⟶-Lowers-ιSync (≼Rec E) RecStep = 
+  subCtrl (var ▸ CtrlFix E) E , ≼-refl _ , RecStep
+⟶-Lowers-ιSync (≼App (≼Abs E) q) (AppStep {V = V} V-Val) with ≼V V-Val q
+... | refl = subCtrl (var ▸ V) E , ≼-refl _ , AppStep V-Val
+⟶-Lowers-ιSync (≼TApp (≼TAbs E) t) AppTStep =
+  tySubCtrl (tyVar ▸ t) E , ≼-refl _ , AppTStep
+
+⇒-Lowers-ιSync : ∀{L} → ⇒-Lowers ιSyncL L
+⇒-Lowers-ιSync = η-Lowers ⟶-Lowers-ιSync
+
+⟶-Lowers-Send : ∀{v L1 L2} → ⟶-Lowers (SendL v L2) L1
+⟶-Lowers-Send (≼Send (≼Ret _) .(LitLoc _)) (SendVStep v-Val L2≢L1) =
+  Unit , ≼Unit , SendVStep v-Val L2≢L1
+ 
+⇒-Lowers-Send : ∀{v L1 L2} → ⇒-Lowers (SendL v L2) L1
+⇒-Lowers-Send = η-Lowers ⟶-Lowers-Send
+
+⟶-Lowers-Recv : ∀{v L1 L2} → ⟶-Lowers (RecvL L1 v) L2
+⟶-Lowers-Recv (≼Recv .(LitLoc _)) (RecvStep v-Val L1≢L2) =
+  _ , ≼Ret _ , RecvStep v-Val L1≢L2
+
+⇒-Lowers-Recv : ∀{v L1 L2} → ⇒-Lowers (RecvL L1 v) L2
+⇒-Lowers-Recv = η-Lowers ⟶-Lowers-Recv
+
+⟶-Lowers-SendSync : ∀{d L1 L2} → ⟶-Lowers (SendSyncL d L2) L1
+⟶-Lowers-SendSync (≼Choose d .(LitLoc _) p) (ChooseStep L2≢L1) =
+  _ , p , ChooseStep L2≢L1
+
+⇒-Lowers-SendSync : ∀{d L1 L2} → ⇒-Lowers (SendSyncL d L2) L1
+⇒-Lowers-SendSync = η-Lowers ⟶-Lowers-SendSync
+
+⟶-Lowers-SendLoc : ∀{Lv ρ L} → ⟶-Lowers (SendLocL Lv ρ) L
+⟶-Lowers-SendLoc {Lv} (≼SendTy *ₗ (≼Ret .(𝕃 .litLocₑ _)) .(LitSet _) p) SendTyLocStep =
+  _ , ≼-tySubCtrl (tyVar ▸ LitLoc Lv) p , SendTyLocStep
+
+⇒-Lowers-SendLoc : ∀{Lv ρ L} → ⇒-Lowers (SendLocL Lv ρ) L
+⇒-Lowers-SendLoc = η-Lowers ⟶-Lowers-SendLoc
+
+⟶-Lowers-RecvLoc : ∀{Lv L1 L2} → ⟶-Lowers (RecvLocL L1 Lv) L2
+⟶-Lowers-RecvLoc {Lv} (≼RecvTy *ₗ .(LitLoc _) p) (RecvTyLocStep L1≢L2) =
+  _ , ≼-tySubCtrl (tyVar  ▸ LitLoc Lv) p , RecvTyLocStep L1≢L2
+
+⇒-Lowers-RecvLoc : ∀{Lv L1 L2} → ⇒-Lowers (RecvLocL L1 Lv) L2
+⇒-Lowers-RecvLoc = η-Lowers ⟶-Lowers-RecvLoc
+
+⟶-Lowers-SendTy : ∀{L tₑ ρ} → ⟶-Lowers (SendTyL tₑ ρ) L
+⟶-Lowers-SendTy (≼SendTy .*ₑ (≼Ret _) .(LitSet _) p) (SendLocalTyStep {v = v} v-Val) =
+  _ , ≼-tySubCtrl (tyVar ▸ injTy (𝕃 .Elₑ v)) p , SendLocalTyStep v-Val
+
+⇒-Lowers-SendTy : ∀{L tₑ ρ} → ⇒-Lowers (SendTyL tₑ ρ) L
+⇒-Lowers-SendTy = η-Lowers ⟶-Lowers-SendTy
+
+⟶-Lowers-RecvTy : ∀{L1 L2 tₑ} → ⟶-Lowers (RecvTyL L1 tₑ) L2
+⟶-Lowers-RecvTy (≼RecvTy .*ₑ .(LitLoc _) p) (RecvLocalTyStep {v = v} v-Val L1≢L2) =
+  _ , ≼-tySubCtrl (tyVar ▸ injTy (𝕃 .Elₑ v)) p , RecvLocalTyStep v-Val L1≢L2
+
+⇒-Lowers-RecvTy : ∀{L1 L2 tₑ} → ⇒-Lowers (RecvTyL L1 tₑ) L2
+⇒-Lowers-RecvTy = η-Lowers ⟶-Lowers-RecvTy

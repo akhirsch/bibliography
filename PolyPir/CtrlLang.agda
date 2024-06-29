@@ -247,6 +247,37 @@ localSub σ (AmIIn ρ E1 E2) = AmIIn ρ (localSub σ E1) (localSub σ E2)
 localSub? σ ？ = ？
 localSub? σ (′ E) = ′ (localSub σ E)
 
+localRen : (ℕ → ℕ) → Ctrl → Ctrl
+localRen? : (ℕ → ℕ) → ?Ctrl → ?Ctrl
+
+localRen ξ (var x) = var x
+localRen ξ Unit = Unit
+localRen ξ (Ret e) = Ret (ren (𝕃 .⅀ₑ) ξ e)
+localRen ξ (Seq E1 E2) = Seq (localRen ξ E1) (localRen ξ E2)
+localRen ξ (CtrlLam E) = CtrlLam (localRen ξ E)
+localRen ξ (CtrlFix E) = CtrlFix (localRen ξ E)
+localRen ξ (CtrlApp E1 E2) =
+  CtrlApp (localRen ξ E1) (localRen ξ E2)
+localRen ξ (SendTo E ℓ) = SendTo (localRen ξ E) ℓ
+localRen ξ (Recv ℓ) = Recv ℓ
+localRen ξ (Choose d ℓ E) = Choose d ℓ (localRen ξ E)
+localRen ξ (Allow ℓ ?E1 ?E2) =
+  Allow ℓ (localRen? ξ ?E1) (localRen? ξ ?E2)
+localRen ξ (CtrlITE E E1 E2) =
+  CtrlITE (localRen ξ E) (localRen ξ E1) (localRen ξ E2)
+localRen ξ (CtrlTAbs E) = CtrlTAbs (localRen ξ E)
+localRen ξ (CtrlTApp E t) = CtrlTApp (localRen ξ E) t
+localRen ξ (LetRet E1 E2) =
+  LetRet (localRen ξ E1) (localRen (Keep ξ) E2)
+localRen ξ (SendTy κ E1 ρ E2) =
+  SendTy κ (localRen ξ E1) ρ (localRen ξ E2)
+localRen ξ (RecvTy κ ℓ E) = RecvTy κ ℓ (localRen ξ E)
+localRen ξ (AmI ℓ E1 E2) = AmI ℓ (localRen ξ E1) (localRen ξ E2)
+localRen ξ (AmIIn ρ E1 E2) = AmIIn ρ (localRen ξ E1) (localRen ξ E2)
+
+localRen? ξ ？ = ？
+localRen? ξ (′ E) = ′ (localRen ξ E)
+
 {-
 The less nondeterministic relation
 -}
@@ -768,3 +799,34 @@ _?×_ (no ¬x) _       = no λ{ (x , _) → ¬x x }
 
 ?notFreeTyIn?Ctrl x ？ = yes tt
 ?notFreeTyIn?Ctrl x (′ E) = ?notFreeTyInCtrl x E
+
+data _∈ₛ_ (L : Loc) : CTy → Set where
+  ∈Sng : L ∈ₛ Sng (LitLoc L)
+  ∈Union₁ : ∀{ρ1} → L ∈ₛ ρ1 → (ρ2 : CTy) → L ∈ₛ Union ρ1 ρ2
+  ∈Union₂ : ∀{ρ2} → (ρ1 : CTy) → L ∈ₛ ρ2 → L ∈ₛ Union ρ1 ρ2
+
+_?∈ₛ_ : (L : Loc) (ρ : CTy) → Dec (L ∈ₛ ρ)
+L ?∈ₛ tyVar x = no λ ()
+L ?∈ₛ tyConstr (EmbLocalTyS sₑ) ts = no λ ()
+L ?∈ₛ tyConstr (LocalS κₑ) ts = no λ ()
+L ?∈ₛ tyConstr AtS ts = no λ ()
+L ?∈ₛ tyConstr FunS ts = no λ ()
+L ?∈ₛ tyConstr (AllS κ ∀κ) ts = no λ ()
+L ?∈ₛ tyConstr (LitLocS L') ts = no λ ()
+L ?∈ₛ tyConstr EmpS ts = no λ ()
+L ?∈ₛ tyConstr SngS [] = no λ ()
+L ?∈ₛ tyConstr SngS ((t , zero) ∷ []) with ≡-dec-CTy (LitLoc L) t
+... | yes refl = yes ∈Sng
+... | no  ¬p   = no λ{ ∈Sng → ¬p refl }
+L ?∈ₛ tyConstr SngS ((t , suc k) ∷ []) = no λ ()
+L ?∈ₛ tyConstr SngS (tk1 ∷ tk2 ∷ ts) = no λ ()
+L ?∈ₛ tyConstr UnionS [] = no λ ()
+L ?∈ₛ tyConstr UnionS (tk1 ∷ []) = no λ ()
+L ?∈ₛ tyConstr UnionS ((t1 , 0) ∷ (t2 , 0) ∷ []) with L ?∈ₛ t1 | L ?∈ₛ t2
+... | yes p | _     = yes (∈Union₁ p t2)
+... | no ¬p | yes q = yes (∈Union₂ t1 q)
+... | no ¬p | no ¬q = no λ{ (∈Union₁ p ρ2) → ¬p p
+                          ; (∈Union₂ ρ1 q) → ¬q q }
+L ?∈ₛ tyConstr UnionS ((t1 , 0) ∷ (t2 , suc x) ∷ []) = no λ ()
+L ?∈ₛ tyConstr UnionS ((t1 , suc x) ∷ (t2 , k2) ∷ []) = no λ ()
+L ?∈ₛ tyConstr UnionS (tk1 ∷ tk2 ∷ tk3 ∷ ts) = no λ ()
