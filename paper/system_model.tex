@@ -1,19 +1,16 @@
 \section{System Model}
 \label{sec:system_model}
-
 We first provide an overview of the assumptions we make about the structure and behavior of the systems that \langname{} programs can run on.
 A system is composed of a set of logically distinct computational nodes which can run single-machine computations described by a set of local programs, and can send and receive messages with each-other over a network.
 
 \subsection{Locations}
 \label{sec:locations}
-
 The set of \emph{location names}, or just \emph{locations}, is denoted by \Locations.
 We write elements of this set as uppercase letters, typically as $L$, $L_1$, $L_2$, $W$, $M$, and so-on.
 Locations are atomic and have no associated structure, simply representing the names of distinguishable physical nodes, threads, or other entities capable of running local computations and communicating with other locations.
 
 \subsection{Communication}
 \label{sec:communication}
-
 We assume that all locations can communicate with each-other synchronously, whether over a network or otherwise.
 In particular, if $L_1$ sends a message to $L_2$, then $L_1$ will not continue execution until $L_2$ has received the message.
 Messages are sent instantaneously and deterministically, and must be guaranteed to arrive.
@@ -29,22 +26,24 @@ The synchronization messages are used to ensure that locations execute the corre
 Each node should be able to execute \emph{local} programs in an expression-based language.
 \langname is generic over the choice of local language, requiring only that it obey typical syntactic and typing rules, have a sound type system and semantics, and include the components described below.
 
-First, we require that the language consist of a set of expressions which may include variables and expressions which bind variables.
-The free-variables of an expression are denoted by $\fv(e)$.
+% First, we require that the language consist of a set of expressions which may include variables and expressions which bind variables.
+% The free-variables of an expression are denoted by $\fv(e)$.
 
-The local language must have a notion of variable substitution satisfying standard properties such as substitution of variables $\subst{x}{x}{e} = e$, substitution along the identity $\subst{e}{x}{x} = e$, and compositionality of substitutions $\subst{\subst{e}{x_1}{e_1}}{x_2}{e_2} = \subst{\subst{e}{x_2}{e_2}}{x_1}{(\subst{e_1}{x_2}{e_2})}$ for $x_1 \notin \fv(e_2)$.
+% The local language must have a notion of variable substitution satisfying standard properties such as substitution of variables $\subst{x}{x}{e} = e$, substitution along the identity $\subst{e}{x}{x} = e$, and compositionality of substitutions $\subst{\subst{e}{x_1}{e_1}}{x_2}{e_2} = \subst{\subst{e}{x_2}{e_2}}{x_1}{(\subst{e_1}{x_2}{e_2})}$ for $x_1 \notin \fv(e_2)$.
 
-Types are reflected in the local language, along with type variables and binding thereof, and must satisfy identical substitutive properties.
-As shown in Example \ref{ex:st-lambda}, type variables need not be used in a nontrivial manner or bound in any types or expressions, and the type system may ultimately be \emph{simply-typed}.
+% Types are reflected in the local language, along with type variables and binding thereof, and must satisfy identical substitutive properties.
+% As shown in Example \ref{ex:st-lambda}, type variables need not be used in a nontrivial manner or bound in any types or expressions, and the type system may ultimately be \emph{simply-typed}.
+
+First, each location should be able to send the result of a local computation to any other location.
+Specifically, if an expression $v$ of the local language is a value, denoted $\val{v}$, then we can send $v$ in a message.
 
 To implement the synchronization messages, we require that the local language have two distinguishable constants, \True and \False, which are values.
 There should also be a type \Bool of booleans within the local language.
 We also require that these constants be the \emph{only} well-typed values of the \Bool type, as described in Section \ref{sec:sound-type-systems}.
 
-In order for location names to be dynamically computed and sent over the network, we require a type \Loc in the local language for representations of location names.
-This type need not be \emph{complete}, in the sense that there does not need to be a value of this type which represents each concrete location $L \in \Locations$.
-Similarly there must be a type \Typ for representations of local language types, which also need not be complete.
-For example, the types present in the simply-typed lambda calculus could be represented as a type of binary trees with root-nodes labeled by a basic type.
+In order for location names to be dynamically computed and sent over the network, we require a type \Loc in the local language for \emph{representations} of location names.
+These representations need not be in any specific format; they only need to satisfy a similar property to that of the synchronization messages which allows us to convert a representation into an actual location.
+Similarly there must be a type \Typ for representations of local language types which satisfies a similar property.
 
 We require the language have a predicate $\text{Val}(e)$ to determine whether an expression is a value of the language, and all values are required to be closed, with no free expression or type variables.
 All values of the local language are able to be sent over the network, including expressions which may be functions.

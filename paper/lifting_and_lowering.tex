@@ -1,96 +1,147 @@
 \subsection{Proof of Theorem \ref{thm:lifting-and-lowering}}
+
+\begin{mathparpagebreakable}
+  \ctxLabel{\hole} = \hole
+  \and
+  \ctxLabel{\eta;E} = \text{Fun}(\ctxLabel{\eta})
+  \and
+  \ctxLabel{E;\eta} = \text{Arg}(\ctxLabel{\eta})
+  \and
+  \ctxLabel{\eta;t} = \text{Fun}(\ctxLabel{\eta})
+  \and
+  \ctxLabel{\SendTo{\eta}{L}} = \text{Arg}(\ctxLabel{\eta})
+  \and
+  \ctxLabel{\CtrlITE{\eta}{E_1}{E_2}} = \text{Arg}(\ctxLabel{\eta})
+  \and
+  \ctxLabel{\CtrlLetIn{\Ret{x}}{\eta}{E}} = \text{Arg}(\ctxLabel{\eta})
+  \and
+  \ctxLabel{\LetSendIn{\alpha \knd \kappa}{\eta}{\rho}{E}} = \text{Arg}(\ctxLabel{\eta})
+\end{mathparpagebreakable}
+
 \begin{lem}[Choice Control Step Lowering]
 \label{lem:choice-control-lowering}
-For every choreography $C$ and distinct locations $L_1 \neq L_2$, if
+For every choreography $C$, evaluation contexts $\eta_1$ and $\eta_2$, and distinct locations $L_1 \neq L_2$, if
 \begin{itemize}
-  \item $E_{1 \leq} \ctrlsteploc[d \sendsto L_2]{L_1} E_{1 \leq}'$,
-  \item $\epp{C}{L_1} \lessnd E_{1 \leq}$,
-  \item $E_{2 \leq} \ctrlsteploc[L_1;d \sendsto]{L_2} E_{2 \leq}'$, and
-  \item $\epp{C}{L_2} \lessnd E_{2 \leq}$,
+  \item $\eta_1[E_1] \ctrlreduceloc[d \sendsto L_2]{L_1} \eta_1[E_1']$,
+  \item $\epp{C}{L_1} \lessnd \eta_1[E_1]$,
+  \item $\eta_2[E_2] \ctrlreduceloc[L_1;d \sendsto]{L_2} \eta_2[E_2']$,
+  \item $\epp{C}{L_2} \lessnd \eta_2[E_2]$, and
+  \item $\ctxLabel{\eta_1} = \ctxLabel{\eta_2}$
 \end{itemize}
-then there is some $E_1'$ and $E_2'$ such that
+then there is some $E_1''$ and $E_2''$ such that
 \begin{itemize}
-  \item $\epp{C}{L_1} \ctrlsteploc[d \sendsto L_2]{L_1} E_1'$,
-  \item $E_1' \lessnd E_{1 \leq}'$,
-  \item $\epp{C}{L_2} \ctrlsteploc[L_1;d \sendsto]{L_2} E_2'$, and
-  \item $E_2' \lessnd E_{2 \leq}'$.
+  \item $\epp{C}{L_1} \ctrlsteploc[d \sendsto L_2]{L_1} E_1''$,
+  \item $E_1'' \lessnd \eta_1[E_1']$,
+  \item $\epp{C}{L_2} \ctrlsteploc[L_1;d \sendsto]{L_2} E_2''$, and
+  \item $E_2'' \lessnd \eta_2[E_2']$.
 \end{itemize}
 \end{lem}
-We proceed by induction on the choreography $C$ and the control steps.
+We proceed by induction on the choreography $C$ and the evaluation contexts $\eta_1$ and $\eta_2$.
 \begin{description}
+  \item[--]
+    If $C$ is of the form $X$, $\ell.e$, $\Fun{X \ty \tau}{C}$, or $\Rec{X \ty \tau}{C}$ then the reduction steps are impossible because either there is no matching evaluation context, or the label of the step is incorrect.
   \item[--]
     Let $C = C_1~C_2$.
-    In this case, the control steps may either be \textsc{AppFun} or \textsc{AppArg}.
-    We can apply induction separately on the function or argument, depending on the step, and keep the other part of the control expression the same.
+    In this case, the evaluation contexts are either $\eta_1 = \eta_1'~E_1$ and $\eta_2 = \eta_2'~E_2$, or $\eta_1 = E_1~\eta_1'$ and $\eta_2 = E_2~\eta_2'$.
+    In the former case, we can apply induction to $C_1$, $\eta_1'$, and $\eta_2'$ to yield some $E_1''$ and $E_2''$.
+    Then $E_1''~E_1$ and $E_2''~E_2$ satisfy the conclusion.
+    In the latter case, we can apply induction to $C_2$, $\eta_1'$, and $\eta_2'$ to yield some $E_1''$ and $E_2''$, for which $E_1~E_1''$ and $E_2~E_2''$ satisfy the conclusion.
   \item[--]
-    Let $C = C' \ChorSend[L_a] L_b$.
-    Because the control steps are synchronizations, neither $L_b = L_1$ nor $L_b = L_2$.
-    In the case that $L_a = L_1$, the first control step must be \textsc{Send}.
-    We can apply induction to $C'$ to yield some $E_1'$ and $E_2'$, where then $\SendTo{E_1'}{L_b}$ and $E_2'$ are satisfactory.
-    The case when $L_a = L_2$ is symmetric.
-    If both $L_a \neq L_1$ and $L_a \neq L_2$, we can directly apply induction to $C$.
+    Let $C = C' \ChorSend[\ell_1] \ell_2$.
+    \begin{description}
+      \item[--]
+      Suppose that $L_1 = \ell_1$ and $L_2 = \ell_2$, so that $C$ projects to a send for $L_1$ and to a sequence for $L_2$. 
+      Then the evaluation context for $L_1$ must be of the form $\eta_1 = \SendTo{\eta_1'}{L_2}$.
+      We can apply induction with $C'$, $\eta_1'$, and $\eta_2$ to yield $E_1''$ and $E_2''$.
+      Then the expressions $E_1'' \SendTo{E_1''}{L_2}$ and $E_2''$ suffice.
+      \item[--]
+      The case when $L_1 = \ell_2$ and $L_2 = \ell_1$ is symmetric.
+      \item[--]
+      Suppose that $L_1, L_2 \neq \ell_1, \ell_2$.
+      Then we can directly apply induction on $C'$, $\eta_1$, and $\eta_2$.
+    \end{description}
   \item[--]
-    Let $C = \syncs{L_a}{d}{L_b} \seq C'$.
-    Because both the left and right case must be present in order to take an \textsc{AllowChoiceL} or \textsc{AllowChoiceR} step, we must have that $L_a \neq L_1, L_2$ and $L_b \neq L_1, L_2$.
-    Therefore we can directly apply induction to $C'$ to yield the required $E_1'$ and $E_2'$.
+    Let $C = \syncs{\ell_1}{d}{\ell_2} \seq C'$.
+    Then necessarily $\ell_1 = L_1$, $\ell_2 = L_2$, $\eta_1 = \eta_2 = \hole$, $E_1 = \ChooseFor{d}{L_2}{E_1'}$, and $E_2 = \AllowOneChoice{L_1}{d}{E_2'}$, where $\epp{C'}{L_1} \lessnd E_1'$ and $\epp{C'}{L_2} \lessnd E_2'$.
+    Therefore $\epp{C'}{L_1}$ and $\epp{C'}{L_2}$ are sufficient.
   \item[--]
-    Let $C = \ITE{C}{C_1}{C_2}$.
+    Let $C = \ITE{C'}{C_T}{C_F}$.
+    \begin{description}
+      \item[--]
+      Suppose that $L_1, L_2 \neq \ell$.
+      Then the evaluation contexts must be of the form $\eta_1 = \eta_1' \CtrlSeq E_1$ and $\eta_2 = \eta_2' \CtrlSeq E_2$, where $\epp{C_T}{L_1} \ctrlmerge \epp{C_F}{L_1} \lessnd E_1$ and $\epp{C_T}{L_2} \ctrlmerge \epp{C_F}{L_2} \lessnd E_2$.
+      We can apply induction with $C'$, $\eta_1'$, and $\eta_2'$ to yield $E_1''$ and $E_2''$.
+      Then the expressions $E_1'' \CtrlSeq E_1$ and $E_2' \CtrlSeq E_2$ suffice.
+      \item[--]
+      Suppose that $L_1 = \ell$.
+      Then the evaluation contexts must be of the form $\eta_1 = \CtrlITE{\eta_1'}{E_T}{E_F}$ and $\eta_2 = \eta_2' \CtrlSeq E$, where $\epp{C_T}{L_1} \lessnd E_T$, $\epp{C_F}{L_1} \lessnd E_F$, and $\epp{C_T}{L_2} \ctrlmerge \epp{C_F}{L_2} \lessnd E$.
+      We can apply induction with $C'$, $\eta_1'$, and $\eta_2'$ to yield $E_1''$ and $E_2''$.
+      Then the expressions $\CtrlITE{E_1''}{E_T}{E_2'}$ and $E_2' \CtrlSeq \epp{C_T}{L_2} \ctrlmerge \epp{C_F}{L_2}$ suffice.
+      \item[--]
+      The case when $L_2 = \ell$ is symmetric.
+    \end{description}
   \item[--]
     Let $C = C'~t$.
-    In this case, the control steps must be \textsc{AppTFun}.
-    Therefore we can apply induction to $C'$ to yield $E_1'$ and $E_2'$, with $E_1'~t$ and $E_2'~t$ sufficing for this case.
+    In this case, the evaluation contexts must be of the form $\eta_1 = \eta_1'~t$ and $\eta_2 = \eta_2'~t$.
+    We can apply induction with $C'$, $\eta_1'$, and $\eta_2'$ to yield $E_1''$ and $E_2''$.
+    Then the expressions $E_1''~t$ and $E_2''~t$ suffice.
   \item[--]
-    Let $C = \LetIn{L'.x \ty t_e}{C_1}{C_2}$.
+    Let $C = \LetIn{\ell.x}{C_1}{C_2}$.
     \begin{description}
       \item[--]
-        Suppose that $L_1, L_2 \neq L'$.
-        Then the control steps must both be \textsc{Seq}, and we can apply induction to $C_1$ to satisfy this case.
+        Suppose that $L_1, L_2 \neq \ell$, so the choreography projects to a sequence for both locations.
+        Then the evaluation contexts must be of the form $\eta_1 = \eta_1' \CtrlSeq E_1$ and $\eta_2 = \eta_2' \CtrlSeq E_2$, so we can apply induction to $C_1$, $\eta_1'$, and $\eta_2'$ to satisfy this case.
       \item[--]
-        Suppose that $L_1 = L'$ and $L_2 \neq L'$.
-        Then the control steps must be \textsc{LetRet} and \textsc{Seq}, respectively.
-        In this case we can apply induction to $C_1$ to satisfy this case.
+        Suppose that $L_1 = \ell$ and $L_2 \neq \ell$, so $C$ projects to a let-return for $L_1$, and to a sequence for $L_2$.
+        Then the evaluation contexts must be of the form $\eta_1 = \CtrlLetIn{\Ret{x}}{\eta_1'}{E_1}$ and $\eta_2 = \eta_2' \CtrlSeq E_2$.
+        We can apply induction to $C_1$, $\eta_1'$, and $\eta_2'$ to yield $E_1''$ and $E_2''$.
+        Then the expressions $\CtrlLetIn{\Ret{x}}{E_1''}{E_1}$ and $E_2'' \CtrlSeq E_2$ are sufficient for this case.
       \item[--]
-        The case when $L_1 \neq L'$ and $L_2 = L'$ is symmetric to the previous.
+        The case when $L_1 \neq \ell$ and $L_2 = \ell$ is symmetric.
     \end{description}
   \item[--]
-    Let $C = \LetTellIn{\alpha}{L'}{C_1 \knd *_\ell}{\rho}{C_2}$.
+    Let $C = \LetTellIn{\alpha}{\ell}{C_1 \knd *_\ell}{\rho}{C_2}$.
     \begin{description}
       \item[--]
-        Suppose that $L' = L_1 \in \rho$, and $L_2 \in \rho$.
+        Suppose that $L_1 = \ell$ and $L_2 \in \rho$.
+        Then for $L_1$, $C$ projects to
+        \begin{align*}
+          &\LetSendIn{\alpha}{\epp{C_1}{L_1}}{\rho}{~}\\
+          &~\AmI{\alpha}{\epp{\subst{C_2}{\alpha}{L}}{L}}{\epp{C_2}{L_1}}
+        \end{align*}
+        and for $L_2$, $C$ projects to
+        \begin{align*}
+          &\epp{C_1}{L} \CtrlSeq \LetRecvIn{\alpha}{\ell}{~} \\
+          &~\AmI{\alpha}{\epp{\subst{C_2}{\alpha}{L}}{L}}{\epp{C_2}{L}}
+        \end{align*}
+        Thus the evaluation contexts must be of the form $\eta_1 = \LetSendIn{\alpha}{\eta_1'}{\rho}{E_1}$ and $\eta_2 = \eta_2' \CtrlSeq E_2$, and we can apply induction to $C_1$, $\eta_1'$, and $\eta_2'$.
       \item[--]
-        Suppose that $L' = L_1 \in \rho$, and $L_2 \notin \rho$.
+        Suppose that $L_1 = \ell$ and $L_2 \notin \rho$.
+        Then for $L_2$, $C$ now projects to $\epp{C_1}{L_2} \CtrlSeq \epp{C_2}{L_2}$
+        and its evaluation context is of the form $\eta_2 = \eta_2' \CtrlSeq E_2$, so we can again apply induction to $C_1$, $\eta_1'$, and $\eta_2'$.
       \item[--]
-        Suppose that $L' \neq L_1 \in \rho$, and $L_2 \in \rho$.
+        Now suppose that $L_1, L_2 \notin \{\ell\} \cup \rho$.
+        For $L_1$, $C$ projects to $\epp{C_1}{L_1} \CtrlSeq \epp{C_2}{L_1}$, and symmetrically for $L_2$.
+        The evaluation contexts are of the form $\eta_1 = \eta_1' \CtrlSeq E_1$ and $\eta_2 = \eta_2' \CtrlSeq E_2$, so we can again apply induction to $C_1$, $\eta_1'$, and $\eta_2'$.
       \item[--]
-        Suppose that $L' \neq L_1 \in \rho$, and $L_2 \notin \rho$.
-      \item[--]
-        Suppose that $L' = L_1 \notin \rho$, and $L_2 \in \rho$.
-      \item[--]
-        Suppose that $L' = L_1 \notin \rho$, and $L_2 \notin \rho$.
-      \item[--]
-        Suppose that $L' \neq L_1 \notin \rho$, and $L_2 \in \rho$.
-      \item[--]
-        Suppose that $L' \neq L_1 \notin \rho$, and $L_2 \notin \rho$.
+        The other cases are symmetric.
     \end{description}
   \item[--]
-    Let $C = \LetTellIn{\alpha}{L'}{C_1 \knd *_e}{\rho}{C_2}$.
-\end{description}
-
-\label{sec:lowering-proof}
-\paragraph{Proof of \textsc{Lowering}}
-Suppose that $\Pi_1 \lessnd \Pi_2$, $\Pi_2 \systemstep[l_S] \Pi_2'$, and $\Pi_1 = \epp{C}{\Locations}$.
-We proceed by case analysis of the system step.
-\begin{description}
-  \item[\textsc{Internal}]
-    Analogous to the corresponding case in the \textsc{Lifting} proof.
-  \item[\textsc{Synchronized Internal}]
-    Analogous to the corresponding case in the \textsc{Lifting} proof.
-  \item[\textsc{Comm}]
-    Analogous to the corresponding case in the \textsc{Lifting} proof.
-  \item[\textsc{Choice}]
-    Suppose that $\Pi_2(L_1) \ctrlsteploc[d \sendsto L_2]{L_1} E_1$ and $\Pi_2(L_2) \ctrlsteploc[L_1;d \sendsto]{L_2} E_2$.
-    Let $E_1'$ and $E_2'$ be the control expressions yielded by applying Lemma \ref{lem:choice-control-lowering}.
-    Then $\subst*{\Pi_1}{{L_1}{E_1'}{L_2}{E_2'}}$ satisfies the theorem.
-  \item[\textsc{CommTy}]
-  Analogous to the corresponding case in the \textsc{Lifting} proof.
+    Let $C = \LetTellIn{\alpha \knd *_e}{\ell}{C_1}{\rho}{C_2}$.
+    \begin{description}
+      \item[--]
+        Suppose that $L_1 = \ell$ and $L_2 \in \rho$.
+        Then for $L_1$, $C$ projects to $\LetSendIn{\alpha}{\epp{C_1}{L_1}}{\rho}{\epp{C_2}{L_1}}$, and for $L_2$, $C$ projects to $\epp{C_1}{L} \CtrlSeq \LetRecvIn{\alpha}{\ell}{\epp{C_2}{L}}$.
+        Then the evaluation contexts must be of the form $\eta_1 = \LetSendIn{\alpha}{\eta_1'}{\rho}{E_1}$ and $\eta_2 = \eta_2' \CtrlSeq E_2$, so we can apply induction to $C_1$, $\eta_1'$, and $\eta_2'$.
+      \item[--]
+        Suppose that $L_1 = \ell$ and $L_2 \notin \rho$.
+        Then for $L_2$, $C$ now projects to $\epp{C_1}{L_2} \CtrlSeq \epp{C_2}{L_2}$
+        and its evaluation context is of the form $\eta_2 = \eta_2' \CtrlSeq E_2$, so we can again apply induction to $C_1$, $\eta_1'$, and $\eta_2'$.
+      \item[--]
+        Now suppose that $L_1, L_2 \notin \{\ell\} \cup \rho$.
+        For $L_1$, $C$ projects to $\epp{C_1}{L_1} \CtrlSeq \epp{C_2}{L_1}$, and symmetrically for $L_2$.
+        The evaluation contexts are of the form $\eta_1 = \eta_1' \CtrlSeq E_1$ and $\eta_2 = \eta_2' \CtrlSeq E_2$, so we can again apply induction to $C_1$, $\eta_1'$, and $\eta_2'$.
+      \item[--]
+        The other cases are symmetric.
+    \end{description}
 \end{description}

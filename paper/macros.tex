@@ -92,6 +92,8 @@
 \newcommand{\ctrlmerge}{\sqcup}
 \newcommand{\maybectrlmerge}{\sqcup_\text{?}}
 \newcommand{\question}{\text{?}}
+\newcommand{\val}[1]{\text{val}({#1})}
+\newcommand{\ctxLabel}[1]{\text{ctxLabel}({#1})}
 
 \newcommand{\defeq}{\ensuremath{\stackrel{\text{\normalfont\tiny def}}{=}}}
 
@@ -174,6 +176,7 @@
 % \newcommand{\AllowChoice}[3]{\FontCtrl{allow}~{#1}~\FontCtrl{choice} \mid \CtrlLeft \Rightarrow {#2} \mid \CtrlRight \Rightarrow {#3}}
 % \WithSuffix\newcommand\AllowChoice*[2]{\FontCtrl{allow}~{#1}~\FontCtrl{choice} \mid d \Rightarrow {#2}}
 \newcommand{\AllowChoice}[3]{\FontCtrl{allow}~{#1}~\FontCtrl{choice}~(\CtrlLeft \Rightarrow {#2}) ~ (\CtrlRight \Rightarrow {#3})}
+\newcommand{\AllowOneChoice}[3]{\FontCtrl{allow}~{#1}~\FontCtrl{choice}~({#2} \Rightarrow {#3})}
 \newcommand{\LetRecvIn}[3]{\FontCtrl{receive}~{#1}~\FontCtrl{from}~{#2}~\CtrlIn~{#3}}
 \newcommand{\LetSendIn}[4]{\FontCtrl{send}~{#1} \CtrlDef {#2}~\FontCtrl{to}~{#3}~\CtrlIn~{#4}}
 \newcommand{\AmI}[3]{\FontCtrl{AmI}~{#1}~\FontCtrl{then}~{#2}~\FontCtrl{else}~{#3}}

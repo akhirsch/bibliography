@@ -116,20 +116,20 @@ Finally, the manager releases the worker back into the thread pool, at which poi
 \ethan{Again, probably a bit too technical here, but we need some of this.}
 The second line of this program, $W \ChorDef \Tell[\Mngr]{w}{\{\Client\} \cup \programfont{pool}}$, is the main difference between this and the previous example, and is critical for the ability of \langname to be able to send and use dynamically generated location names.
 This expression, called a \emph{tell-let} binding, allows for location names from the local language to be used within the subsequent choreographic program.
-Although locations can appear in the types of choreographic programs such as $\Int @ \Worker$, we disallow \emph{dependent types} within our language while still allowing the dynamic value of the location to be used in the body of the program
+Although locations can appear in the types of choreographic programs such as $\Int @ \Worker$, we are careful to disallow \emph{dependent types} within our language while still enabling the dynamic value of the location to be used in the body of the program
 \ethan{if we tweak the wording a bit, it can sound like a big win! ``We manage to let you do all of this very dependent-feeling stuff without needing any dependent types!''}
 by enforcing that the \emph{output type} of a tell-let binding does not depend on the value of the location.
 
 \paragraph{Contributions}
 \begin{itemize}
-	\item We present \langname, the first typed choreographic programming language with the ability to send dynamically generated location names and types 
+	\item We present \langname, the first typed choreographic programming language with the ability to send dynamically generated location names and types.
     \ethan{We should be careful. One could argue Symphony did that, it just didn't have a type system.}
-	\item We show how process \ashley{Should I stick with "process polymorphism" or use "location polymorphism" as I'm sticking with Pirouette and calling them locations} and type polymorphism can be implemented in a manner which is generic over the choice of local language
+	\item We show how process \ashley{Should I stick with "process polymorphism" or use "location polymorphism" as I'm sticking with Pirouette and calling them locations} and type polymorphism can be implemented in a choreographic language which is generic over a language of local computations.
     \ethan{Good point. We should either be very consistent, or mention early on that we use the interchangeably. I vote consistent.}
-	\item We show how to define an out-of-order execution semantics for a choreographic language which includes process polymorphism
+	\item We show how to define an out-of-order execution semantics for a choreographic language which includes process polymorphism.
 	\item We settle an open question about the strength of the type-system needed to implement process polymorphism in a choreographic language.
-  In particular, previous works (Alice \& Bob) have implemented process polymorphism using a variant of System $\text{F}_\omega$ which includes a \emph{type-conversion} rule, whereas \langname extends System F and does not require type-conversion.
-	\item The metatheory of our syntax and type-system have been formalized and mechanically verified in Agda, and we present proofs for all remaining major theorems within this paper.
+  In particular, previous works (Alice \& Bob) have implemented process polymorphism using a variant of System $\text{F}_\omega$ which includes a \emph{type-conversion} rule, whereas \langname extends System F and does not require type-conversions.
+	\item We formalize the metatheory of our syntax and type-system in Agda, and we present proofs for all remaining major theorems within this paper.
   The Agda implementation is discussed in Section \ref{sec:agda-dev}.
 \end{itemize}
 
