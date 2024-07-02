@@ -112,7 +112,8 @@
 \newcommand{\Loc}{\programfont{loc}}
 \newcommand{\Empty}{\ensuremath{\mathbf{0}}}
 
-\newcommand{\ChoiceCol}[1]{{\color{YellowOrange}#1}}
+\definecolor{orangeGold}{rgb}{0.67, 0.33, 0.1}
+\newcommand{\ChoiceCol}[1]{{\color{orangeGold}#1}}
 \newcommand{\FontChoice}[1]{\mathbf{\ChoiceCol{#1}}}
 \newcommand{\Left}{\FontChoice{L}}
 \newcommand{\Right}{\FontChoice{R}}
@@ -159,13 +160,16 @@
 
 \newcommand{\CtrlDef}{\mathrel{\CtrlCol{\coloneqq}}}
 \newcommand{\CtrlIn}{\FontCtrl{in}}
+\newcommand{\CtrlThen}{\FontCtrl{then}}
+\newcommand{\CtrlElse}{\FontCtrl{else}}
 \newcommand{\CtrlLeft}{\Left}
 \newcommand{\CtrlRight}{\Right}
 \newcommand{\CtrlFunN}{\CtrlCol{\lambda}}
 \newcommand{\CtrlTFunN}{\CtrlCol{\Lambda}}
 
 \newcommand{\CtrlLetIn}[3]{\FontCtrl{let}~{#1} \CtrlDef {#2}~\FontCtrl{in}~{#3}}
-\newcommand{\CtrlITE}[3]{\FontCtrl{if}~{#1}~\FontCtrl{then}~{#2}~\FontCtrl{else}~{#3}}
+\newMLP*{\CtrlLetIn}[3]{\FontCtrl{let}~{#1} \CtrlDef {#2} \\ \FontCtrl{in}~{#3}}
+\newcommand{\CtrlITE}[3]{\FontCtrl{if}~{#1}~\CtrlThen~{#2}~\CtrlElse~{#3}}
 
 \newcommand{\CtrlFail}{\FontCtrl{()}}
 \newcommand{\CtrlNone}{\FontCtrl{?}}
@@ -179,7 +183,7 @@
 \newcommand{\AllowOneChoice}[3]{\FontCtrl{allow}~{#1}~\FontCtrl{choice}~({#2} \Rightarrow {#3})}
 \newcommand{\LetRecvIn}[3]{\FontCtrl{receive}~{#1}~\FontCtrl{from}~{#2}~\CtrlIn~{#3}}
 \newcommand{\LetSendIn}[4]{\FontCtrl{send}~{#1} \CtrlDef {#2}~\FontCtrl{to}~{#3}~\CtrlIn~{#4}}
-\newcommand{\AmI}[3]{\FontCtrl{AmI}~{#1}~\FontCtrl{then}~{#2}~\FontCtrl{else}~{#3}}
+\newcommand{\AmI}[3]{\FontCtrl{AmI}~{#1}~\CtrlThen~{#2}~\CtrlElse~{#3}}
 \newcommand{\CtrlSeq}{\mathrel{\CtrlCol{;}}}
 \newcommand{\IAm}[1]{\text{IAm}~{#1}}
 
@@ -199,6 +203,9 @@
 \newcommand{\Mngr}{\LocFont{M}}
 \newcommand{\RunAtWorker}{\programfont{runAtW}}
 \newcommand{\WithWorker}{\programfont{withWorker}}
+\newcommand{\AcquireWorker}{\programfont{acquireWorker}}
+\newcommand{\Pool}{\LocFont{pool}}
+\newcommand{\ReleaseWorker}{\LocFont{releaseWorker}}
 
 % AMSThm Setup
 \theoremstyle{theorem}

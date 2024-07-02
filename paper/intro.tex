@@ -83,21 +83,21 @@ What if, however, we wish for the identity of the worker location to be dynamica
 
 For instance, consider a programmer who wishes to implement a thread pool.
 In this process, the client \Client will ask a pool-manager \Mngr for the name of a location on which their task will run.
-The manager can locally track the state of the thread pool, for instance by using a queue of idle processes, and allow clients to acquire the least-recently-used location by using a \emph{dynamically-computed} local function \programfont{acquireWorker}.
+The manager can locally track the state of the thread pool, for instance by using a queue of idle processes, and allow clients to acquire the least-recently-used location by using a \emph{dynamically-computed} local function \AcquireWorker.
 The programmer could implement the job-submission process using the following choreography:
 \begin{align*}
-  & \WithWorker : (\Int \to \Int) @ \Client \to \Int@\Client \to \Int@\Client \\
+  & \WithWorker : (t \to t') @ \Client \to t@\Client \to t'@\Client \\
   & \WithWorker~F~X =
   \def\arraystretch{1.1}
   \begin{array}[t]{@{}l@{}}
     \LetN~\begin{array}[t]{@{}l@{}}
-      \Mngr.w \ChorDef \programfont{acquireWorker} \\
-      W \ChorDef \Tell[\Mngr]{w}{\{\Client\} \cup \programfont{pool}} \\
+      \Mngr.w \ChorDef \AcquireWorker \\
+      W \ChorDef \Tell[\Mngr]{w}{\{\Client\} \cup \Pool} \\
       W.f \ChorDef F \ColSend W \\
       W.x \ChorDef X \ColSend W \\
       \mathit{Res} \ChorDef W.(f~x) \ColSend \Client
     \end{array} \\
-    \In~\programfont{releaseWorker}~M.w \seq \mathit{Res}
+    \In~\ReleaseWorker~M.w \seq \mathit{Res}
   \end{array}
 \end{align*}
 
@@ -106,15 +106,15 @@ The programmer could implement the job-submission process using the following ch
 
 \ashley{Explain the second tell-let line in more detail. Emphasize this line, it's "the magic" which makes it work. Everything else in the program is seen in the first example.}
 
-On the first line of this program, the pool manager \Mngr first finds and selects an idle \textsf{worker} location $w$ from the pool \programfont{pool} of possible worker locations using the local \textsf{acquireWorker} function.
+On the first line of this program, the pool manager \Mngr first finds and selects an idle \textsf{worker} location $w$ from the pool \Pool of possible worker locations using the local \AcquireWorker function.
 With this dynamically computed value, on the seond line \Mngr then \emph{tells} the identity of the location $w$ to the client \Client, where it is bound to the choreographic program variable $W$.
-As well, all workers in \programfont{pool} are notified about the identity of the chosen worker so that they know whether or not they have been selected.
+As well, all workers in \Pool are notified about the identity of the chosen worker so that they know whether or not they have been selected.
 
 As in the earlier \RunAtWorker function, the client then sends $F$ and $X$ to $W$, who then computes $F~X$ locally, and sends the result to \Client.
 Finally, the manager releases the worker back into the thread pool, at which point the computation has finished.
 
 \ethan{Again, probably a bit too technical here, but we need some of this.}
-The second line of this program, $W \ChorDef \Tell[\Mngr]{w}{\{\Client\} \cup \programfont{pool}}$, is the main difference between this and the previous example, and is critical for the ability of \langname to be able to send and use dynamically generated location names.
+The second line of this program, $W \ChorDef \Tell[\Mngr]{w}{\{\Client\} \cup \Pool}$, is the main difference between this and the previous example, and is critical for the ability of \langname to be able to send and use dynamically generated location names.
 This expression, called a \emph{tell-let} binding, allows for location names from the local language to be used within the subsequent choreographic program.
 Although locations can appear in the types of choreographic programs such as $\Int @ \Worker$, we are careful to disallow \emph{dependent types} within our language while still enabling the dynamic value of the location to be used in the body of the program
 \ethan{if we tweak the wording a bit, it can sound like a big win! ``We manage to let you do all of this very dependent-feeling stuff without needing any dependent types!''}

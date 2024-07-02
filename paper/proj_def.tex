@@ -19,7 +19,7 @@
   \epp{C \ChorSend[\ell_1] \ell_2}{L} =
     \begin{cases}
       \epp{C}{L} & L = \ell_1 = \ell_2 ~\text{or}~ L \neq \ell_1, \ell_2 \\
-      \SendTo{\epp{C}{L}}{\ell_2} & L = \ell_1 \neq \ell_2 \\
+      \SendTo{\epp{C}{L}}{\{\ell_2\}} & L = \ell_1 \neq \ell_2 \\
       \RecvFrom{\ell_1} & L = \ell_2 \neq \ell_1
     \end{cases}
   \and
@@ -52,31 +52,33 @@
   \epp{\LetTellIn{\alpha \knd *_\ell}{\ell}{C_1}{\rho}{C_2}}{L} =
     \begin{cases}
       \begin{array}{@{}l@{}}
-        \LetSendIn{\alpha}{\epp{C_1}{L}}{\rho}{~}\\
-        ~\AmI{\alpha}{\epp{\subst{C_2}{\alpha}{L}}{L}}{\epp{C_2}{L}}
-      \end{array} & L = \ell \\
-%      \LetSendIn{\alpha}{\epp{C_1}{L}}{\rho}{\epp{C_2}{L}} & L = \ell ~\text{and}~ L \notin \rho \\
+        \CtrlLetIn{\alpha}{\epp{C_1}{L}}{} \\
+        \quad \SendTo{\alpha}{\rho} \CtrlSeq \\
+        \quad\AmI{\alpha}{\epp{\subst{C_2}{\alpha}{L}}{L}}{\epp{C_2}{L}}
+      \end{array} & L = \ell \vspace{1ex}\\
       \begin{array}{@{}l@{}}
-      \epp{C_1}{L} \CtrlSeq \LetRecvIn{\alpha}{\ell}{~} \\
-      ~\AmI{\alpha}{\epp{\subst{C_2}{\alpha}{L}}{L}}{\epp{C_2}{L}}
+        \epp{C_1}{L} \CtrlSeq \CtrlLetIn{\alpha}{(\RecvFrom{\ell})}{} \\
+        \quad \AmI{\alpha}{\epp{\subst{C_2}{\alpha}{L}}{L}}{\epp{C_2}{L}}
       \end{array}
-      & L \neq \ell ~\text{and}~ L \in \rho \\
+      & L \neq \ell ~\text{and}~ L \in \rho \vspace{1ex}\\
       \epp{C_1}{L} \CtrlSeq \epp{C_2}{L}
-        & \begin{array}{@{}l@{}}
-            L \neq \ell ~\text{and}~ L \notin \rho \\
-            \text{and}~ \alpha \notin \fv(\epp{C_2}{L})
-        \end{array}
+        & \makebox[\widthof{$L \neq \ell ~\text{and}~ L \in \rho$}][r]{
+          $L \neq \ell$ and $L \notin \rho$ and $\alpha \notin \fv(\epp{C_2}{L})$}
     \end{cases}
   \and
   \epp{\LetTellIn{\alpha \knd *_e}{\ell}{C_1}{\rho}{C_2}}{L} =
     \begin{cases}
-      \LetSendIn{\alpha}{\epp{C_1}{L}}{\rho}{\epp{C_2}{L}} & L = \ell \\
-      \epp{C_1}{L} \CtrlSeq \LetRecvIn{\alpha}{\ell}{\epp{C_2}{L}} & L \neq \ell ~\text{and}~ L \in \rho \\
+      \CtrlLetIn{\alpha}{\epp{C_1}{L}}{(\SendTo{\alpha}{\rho} \CtrlSeq \epp{C_2}{L})} & L = \ell \vspace{1ex}\\
+%      \LetSendIn{\alpha}{\epp{C_1}{L}}{\rho}{\epp{C_2}{L}} & L = \ell \\
+      \begin{array}{@{}l@{}}
+        \epp{C_1}{L} \CtrlSeq \CtrlLetIn{\alpha}{(\RecvFrom{\ell})}{} \\
+        \quad \SendTo{\alpha}{\rho} \CtrlSeq \epp{C_2}{L}
+      \end{array}
+      & L \neq \ell ~\text{and}~ L \in \rho \vspace{1ex}\\
+%      \epp{C_1}{L} \CtrlSeq \LetRecvIn{\alpha}{\ell}{\epp{C_2}{L}} & L \neq \ell ~\text{and}~ L \in \rho \\
       \epp{C_1}{L} \CtrlSeq \epp{C_2}{L}
-        & \begin{array}{@{}l@{}}
-            L \neq \ell ~\text{and}~ L \notin \rho \\
-            \text{and}~ \alpha \notin \fv(\epp{C_2}{L})
-        \end{array}
+        & \makebox[\widthof{$L \neq \ell ~\text{and}~ L \in \rho$}][r]{
+          $L \neq \ell$ and $L \notin \rho$ and $\alpha \notin \fv(\epp{C_2}{L})$}
     \end{cases}
 \end{mathparpagebreakable}
 
