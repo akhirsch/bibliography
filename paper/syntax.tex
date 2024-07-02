@@ -1,9 +1,17 @@
 \subsection{Syntax}
 \label{sec:syntax}
-The full syntax of \langname is presented in \todo.
-As we extend the Pirouette language, much of our syntax is identical or similar.
+The syntax of \langname is presented in Figure \ref{fig:abstract-syntax}.
 As in Pirouette, we include both choreographic program variables written in uppercase Latin characters ($X,Y,F,\ldots$) and local program variables written in lowercase Latin characters ($x,y,f,\ldots$).
 Both choreographic and local type variables, including location variables, are denoted with lowercase Greek characters ($\alpha,\beta,\ldots$).
+Types are reflected in programs, and are variously written as $t$, $\ell$, $\tau$, or $t_e$ depending on the context, as detailed in Section~\ref{sec:type-system}.
+
+Much of the base choreographic constructs and design decisions are inherited from Pirouette.
+Every location has a separate namespace for local variables, where we write $L_1.x$ to denote the variable $x$ located in the namespace of $L_1$.
+Each location's namespace is separate, so that $L_1.x \neq L_2.x$, and this is reflected in the substitution and renaming operations.
+Choreographic variable substitution, $\subst{C_1}{X}{C_2}$ is defined in a standard capture-avoiding manner.
+Local variable substitution $\hsubst{C}{\ell}{x}{e}$ is defined similarly, but operating only over the namespace of the denoted location $\ell$, 
+Type substitution $\subst{C}{\alpha}{t}$ needs more care in its definition due to the fact that \emph{locations are types}, and hence when implemented na\"ively can cause namespaces to collide.
+This is discussed in-detail in \todo is this it's own subsection? \ref{sec:location-substitution}.
 
 \todo Explain base choreographic stuff: $\ell.e$, $C_1 \ChorSend[\ell_1] \ell_2$, $\LetIn{\ell.x}{C_1}{C_2}$, $\syncs{\ell_1}{d}{\ell_2}$, $\lambda X \ty \tau.C$, $\mu X \ty \tau.C$
 
@@ -12,6 +20,7 @@ Both choreographic and local type variables, including location variables, are d
 \todo Explain tell-let binding $\LetTellIn{\alpha \knd *_\ell}{\ell}{C_1}{\rho}{C_2}$
 
 \paragraph{Location Substitution}
+\label{sec:location-substitution}
 \ethan{I cut this discussion down and cleaned it up a bit.
   It also feels like the wrong place, but it needs to be somewhere. Maybe in the semantics section?}
 While substitution and variable renaming can largely be handled in the standard way,
@@ -71,7 +80,6 @@ Safe location substitution for local let bindings is then defined follows.
 \begin{figure}[h]
   \begin{syntax}
     \abstractCategory[Local Expressions]{e}
-    \abstractCategory[Local Values]{v}
     \abstractCategory[Local Variables]{x, y, \ldots}
     \\
 
@@ -82,16 +90,10 @@ Safe location substitution for local let bindings is then defined follows.
     \abstractCategory[Choreographic Variables]{X, Y, \ldots}
 
     \category[Choreographies]{C}
-    \alternative{X}
-    \alternative{\ell.e}
-    \alternative{\Fun{X \ty \tau}{C}}
-    \alternative{\Rec{X \ty \tau}{C}}
-    \alternative{C_1~C_2}\\
-    \alternative{C \ChorSend[\ell_1] \ell_2}
-    \alternative{\syncs{\ell_1}{d}{\ell_2} \seq C}\\
+    \alternative{X} \alternative{\ell.e} \alternative{\Fun{X \ty \tau}{C}} \alternative{C_1~C_2} \alternative{\Rec{X \ty \tau}{C}}\\
+    \alternative{\TFun{\alpha \knd \kappa}{C}} \alternative{C~t}\\
+    \alternative{C \ChorSend[\ell_1] \ell_2} \alternative{\syncs{\ell_1}{d}{\ell_2} \seq C}\\
     \alternative{\ITE{C}{C_1}{C_2}}\\
-    \alternative{\TFun{\alpha \knd \kappa}{C}}
-    \alternative{C~t}\\
     \alternative{\LetIn{\ell.x \ty t_e}{C_1}{C_2}}\\
     \alternative{\LetTellIn{\alpha \knd \kappa}{\ell}{C_1}{\rho}{C_2}}\\
 %    \alternative{\LetTellIn{\alpha \knd *_e}{\ell}{C_1}{\rho}{C_2}}

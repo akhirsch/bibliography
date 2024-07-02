@@ -372,6 +372,9 @@ LitLoc L = tyConstr (LitLocS L) []
 ⊢LitLoc : ∀{Γ} (L : Loc) → Γ c⊢ₜ LitLoc L ∶ *ₗ
 ⊢LitLoc L = ⊢ₜtyConstr (LitLocS L) ⊢ₜ[]
 
+LitLoc-inj : Injective _≡_ _≡_ LitLoc
+LitLoc-inj refl = refl
+
 Emp : CTy
 Emp = tyConstr EmpS []
 

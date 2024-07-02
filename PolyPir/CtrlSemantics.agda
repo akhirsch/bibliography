@@ -43,6 +43,7 @@ open import PolyPir.ChorTerms Loc ≡-dec-Loc 𝕃
 open import PolyPir.TermOperations Loc ≡-dec-Loc 𝕃
 open import PolyPir.ChorEquality Loc ≡-dec-Loc 𝕃
 open import PolyPir.CtrlLang Loc ≡-dec-Loc 𝕃
+open import PolyPir.EPP Loc ≡-dec-Loc 𝕃
 
 -- Control language labels
 data CtrlLabel : Set where
@@ -571,3 +572,82 @@ E2 ⇒E[l⨾L] E2'
 
 ⇒-Lowers-RecvTy : ∀{L1 L2 tₑ} → ⇒-Lowers (RecvTyL L1 tₑ) L2
 ⇒-Lowers-RecvTy = η-Lowers ⟶-Lowers-RecvTy
+
+EPP-⟶-Lowers² : CtrlLabel → Loc → CtrlLabel → Loc → Set
+EPP-⟶-Lowers² l1 L1 l2 L2 =
+  ∀{C Γ Δ E1 E1≼ E1≼' E2 E2≼ E2≼'} →
+  ⟦ C ⟧↓ Γ Δ L1 E1 →
+  ⟦ C ⟧↓ Γ Δ L2 E2 →
+  E1 ≼ E1≼ →
+  E2 ≼ E2≼ →
+  E1≼ ⟶E[ l1 ⨾ L1 ] E1≼' →
+  E2≼ ⟶E[ l2 ⨾ L2 ] E2≼' →
+  Σ[ E1' ∈ Ctrl ] Σ[ E2' ∈ Ctrl ]
+  E1' ≼ E1≼' ×
+  E2' ≼ E2≼' ×
+  E1 ⟶E[ l1 ⨾ L1 ] E1' ×
+  E2 ⟶E[ l2 ⨾ L2 ] E2'
+
+EPP-⟶-Lowers²-Sync : ∀{d L1 L2} → EPP-⟶-Lowers² (SendSyncL d L2) L1 (RecvSyncL L1 d) L2
+EPP-⟶-Lowers²-Sync (SendRecvProj x x₁ ↓E1) (SendRecvProj x₂ x₃ ↓E2) (≼Choose .true .(LitLoc _) p) (≼Allow .(LitLoc _) q r) (ChooseStep L2≢L1) (AllowLStep L1≢L2) =
+  ⊥-elim $ L1≢L2 $ LitLoc-inj $ sym x ∙ x₂
+EPP-⟶-Lowers²-Sync (SendRecvProj x x₁ ↓E1) (SendProj≢ x₂ x₃ ↓E2) (≼Choose .true .(LitLoc _) p) (≼Allow .(LitLoc _) q r) (ChooseStep L2≢L1) (AllowLStep L1≢L2) =
+  EPP-⟶-Lowers²-Sync ↓E1 ↓E2 (≼Choose true (LitLoc _) p) (≼Allow (LitLoc _) q r) (ChooseStep L2≢L1) (AllowLStep L1≢L2)
+EPP-⟶-Lowers²-Sync (SendProj≢ x x₁ ↓E1) (SendRecvProj x₂ x₃ ↓E2) (≼Choose .true .(LitLoc _) p) (≼Allow .(LitLoc _) q r) (ChooseStep L2≢L1) (AllowLStep L1≢L2) =
+  EPP-⟶-Lowers²-Sync ↓E1 ↓E2 (≼Choose true (LitLoc _) p) (≼Allow (LitLoc _) q r) (ChooseStep L2≢L1) (AllowLStep L1≢L2)
+EPP-⟶-Lowers²-Sync (SendProj≢ x x₁ ↓E1) (SendProj≢ x₂ x₃ ↓E2) (≼Choose .true .(LitLoc _) p) (≼Allow .(LitLoc _) q r) (ChooseStep L2≢L1) (AllowLStep L1≢L2) =
+  EPP-⟶-Lowers²-Sync ↓E1 ↓E2 (≼Choose true (LitLoc _) p) (≼Allow (LitLoc _) q r) (ChooseStep L2≢L1) (AllowLStep L1≢L2)
+EPP-⟶-Lowers²-Sync (SyncSendRecvProj x x₁ ↓E1) (SyncSendRecvProj x₂ x₃ ↓E2) (≼Choose .true .(LitLoc _) p) (≼Allow .(LitLoc _) q r) (ChooseStep L2≢L1) (AllowLStep L1≢L2) =
+  EPP-⟶-Lowers²-Sync ↓E1 ↓E2 (≼Choose true (LitLoc _) p) (≼Allow (LitLoc _) q r) (ChooseStep L2≢L1) (AllowLStep L1≢L2)
+EPP-⟶-Lowers²-Sync (SyncSendRecvProj x x₁ ↓E1) (SyncRecvLProj x₂ x₃ ↓E2) (≼Choose .true .(LitLoc _) p) (≼Allow .(LitLoc _) q r) (ChooseStep L2≢L1) (AllowLStep L1≢L2) =
+  ⊥-elim $ L1≢L2 $ LitLoc-inj $ sym x₁ ∙ x₃
+EPP-⟶-Lowers²-Sync (SyncSendRecvProj x x₁ ↓E1) (SyncRecvRProj x₂ x₃ ↓E2) (≼Choose .true .(LitLoc _) p) (≼Allow .(LitLoc _) q r) (ChooseStep L2≢L1) (AllowLStep L1≢L2) =
+  ⊥-elim $ L1≢L2 $ LitLoc-inj $ sym x₁ ∙ x₃
+EPP-⟶-Lowers²-Sync (SyncSendRecvProj x x₁ ↓E1) (SyncProj≢ x₂ x₃ ↓E2) (≼Choose .true .(LitLoc _) p) (≼Allow .(LitLoc _) q r) (ChooseStep L2≢L1) (AllowLStep L1≢L2) =
+  EPP-⟶-Lowers²-Sync ↓E1 ↓E2 (≼Choose true (LitLoc _) p) (≼Allow (LitLoc _) q r) (ChooseStep L2≢L1) (AllowLStep L1≢L2)
+EPP-⟶-Lowers²-Sync (SyncSendProj x x₁ ↓E1) (SyncSendRecvProj x₂ x₃ ↓E2) (≼Choose .true .(LitLoc _) p) (≼Allow .(LitLoc _) q r) (ChooseStep L2≢L1) (AllowLStep L1≢L2) =
+  ⊥-elim $ L1≢L2 $ LitLoc-inj $ sym x ∙ x₂
+EPP-⟶-Lowers²-Sync (SyncSendProj x x₁ ↓E1) (SyncRecvLProj x₂ x₃ ↓E2) (≼Choose .true .(LitLoc _) p) (≼Allow .(LitLoc _) (′≼′ q) r) (ChooseStep L2≢L1) (AllowLStep L1≢L2) =
+  _ , _ , p , q , ChooseStep L2≢L1 , AllowLStep L1≢L2
+EPP-⟶-Lowers²-Sync (SyncSendProj x x₁ ↓E1) (SyncProj≢ x₂ x₃ ↓E2) (≼Choose .true .(LitLoc _) p) (≼Allow .(LitLoc _) q r) (ChooseStep L2≢L1) (AllowLStep L1≢L2) =
+  ⊥-elim $ x₃ refl
+EPP-⟶-Lowers²-Sync (SyncProj≢ x x₁ ↓E1) (SyncSendRecvProj x₂ x₃ ↓E2) (≼Choose .true .(LitLoc _) p) (≼Allow .(LitLoc _) q r) (ChooseStep L2≢L1) (AllowLStep L1≢L2) =
+  EPP-⟶-Lowers²-Sync ↓E1 ↓E2 (≼Choose true (LitLoc _) p) (≼Allow (LitLoc _) q r) (ChooseStep L2≢L1) (AllowLStep L1≢L2)
+EPP-⟶-Lowers²-Sync (SyncProj≢ x x₁ ↓E1) (SyncRecvLProj x₂ x₃ ↓E2) (≼Choose .true .(LitLoc _) p) (≼Allow .(LitLoc _) q r) (ChooseStep L2≢L1) (AllowLStep L1≢L2) =
+  ⊥-elim $ x refl
+EPP-⟶-Lowers²-Sync (SyncProj≢ x x₁ ↓E1) (SyncRecvRProj x₂ x₃ ↓E2) (≼Choose .true .(LitLoc _) p) (≼Allow .(LitLoc _) q r) (ChooseStep L2≢L1) (AllowLStep L1≢L2) =
+  ⊥-elim $ x refl
+EPP-⟶-Lowers²-Sync (SyncProj≢ x x₁ ↓E1) (SyncProj≢ x₂ x₃ ↓E2) (≼Choose .true .(LitLoc _) p) (≼Allow .(LitLoc _) q r) (ChooseStep L2≢L1) (AllowLStep L1≢L2) =
+  EPP-⟶-Lowers²-Sync ↓E1 ↓E2 (≼Choose true (LitLoc _) p) (≼Allow (LitLoc _) q r) (ChooseStep L2≢L1) (AllowLStep L1≢L2)
+EPP-⟶-Lowers²-Sync (SendRecvProj x x₁ ↓E1) (SendRecvProj x₂ x₃ ↓E2) (≼Choose .false .(LitLoc _) ≼1) (≼Allow .(LitLoc _) x₄ x₅) (ChooseStep L2≢L1) (AllowRStep L1≢L2) =
+  EPP-⟶-Lowers²-Sync ↓E1 ↓E2 (≼Choose false (LitLoc _) ≼1) (≼Allow (LitLoc _) x₄ x₅) (ChooseStep L2≢L1) (AllowRStep L1≢L2)
+EPP-⟶-Lowers²-Sync (SendRecvProj x x₁ ↓E1) (SendProj≢ x₂ x₃ ↓E2) (≼Choose .false .(LitLoc _) ≼1) (≼Allow .(LitLoc _) x₄ x₅) (ChooseStep L2≢L1) (AllowRStep L1≢L2) =
+  EPP-⟶-Lowers²-Sync ↓E1 ↓E2 (≼Choose false (LitLoc _) ≼1) (≼Allow (LitLoc _) x₄ x₅) (ChooseStep L2≢L1) (AllowRStep L1≢L2)
+EPP-⟶-Lowers²-Sync (SendProj≢ x x₁ ↓E1) (SendRecvProj x₂ x₃ ↓E2) (≼Choose .false .(LitLoc _) ≼1) (≼Allow .(LitLoc _) x₄ x₅) (ChooseStep L2≢L1) (AllowRStep L1≢L2) =
+  EPP-⟶-Lowers²-Sync ↓E1 ↓E2 (≼Choose false (LitLoc _) ≼1) (≼Allow (LitLoc _) x₄ x₅) (ChooseStep L2≢L1) (AllowRStep L1≢L2)
+EPP-⟶-Lowers²-Sync (SendProj≢ x x₁ ↓E1) (SendProj≢ x₂ x₃ ↓E2) (≼Choose .false .(LitLoc _) ≼1) (≼Allow .(LitLoc _) x₄ x₅) (ChooseStep L2≢L1) (AllowRStep L1≢L2) =
+  EPP-⟶-Lowers²-Sync ↓E1 ↓E2 (≼Choose false (LitLoc _) ≼1) (≼Allow (LitLoc _) x₄ x₅) (ChooseStep L2≢L1) (AllowRStep L1≢L2)
+EPP-⟶-Lowers²-Sync (SyncSendRecvProj x x₁ ↓E1) (SyncSendRecvProj x₂ x₃ ↓E2) (≼Choose .false .(LitLoc _) ≼1) (≼Allow .(LitLoc _) x₄ x₅) (ChooseStep L2≢L1) (AllowRStep L1≢L2) =
+  ⊥-elim $ L1≢L2 $ LitLoc-inj $ sym x ∙ x₂
+EPP-⟶-Lowers²-Sync (SyncSendRecvProj x x₁ ↓E1) (SyncSendProj x₂ x₃ ↓E2) (≼Choose .false .(LitLoc _) ≼1) () (ChooseStep L2≢L1) (AllowRStep L1≢L2)
+EPP-⟶-Lowers²-Sync (SyncSendRecvProj x x₁ ↓E1) (SyncRecvLProj x₂ x₃ ↓E2) (≼Choose .false .(LitLoc _) ≼1) (≼Allow .(LitLoc _) x₄ x₅) (ChooseStep L2≢L1) (AllowRStep L1≢L2) =
+  ⊥-elim $ L1≢L2 $ LitLoc-inj $ sym x₁ ∙ x₃
+EPP-⟶-Lowers²-Sync (SyncSendRecvProj x x₁ ↓E1) (SyncRecvRProj x₂ x₃ ↓E2) (≼Choose .false .(LitLoc _) ≼1) (≼Allow .(LitLoc _) x₄ x₅) (ChooseStep L2≢L1) (AllowRStep L1≢L2) =
+  ⊥-elim $ L1≢L2 $ LitLoc-inj $ sym x₁ ∙ x₃
+EPP-⟶-Lowers²-Sync (SyncSendRecvProj x x₁ ↓E1) (SyncProj≢ x₂ x₃ ↓E2) (≼Choose .false .(LitLoc _) ≼1) (≼Allow .(LitLoc _) x₄ x₅) (ChooseStep L2≢L1) (AllowRStep L1≢L2) =
+  EPP-⟶-Lowers²-Sync ↓E1 ↓E2 (≼Choose false (LitLoc _) ≼1) (≼Allow (LitLoc _) x₄ x₅) (ChooseStep L2≢L1) (AllowRStep L1≢L2)
+EPP-⟶-Lowers²-Sync (SyncSendProj x x₁ ↓E1) (SyncSendRecvProj x₂ x₃ ↓E2) (≼Choose .false .(LitLoc _) ≼1) (≼Allow .(LitLoc _) x₄ x₅) (ChooseStep L2≢L1) (AllowRStep L1≢L2) =
+  ⊥-elim $ L1≢L2 $ LitLoc-inj $ sym x ∙ x₂
+EPP-⟶-Lowers²-Sync (SyncSendProj x x₁ ↓E1) (SyncRecvRProj x₂ x₃ ↓E2) (≼Choose .false .(LitLoc _) p) (≼Allow .(LitLoc _) q (′≼′ r)) (ChooseStep L2≢L1) (AllowRStep L1≢L2) =
+  _ , _ , p , r , ChooseStep L2≢L1 , AllowRStep L1≢L2
+EPP-⟶-Lowers²-Sync (SyncSendProj x x₁ ↓E1) (SyncProj≢ x₂ x₃ ↓E2) (≼Choose .false .(LitLoc _) ≼1) (≼Allow .(LitLoc _) x₄ x₅) (ChooseStep L2≢L1) (AllowRStep L1≢L2) =
+  ⊥-elim $ x₃ refl
+EPP-⟶-Lowers²-Sync (SyncProj≢ x x₁ ↓E1) (SyncSendRecvProj x₂ x₃ ↓E2) (≼Choose .false .(LitLoc _) ≼1) (≼Allow .(LitLoc _) x₄ x₅) (ChooseStep L2≢L1) (AllowRStep L1≢L2) =
+  EPP-⟶-Lowers²-Sync ↓E1 ↓E2 (≼Choose false (LitLoc _) ≼1) (≼Allow (LitLoc _) x₄ x₅) (ChooseStep L2≢L1) (AllowRStep L1≢L2)
+EPP-⟶-Lowers²-Sync (SyncProj≢ x x₁ ↓E1) (SyncSendProj x₂ x₃ ↓E2) (≼Choose .false .(LitLoc _) ≼1) () (ChooseStep L2≢L1) (AllowRStep L1≢L2)
+EPP-⟶-Lowers²-Sync (SyncProj≢ x x₁ ↓E1) (SyncRecvLProj x₂ x₃ ↓E2) (≼Choose .false .(LitLoc _) ≼1) (≼Allow .(LitLoc _) x₄ x₅) (ChooseStep L2≢L1) (AllowRStep L1≢L2) =
+  ⊥-elim $ x refl
+EPP-⟶-Lowers²-Sync (SyncProj≢ x x₁ ↓E1) (SyncRecvRProj x₂ x₃ ↓E2) (≼Choose .false .(LitLoc _) ≼1) (≼Allow .(LitLoc _) x₄ x₅) (ChooseStep L2≢L1) (AllowRStep L1≢L2) =
+  ⊥-elim $ x refl
+EPP-⟶-Lowers²-Sync (SyncProj≢ x x₁ ↓E1) (SyncProj≢ x₂ x₃ ↓E2) (≼Choose .false .(LitLoc _) ≼1) (≼Allow .(LitLoc _) x₄ x₅) (ChooseStep L2≢L1) (AllowRStep L1≢L2) =
+  EPP-⟶-Lowers²-Sync ↓E1 ↓E2 (≼Choose false (LitLoc _) ≼1) (≼Allow (LitLoc _) x₄ x₅) (ChooseStep L2≢L1) (AllowRStep L1≢L2)

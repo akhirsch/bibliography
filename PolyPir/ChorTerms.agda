@@ -385,7 +385,7 @@ ChorTmSig (AbsS κ ∀κ) Γ ((τ , 1) ∷ []) =
 ChorTmSig (AppTyS κ ∀κ) Γ ((τ , 1) ∷ (T , 0) ∷ []) =
   ([] , [] , * , All ∀κ τ) ∷ [] ,
   * ,
-  subTy C⅀ₖ (addTySub C⅀ₖ tyVar T) τ
+  subTy C⅀ₖ (tyVar ▸ T) τ
 ChorTmSig SendS Γ ((ℓ1 , 0) ∷ (ℓ2 , 0) ∷ (tₑ , 0) ∷ []) =
   ([] , [] , * , At tₑ ℓ1) ∷ [] ,
   * ,
@@ -755,17 +755,17 @@ sub-comm-ChorTmSig-snd AppS ⊢σ (τ1 ⊢ₜ∷ τ2 ⊢ₜ∷ ⊢ₜ[]) = refl
 sub-comm-ChorTmSig-snd (AbsS κ ∀κ) ⊢σ (τ ⊢ₜ∷ ⊢ₜ[]) = refl
 sub-comm-ChorTmSig-snd {Γ1} {Γ2} {σ} {(τ , 1) ∷ (T , 0) ∷ []} (AppTyS κ ∀κ) ⊢σ (⊢τ ⊢ₜ∷ ⊢T ⊢ₜ∷ ⊢ₜ[]) =
   cong (* ,_) $
-  subTy C⅀ₖ (addTySub C⅀ₖ tyVar (subTy C⅀ₖ σ T)) (subTy C⅀ₖ (TyKeepSub C⅀ₖ σ) τ)
-    ≡⟨ subTy◦ₜ C⅀ₖ (addTySub C⅀ₖ tyVar (subTy C⅀ₖ σ T)) (TyKeepSub C⅀ₖ σ) τ ⟩
-  subTy C⅀ₖ (_◦ₜ_ C⅀ₖ (addTySub C⅀ₖ tyVar (subTy C⅀ₖ σ T)) (TyKeepSub C⅀ₖ σ)) τ
-    ≡⟨ subTy-ext C⅀ₖ (▸ₜ-◦ₜ-Keep C⅀ₖ tyVar (subTy C⅀ₖ σ T) σ) τ ⟩
-  subTy C⅀ₖ (addTySub C⅀ₖ (_◦ₜ_ C⅀ₖ tyVar σ) (subTy C⅀ₖ σ T)) τ
-    ≡⟨ subTy-ext C⅀ₖ (▸ₜ-ext C⅀ₖ (Id◦ₜ C⅀ₖ σ) refl) τ ⟩
-  subTy C⅀ₖ (addTySub C⅀ₖ σ (subTy C⅀ₖ σ T)) τ
-    ≡⟨ subTy-ext C⅀ₖ (sym ∘ ◦ₜ-▸ₜ C⅀ₖ σ tyVar T) τ ⟩
-  subTy C⅀ₖ (_◦ₜ_ C⅀ₖ σ (addTySub C⅀ₖ tyVar T)) τ
-    ≡⟨ (sym $ subTy◦ₜ C⅀ₖ σ (addTySub C⅀ₖ tyVar T) τ) ⟩
-  subTy C⅀ₖ σ (subTy C⅀ₖ (addTySub C⅀ₖ tyVar T) τ) ∎
+  subTy C⅀ₖ (tyVar ▸ subTy C⅀ₖ σ T) (subTy C⅀ₖ (TyKeepSub C⅀ₖ σ) τ)
+    ≡⟨ subTy◦ₜ C⅀ₖ (tyVar ▸ subTy C⅀ₖ σ T) (TyKeepSub C⅀ₖ σ) τ ⟩
+  subTy C⅀ₖ (_◦ₜ_ C⅀ₖ (tyVar ▸ subTy C⅀ₖ σ T) (TyKeepSub C⅀ₖ σ)) τ
+    ≡⟨ subTy-ext C⅀ₖ (▸-◦ₜ-Keep C⅀ₖ tyVar (subTy C⅀ₖ σ T) σ) τ ⟩
+  subTy C⅀ₖ ((_◦ₜ_ C⅀ₖ tyVar σ) ▸ subTy C⅀ₖ σ T) τ
+    ≡⟨ subTy-ext C⅀ₖ (▸-ext (Id◦ₜ C⅀ₖ σ) refl) τ ⟩
+  subTy C⅀ₖ (σ ▸ subTy C⅀ₖ σ T) τ
+    ≡⟨ subTy-ext C⅀ₖ (sym ∘ ◦ₜ-▸ C⅀ₖ σ tyVar T) τ ⟩
+  subTy C⅀ₖ (_◦ₜ_ C⅀ₖ σ (tyVar ▸ T)) τ
+    ≡⟨ (sym $ subTy◦ₜ C⅀ₖ σ (tyVar ▸ T) τ) ⟩
+  subTy C⅀ₖ σ (subTy C⅀ₖ (tyVar ▸ T) τ) ∎
 sub-comm-ChorTmSig-snd SendS ⊢σ (ℓ1 ⊢ₜ∷ ℓ2 ⊢ₜ∷ tₑ ⊢ₜ∷ ⊢ₜ[]) = refl
 sub-comm-ChorTmSig-snd (SyncS d) ⊢σ (ℓ1 ⊢ₜ∷ ℓ2 ⊢ₜ∷ τ ⊢ₜ∷ ⊢ₜ[]) = refl
 sub-comm-ChorTmSig-snd ITES ⊢σ (⊢ℓ ⊢ₜ∷ ⊢τ ⊢ₜ∷ ⊢ₜ[]) = refl
@@ -936,14 +936,14 @@ Abs {κ} ∀κ τ C = constr (AbsS κ ∀κ) ((τ , 1) ∷ []) ((C , 1 , 0) ∷ 
 ⊢Abs {κ = κ} ∀κ ⊢Δ ⊢C =
   ⊢constr (AbsS κ ∀κ) (⊢⇒⊢typ C⅀ ⊢C ⊢ₜ∷ ⊢ₜ[]) (⊢C ⊢∷ ⊢[] ⊢Δ)
 
-AppTy : ∀{κ} (∀κ : canAbstract κ) (C : CTm) (τ : CTy) (T : CTy) → CTm
-AppTy {κ} ∀κ C τ T =
-  constr (AppTyS κ ∀κ) ((τ , 1) ∷ (T , 0) ∷ []) ((C , 0 , 0) ∷ [])
+AppTy : ∀{κ} (∀κ : canAbstract κ) (C : CTm) (τ : CTy) (t : CTy) → CTm
+AppTy {κ} ∀κ C τ t =
+  constr (AppTyS κ ∀κ) ((τ , 1) ∷ (t , 0) ∷ []) ((C , 0 , 0) ∷ [])
 
 ⊢AppTy : ∀{Γ Δ κ C τ T} (∀κ : canAbstract κ) →
          Γ ⨾ Δ c⊢ C ∶ (* , All ∀κ τ) →
          Γ c⊢ₜ T ∶ κ →
-         Γ ⨾ Δ c⊢ AppTy ∀κ C τ T ∶ (* , subTy C⅀ₖ (addTySub C⅀ₖ tyVar T) τ)
+         Γ ⨾ Δ c⊢ AppTy ∀κ C τ T ∶ (* , subTy C⅀ₖ (tyVar ▸ T) τ)
 ⊢AppTy {Γ} {Δ} {κ} {C} {τ} {T} ∀κ ⊢C ⊢T =
   ⊢constr (AppTyS κ ∀κ)
     ((⊢All⁻ $ ⊢⇒⊢typ C⅀ ⊢C) ⊢ₜ∷ ⊢T ⊢ₜ∷ ⊢ₜ[])
