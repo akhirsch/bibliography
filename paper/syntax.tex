@@ -29,18 +29,32 @@ The program can choose a different branch to execute based on the output of a lo
 This program first executes $C$, yielding a boolean value at $\ell_1$, which is used to decide whether to then execute $C_1$ or $C_2$.
 However, although $\ell_1$ knows which branch to take, the other participants in the program may not.
 This is solved by placing a synchronization statement $\syncs{\ell_1}{d}{\ell_2} \seq C$ in the body of the branches, wherein $\ell_1$ sends the decision $d$ to $\ell_2$ of whether the left branch was taken.
-Here the \emph{synchronization constant} $d$ may denote either the left branch as $\Left$, or the right branch as $\Right$.
+Here the \emph{synchronization label} $d$ may denote either the left branch as $\Left$, or the right branch as $\Right$.
 
 We represent possibly higher-order choreographic functions as $\Fun{X \ty \tau}{C}$, where $X$ is the choreographic variable that is bound in the body of $C$.
 Choreographic functions can be applied to their arguments in a standard manner as $C_1~C_2$.
-Possibly non-terminating recursion can be implemented with the fixpoint operator $\Rec{X \ty \tau}{C}$, which can yield values of any choreographic type, rather than just choreographic functions. \todo~Rephrase? Want to be clear that this is a real fixpoint rather than a function definition
+Possibly non-terminating recursion can be implemented with the fixpoint operator $\Rec{X \ty \tau}{C}$, which can yield values of any choreographic type, rather than just choreographic functions. \todo\ashley{Rephrase? Want to be clear that this is a real fixpoint rather than just a recursive function definition}
 
 Parametric polymorphism is implemented with the type-abstraction expression $\TFun{\alpha \knd \kappa}{C}$ which, for any type $t$ of kind $\kappa$, can run the choreography $C$ with $\alpha$ bound to $t$.
 As will be detailed in Section~\ref{sec:kind-system}, there are four kinds of types, representing locations, sets of locations, choreographic types, and types of the local language.
 Thus this expression uniformly implements both process polymorphism, as well as type polymorphism for both choreographic and local types.
 This does not, however, require that the local language implement any form of polymorphism.
 
-\todo Explain tell-let binding $\LetTellIn{\alpha \knd *_\ell}{\ell}{C_1}{\rho}{C_2}$
+\paragraph{Tell-Let Binding}
+\todo \ashley{Good idea to have its own paragraph?}
+Finally, we have a construct, the \emph{tell-let binding} $\LetTellIn{\alpha \knd \kappa}{\ell}{C_1}{\rho}{C_2}$, which is used to enable the sending and utilization of dynamically generated locations and types.
+This is akin-to a standard let-binding, except that the type variable $\alpha$ is bound in the body of the program $C_2$.
+Specifically, a tell-let binding first runs the program $C_1$, which should yield a \emph{representation of} a location name or type.
+For instance, one could represent location names as integers, with $n$ representing a concrete location $L_n \in \Locations$.
+Once $C_1$ yields $n$, $\ell$ then sends the location-value $L_n$ to all of the locations in the set $\rho$.
+After receiving the location, it is bound to $\alpha$ in the body of $C_2$, and the execution continues.
+For other locations who did not receive the value of $L_n$, the execution similarly continues executing $C_2$, but where $\alpha$ is instead left free.
+The components that are critical to ensure this construct's functionality are:
+\begin{itemize}
+  \item[1.] The local language must provide an interface for converting representations of locations and types into concrete locations and types.
+  \item[2.] Our compilation procedure ensures that $\alpha$ is only used in $C_2$ by $\ell$ and members of $\rho$, preventing deadlocks.
+  \item[3.] Our type-system soundly handles this construct while allowing for the dynamically generated value to be used in the body of $C_2$.
+\end{itemize}
 
 \subsection{Location Substitution}
 \label{sec:location-substitution}
@@ -100,6 +114,7 @@ Safe location substitution for local let bindings is then defined follows.
 \begin{figure}[h]
   \begin{syntax}
     \abstractCategory[Local Expressions]{e}
+    \abstractCategory[Local Values]{v}
     \abstractCategory[Local Variables]{x, y, \ldots}
     \\
 
