@@ -3,17 +3,18 @@
 
 Distributed programs are an integral part of many modern software systems, but programming them correctly is notoriously difficult.
 Correctly representing computations spanning multiple locations is far more challenging than single-machine programming.
-The developer must not only divide the work across multiple machines, they must ensure that all work is being done by someone
+The developer must not only divide the work across multiple machines, they must ensure that all work is being done by someone~\akh{??}
 and avoid issues like deadlock, where execution cannot proceed due to nodes with mismatched message send and receive expectations forever waiting on each other.
 
 \ethan{I don't see the value in mentioning session types here, so I got rid of it for now.}
 %\emph{Session types} solve this problem by describing and enforcing the pattern in which each individual participant will send and receive data.
 %However, session types can be difficult to work with as a separate program must be written for each participant, the entire system must be checked for mutual compatibility, and the participants must be fixed and statically known.
 
-\emph{Choreographic programming} promises a developer-friendly approach to solving these problems~\citep{Montesi22}.
+\emph{Choreographic programming} promises a developer-friendly approach to solving these problems~\citep{Montesi22,Montesi13}.
 With choreographies, a single top-level program describes the computation performed by each node and the interactions between them.
 Programs for individual locations are then \emph{projected} from this single top-level program.
-These choreographies centralize the code so developers can see all of the computations control flow in one place
+\akh{The following sentence seems like it's two different ideas. It should be split in two.}
+These choreographies centralize the code so developers can see all of the computations' control flow in one place
 and lead to \emph{deadlock freedom by design}, meaning developers no longer have to worry about a notoriously challenging issue in concurrent code.
 
 \ethan{I think this paragraph should talk about what other people do (with some citations) and how it's not good enough.
@@ -27,6 +28,7 @@ However, none of these results \ethan{TODO: what they're missing}.
 %Moreover, the only existing typed choreography supporting process polymorphism does not allow \emph{dynamically computed process names}~\citep{aliceorbob}.
 %Moreover, the only , or cannot send \emph{dynamically computed process names} in a manner which does not introduce deadlocks or stuck programs.
 %\ashley{How about this wording?}
+\akh{I don't know what it would mean to support process polymorphism \emph{without} dynamically computed names. I think we should talk about sending and receiving here instead.}
 This paper presents \langname, the first typed choreographic programming language
 supporting process polymorphism with dynamically computed process names.
 \ethan{I think we should identify the main selling point of the paper and try not to muddy the water with other things too much.
@@ -77,12 +79,15 @@ Lastly \Worker sends the result of this computation to \Client, completing the p
 \ethan{I think we want to more heavily emphasize that this is not how real distributed systems work.}
 \ashley{What aspects specifically? I feel like this has been mentioned in other papers, but not in the introduction}
 \ethan{Just the point that real distributed systems don't have a single static worker, they use thread pools and load balancers.}
+\akh{I second Ethan's point here.}
 
-We have so-far assumed that the worker location \Worker in this program is both fixed and statically-known.
+\akh{There was a hyphen here (``so-far'') that doesn't make sense. Remember, hyphens are used in some compound nouns and to disambiguate adjectives.}
+We have so far assumed that the worker location \Worker in this program is both fixed and statically-known.
 What if, however, we wish for the identity of the worker location to be dynamically computed during the execution of the program?
+\akh{I generally don't like rhetorical questions in technical writing like this. In particular, this seems like an excellent time to emphasize the point above.}
 
 For instance, consider a programmer who wishes to implement a thread pool.
-In this process, the client \Client will ask a pool-manager \Mngr for the name of a location on which their task will run.
+In this process, the client \Client will ask a pool manager \Mngr for the name of a location on which their task will run.
 The manager can locally track the state of the thread pool, for instance by using a queue of idle processes, and allow clients to acquire the least-recently-used location by using a \emph{dynamically-computed} local function \AcquireWorker.
 The programmer could implement the job-submission process using the following choreography:
 \begin{align*}
@@ -91,7 +96,7 @@ The programmer could implement the job-submission process using the following ch
   \def\arraystretch{1.1}
   \begin{array}[t]{@{}l@{}}
     \LetN~\begin{array}[t]{@{}l@{}}
-      \Mngr.w \ChorDef \AcquireWorker \\
+      \Mngr.w \ChorDef \AcquireWorker ()\\
       W \ChorDef \Tell[\Mngr]{w}{\{\Client\} \cup \Pool} \\
       W.f \ChorDef F \ColSend W \\
       W.x \ChorDef X \ColSend W \\
@@ -101,12 +106,13 @@ The programmer could implement the job-submission process using the following ch
   \end{array}
 \end{align*}
 
-\ethan{This no longer matches the updated example}
-\ashley{Updated}
+\akh{I added a unit to $\AcquireWorker$ to make it clear that it's a function. If there's better syntax for it, do it.}
 
-\ashley{Explain the second tell-let line in more detail. Emphasize this line, it's "the magic" which makes it work. Everything else in the program is seen in the first example.}
+\todo{Explain the second tell-let line in more detail. Emphasize this line, it's "the magic" which makes it work. Everything else in the program is seen in the first example.}
 
-On the first line of this program, the pool manager \Mngr first finds and selects an idle \textsf{worker} location $w$ from the pool \Pool of possible worker locations using the local \AcquireWorker function.
+\akh{I think you intended to make the name of the pool ``pool'', but that looked like a typo. I've removed it.}
+\akh{On another note, make sure to always use a tie \textasciitilde between a description of a definite object and its name.}
+On the first line of this program, the pool manager \Mngr first finds and selects an idle \textsf{worker} location $w$ from the pool of possible worker locations using the local \AcquireWorker function.
 With this dynamically computed value, on the seond line \Mngr then \emph{tells} the identity of the location $w$ to the client \Client, where it is bound to the choreographic program variable $W$.
 As well, all workers in \Pool are notified about the identity of the chosen worker so that they know whether or not they have been selected.
 
@@ -120,6 +126,7 @@ Although locations can appear in the types of choreographic programs such as $\I
 \ethan{if we tweak the wording a bit, it can sound like a big win! ``We manage to let you do all of this very dependent-feeling stuff without needing any dependent types!''}
 by enforcing that the \emph{output type} of a tell-let binding does not depend on the value of the location.
 
+\akh{We should put section numbers in here.}
 \paragraph{Contributions}
 \begin{itemize}
 	\item We present \langname, the first typed choreographic programming language with the ability to send dynamically generated location names and types.
@@ -128,7 +135,7 @@ by enforcing that the \emph{output type} of a tell-let binding does not depend o
     \ethan{Good point. We should either be very consistent, or mention early on that we use the interchangeably. I vote consistent.}
 	\item We show how to define an out-of-order execution semantics for a choreographic language which includes process polymorphism.
 	\item We settle an open question about the strength of the type-system needed to implement process polymorphism in a choreographic language.
-  In particular, previous works (Alice \& Bob) have implemented process polymorphism using a variant of System $\text{F}_\omega$ which includes a \emph{type-conversion} rule, whereas \langname extends System F and does not require type-conversions.
+  In particular, previous works (Alice or Bob) have implemented process polymorphism using a variant of System $\text{F}_\omega$ which includes a \emph{type-conversion} rule, whereas \langname extends System F and does not require type-conversions.
 	\item We formalize the metatheory of our syntax and type-system in Agda, and we present proofs for all remaining major theorems within this paper.
   The Agda implementation is discussed in Section \ref{sec:agda-dev}.
 \end{itemize}
