@@ -1,9 +1,27 @@
 \subsection{Control Language}
 \label{sec:control-lang}
+The syntax of our control language, presented in Figure~\ref{fig:control-lang-syntax}, closely mirrors the control language of Pirouette, with additions to account for the new features that we have added.
+The control language is a concurrent $\lambda$-calculus where messages are values from the local language.
 
-\todo purpose and design of control language
+Identically to choreographies, control program variables are written in uppercase Latin characters ($X,Y,F,\ldots$) and local program variables written in lowercase Latin characters ($x,y,f,\ldots$).
+While the control language is un-typed, it reflects types, and includes both control program and local type variables with lowercase Greek characters ($\alpha,\beta,\ldots$).
 
-\todo explanation of AmI and reason it's needed
+Functions and type-abstraction in the control language, written $\CtrlFun{F}{X}{E}$ and $\CtrlTFun{\alpha}{E}$, mirror the corresponding choreographic constructs.
+Likewise, the control program let-expression $\CtrlLetIn{X}{E_1}{E_2}$ and sequencing operator $E_1 \CtrlSeq E_2$ are standard.
+
+The send $\SendTo{E}{\rho}$ and receive $\RecvFrom{\ell}$ expressions allow control programs to send a message to a set of locations $\rho$, and receive a message from the location $\ell$, respectively, and utilize the value in further computation.
+
+There are three different branching constructs in the control language.
+The if-then-else expression $\CtrlITE{E}{E_1}{E_2}$ is a standard branching construct, and allows a location to branch their control program based on the result of a local computation.
+
+The \emph{external choice} expression $\AllowChoice{\ell}{?E_1}{?E_2}$ is a form of branching in which the executing location will receive either $\Left$ or $\Right$ from $\ell$ to indicate which branch to take.
+The question-marks prepended to the expressions $?E_1$ and $?E_2$ indicate that these branches may be absent from the control program, which will be denoted by the value $\CtrlNone$.
+A branch may be missing as a result of the endpoint projection process, but does not necessitate that the control program will fail to execute.
+The other side of an external choice is the choose-for expression $\ChooseFor{d}{\ell}{E}$, in which the executing location informs $\ell$ to branch in the direction $d$, after which execution resumes on $E$.
+
+Lastly, the ``am-I-in'' expression $\AmI{\rho}{E_1}{E_2}$ is a form of local branching which reflects the currently executing location's knowledge of its own identity.
+Specifically, when executing at a location $L$, if $L \in \rho$ then the left branch $E_1$ will be taken, and if $L \notin \rho$ then the right branch $E_2$ will be taken.
+This is a generalization of the ``AmI'' expression of PolyChor$\lambda$~\citep{GraversenHM23} which is critical in order to implement location polymorphism and the usage of dynamically generated locations.
 
 \begin{figure}
   \begin{syntax}
@@ -18,15 +36,15 @@
     \alternative{\CtrlLetIn{X}{E_1}{E_2}}\\
 %    \alternative{\LetSendIn{\alpha}{E_1}{\rho}{E_2}} \alternative{\LetRecvIn{\alpha}{\ell}{E}}\\
 %    \alternative{\LetSendIn{\alpha \knd *_e}{E_1}{\rho}{E_2}} \alternative{\LetRecvIn{\alpha \knd *_e}{\ell}{E}}\\
-    \alternative{\AmI{\ell}{E_1}{E_2}}
+    \alternative{\AmI{\rho}{E_1}{E_2}}
 
     \category[Control Expression Values]{V}
     \alternative{\CtrlFail} \alternative{\Ret{v}} \alternative{\CtrlFun{F}{X}{E}}
     \alternative{\CtrlTFun{\alpha}{E}}
 
-    \category[Possible Control Expression]{?E}
-    \alternative{\CtrlNone}
-    \alternative{E}
+    % \category[Possible Control Expression]{?E}
+    % \alternative{\CtrlNone}
+    % \alternative{E}
 
     \abstractCategory[Systems]{\Pi}
   \end{syntax}
@@ -116,8 +134,7 @@ Specifically, we have reduction rules of the form $E_1 \ctrlreduce[l] E_2$ which
 \paragraph{Control Systems}
 \label{sec:system-semantics}
 We can compose control programs in parallel over each location as a \emph{system}.
-In particular, a system $\Pi$ is a map from each location $\Locations$ to a control program.
-For a given location $L \in \Locations$, the program that $L$ is running in the system $\Pi$ is denoted as $\Pi(L)$.
+A system, denoted as $\Pi$, is a map from each location $L \in \Locations$ to the control program $\Pi(L)$ which it is currently executing.
 The \emph{system update} $\subst{\Pi}{L}{E}$ is $\Pi$ with $\Pi(L)$ replaced by $E$, and the control program at every other location unchanged:
 \begin{mathpar}
   \subst{\Pi}{L}{E}(L') \defeq
@@ -135,9 +152,9 @@ Likewise the multiple system update $\subst{\Pi}{\rho}{\Pi'}$ is $\Pi$ with $\Pi
     \end{cases}
 \end{mathpar}
 
-We can lift the control language semantics to a semantics for systems by asking that a subset of locations make a step, and that the labels used in these steps match.
+We can lift the control language semantics to a semantics for systems by asking that a subset of locations make a step, and that the labels used in these steps ``match''.
 This system semantics is also labeled, with system labels $l_S$ shown in Figure \ref{fig:system-semantics}.
-While the control program labels only show one side of a send or receive, the system labels reflect both sides, and the semantics of the system ensure that the send and receive messages match.
+While the control program labels only show one side of a send or receive, the system labels reflect both sides, and the semantics of the system ensure that the sender and receiver agree on the content of a message.
 
 \begin{figure}
   \begin{syntax}

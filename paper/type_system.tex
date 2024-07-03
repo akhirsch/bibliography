@@ -64,6 +64,57 @@ Typing judgments for our language are of the form $\chortyped{\Gamma}{\Delta}{\S
 Where the choreographic context $\Delta$ handles variables bound at the choreographic level, for instance via a lambda-abstraction $\Fun{F}{X\ty\tau}{C}$, the local context $\Sigma$ handles variables bound to a specific location via the local-let binding $\LetIn{\ell.x \ty t_e}{C_1}{C_2}$.
 This allows choreographic expressions of the form $t_e @ \ell$ to be used within local computations at $\ell$, and enforces that each location can only perform local computations on data that they have access to.
 
+\begin{figure}[h]
+  \begin{syntax}
+    \category[Kinds]{\kappa}
+    \alternative{*}
+    \alternative{*_\ell}
+    \alternative{*_s}
+    \alternative{*_e}
+    \\
+    
+    \abstractCategory[Type Variables]{\alpha, \beta, \ldots}
+    
+    \abstractCategory[Local Types]{t_e}
+
+    \categoryFromSet[Locations]{L}{\Locations}
+    
+    \category[Choreography Types]{t, \ell, \rho, \tau}
+    \alternative{\alpha}
+    \alternative{t_e @ \ell}
+    \alternative{\tau_1 \rightarrow \tau_2}
+    \alternative{\forall \alpha \knd \kappa.\tau}
+    \\
+    \alternative{L}
+    \alternative{\varnothing}
+    \alternative{\{\ell\}}
+    \alternative{\rho_1 \cup \rho_2}
+    % \\
+    % \category[Choreography Kinding Contexts]{\Gamma}
+    % \alternative{\cdot}
+    % \alternative{\Gamma, \alpha \knd \kappa}
+    
+    % \category[Choreography Typing Contexts]{\Delta}
+    % \alternative{\cdot}
+    % \alternative{\Delta, X \ty \tau}
+    
+    % \category[Locally-Bound Typing Contexts]{\Sigma}
+    % \alternative{\cdot}
+    % \alternative{\Sigma, \ell.x \ty t_e}
+    % \\
+    % \category[Local Kinding Contexts]{\Gamma_e}
+    % \alternative{\cdot}
+    % \alternative{\Gamma_e, \alpha}
+    
+    % \category[Local Typing Contexts]{\Sigma_e}
+    % \alternative{\cdot}
+    % \alternative{\Sigma_e, x \ty t_e}
+  \end{syntax}
+
+  \caption{Syntax of Kinds and Types}
+  \label{fig:types}
+\end{figure}
+
 \todo Figure out which typing rules to include. Further ones which could be removed as they are standard: Fun, Rec, App, Abs, AppTy
 \begin{figure}
 \begin{mathparpagebreakable}

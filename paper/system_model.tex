@@ -15,8 +15,8 @@ We assume that all locations can communicate with each-other synchronously, whet
 In particular, if $L_1$ sends a message to $L_2$, then $L_1$ will not continue execution until $L_2$ has received the message.
 Messages are sent instantaneously and deterministically, and must be guaranteed to arrive.
 
-Nodes must be able to send both values from local computations, and the special \emph{synchronization messages} denoted \textsf{Left} and \textsf{Right}.
-The synchronization messages are used to ensure that locations execute the correct branch of the program based on the results of previous computations at other locations, and can simply be represented as boolean values.
+Nodes must be able to send both values from local computations, and the special \emph{synchronization messages} denoted \Left~and \Right.
+The synchronization messages are used to ensure that locations execute the correct branch of the program based on the results of previous computations at other locations, and can simply be viewed as boolean values.
 
 \subsection{Local Programs}
 \label{sec:local-programs}
@@ -24,20 +24,20 @@ The synchronization messages are used to ensure that locations execute the corre
 \ethan{I suspect we can cut this down a lot by assuming some (common at POPL) knowledge and editing.}
 
 Each node should be able to execute \emph{local} programs in an expression-based language.
-\langname is generic over the choice of local language, requiring only that it obey typical syntactic and typing rules, have a sound type system and semantics, and include the components described below.
+\langname~is generic over the choice of local language, requiring only that it obey typical syntactic and typing rules, have a sound type system and semantics, and include the components described below.
 
 First, each location should be able to send the result of a local computation to any other location.
 Specifically, if an expression $v$ of the local language is a value, denoted $\val{v}$, then we can send $v$ in a message.
 We require that if $\val{v}$ then $v$ has no free variables; this serves to prevent terms with free-variables representing values only known by one location from being send to another.
 
 To implement the synchronization messages, we require that the local language have two distinguishable constants, $\True, \False \ty \Bool$, which are values.
-We also require that these constants be the \emph{only} well-typed values of the \Bool type, as described in Section \ref{sec:sound-type-systems}.
+We also require that these constants be the \emph{only} well-typed values of the \Bool~type, as described in Section~\ref{sec:sound-type-systems}.
 
-In order for location names to be dynamically computed and sent over the network, we require a type \Loc in the local language for \emph{representations} of location names.
+In order for location names to be dynamically computed and sent over the network, we require a type \Loc~in the local language for \emph{representations} of location names.
 These representations need not be in any specific format; they only must satisfy a similar property to that of the synchronization messages which allows us to convert a representation of a location into a concrete location.
 This requirement can be thought of as an interface between the local and choreographic languages.
-Similarly there must be a type \Typ for representations of local language types which satisfies a similar property.
-We denote representations of a type or location as $\say{t}$, with the details formalized in \ref{sec:sound-type-systems}.
+Similarly there must be a type \Typ~for representations of local language types which satisfies a similar property.
+We denote representations of a type or location as $\say{t}$, with the details formalized in Section~\ref{sec:sound-type-systems}.
 
 The local language must have an operational semantics on expressions defined by the relation $e_1 \localstep e_2$, read as ``$e_1$ steps-to $e_2$''.
 Values are required to be fully-reduced, so that for any value $\val{v}$, we have that $v \nlocalstep e$ for any $e$.
@@ -45,7 +45,7 @@ Values are required to be fully-reduced, so that for any value $\val{v}$, we hav
 Types may be reflected in the local language, including via binding of local type-variables.
 This allows, for instance, typed parametric polymorphism represented by for-all types in the local language, but is not a requirement.
 However, types are disallowed from having an operational semantics.
-In particular, we require that the expression semantics $e_1 \localstep e_2$ obeys type preservation \emph{on-the-nose} without an allowance for a \emph{type-conversion} rule, as described in Section \ref{sec:sound-type-systems}.
+In particular, we require that the expression semantics $e_1 \localstep e_2$ obeys type preservation \emph{on-the-nose} without an allowance for a \emph{type-conversion} rule, as described in Section~\ref{sec:sound-type-systems}.
 This precludes System $F_\omega$ or any language with a dependent type system from being used for local computations.
 
 \iftr\subsubsection{Examples}\else\paragraph{Examples}\fi

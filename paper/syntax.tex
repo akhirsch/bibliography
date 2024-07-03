@@ -5,113 +5,6 @@ As in Pirouette, we include both choreographic program variables written in uppe
 Both choreographic and local type variables, including location variables, are denoted with lowercase Greek characters ($\alpha,\beta,\ldots$).
 Types are reflected in programs, and are variously written as $t$, $\ell$, $\tau$, or $t_e$ depending on the context, as detailed in Section~\ref{sec:type-system}.
 
-Much of the choreographic syntax and design-decisions are inherited from Pirouette.
-Every location has a separate namespace for local variables, where we write $\ell_1.x$ to denote the variable $x$ located in the namespace of $\ell_1$.
-Each location's namespace is separate, so that $\ell_1.x \neq \ell_2.x$, and this is reflected in the substitution and renaming operations.
-Choreographic variable substitution, $\subst{C_1}{X}{C_2}$ is defined in a standard capture-avoiding manner.
-Local variable substitution $\hsubst{C}{\ell}{x}{e}$ is defined similarly, but operating only over the namespace of the location $\ell$, which may itself be a type variable.
-Type substitution $\subst{C}{\alpha}{t}$ needs more care in its definition due to the fact that \emph{locations are types}, and hence when implemented na\i vely can cause local namespaces to collide.
-This is discussed in-detail in Section~\ref{sec:location-substitution}.
-
-The choreography which runs the local program $e$ at a specified location $\ell$ is denoted as $\ell.e$.
-Local programs can use local variables which are bound in the scope of either the choreography, or in the local program itself.
-
-When a program $C_1$ finishes running, yielding a value at some location $\ell$,
-we can then use this value in a future local computation at $\ell$ via the \emph{local-let} binding $\LetIn{\ell.x}{C_1}{C_2}$.
-This program first runs $C_1$, and then runs $C_2$ with the value resulting from $C_2$ bound to the local variable $\ell.x$.
-
-The send operation $C \ChorSend[\ell_1] \ell_2$ allows values to be shared between locations.
-This program first executes $C$, whose final result is stored at $\ell_1$, and then $\ell_1$ sends this result to $\ell_2$.
-As this program yields a value at $\ell_2$, the expression can be used in further computations where a value at $\ell_2$ is expected.
-For instance, $\LetIn{\ell_2.x}{\ell_1.3 \ChorSend[\ell_1] \ell_2}{\ell_2.(x + 2)}$ is a program in which $\ell_1$ sends the value 3 to $\ell_2$, who then locally executes the program $\ell_2.(3 + 2)$ to yield $\ell_2.5$.
-
-The program can choose a different branch to execute based on the output of a local computation with the statement $\ITE[\ell_1]{C}{C_1}{C_2}$.
-This program first executes $C$, yielding a boolean value at $\ell_1$, which is used to decide whether to then execute $C_1$ or $C_2$.
-However, although $\ell_1$ knows which branch to take, the other participants in the program may not.
-This is solved by placing a synchronization statement $\syncs{\ell_1}{d}{\ell_2} \seq C$ in the body of the branches, wherein $\ell_1$ sends the decision $d$ to $\ell_2$ of whether the left branch was taken.
-Here the \emph{synchronization label} $d$ may denote either the left branch as $\Left$, or the right branch as $\Right$.
-
-\ethan{Update this for recursive functions}
-We represent possibly higher-order choreographic functions as $\Fun{F}{X \ty \tau}{C}$, where $X$ is the choreographic variable that is bound in the body of $C$.
-Choreographic functions can be applied to their arguments in a standard manner as $C_1~C_2$.
-Possibly non-terminating recursion can be implemented with the fixpoint operator {\color{red}$\mu X \ty \tau\ldotp C$}, which can yield values of any choreographic type, rather than just choreographic functions. \todo\ashley{Rephrase? Want to be clear that this is a real fixpoint rather than just a recursive function definition}
-
-Parametric polymorphism is implemented with the type-abstraction expression $\TFun{\alpha \knd \kappa}{C}$ which, for any type $t$ of kind $\kappa$, can run the choreography $C$ with $\alpha$ bound to $t$.
-As will be detailed in Section~\ref{sec:kind-system}, there are four kinds of types, representing locations, sets of locations, choreographic types, and types of the local language.
-Thus this expression uniformly implements both process polymorphism, as well as type polymorphism for both choreographic and local types.
-This does not, however, require that the local language implement any form of polymorphism.
-
-\paragraph{Tell-Let Binding}
-\todo \ashley{Good idea to have its own paragraph?}
-Finally, we have a construct, the \emph{tell-let binding} $\LetTellIn{\alpha \knd \kappa}{\ell}{C_1}{\rho}{C_2}$, which is used to enable the sending and utilization of dynamically generated locations and types.
-This is akin-to a standard let-binding, except that the type variable $\alpha$ is bound in the body of the program $C_2$.
-Specifically, a tell-let binding first runs the program $C_1$, which should yield a \emph{representation of} a location name or type.
-For instance, one could represent location names as integers, with $n$ representing a concrete location $L_n \in \Locations$.
-Once $C_1$ yields $n$, $\ell$ then sends the location-value $L_n$ to all of the locations in the set $\rho$.
-After receiving the location, it is bound to $\alpha$ in the body of $C_2$, and the execution continues.
-For other locations who did not receive the value of $L_n$, the execution similarly continues executing $C_2$, but where $\alpha$ is instead left free.
-The components that are critical to ensure this construct's functionality are:
-\begin{itemize}
-  \item[1.] The local language must provide an interface for converting representations of locations and types into concrete locations and types.
-  \item[2.] Our compilation procedure ensures that $\alpha$ is only used in $C_2$ by $\ell$ and members of $\rho$, preventing deadlocks.
-  \item[3.] Our type-system soundly handles this construct while allowing for the dynamically generated value to be used in the body of $C_2$.
-\end{itemize}
-
-\subsection{Location Substitution}
-\label{sec:location-substitution}
-While substitution and variable renaming can largely be handled in the standard way, care must be taken when substituting \emph{locations} to avoid variable capture that is not otherwise possible.
-Consider the following choreography with a location variable~$\alpha$ and concrete location~$L$.
-\[\begin{array}{l}
-  C = \begin{array}[t]{@{}l@{}}
-    \LetN~\begin{array}[t]{@{}l@{}}
-      \alpha.x\ty\Int \ChorDef \alpha.2 \\
-      L.x\ty\Int \ChorDef L.3 \\
-      \alpha.y \ChorDef L.x \ChorSend[L] \alpha \\
-    \end{array} \\
-    \In~\alpha.(x + y)
-  \end{array}
-\end{array}\]
-Note that because $\alpha$ and $L$ are distinct, the local variables $\alpha.x$ and $L.x$ are also distinct,
-so this choreography should always produce $\alpha.5$ regardless of the concrete location~$\alpha$.
-
-Now suppose~$\alpha$ resolves to~$L$.
-How do we define $\subst{C}{\alpha}{L}$?
-One might naively think that, since~$\alpha$ does not clash with any other variables, we can simply replace all instances of~$\alpha$ with~$L$.
-However, doing so changes the meaning of the program as the previously-distinct local variables $\alpha.x$ and $L.x$ collapse.
-The variable $\alpha.x$ is incorrectly captured by the definition of $L.x$ and the choreography would wrongly evaluate to~$L.6$.
-
-Note that, when substituting $L$ in for $\alpha$, capture can occur when binding either $\alpha.x$ or $L.x$.
-When substituting a binding of $\alpha.x$, any free instances of $L.x$ in the body will be captured,
-and so too will free instances of $\alpha.x$ be captured when substituting a binding of $L.x$.
-
-To avoid this namespace capture, substitutions of locations in local let expressions must rename variables when binding within either namespace.
-Notationally, we write $\hsubst{C}{\ell}{x}{e}$ to denote standard capture-avoiding substitution of the local variable~$x$ at the location (or location variable)~$\ell$.
-Safe location substitution for local let bindings is then defined follows.
-\begin{align*}
-  \subst{(\LetIn{\alpha.x\ty t}{C_1}{C_2})}{\alpha}{\ell} & = \LetIn*{\ell.x\ty t}{\subst{C_1}{\alpha}{\ell}}{\subst{C_2}{\alpha}{\ell}}
-  && \text{if}~\ell.x \notin \fv(C_2)
-  \\[1ex]
-  \subst{(\LetIn{\alpha.x\ty t}{C_1}{C_2})}{\alpha}{\ell}
-  & = \LetIn*{\ell.y\ty t}{\subst{C_1}{\alpha}{\ell}}{\subst{\hsubst{C_2}{\alpha}{x}{y}}{\alpha}{\ell}}
-  && \begin{array}{@{}l@{}}
-    \text{if}~\ell.x \in \fv(C_2), \\
-    \text{and}~\alpha.y,\ell.y \notin \fv(C_2)
-  \end{array}
-  \\[1ex]
-  \subst{(\LetIn{\ell.x\ty t}{C_1}{C_2})}{\alpha}{\ell}
-  & = \LetIn*{\ell.y\ty t}{\subst{C_1}{\alpha}{\ell}}{\subst{\hsubst{C_2}{\ell}{x}{y}}{\alpha}{\ell}}
-  && \begin{array}{@{}l@{}}
-    \text{if}~\alpha.x \in \fv(C_2), \\
-    \text{and}~\alpha.y,\ell.y \notin \fv(C_2)
-  \end{array}
-  \\[1ex]
-  \subst{(\LetIn{\beta.x\ty t}{C_1}{C_2})}{\alpha}{\ell} & = \LetIn*{\beta.x\ty t}{\subst{C_1}{\alpha}{\ell}}{\subst{C_2}{\alpha}{\ell}}
-  && \begin{array}{@{}l@{}}
-    \text{if}~\alpha \neq \beta ~\text{and} \\
-    \text{either}~ \beta \neq \ell ~\text{or}~ \alpha.x \notin \fv(C_2)
-  \end{array}
-\end{align*}
-
 \begin{figure}[h]
   \begin{syntax}
     \abstractCategory[Local Expressions]{e}
@@ -143,6 +36,113 @@ Safe location substitution for local let bindings is then defined follows.
   \caption{Syntax of Choreographies}
   \label{fig:abstract-syntax}
 \end{figure}
+
+Much of the choreographic syntax and design-decisions are inherited from Pirouette.
+Every location has a separate namespace for local variables, where we write $\ell_1.x$ to denote the variable $x$ located in the namespace of $\ell_1$.
+Each location's namespace is separate, so that $\ell_1.x \neq \ell_2.x$, and this is reflected in the substitution and renaming operations.
+Choreographic variable substitution, $\subst{C_1}{X}{C_2}$ is defined in a standard capture-avoiding manner.
+Local variable substitution $\hsubst{C}{\ell}{x}{e}$ is defined similarly, but operating only over the namespace of the location $\ell$, which may itself be a type variable.
+Type substitution $\subst{C}{\alpha}{t}$ needs more care in its definition due to the fact that \emph{locations are types}, and hence when implemented na\"{i}vely can cause local namespaces to collide.
+This is discussed in-detail in Section~\ref{sec:location-substitution}.
+
+The choreography which runs the local program $e$ at a specified location $\ell$ is denoted as $\ell.e$.
+Local programs can use local variables which are bound in the scope of either the choreography, or in the local program itself.
+
+When a program $C_1$ finishes running, yielding a value at some location $\ell$,
+we can then use this value in a future local computation at $\ell$ via the \emph{local-let} binding $\LetIn{\ell.x}{C_1}{C_2}$.
+This program first runs $C_1$, and then runs $C_2$ with the value resulting from $C_2$ bound to the local variable $\ell.x$.
+
+The send operation $C \ChorSend[\ell_1] \ell_2$ allows values to be shared between locations.
+This program first executes $C$, whose final result is stored at $\ell_1$, and then $\ell_1$ sends this result to $\ell_2$.
+As this program yields a value at $\ell_2$, the expression can be used in further computations where a value at $\ell_2$ is expected.
+For instance, $\LetIn{\ell_2.x}{\ell_1.3 \ChorSend[\ell_1] \ell_2}{\ell_2.(x + 2)}$ is a program in which $\ell_1$ sends the value 3 to $\ell_2$, who then locally executes the program $\ell_2.(3 + 2)$ to yield $\ell_2.5$.
+
+The program can choose a different branch to execute based on the output of a local computation with the statement $\ITE[\ell_1]{C}{C_1}{C_2}$.
+This program first executes $C$, yielding a boolean value at $\ell_1$, which is used to decide whether to then execute $C_1$ or $C_2$.
+However, although $\ell_1$ knows which branch to take, the other participants in the program may not.
+This is solved by placing a synchronization statement $\syncs{\ell_1}{d}{\ell_2} \seq C$ in the body of the branches, wherein $\ell_1$ sends the decision $d$ to $\ell_2$ of whether the left branch was taken.
+Here the \emph{synchronization label} $d$ may denote either the left branch as $\Left$, or the right branch as $\Right$.
+
+\ethan{Update this for recursive functions}
+We represent possibly higher-order choreographic functions as $\Fun{F}{X \ty \tau}{C}$, where $X$ is the choreographic variable that is bound in the body of $C$.
+Choreographic functions can be applied to their arguments in a standard manner as $C_1~C_2$.
+Possibly non-terminating recursion can be implemented with the fixpoint operator {\color{red}$\mu X \ty \tau\ldotp C$}, which can yield values of any choreographic type, rather than just choreographic functions. \todo\ashley{Rephrase? Want to be clear that this is a real fixpoint rather than just a recursive function definition}
+
+Parametric polymorphism is implemented with the type-abstraction expression $\TFun{\alpha \knd \kappa}{C}$ which, for any type $t$ of kind $\kappa$, can run the choreography $C$ with $\alpha$ bound to $t$.
+We can apply a type to a polymorphic choreography as $C~t$.
+As will be detailed in Section~\ref{sec:kind-system}, there are four kinds of types, representing locations, sets of locations, choreographic types, and types of the local language.
+Thus this expression uniformly implements both process polymorphism, as well as type polymorphism for both choreographic and local types.
+This does not, however, require that the local language implement any form of polymorphism.
+
+\paragraph{Tell-Let Binding}
+\todo \ashley{Good idea to have its own paragraph?}
+Finally, we have a construct, the \emph{tell-let binding} $\LetTellIn{\alpha \knd \kappa}{\ell}{C_1}{\rho}{C_2}$, which is used to enable the sending and utilization of dynamically generated locations and types.
+This is akin-to a standard let-binding, except that the type variable $\alpha$ is bound in the body of the program $C_2$.
+Specifically, a tell-let binding first runs the program $C_1$, which should yield a \emph{representation of} a location name or type.
+For instance, one could represent location names as integers, with $n$ representing a concrete location $L_n \in \Locations$.
+Once $C_1$ yields $n$, $\ell$ then sends the location-value $L_n$ to all of the locations in the set $\rho$.
+After receiving the location, it is bound to $\alpha$ in the body of $C_2$, and the execution continues.
+For other locations who did not receive the value of $L_n$, the execution similarly continues executing $C_2$, but where $\alpha$ is instead left free.
+The components that are critical to ensure this construct's functionality are:
+\begin{itemize}
+  \item[1.] The local language must provide an interface for converting representations of locations and types into concrete locations and types.
+  \item[2.] Our compilation procedure ensures that $\alpha$ is only used in $C_2$ by $\ell$ and members of $\rho$, preventing deadlocks.
+  \item[3.] Our type-system soundly handles this construct while allowing for the dynamically generated value to be used in the body of $C_2$.
+\end{itemize}
+
+\subsection{Location Substitution}
+\label{sec:location-substitution}
+While substitution and variable renaming can largely be handled in the standard way, care must be taken when substituting \emph{locations} to avoid variable capture that is not otherwise possible.
+Consider the following choreography with a location variable~$\alpha$ and concrete location~$L$.
+\[\begin{array}{l}
+  C = \begin{array}[t]{@{}l@{}}
+    \LetN~\begin{array}[t]{@{}l@{}}
+      \alpha.x\ty\Int \ChorDef \alpha.2 \\
+      L.x\ty\Int \ChorDef L.3 \\
+      \alpha.y\ty\Int \ChorDef L.x \ChorSend[L] \alpha \\
+    \end{array} \\
+    \In~\alpha.(x + y)
+  \end{array}
+\end{array}\]
+Note that because $\alpha$ and $L$ are distinct, the local variables $\alpha.x$ and $L.x$ are also distinct, so this choreography should always produce $\alpha.5$ regardless of the concrete location to which $\alpha$ resolves.
+
+Consider the case when $\alpha$ resolves to~$L$.
+How do we define $\subst{C}{\alpha}{L}$?
+One might na\"{i}vely think that, since~$\alpha$ does not clash with any other variables, we can simply replace all instances of~$\alpha$ with~$L$.
+However, doing so changes the meaning of the program as the previously-distinct local variables $\alpha.x$ and $L.x$ collapse.
+The variable $\alpha.x$ is incorrectly captured by the definition of $L.x$ and the choreography would wrongly evaluate to~$L.6$.
+
+Note that, when substituting $L$ in for $\alpha$, capture can occur when binding either $\alpha.x$ or $L.x$.
+When substituting a binding of $\alpha.x$, any free instances of $L.x$ in the body will be captured,
+and so too will free instances of $\alpha.x$ be captured when substituting a binding of $L.x$.
+
+To avoid this namespace capture, substitutions of locations in local-let expressions must rename variables when binding within \emph{either} namespace.
+Notationally, we write $\hsubst{C}{\ell}{x}{e}$ to denote standard capture-avoiding substitution of the local variable~$x$ at the location (or location variable)~$\ell$.
+Safe location substitution for local-let bindings is then defined as follows.
+\begin{align*}
+  \subst{(\LetIn{\alpha.x\ty t}{C_1}{C_2})}{\alpha}{\ell} & = \LetIn*{\ell.x\ty t}{\subst{C_1}{\alpha}{\ell}}{\subst{C_2}{\alpha}{\ell}}
+  && \text{if}~\ell.x \notin \fv(C_2)
+  \\[1ex]
+  \subst{(\LetIn{\alpha.x\ty t}{C_1}{C_2})}{\alpha}{\ell}
+  & = \LetIn*{\ell.y\ty t}{\subst{C_1}{\alpha}{\ell}}{\subst{\hsubst{C_2}{\alpha}{x}{y}}{\alpha}{\ell}}
+  && \begin{array}{@{}l@{}}
+    \text{if}~\ell.x \in \fv(C_2), \\
+    \text{and}~\alpha.y,\ell.y \notin \fv(C_2)
+  \end{array}
+  \\[1ex]
+  \subst{(\LetIn{\ell.x\ty t}{C_1}{C_2})}{\alpha}{\ell}
+  & = \LetIn*{\ell.y\ty t}{\subst{C_1}{\alpha}{\ell}}{\subst{\hsubst{C_2}{\ell}{x}{y}}{\alpha}{\ell}}
+  && \begin{array}{@{}l@{}}
+    \text{if}~\alpha.x \in \fv(C_2), \\
+    \text{and}~\alpha.y,\ell.y \notin \fv(C_2)
+  \end{array}
+  \\[1ex]
+  \subst{(\LetIn{\beta.x\ty t}{C_1}{C_2})}{\alpha}{\ell} & = \LetIn*{\beta.x\ty t}{\subst{C_1}{\alpha}{\ell}}{\subst{C_2}{\alpha}{\ell}}
+  && \begin{array}{@{}l@{}}
+    \text{if}~\alpha \neq \beta ~\text{and} \\
+    \text{either}~ \beta \neq \ell ~\text{or}~ \alpha.x \notin \fv(C_2)
+  \end{array}
+\end{align*}
 
 \begin{figure}[h]
   \begin{syntax}
