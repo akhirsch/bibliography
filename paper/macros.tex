@@ -113,7 +113,7 @@
 \newcommand{\Empty}{\ensuremath{\mathbf{0}}}
 
 \definecolor{orangeGold}{rgb}{0.67, 0.33, 0.1}
-\newcommand{\ChoiceCol}[1]{{\color{orangeGold}#1}}
+\newcommand{\ChoiceCol}[1]{{\color{Emerald}#1}}
 \newcommand{\FontChoice}[1]{\ensuremath{\mathbf{\ChoiceCol{#1}}}}
 \newcommand{\Left}{\FontChoice{L}}
 \newcommand{\Right}{\FontChoice{R}}
@@ -139,8 +139,7 @@
 \newcommand{\ElseN}{\FontChoreo{else}}
 \newcommand{\FunN}{\FontChoreo{fun}}
 \newcommand{\TFunN}{\ChorCol{\Lambda}}
-\newcommand{\ChorDef}{\mathbin{\ChorCol{\coloneqq}}}
-%\newcommand{\CtrlDef}{\mathrel{\ChorCol{\coloneqq}}}
+\newcommand{\ChorDef}{\mathrel{\ChorCol{\coloneqq}}}
 \newcommand{\TellN}{\FontChoreo{tell}}
 \newcommand{\To}{\FontChoreo{to}}
 
@@ -158,7 +157,9 @@
 \newcommand{\CtrlCol}[1]{{\color{RedOrange}#1}}
 \newcommand{\FontCtrl}[1]{\mathtt{\CtrlCol{#1}}}
 
-\newcommand{\CtrlDef}{\mathbin{\CtrlCol{\coloneqq}}}
+\newcommand{\CtrlDef}{\mathrel{\CtrlCol{\coloneqq}}}
+\newcommand{\AmIN}{\FontCtrl{AmI}}
+\newcommand{\AmIInN}{\AmIN\mathord{\CtrlCol{\in}}}
 \newcommand{\CtrlIn}{\FontCtrl{in}}
 \newcommand{\CtrlThen}{\FontCtrl{then}}
 \newcommand{\CtrlElse}{\FontCtrl{else}}
@@ -183,7 +184,12 @@
 \newcommand{\AllowOneChoice}[3]{\FontCtrl{allow}~{#1}~\FontCtrl{choice}~({#2} \Rightarrow {#3})}
 \newcommand{\LetRecvIn}[3]{\FontCtrl{receive}~{#1}~\FontCtrl{from}~{#2}~\CtrlIn~{#3}}
 \newcommand{\LetSendIn}[4]{\FontCtrl{send}~{#1} \CtrlDef {#2}~\FontCtrl{to}~{#3}~\CtrlIn~{#4}}
-\newcommand{\AmI}[3]{\FontCtrl{AmI}\CtrlCol{\in}~{#1}~\CtrlThen~{#2}~\CtrlElse~{#3}}
+\newcommand{\AmI}[3]{\AmIN~{#1}~\CtrlThen~{#2}~\CtrlElse~{#3}}
+\newMLP*{\AmI}[3]{\AmIN~{#1}~\CtrlThen~{#2} \\ \phantom{\AmIN~{#1}~{}}\CtrlElse~{#3}}
+\newcommand{\AmIIn}[3]{\AmIInN~{#1}~\CtrlThen~{#2}~\CtrlElse~{#3}}
+\newMLP{\MLAmIIn}[3]{\AmIInN~{#1} \\ \CtrlThen~{#2} \\ \CtrlElse~{#3}}
+\newMLP*{\MLAmIIn}[3]{\AmIInN~{#1}~\CtrlThen~{#2} \\ \phantom{\AmIInN~{#1}~{}}\CtrlElse~{#3}}
+%\newMLP*{\MLAmI}[3]{\AmIN~{#1}~\CtrlThen~{#2} \\ \phantom{\AmIN~{#1}~{}} \CtrlElse~{#3}}
 \newcommand{\CtrlSeq}{\mathrel{\CtrlCol{;}}}
 \newcommand{\IAm}[1]{\text{IAmIn}~{#1}}
 
@@ -197,13 +203,13 @@
 \newcommand\hole{\ensuremath{[\boldsymbol{\cdot}]}}
 
 %% Example Names
-\newcommand{\LocFont}[1]{\programfont{#1}}
+\newcommand{\LocFont}[1]{\programfont{\color{orangeGold}#1}}
 \newcommand{\Client}{\LocFont{C}}
 \newcommand{\Worker}{\LocFont{W}}
 \newcommand{\Mngr}{\LocFont{M}}
 \newcommand{\RunAtWorker}{\programfont{runAtW}}
 \newcommand{\WithWorker}{\programfont{withWorker}}
-\newcommand{\AcquireWorker}{\programfont{acquireWorker}}
+\newcommand{\AcquireWorker}{\LocFont{acquireWorker}}
 \newcommand{\Pool}{\LocFont{pool}}
 \newcommand{\ReleaseWorker}{\LocFont{releaseWorker}}
 
@@ -254,8 +260,8 @@
 \newcommand{\step}[1]{\raw@step{#1}{}{c}}
 \newcommand{\manystep}{\raw@step{}{*}{c}}
 \newcommand{\localstep}[1][]{\raw@step{#1}{}{e}}
-\newcommand{\ctrlstep}[1][]{\raw@step{#1}{}{E[L]}}
-\newcommand{\ctrlsteploc}[2][]{\raw@step{#1}{}{E[{#2}]}}
+\newcommand{\ctrlsteploc}[2][]{\raw@step{#1}{}{}}
+\newcommand{\ctrlstep}[1][]{\ctrlsteploc[#1]{L}}
 \newcommand{\ctrlreduce}[1][]{\raw@reduce{#1}{}{E[L]}}
 \newcommand{\ctrlreduceloc}[2][]{\raw@reduce{#1}{}{E[{#2}]}}
 \newcommand{\systemstep}[1][]{\raw@step{#1}{}{S}}

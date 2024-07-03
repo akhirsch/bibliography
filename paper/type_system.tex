@@ -142,7 +142,9 @@ This allows choreographic expressions of the form $t_e @ \ell$ to be used within
     \chortyped{\Gamma}{\Delta}{\Sigma}{C}{\tau}}
     {\chortyped{\Gamma}{\Delta}{\Sigma}{\syncs{\ell_1}{d}{\ell_2} \seq C}{\tau}}
   \and
-  \infer[TAbs]{\chorkinded{\Gamma, \alpha \knd \kappa}{\tau}{*} \\\\
+  \infer[TAbs]{
+    \kappa \neq *_s \\
+    \chorkinded{\Gamma, \alpha \knd \kappa}{\tau}{*} \\\\
     \chortyped{\Gamma, \alpha \knd \kappa}{\Delta}{\Sigma}{C}{\tau}}
   {\chortyped{\Gamma}{\Delta}{\Sigma}{\TFun{\alpha \knd \kappa}{C}}{\forall \alpha \knd \kappa.\tau}}
 

@@ -37,9 +37,11 @@
       \epp{C}{L} \CtrlSeq \epp{C_1}{L} \ctrlmerge \epp{C_2}{L} & L \neq \ell
     \end{cases}
   \and
-  \epp{\TFun{\alpha \knd *_\ell}{C}}{L} = \CtrlTFun{\alpha}{\AmI{\alpha}{\epp{\subst{C}{\alpha}{L}}{L}}{\epp{C}{L}}}
-  \and
-  \epp{\TFun{\alpha \knd \kappa}{C}}{L} = \CtrlTFun{\alpha}{\epp{C}{L}} ~\text{if}~\kappa \neq *_\ell
+  \epp{\TFun{\alpha \knd \kappa}{C}}{L} = \begin{cases}
+    \CtrlTFun{\alpha}{\AmI{\alpha}{\epp{\subst{C}{\alpha}{L}}{L}}{\epp{C}{L}}} & \text{if}~\kappa = *_\ell \\
+%    \CtrlTFun{\alpha}{\AmIIn{\alpha}{\epp{\subst{C}{\alpha}{\{L\}}}{L}}{\epp{C}{L}}} & \text{if}~\kappa = *_s \\
+    \CtrlTFun{\alpha}{\epp{C}{L}} & \text{otherwise}
+  \end{cases}
   \and
   \epp{C~t}{L} = \epp{C}{L}~t
   \and
@@ -49,6 +51,7 @@
       \epp{C_1}{L} \CtrlSeq \epp{C_2}{L} & L \neq \ell
     \end{cases}
   \and
+  \addtocounter{numlevels}{1}
   \epp{\LetTellIn{\alpha \knd *_\ell}{\ell}{C_1}{\rho}{C_2}}{L} =
     \begin{cases}
       \begin{array}{@{}l@{}}
@@ -57,14 +60,16 @@
         \quad\AmI{\alpha}{\epp{\subst{C_2}{\alpha}{L}}{L}}{\epp{C_2}{L}}
       \end{array} & L = \ell \vspace{1ex}\\
       \begin{array}{@{}l@{}}
-        \epp{C_1}{L} \CtrlSeq \CtrlLetIn{\alpha}{(\RecvFrom{\ell})}{} \\
-        \quad \AmI{\alpha}{\epp{\subst{C_2}{\alpha}{L}}{L}}{\epp{C_2}{L}}
+      \epp{C_1}{L} \CtrlSeq
+          \CtrlLetIn*{\alpha}{\RecvFrom{\ell}}
+          {\AmI*{\alpha}{\epp{\subst{C_2}{\alpha}{L}}{L}}{\epp{C_2}{L}}}
       \end{array}
       & L \neq \ell ~\text{and}~ L \in \rho \vspace{1ex}\\
       \epp{C_1}{L} \CtrlSeq \epp{C_2}{L}
         & \makebox[\widthof{$L \neq \ell ~\text{and}~ L \in \rho$}][r]{
           $L \neq \ell$ and $L \notin \rho$ and $\alpha \notin \fv(\epp{C_2}{L})$}
     \end{cases}
+  \addtocounter{numlevels}{-1}
   \and
   \epp{\LetTellIn{\alpha \knd *_e}{\ell}{C_1}{\rho}{C_2}}{L} =
     \begin{cases}
