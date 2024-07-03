@@ -137,9 +137,9 @@
 \newcommand{\IfN}{\FontChoreo{if}}
 \newcommand{\ThenN}{\FontChoreo{then}}
 \newcommand{\ElseN}{\FontChoreo{else}}
-\newcommand{\FunN}{\ChorCol{\lambda}}
+\newcommand{\FunN}{\FontChoreo{fun}}
 \newcommand{\TFunN}{\ChorCol{\Lambda}}
-\newcommand{\ChorDef}{\mathrel{\ChorCol{\coloneqq}}}
+\newcommand{\ChorDef}{\mathbin{\ChorCol{\coloneqq}}}
 %\newcommand{\CtrlDef}{\mathrel{\ChorCol{\coloneqq}}}
 \newcommand{\TellN}{\FontChoreo{tell}}
 \newcommand{\To}{\FontChoreo{to}}
@@ -148,8 +148,8 @@
 \newMLP*{\LetIn}[3]{\LetN~{#1} \ChorDef {#2} \\ \In~{#3}}
 \newcommand{\ITE}[4][\ell]{\IfN_{#1}~{#2}~\ThenN~{#3}~\ElseN~{#4}}
 \newMLP*{\ITE}[4][\ell]{\IfN_{#1}~{#2} \\ \ThenN~{#3} \\ \ElseN~{#4}}
-\newcommand{\Fun}[2]{\FunN{#1}\ldotp {#2}}
-\newcommand{\Rec}[2]{\ChorCol{\mu}{#1}\ldotp {#2}}
+\newcommand{\Fun}[3]{\mathop{\FunN}{#1}({#2}) \ChorDef {#3}}
+%\newcommand{\Rec}[2]{\ChorCol{\mu}{#1}\ldotp {#2}}
 \newcommand{\TFun}[2]{\TFunN{#1}\ldotp {#2}}
 \newcommand{\Tell}[3][\loc]{{#1}.\TellN~{#2}~\To~{#3}}
 \newcommand{\LetTellIn}[5]{\LetN~ {#1} \ChorDef \Tell[#2]{#3}{#4}~\In~{#5}}
@@ -158,13 +158,13 @@
 \newcommand{\CtrlCol}[1]{{\color{RedOrange}#1}}
 \newcommand{\FontCtrl}[1]{\mathtt{\CtrlCol{#1}}}
 
-\newcommand{\CtrlDef}{\mathrel{\CtrlCol{\coloneqq}}}
+\newcommand{\CtrlDef}{\mathbin{\CtrlCol{\coloneqq}}}
 \newcommand{\CtrlIn}{\FontCtrl{in}}
 \newcommand{\CtrlThen}{\FontCtrl{then}}
 \newcommand{\CtrlElse}{\FontCtrl{else}}
 \newcommand{\CtrlLeft}{\Left}
 \newcommand{\CtrlRight}{\Right}
-\newcommand{\CtrlFunN}{\CtrlCol{\lambda}}
+\newcommand{\CtrlFunN}{\FontCtrl{fun}}
 \newcommand{\CtrlTFunN}{\CtrlCol{\Lambda}}
 
 \newcommand{\CtrlLetIn}[3]{\FontCtrl{let}~{#1} \CtrlDef {#2}~\FontCtrl{in}~{#3}}
@@ -190,8 +190,8 @@
 \newcommand{\LocalLangFont}[1]{\programfont{#1}}
 \newcommand{\True}{\LocalLangFont{true}}
 \newcommand{\False}{\LocalLangFont{false}}
-\newcommand{\CtrlFun}[2]{\CtrlFunN{#1}\ldotp {#2}}
-\newcommand{\CtrlRec}[2]{\CtrlCol{\mu}{#1}\ldotp {#2}}
+\newcommand{\CtrlFun}[3]{\mathop{\CtrlFunN} {#1}({#2}) \CtrlDef {#3}}
+%\newcommand{\CtrlRec}[2]{\CtrlCol{\mu}{#1}\ldotp {#2}}
 \newcommand{\CtrlTFun}[2]{\CtrlTFunN{#1}\ldotp {#2}}
 
 \newcommand\hole{\ensuremath{[\boldsymbol{\cdot}]}}

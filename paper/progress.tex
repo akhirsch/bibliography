@@ -9,22 +9,23 @@ We proceed by structural induction on $\choremptyped{C_1}{\tau}$.
   In the latter, $L.e_1 \step{\RDone{L}{e_1}{e_2}} L.e_2$ by \textsc{DoneE}.
 
   \item[\textsc{Fun}]
-  Let $C = \Fun{X \ty \tau}{C_1}$.
-  By definition, $\Fun{X \ty \tau}{C_1}$ is a value.
+  Let $C = \Fun{F}{X \ty \tau}{C_1}$.
+  By definition, $\Fun{F}{X \ty \tau}{C_1}$ is a value.
 
-  \item[\textsc{Rec}]
-  Let $C = \Rec{X \ty \tau}{C_1}$.
-  By \textsc{Rec}, $\Rec{X \ty \tau}{C_1} \step{\RRec} \subst{C}{X}{\Rec{X \ty \tau}{C_1}}$ can always step.
+%  \item[\textsc{Rec}]
+%  Let $C = \Rec{X \ty \tau}{C_1}$.
+%  By \textsc{Rec}, $\Rec{X \ty \tau}{C_1} \step{\RRec} \subst{C}{X}{\Rec{X \ty \tau}{C_1}}$ can always step.
 
   \item[\textsc{App}]
+    \ethan{Fix this for recursive functions!}
   Let $C = C_1~C_2$.
   By induction, either $C_1$ is a value or can step to some $C_2$.
   In the latter, if $C_1 \step{R} C_1'$, then $C_1~C_2 \step{\RFun{R}} C_1'~C_2$ by \textsc{AppFun}.
   Now suppose $C_1$ is a value.
   If $C_2 \step{R} C_2'$, then $C_1~C_2 \step{\RArg{R}} C_1~C_2'$ by \textsc{AppArg}.
   Otherwise suppose $C_2$ is also a value.
-  Because $C_1$ is a value, it must be of the form $C_1 = \Fun{X \ty \tau}{C_1'}$.
-  Therefore $(\Fun{X \ty \tau}{C_1'})~C_2 \step{\RApp} \subst{C_1'}{X}{C_2}$ by \textsc{App}.
+  Because $C_1$ is a value, it must be of the form $C_1 = \Fun{F}{X \ty \tau}{C_1'}$.
+  Therefore $C_1~C_2 \step{\RApp} \subst*{C_1'}{{F}{C_1}{X}{C_2}}$ by \textsc{App}.
 
   \item[\textsc{Send}]
   Let $C = C_1 \ChorSend[L_1] L_2$.

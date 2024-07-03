@@ -9,7 +9,7 @@
   \begin{syntax}
     \category[Control Expression]{E}
     \alternative{X} \alternative{\CtrlFail} \alternative{\Ret{e}} \alternative{E_1 \CtrlSeq E_2} \\
-    \alternative{\CtrlFun{X}{E}} \alternative{E_1~E_2} \alternative{\CtrlRec{X}{E}} \\
+    \alternative{\CtrlFun{F}{X}{E}} \alternative{E_1~E_2} \\
     \alternative{\CtrlTFun{\alpha}{E}} \alternative{E~t} \\
     \alternative{\SendTo{E}{\rho}} \alternative{\RecvFrom{\ell}} \\
     \alternative{\ChooseFor{d}{\ell}{E}} \\
@@ -21,7 +21,7 @@
     \alternative{\AmI{\ell}{E_1}{E_2}}
 
     \category[Control Expression Values]{V}
-    \alternative{\CtrlFail} \alternative{\Ret{v}} \alternative{\CtrlFun{X}{E}}
+    \alternative{\CtrlFail} \alternative{\Ret{v}} \alternative{\CtrlFun{F}{X}{E}}
     \alternative{\CtrlTFun{\alpha}{E}}
 
     \category[Possible Control Expression]{?E}
@@ -62,12 +62,15 @@ Specifically, we have reduction rules of the form $E_1 \ctrlreduce[l] E_2$ which
     \infer[SeqV]{\text{Value}(V)}
     {V \CtrlSeq E \ctrlreduce[\iota] E}
     \and
-    \infer[App]{\text{Value}(V)}
-    {(\CtrlFun{X}{E})~V \ctrlreduce[\iotasync] \subst{E}{X}{V}}
+    \infer[App]{
+      f = \CtrlFun{F}{X}{E} \\
+      \text{Value}(V)
+    }
+    {f~V \ctrlreduce[\iotasync] \subst*{E}{{F}{f}{X}{V}}}
     \and
-    \infer[Rec]{~}
-    {\mu X.E \ctrlreduce[\iotasync] \subst{E}{X}{\mu X.E}}
-    \and
+%    \infer[Rec]{~}
+%    {\mu X.E \ctrlreduce[\iotasync] \subst{E}{X}{\mu X.E}}
+%    \and
     \infer[SendV]{\text{Value}(v) \\
       L' \neq L}
     {\SendTo{\Ret{v}}{L'} \ctrlreduce[v \sendsto L'] \CtrlFail}

@@ -31,9 +31,10 @@ However, although $\ell_1$ knows which branch to take, the other participants in
 This is solved by placing a synchronization statement $\syncs{\ell_1}{d}{\ell_2} \seq C$ in the body of the branches, wherein $\ell_1$ sends the decision $d$ to $\ell_2$ of whether the left branch was taken.
 Here the \emph{synchronization label} $d$ may denote either the left branch as $\Left$, or the right branch as $\Right$.
 
-We represent possibly higher-order choreographic functions as $\Fun{X \ty \tau}{C}$, where $X$ is the choreographic variable that is bound in the body of $C$.
+\ethan{Update this for recursive functions}
+We represent possibly higher-order choreographic functions as $\Fun{F}{X \ty \tau}{C}$, where $X$ is the choreographic variable that is bound in the body of $C$.
 Choreographic functions can be applied to their arguments in a standard manner as $C_1~C_2$.
-Possibly non-terminating recursion can be implemented with the fixpoint operator $\Rec{X \ty \tau}{C}$, which can yield values of any choreographic type, rather than just choreographic functions. \todo\ashley{Rephrase? Want to be clear that this is a real fixpoint rather than just a recursive function definition}
+Possibly non-terminating recursion can be implemented with the fixpoint operator {\color{red}$\mu X \ty \tau\ldotp C$}, which can yield values of any choreographic type, rather than just choreographic functions. \todo\ashley{Rephrase? Want to be clear that this is a real fixpoint rather than just a recursive function definition}
 
 Parametric polymorphism is implemented with the type-abstraction expression $\TFun{\alpha \knd \kappa}{C}$ which, for any type $t$ of kind $\kappa$, can run the choreography $C$ with $\alpha$ bound to $t$.
 As will be detailed in Section~\ref{sec:kind-system}, there are four kinds of types, representing locations, sets of locations, choreographic types, and types of the local language.
@@ -125,7 +126,7 @@ Safe location substitution for local let bindings is then defined follows.
     \abstractCategory[Choreographic Variables]{X, Y, \ldots}
 
     \category[Choreographies]{C}
-    \alternative{X} \alternative{\ell.e} \alternative{\Fun{X \ty \tau}{C}} \alternative{C_1~C_2} \alternative{\Rec{X \ty \tau}{C}}\\
+    \alternative{X} \alternative{\ell.e} \alternative{\Fun{F}{X \ty \tau}{C}} \alternative{C_1~C_2} \\
     \alternative{\TFun{\alpha \knd \kappa}{C}} \alternative{C~t}\\
     \alternative{C \ChorSend[\ell_1] \ell_2} \alternative{\syncs{\ell_1}{d}{\ell_2} \seq C}\\
     \alternative{\ITE{C}{C_1}{C_2}}\\
@@ -135,7 +136,7 @@ Safe location substitution for local let bindings is then defined follows.
 
     \category[Choreographic Values]{V}
     \alternative{L.v}
-    \alternative{\Fun{X \ty \tau}{C}}
+    \alternative{\Fun{F}{X \ty \tau}{C}}
     \alternative{\TFun{\alpha \knd \kappa}{C}}
   \end{syntax}
 

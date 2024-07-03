@@ -18,12 +18,13 @@ We proceed by structural induction on $C_1 \step{R} C_2$.
   Therefore $\chortyped{\Gamma}{\Delta}{\Sigma}{C_1~C_2'}{\tau_2}$.
 
   \item[\textsc{App}]
+    \ethan{Fix this for recursive functions!}
   By \textsc{App}, $\chortyped{\Gamma}{\Delta, X \ty \tau_1}{\Sigma}{C}{\tau_2}$ and $\chortyped{\Gamma}{\Delta}{\Sigma}{V}{\tau_1}$.
   Therefore by \textsc{Substitution}, $\chortyped{\Gamma}{\Delta}{\Sigma}{\subst{C}{X}{V}}{\tau_2}$.
 
-  \item[\textsc{Rec}]
-  By \textsc{Rec}, $\chortyped{\Gamma}{\Delta, X \ty \tau}{\Sigma}{C}{\tau}$.
-  Therefore by \textsc{Substitution}, $\chortyped{\Gamma}{\Delta}{\Sigma}{\subst{C}{X}{\mu X \ty \tau.C}}{\tau}$.
+%  \item[\textsc{Rec}]
+%  By \textsc{Rec}, $\chortyped{\Gamma}{\Delta, X \ty \tau}{\Sigma}{C}{\tau}$.
+%  Therefore by \textsc{Substitution}, $\chortyped{\Gamma}{\Delta}{\Sigma}{\subst{C}{X}{\mu X \ty \tau.C}}{\tau}$.
 
   \item[\textsc{SendE}]
   By \textsc{Send}, $\chortyped{\Gamma}{\Delta}{\Sigma}{C}{t_e @ L}$.

@@ -39,7 +39,7 @@ then there is some $E_1''$ and $E_2''$ such that
 We proceed by induction on the choreography $C$ and the evaluation contexts $\eta_1$ and $\eta_2$.
 \begin{description}
   \item[--]
-    If $C$ is of the form $X$, $\ell.e$, $\Fun{X \ty \tau}{C}$, or $\Rec{X \ty \tau}{C}$ then the reduction steps are impossible because either there is no matching evaluation context, or the label of the step is incorrect.
+    If $C$ is of the form $X$, $\ell.e$ or $\Fun{F}{X \ty \tau}{C}$ then the reduction steps are impossible because either there is no matching evaluation context, or the label of the step is incorrect.
   \item[--]
     Let $C = C_1~C_2$.
     In this case, the evaluation contexts are either $\eta_1 = \eta_1'~E_1$ and $\eta_2 = \eta_2'~E_2$, or $\eta_1 = E_1~\eta_1'$ and $\eta_2 = E_2~\eta_2'$.
