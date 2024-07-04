@@ -24,9 +24,9 @@ The question-marks prepended to the expressions $?E_1$ and $?E_2$ indicate that 
 A branch may be missing as a result of the endpoint projection process, but does not necessitate that the control program will fail to execute.
 The other side of an external choice is the choose-for expression $\ChooseFor{d}{\ell}{E}$, in which the executing location informs $\ell$ to branch in the direction $d$, after which execution resumes on $E$.
 
-%Lastly, the ``am-I-in'' expression $\AmIIn{\rho}{E_1}{E_2}$ is a form of local branching which reflects the currently executing location's knowledge of its own identity.
+Lastly, the ``am-I-in'' expression $\AmIIn{\rho}{E_1}{E_2}$ is a form of local branching which reflects the currently executing location's knowledge of its own identity.
 Specifically, when executing at a location $L$, if $L \in \rho$ then the left branch $E_1$ will be taken, and if $L \notin \rho$ then the right branch $E_2$ will be taken.
-This is a generalization of the ``AmI'' expression of PolyChor$\lambda$~\citep{GraversenHM23}, and is critical in order to implement location polymorphism and the usage of dynamically generated locations.
+This is a generalization of the ``AmI'' expression of PolyChor$\lambda$~\citep{GraversenHM23}, and is critical to implement polymorphism over dynamically computed sets of locations.
 
 \begin{figure}
   \begin{syntax}

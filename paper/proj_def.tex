@@ -1,6 +1,8 @@
 \subsection{Endpoint Projection}
 \label{sec:proj-def}
 
+Note, in the following definitions, $\AmI{\ell}{E_1}{E_2}$ is used as shorthand for $\AmIIn{\{\ell\}}{E_1}{E_2}$.
+
 \begin{mathparpagebreakable}
   \epp{X}{L} = X
   \and
@@ -39,7 +41,7 @@
   \and
   \epp{\TFun{\alpha \knd \kappa}{C}}{L} = \begin{cases}
     \CtrlTFun{\alpha}{\AmI{\alpha}{\epp{\subst{C}{\alpha}{L}}{L}}{\epp{C}{L}}} & \text{if}~\kappa = *_\ell \\
-%    \CtrlTFun{\alpha}{\AmIIn{\alpha}{\epp{\subst{C}{\alpha}{\{L\}}}{L}}{\epp{C}{L}}} & \text{if}~\kappa = *_s \\
+    \CtrlTFun{\alpha}{\AmIIn{\alpha}{\epp{\subst{C}{\alpha}{\alpha \cup \{L\}}}{L}}{\epp{C}{L}}} & \text{if}~\kappa = *_s \\
     \CtrlTFun{\alpha}{\epp{C}{L}} & \text{otherwise}
   \end{cases}
   \and
