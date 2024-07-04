@@ -1,4 +1,0 @@
-name: polypir
-depend: standard-library
-include: .
-  ./higher-order-syntax/src
