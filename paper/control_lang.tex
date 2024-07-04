@@ -26,7 +26,7 @@ The other side of an external choice is the choose-for expression $\ChooseFor{d}
 
 Lastly, the ``am-I-in'' expression $\AmIIn{\rho}{E_1}{E_2}$ is a form of local branching which reflects the currently executing location's knowledge of its own identity.
 Specifically, when executing at a location $L$, if $L \in \rho$ then the left branch $E_1$ will be taken, and if $L \notin \rho$ then the right branch $E_2$ will be taken.
-This is a generalization of the ``AmI'' expression of PolyChor$\lambda$~\citep{GraversenHM23}, and is critical to implement polymorphism over dynamically computed sets of locations.
+This is a generalization of the ``AmI'' expression of PolyChor$\lambda$~\citep{GraversenHM24}, and is critical to implement polymorphism over dynamically computed sets of locations.
 
 \begin{figure}
   \begin{syntax}
@@ -40,8 +40,8 @@ This is a generalization of the ``AmI'' expression of PolyChor$\lambda$~\citep{G
     \alternative{\CtrlITE{E}{E_1}{E_2}} \\
     \alternative{\CtrlLetIn{X}{E_1}{E_2}}\\
     \alternative{\CtrlLetIn{\Ret{x}}{E_1}{E_2}}\\
-%    \alternative{\LetSendIn{\alpha}{E_1}{\rho}{E_2}} \alternative{\LetRecvIn{\alpha}{\ell}{E}}\\
-%    \alternative{\LetSendIn{\alpha \knd *_e}{E_1}{\rho}{E_2}} \alternative{\LetRecvIn{\alpha \knd *_e}{\ell}{E}}\\
+    %    \alternative{\LetSendIn{\alpha}{E_1}{\rho}{E_2}} \alternative{\LetRecvIn{\alpha}{\ell}{E}}\\
+    %    \alternative{\LetSendIn{\alpha \knd *_e}{E_1}{\rho}{E_2}} \alternative{\LetRecvIn{\alpha \knd *_e}{\ell}{E}}\\
     \alternative{\AmIIn{\rho}{E_1}{E_2}}
 
     \category[Control Expression Values]{V}
@@ -67,7 +67,7 @@ Specifically, we have reduction rules of the form $E_1 \ctrlstep[l] E_2$ which c
 
 \begin{syntax}
   \category[Labels]{l}
-  \alternative{\iota} \alternative{[d] \sendsto L} \alternative{L;[d] \sendsto}  \alternative{v \sendsto \rho} \alternative{L;\rho \sendsto} 
+  \alternative{\iota} \alternative{[d] \sendsto L} \alternative{L;[d] \sendsto}  \alternative{v \sendsto \rho} \alternative{L;\rho \sendsto}
 
   \category[Evaluation Contexts]{\eta}
   \alternative{\hole \CtrlSeq E} \alternative{\hole~E}\alternative{E~\hole} \alternative{\hole~t} \\
@@ -78,61 +78,61 @@ Specifically, we have reduction rules of the form $E_1 \ctrlstep[l] E_2$ which c
 \end{syntax}
 
 \begin{mathparpagebreakable}
-    \infer[]{
-      L \triangleright E_1 \ctrlstep[l] E_2
-    }{L \triangleright \eta[E_1] \ctrlstep[l] \eta[E_2]}
-    \and
-    \infer[RetE]{e_1 \localstep e_2}
-    {L \triangleright \Ret{e_1} \ctrlstep[\iota] \Ret{e_2}}
-    \and
-    \infer[SeqV]{\text{Value}(V)}
-    {L \triangleright V \CtrlSeq E \ctrlstep[\iota] E}
-    \and
-    \infer[App]{
-      f = \CtrlFun{F}{X}{E} \\
-      \text{Value}(V)
-    }{L \triangleright f~V \ctrlstep[\iotasync] \subst*{E}{{F}{f}{X}{V}}}
-    \and
-    \infer[SendV]{\text{Value}(v) \\
-      L' \neq L}
-    {L \triangleright \SendTo{\Ret{v}}{L'} \ctrlstep[v \sendsto L'] \CtrlFail}
-    \and
-    \infer[Recv]{\text{Value}(v) \\
-      L' \neq L}
-    {L \triangleright \RecvFrom{L'} \ctrlstep[L';v \sendsto] \Ret{v}}
-    \and
-    \infer[Choose]{L' \neq L}
-    {L \triangleright \ChooseFor{d}{L'}{E} \ctrlstep[d \sendsto L'] E}
-    \and
-    \infer[AllowChoiceL]{L' \neq L}
-    {L \triangleright \AllowChoice{L'}{E_1}{E_2} \ctrlstep[L';\Left \sendsto] E_1}
-    \and
-    \infer[AllowChoiceR]{L' \neq L}
-    {L \triangleright \AllowChoice{L'}{E_1}{E_2} \ctrlstep[L';\Right \sendsto] E_2}
-    \and
-    \infer[IfT]{ }
-    {L \triangleright \CtrlITE{\Ret{\True}}{E_1}{E_2} \ctrlstep[\iota] E_1}
-    \and
-    \infer[IfF]{ }
-    {L \triangleright \CtrlITE{\Ret{\False}}{E_1}{E_2} \ctrlstep[\iota] E_2}
-    \and
-    \infer[AppT]{ }
-    {L \triangleright (\CtrlTFun{\alpha}{E})~t \ctrlstep[\iotasync] \subst{E}{\alpha}{t}}
-    \and
-    \infer[LetRetV]{\text{Value}(v)}
-    {L \triangleright \CtrlLetIn{\Ret{x}}{\Ret{v}}{E} \ctrlstep[\iota] \subst{E}{x}{v}}
-    \and
-    \infer[SendTyV]{ }
-    {L \triangleright \LetSendIn{\alpha \knd \kappa}{\Ret{\say{t}}}{\rho}{E} \ctrlstep[t \sendsto \rho] \subst{E}{\alpha}{t}}
-    \and
-    \infer[RecvTy]{L' \neq L}
-    {L \triangleright \LetRecvIn{\alpha \knd \kappa}{L'}{E} \ctrlstep[L';t \sendsto] \subst{E}{\alpha}{t}}
-    \and
-    \infer[AmIL]{L \in \rho}
-    {L \triangleright \AmIIn{\rho}{E_1}{E_2} \ctrlstep[\iota] E_1}
-    \and
-    \infer[AmIR]{L \notin \rho}
-    {L \triangleright \AmIIn{\rho}{E_1}{E_2} \ctrlstep[\iota] E_2}
+  \infer[]{
+    L \triangleright E_1 \ctrlstep[l] E_2
+  }{L \triangleright \eta[E_1] \ctrlstep[l] \eta[E_2]}
+  \and
+  \infer[RetE]{e_1 \localstep e_2}
+  {L \triangleright \Ret{e_1} \ctrlstep[\iota] \Ret{e_2}}
+  \and
+  \infer[SeqV]{\text{Value}(V)}
+  {L \triangleright V \CtrlSeq E \ctrlstep[\iota] E}
+  \and
+  \infer[App]{
+    f = \CtrlFun{F}{X}{E} \\
+    \text{Value}(V)
+  }{L \triangleright f~V \ctrlstep[\iotasync] \subst*{E}{{F}{f}{X}{V}}}
+  \and
+  \infer[SendV]{\text{Value}(v) \\
+    L' \neq L}
+  {L \triangleright \SendTo{\Ret{v}}{L'} \ctrlstep[v \sendsto L'] \CtrlFail}
+  \and
+  \infer[Recv]{\text{Value}(v) \\
+    L' \neq L}
+  {L \triangleright \RecvFrom{L'} \ctrlstep[L';v \sendsto] \Ret{v}}
+  \and
+  \infer[Choose]{L' \neq L}
+  {L \triangleright \ChooseFor{d}{L'}{E} \ctrlstep[d \sendsto L'] E}
+  \and
+  \infer[AllowChoiceL]{L' \neq L}
+  {L \triangleright \AllowChoice{L'}{E_1}{E_2} \ctrlstep[L';\Left \sendsto] E_1}
+  \and
+  \infer[AllowChoiceR]{L' \neq L}
+  {L \triangleright \AllowChoice{L'}{E_1}{E_2} \ctrlstep[L';\Right \sendsto] E_2}
+  \and
+  \infer[IfT]{ }
+  {L \triangleright \CtrlITE{\Ret{\True}}{E_1}{E_2} \ctrlstep[\iota] E_1}
+  \and
+  \infer[IfF]{ }
+  {L \triangleright \CtrlITE{\Ret{\False}}{E_1}{E_2} \ctrlstep[\iota] E_2}
+  \and
+  \infer[AppT]{ }
+  {L \triangleright (\CtrlTFun{\alpha}{E})~t \ctrlstep[\iotasync] \subst{E}{\alpha}{t}}
+  \and
+  \infer[LetRetV]{\text{Value}(v)}
+  {L \triangleright \CtrlLetIn{\Ret{x}}{\Ret{v}}{E} \ctrlstep[\iota] \subst{E}{x}{v}}
+  \and
+  \infer[SendTyV]{ }
+  {L \triangleright \LetSendIn{\alpha \knd \kappa}{\Ret{\say{t}}}{\rho}{E} \ctrlstep[t \sendsto \rho] \subst{E}{\alpha}{t}}
+  \and
+  \infer[RecvTy]{L' \neq L}
+  {L \triangleright \LetRecvIn{\alpha \knd \kappa}{L'}{E} \ctrlstep[L';t \sendsto] \subst{E}{\alpha}{t}}
+  \and
+  \infer[AmIL]{L \in \rho}
+  {L \triangleright \AmIIn{\rho}{E_1}{E_2} \ctrlstep[\iota] E_1}
+  \and
+  \infer[AmIR]{L \notin \rho}
+  {L \triangleright \AmIIn{\rho}{E_1}{E_2} \ctrlstep[\iota] E_2}
 \end{mathparpagebreakable}
 
 \paragraph{Control Systems}
@@ -142,18 +142,18 @@ A system, denoted as $\Pi$, is a map from each location $L \in \Locations$ to th
 The \emph{system update} $\subst{\Pi}{L}{E}$ is $\Pi$ with $\Pi(L)$ replaced by $E$, and the control program at every other location unchanged:
 \begin{mathpar}
   \subst{\Pi}{L}{E}(L') \defeq
-    \begin{cases}
-      E & L = L'\\
-      \Pi(L') & L \neq L'
-    \end{cases}
+  \begin{cases}
+    E       & L = L'    \\
+    \Pi(L') & L \neq L'
+  \end{cases}
 \end{mathpar}
 Likewise the multiple system update $\subst{\Pi}{\rho}{\Pi'}$ is $\Pi$ with $\Pi(L)$ replaced by $\Pi'(L)$ for each $L \in \rho$, and other locations unchanged.
 \begin{mathpar}
   \subst{\Pi}{\rho}{\Pi'}(L) \defeq
-    \begin{cases}
-      \Pi'(L) & L \in \rho\\
-      \Pi(L) & L \notin \rho
-    \end{cases}
+  \begin{cases}
+    \Pi'(L) & L \in \rho    \\
+    \Pi(L)  & L \notin \rho
+  \end{cases}
 \end{mathpar}
 
 We can lift the control language semantics to a semantics for systems by asking that a subset of locations make a step, and that the labels used in these steps ``match''.
@@ -178,19 +178,19 @@ While the control program labels only show one side of a send or receive, the sy
       L \triangleright \Pi(L) \ctrlstep[v \sendsto \rho] \Pi'(L) \\
       \forall L' \in \rho \setminus L\ldotp \Big(L' \triangleright \Pi(L') \ctrlsteploc[L;v \sendsto]{L'} \Pi'(L')\Big) \\
       \forall L' \notin \rho \cup \{L\} \ldotp \Pi(L') = \Pi'(L')
-%      \Pi(L_1) \ctrlsteploc[v \sendsto L_2]{L_1} E_1 \\
-%      \Pi(L_2) \ctrlsteploc[L_1;v \sendsto]{L_2} E_2
+      %      \Pi(L_1) \ctrlsteploc[v \sendsto L_2]{L_1} E_1 \\
+      %      \Pi(L_2) \ctrlsteploc[L_1;v \sendsto]{L_2} E_2
     }{\Pi \systemstep[L;v \sendsto \rho] \Pi'}
     \and
     \infer[Choice]{L_1 \neq L_2 \\
-    L_1 \triangleright \Pi(L_1) \ctrlsteploc[d \sendsto L_2]{L_1} E_1 \\
-    L_2 \triangleright \Pi(L_2) \ctrlsteploc[L_1;d \sendsto]{L_2} E_2}
+      L_1 \triangleright \Pi(L_1) \ctrlsteploc[d \sendsto L_2]{L_1} E_1 \\
+      L_2 \triangleright \Pi(L_2) \ctrlsteploc[L_1;d \sendsto]{L_2} E_2}
     {\Pi \systemstep[L_1;d \sendsto L_2] \subst*{\Pi}{{L_1}{E_1}{L_2}{E_2}}}
-%    \and
-%    \infer[CommTy]{\Pi(L_1) \ctrlsteploc[t \sendsto \rho]{L_1} E_1 \\
-%    \forall L \in \rho \setminus L_1,~ \Pi(L) \ctrlstep[L_1;t \sendsto] \Pi'(L)}
-%    {\Pi \systemstep[L_1;t \sendsto \rho] \subst*{\Pi}{{L_1}{E_1}{\rho}{\Pi'}}}
-%    \and
+    %    \and
+    %    \infer[CommTy]{\Pi(L_1) \ctrlsteploc[t \sendsto \rho]{L_1} E_1 \\
+    %    \forall L \in \rho \setminus L_1,~ \Pi(L) \ctrlstep[L_1;t \sendsto] \Pi'(L)}
+    %    {\Pi \systemstep[L_1;t \sendsto \rho] \subst*{\Pi}{{L_1}{E_1}{\rho}{\Pi'}}}
+    %    \and
   \end{mathpar}
   \caption{System Semantics}
   \label{fig:system-semantics}
@@ -198,7 +198,7 @@ While the control program labels only show one side of a send or receive, the sy
 
 \subsection{Control Program Merging}
 \label{sec:control-merge}
-\todo Talk about merging operator 
+\todo Talk about merging operator
 
 %%% Local Variables:
 %%% mode: latex

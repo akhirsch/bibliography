@@ -8,8 +8,27 @@ Process polymorphism is a technique within choreographic programming proposed by
 Choreographic programming as a whole arises from concurrency theory and the study of $\pi$~calculi.
 We discuss each of these in turn.
 
-\subsection{Functional Choreographic Programming}
+\subsection{(Functional) Choreographic Programming}
 \label{sec:choreo-prog}
+
+Choreographic programming was crystalized as an independent paradigm in 2013 due to the work of \citet{CarboneM13}, especially Montesi's~Ph.D. thesis~\citep{Montesi13}.
+For the next 10 years, choreographic programming advanced, but remained tied to a lower-order model of computing \cite[see e.g.,][]{CarboneMS14,Cruz-FilipeMP18,Cruz-FilipeM17,LaneseMZ13,Cruz-FilipeM17c}.
+
+In 2022, that tie was broken by two independent language developments: Pirouette~\cite{HirschG22} and Chor$\lambda$~\cite{CruzFilipeGLMP21}.
+\akh{\todo{Fix the bibtex for Chor$\lambda$}}
+These works combine the primitives of choreographic programming with $\lambda$~calculi, allowing for (sequential) composition of choreographies and program reuse.
+However, neither supported any type of polymorphism.
+
+\languagename is based on Pirouette, and therefore shares many similarities.
+In particular, like Pirouette, \languagename has a separate language of messages (the local language), whereas Chor$\lambda$ combines the languages of choreographies and messages.
+We also adopt Pirouette's style of out-of-order semantics, in which functions require all participants to synchronize.
+In the original Chor$\lambda$ paper, the only semantics were sequential~\cite{CruzFilipeGLMP21}.
+In recent work, \citet{CruzFilipeGLMP23} show how to give an out-of-order semantics to Chor$\lambda$ based on commuting conversions which does not require global synchronization.
+However, these commuting conversions are fragile; in particular, they break type preservation in the presence of named recursive functions in the style present in this paper.
+We thus adopt the more-restrictive semantics of Pirouette, saving the challenge of finding an appropriate out-of-order semantics for future work.
+Nothing in this paper relies on the use of global synchronization except for the \emph{statement} of epp correctness (Section~\ref{sec:proj-correct}).
+We believe that an appropriate statement of the correctness guarantee would allow for a semantics that simply removes the synchronization requirement.
+However, this requires significant research in its own right.
 
 \subsection{Process Polymorphism}
 \label{sec:process-poly}
