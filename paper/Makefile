@@ -4,7 +4,7 @@ PAPER_FILES := $(shell find . -name "*.tex")
 
 export TEXINPUTS = .::$TEXMF/tex/::../styles::../latex-pl-syntax
 
-.PHONY: clean cleanall all PACMAnon PACMCameraReady
+.PHONY: clean cleanall all PACMAnon PACMCameraReady conference conference_anon tech_report
 
 conference_anon: conference_anon.pdf
 
@@ -16,7 +16,6 @@ tech_report: tech_report.pdf
 
 %.pdf: %.tex $(PAPER_FILES) $(BIB)
 	latexmk -pdf -bibtex -synctex=1 $<
-
 
 ALLCLEANABLES := $(shell find . \( -name '*.aux'\
                              -o -name '\#*\#'\
