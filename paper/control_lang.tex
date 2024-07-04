@@ -4,10 +4,15 @@ The syntax of our control language, presented in Figure~\ref{fig:control-lang-sy
 The control language is a concurrent $\lambda$-calculus where messages are values from the local language.
 
 Identically to choreographies, control program variables are written in uppercase Latin characters ($X,Y,F,\ldots$) and local program variables written in lowercase Latin characters ($x,y,f,\ldots$).
-While the control language is un-typed, it reflects types, and includes both control program and local type variables with lowercase Greek characters ($\alpha,\beta,\ldots$).
+While the control language is un-typed, it reflects types in the syntax, and includes both control program and local type variables with lowercase Greek characters ($\alpha,\beta,\ldots$).
+
+When control programs finish execution, they can return the result of a local program via the return-expression $\Ret{e}$.
+Alternatively they can yield a trivial value $\CtrlFail$ to indicate that they have no return value.
+This can happen when a given location does not participate in some part of the overall choreography.
 
 Functions and type-abstraction in the control language, written $\CtrlFun{F}{X}{E}$ and $\CtrlTFun{\alpha}{E}$, mirror the corresponding choreographic constructs.
 Likewise, the control program let-expression $\CtrlLetIn{X}{E_1}{E_2}$ and sequencing operator $E_1 \CtrlSeq E_2$ are standard.
+The let-expression can also be used in the form $\CtrlLetIn{\Ret{x}}{E_1}{E_2}$ to bind local program variables, mirroring the local-let expressions of choreographies.
 
 The send $\SendTo{E}{\rho}$ and receive $\RecvFrom{\ell}$ expressions allow control programs to send a message to a set of locations $\rho$, and receive a message from the location $\ell$, respectively, and utilize the value in further computation.
 
@@ -21,7 +26,7 @@ The other side of an external choice is the choose-for expression $\ChooseFor{d}
 
 %Lastly, the ``am-I-in'' expression $\AmIIn{\rho}{E_1}{E_2}$ is a form of local branching which reflects the currently executing location's knowledge of its own identity.
 Specifically, when executing at a location $L$, if $L \in \rho$ then the left branch $E_1$ will be taken, and if $L \notin \rho$ then the right branch $E_2$ will be taken.
-This is a generalization of the ``AmI'' expression of PolyChor$\lambda$~\citep{GraversenHM23} which is critical in order to implement location polymorphism and the usage of dynamically generated locations.
+This is a generalization of the ``AmI'' expression of PolyChor$\lambda$~\citep{GraversenHM23}, and is critical in order to implement location polymorphism and the usage of dynamically generated locations.
 
 \begin{figure}
   \begin{syntax}
@@ -34,6 +39,7 @@ This is a generalization of the ``AmI'' expression of PolyChor$\lambda$~\citep{G
     \alternative{\AllowChoice{\ell}{?E_1}{?E_2}} \\
     \alternative{\CtrlITE{E}{E_1}{E_2}} \\
     \alternative{\CtrlLetIn{X}{E_1}{E_2}}\\
+    \alternative{\CtrlLetIn{\Ret{x}}{E_1}{E_2}}\\
 %    \alternative{\LetSendIn{\alpha}{E_1}{\rho}{E_2}} \alternative{\LetRecvIn{\alpha}{\ell}{E}}\\
 %    \alternative{\LetSendIn{\alpha \knd *_e}{E_1}{\rho}{E_2}} \alternative{\LetRecvIn{\alpha \knd *_e}{\ell}{E}}\\
     \alternative{\AmIIn{\rho}{E_1}{E_2}}
@@ -61,7 +67,7 @@ Specifically, we have reduction rules of the form $E_1 \ctrlstep[l] E_2$ which c
 
 \begin{syntax}
   \category[Labels]{l}
-  \alternative{\iota} \alternative{v \sendsto L} \alternative{L;v \sendsto} \alternative{d \sendsto L} \alternative{L;d \sendsto} \alternative{t \sendsto \rho} \alternative{L;t \sendsto}
+  \alternative{\iota} \alternative{[d] \sendsto L} \alternative{L;[d] \sendsto}  \alternative{v \sendsto \rho} \alternative{L;\rho \sendsto} 
 
   \category[Evaluation Contexts]{\eta}
   \alternative{\hole \CtrlSeq E} \alternative{\hole~E}\alternative{E~\hole} \alternative{\hole~t} \\

@@ -3,7 +3,7 @@
 
 Distributed programs are an integral part of many modern software systems, but programming them correctly is notoriously difficult.
 Correctly representing computations spanning multiple locations is far more challenging than single-machine programming.
-The developer must not only divide the work across multiple machines, they must ensure that all work is being done by someone~\akh{??}
+The developer must not only divide the work across multiple machines, they must ensure that all work is being done by someone~\akh{??} \ashley{I don't remember this? Maybe Ethan}
 and avoid issues like deadlock, where execution cannot proceed due to nodes with mismatched message send and receive expectations forever waiting on each other.
 
 \ethan{I don't see the value in mentioning session types here, so I got rid of it for now.}
@@ -13,9 +13,9 @@ and avoid issues like deadlock, where execution cannot proceed due to nodes with
 \emph{Choreographic programming} promises a developer-friendly approach to solving these problems~\citep{Montesi22,Montesi13}.
 With choreographies, a single top-level program describes the computation performed by each node and the interactions between them.
 Programs for individual locations are then \emph{projected} from this single top-level program.
-\akh{The following sentence seems like it's two different ideas. It should be split in two.}
-These choreographies centralize the code so developers can see all of the computations' control flow in one place
-and lead to \emph{deadlock freedom by design}, meaning developers no longer have to worry about a notoriously challenging issue in concurrent code.
+\akh{The following sentence seems like it's two different ideas. It should be split in two.} \ashley{Rephrased}
+Choreographies centralize the code so developers can see all of the computations' control flow in one place.
+This pattern also leads to \emph{deadlock freedom by design}, meaning developers no longer have to worry about a notoriously challenging issue in concurrent code.
 
 \ethan{I think this paragraph should talk about what other people do (with some citations) and how it's not good enough.
   Then we can go into the example.}
@@ -29,8 +29,7 @@ However, none of these results \ethan{TODO: what they're missing}.
 %Moreover, the only , or cannot send \emph{dynamically computed process names} in a manner which does not introduce deadlocks or stuck programs.
 %\ashley{How about this wording?}
 \akh{I don't know what it would mean to support process polymorphism \emph{without} dynamically computed names. I think we should talk about sending and receiving here instead.}
-This paper presents \langname, the first typed choreographic programming language
-supporting process polymorphism with dynamically computed process names.
+This paper presents \langname, the first typed choreographic programming language supporting process polymorphism and the ability to send and receive process names and types.
 \ethan{I think we should identify the main selling point of the paper and try not to muddy the water with other things too much.
   As I see it, ``we do typed process polymorphism with dynamic process names'' is th real winner here.
   It's definitely worth mentioning the other cool stuff we do, but I want to make sure we drive home that
@@ -54,40 +53,42 @@ Note here, the syntax $t@\Client$ indicates a value of type~$t$ located at~\Clie
         \Worker.f \ChorDef F \ColSend \Worker \\
         \Worker.x \ChorDef X \ColSend \Worker \\
     \end{array} \\
-    \In~\Worker.(f~x) \ColSend \Client
+    \In~\Worker. (f~x) \ColSend \Client
   \end{array}
 \end{align*}
 The notation $F \ColSend \Worker$ means that whoever owns $F$ (in this case \Client) should send it to \Worker,
-so \Client is sending the code~($F$) and the input~($X$) to \Worker,
+so \Client~is sending the code~($F$) and the input~($X$) to \Worker,
 who locally binds them to variables~$f$ and~$x$, respectively.
-Finally, \Worker computes $f~x$ and sends the result back to \Client.
+Finally, \Worker~computes $f~x$ and sends the result back to \Client.
 
 \ethan{This description seems WAY too technical for an intro. I just added a quicker one above.}
-In the first line of this program, \Client sends the function $F$ stored on its local system to \Worker via the expression $F \ColSend \Worker$.
-This results in an expression with type $(t \to t') @ \Worker$, indicating that \Worker now has knowledge of this function.
+In the first line of this program, \Client~sends the function $F$ stored on its local system to \Worker~via the expression $F \ColSend \Worker$.
+This results in an expression with type $(t \to t') @ \Worker$, indicating that \Worker~now has knowledge of this function.
 
-The second action which occurs on the first line of the program is the \emph{local let-binding} $\LetN~\Worker.f \ChorDef F \ColSend \Worker$, in which \Worker binds the value of the function it recieved from \Worker to a \emph{local variable} $\Worker.f$, allowing it to be used in \emph{local computations}.
+The second action which occurs on the first line of the program is the \emph{local let-binding} $\LetN~\Worker.f \ChorDef F \ColSend \Worker$, in which \Worker~binds the value of the function it recieved from \Worker~to a \emph{local variable} $\Worker.f$, allowing it to be used in \emph{local computations}.
 
 This construct is necessary as choreographic and local values cannot inter-mingle: choreographic values can only be used in a local computation by using a local let-binding, and local values can only be used in the choreographic program by explicitly denoting the location that the computation will take place at.
 For instance, if $N : \Int @ \ell$ is an integer stored at $\ell$, the choreography which represents $\ell$ locally adding 2 to $N$ is written as the program $\LetN~\ell.n \ChorDef N ~\In~ \ell.(2 + n)$, which also has type $\Int @ \ell$.
 
-The second line of the program similarly has \Client send the value $X$ to \Worker, who then binds it to the local variable $\Worker.x$.
+The second line of the program similarly has \Client~send the value $X$ to \Worker, who then binds it to the local variable $\Worker.x$.
 The final line of the program performs two actions.
-\Worker first applies $f$ to $x$ on its local system, represented by the expression $\Worker.(f~x)$.
-Lastly \Worker sends the result of this computation to \Client, completing the program.
- 
+\Worker~first applies $f$ to $x$ on its local system, represented by the expression $\Worker.(f~x)$.
+Lastly \Worker~sends the result of this computation to \Client, completing the program.
+
 \ethan{I think we want to more heavily emphasize that this is not how real distributed systems work.}
 \ashley{What aspects specifically? I feel like this has been mentioned in other papers, but not in the introduction}
 \ethan{Just the point that real distributed systems don't have a single static worker, they use thread pools and load balancers.}
 \akh{I second Ethan's point here.}
 
 \akh{There was a hyphen here (``so-far'') that doesn't make sense. Remember, hyphens are used in some compound nouns and to disambiguate adjectives.}
-We have so far assumed that the worker location \Worker in this program is both fixed and statically-known.
-What if, however, we wish for the identity of the worker location to be dynamically computed during the execution of the program?
+So far we have assumed that the worker location \Worker~in this program is both fixed and statically-known.
+However in a real distributed system there will typically be many worker nodes, with a thread pool and load balancer being used to manage and assign workers to waiting tasks.
+The worker can be dynamically assigned by the pool manager, and the waiting thread and worker processes must be notified of the identity of the selected worker.
 \akh{I generally don't like rhetorical questions in technical writing like this. In particular, this seems like an excellent time to emphasize the point above.}
+\ashley{updated}
 
-For instance, consider a programmer who wishes to implement a thread pool.
-In this process, the client \Client will ask a pool manager \Mngr for the name of a location on which their task will run.
+Consider a programmer who wishes to implement such a thread pool in a choreography.
+In this process, the client \Client~will ask a pool manager \Mngr~for the name of a location on which their task will run.
 The manager can locally track the state of the thread pool, for instance by using a queue of idle processes, and allow clients to acquire the least-recently-used location by using a \emph{dynamically-computed} local function \AcquireWorker.
 The programmer could implement the job-submission process using the following choreography:
 \begin{align*}
@@ -108,36 +109,35 @@ The programmer could implement the job-submission process using the following ch
 
 \akh{I added a unit to $\AcquireWorker$ to make it clear that it's a function. If there's better syntax for it, do it.}
 
-\todo{Explain the second tell-let line in more detail. Emphasize this line, it's "the magic" which makes it work. Everything else in the program is seen in the first example.}
-
 \akh{I think you intended to make the name of the pool ``pool'', but that looked like a typo. I've removed it.}
 \akh{On another note, make sure to always use a tie \textasciitilde between a description of a definite object and its name.}
-On the first line of this program, the pool manager \Mngr first finds and selects an idle \textsf{worker} location $w$ from the pool of possible worker locations using the local \AcquireWorker function.
-With this dynamically computed value, on the seond line \Mngr then \emph{tells} the identity of the location $w$ to the client \Client, where it is bound to the choreographic program variable $W$.
-As well, all workers in \Pool are notified about the identity of the chosen worker so that they know whether or not they have been selected.
+On the first line of this program, the pool manager~\Mngr first finds and selects an idle \textsf{worker} location $w$ from the pool of possible worker locations using the local \AcquireWorker~function.
 
-As in the earlier \RunAtWorker function, the client then sends $F$ and $X$ to $W$, who then computes $F~X$ locally, and sends the result to \Client.
+With this dynamically computed value, on the seond line \Mngr~then \emph{tells} the identity of the location $w$ to the client \Client, where it is bound to the choreographic program variable $W$.
+As well, all workers in \Pool~are notified about the identity of the chosen worker so that they know whether or not they have been selected.
+
+As in the earlier \RunAtWorker~function, the client then sends $F$ and $X$ to $W$, who computes $F~X$ locally and sends the result to \Client.
 Finally, the manager releases the worker back into the thread pool, at which point the computation has finished.
 
 \ethan{Again, probably a bit too technical here, but we need some of this.}
-The second line of this program, $W \ChorDef \Tell[\Mngr]{w}{\{\Client\} \cup \Pool}$, is the main difference between this and the previous example, and is critical for the ability of \langname to be able to send and use dynamically generated location names.
-This expression, called a \emph{tell-let} binding, allows for location names from the local language to be used within the subsequent choreographic program.
-Although locations can appear in the types of choreographic programs such as $\Int @ \Worker$, we are careful to disallow \emph{dependent types} within our language while still enabling the dynamic value of the location to be used in the body of the program
+The second line of this program, $W \ChorDef \Tell[\Mngr]{w}{\{\Client\} \cup \Pool}$, called a \emph{tell-let} binding, is the main addition to this example over the previous.
+This feature is the key component which allows \langname~programs to send and receive dynamically generated location names.
+As location names may appear within the types of our choreographies, we are careful to implement this feature without introducing a dependency of types on program values.
+% This expression, called a \emph{tell-let} binding, allows for location names from the local language to be used within the subsequent choreographic program.
+% Although locations can appear in the types of choreographic programs such as $\Int @ \Worker$, we are careful to disallow \emph{dependent types} within our language while still enabling the dynamic value of the location to be used in the body of the program
 \ethan{if we tweak the wording a bit, it can sound like a big win! ``We manage to let you do all of this very dependent-feeling stuff without needing any dependent types!''}
-by enforcing that the \emph{output type} of a tell-let binding does not depend on the value of the location.
+\ashley{updated}
+% by enforcing that the \emph{output type} of a tell-let binding does not depend on the value of the location.
 
 \akh{We should put section numbers in here.}
 \paragraph{Contributions}
 \begin{itemize}
-	\item We present \langname, the first typed choreographic programming language with the ability to send dynamically generated location names and types.
-    \ethan{We should be careful. One could argue Symphony did that, it just didn't have a type system.}
-	\item We show how process \ashley{Should I stick with "process polymorphism" or use "location polymorphism" as I'm sticking with Pirouette and calling them locations} and type polymorphism can be implemented in a choreographic language which is generic over a language of local computations.
-    \ethan{Good point. We should either be very consistent, or mention early on that we use the interchangeably. I vote consistent.}
-	\item We show how to define an out-of-order execution semantics for a choreographic language which includes process polymorphism.
-	\item We settle an open question about the strength of the type-system needed to implement process polymorphism in a choreographic language.
-  In particular, previous works (Alice or Bob) have implemented process polymorphism using a variant of System $\text{F}_\omega$ which includes a \emph{type-conversion} rule, whereas \langname extends System F and does not require type-conversions.
-	\item We formalize the metatheory of our syntax and type-system in Agda, and we present proofs for all remaining major theorems within this paper.
-  The Agda implementation is discussed in Section \ref{sec:agda-dev}.
+	\item We present \langname, the first typed choreographic programming language with process polymorphism and the ability to send location names and types as messages (Section \ref{sec:language}).
+	\item We show that process and type polymorphism can be implemented in a choreographic language which allows for a wide range of local message languages (Section \ref{sec:local-programs}).
+	\item We extend the out-of-order execution semantics of Pirouette to allow for process polymorphism (Section \ref{sec:oper-semantics}).
+	\item We settle an open question by showing that process polymorphism can be soundly implemented (\todo ref to statement of soundness) using a type theory with the strength of System F, rather than System $\text{F}_{\omega}$.
+  \todo \ashley{Andrew can you review this one in particular as you suggested this point?}
+	\item We formalize and mechanically verify the metatheory of our syntax and type-system in Agda (Section \ref{sec:agda-dev}), and we present proofs for all remaining major theorems within this paper \todo.
 \end{itemize}
 
 %%% Local Variables:
